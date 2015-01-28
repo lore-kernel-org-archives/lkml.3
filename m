@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933787AbbA1EQQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 23:16:16 -0500
-Received: from mail.kernel.org ([198.145.29.136]:37645 "EHLO mail.kernel.org"
+	id S1762609AbbA1FUR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 00:20:17 -0500
+Received: from mail.kernel.org ([198.145.29.136]:37655 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933758AbbA1EQL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 23:16:11 -0500
+	id S933763AbbA1EQO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 23:16:14 -0500
 From: lizf@kernel.org
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Ilya Dryomov <ilya.dryomov@inktank.com>,
-        Zefan Li <lizefan@huawei.com>
-Subject: [PATCH 3.4 31/91] libceph: do not hard code max auth ticket len
-Date: Wed, 28 Jan 2015 12:07:08 +0800
-Message-Id: <1422418236-12852-61-git-send-email-lizf@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Xiubo Li <Li.Xiubo@freescale.com>,
+        Mark Brown <broonie@kernel.org>, Zefan Li <lizefan@huawei.com>
+Subject: [PATCH 3.4 031/177] regmap: debugfs: fix possbile NULL pointer dereference
+Date: Wed, 28 Jan 2015 12:07:09 +0800
+Message-Id: <1422418236-12852-62-git-send-email-lizf@kernel.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422418050-12581-1-git-send-email-lizf@kernel.org>
 References: <1422418050-12581-1-git-send-email-lizf@kernel.org>
@@ -20,205 +20,49 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ilya Dryomov <ilya.dryomov@inktank.com>
+From: Xiubo Li <Li.Xiubo@freescale.com>
 
-3.4.105-rc1 review patch.  If anyone has any objections, please let me know.
+3.4.106-rc1 review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
 
-commit c27a3e4d667fdcad3db7b104f75659478e0c68d8 upstream.
+commit 2c98e0c1cc6b8e86f1978286c3d4e0769ee9d733 upstream.
 
-We hard code cephx auth ticket buffer size to 256 bytes.  This isn't
-enough for any moderate setups and, in case tickets themselves are not
-encrypted, leads to buffer overflows (ceph_x_decrypt() errors out, but
-ceph_decode_copy() doesn't - it's just a memcpy() wrapper).  Since the
-buffer is allocated dynamically anyway, allocated it a bit later, at
-the point where we know how much is going to be needed.
+If 'map->dev' is NULL and there will lead dev_name() to be NULL pointer
+dereference. So before dev_name(), we need to have check of the map->dev
+pionter.
 
-Fixes: http://tracker.ceph.com/issues/8979
+We also should make sure that the 'name' pointer shouldn't be NULL for
+debugfs_create_dir(). So here using one default "dummy" debugfs name when
+the 'name' pointer and 'map->dev' are both NULL.
 
-Signed-off-by: Ilya Dryomov <ilya.dryomov@inktank.com>
-Reviewed-by: Sage Weil <sage@redhat.com>
+Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
+Signed-off-by: Mark Brown <broonie@kernel.org>
+[lizf: Backported to 3.4: dev_name() is passed to debugfs_create_dir() in 3.4]
 Signed-off-by: Zefan Li <lizefan@huawei.com>
 ---
- net/ceph/auth_x.c | 64 +++++++++++++++++++++++++------------------------------
- 1 file changed, 29 insertions(+), 35 deletions(-)
+ drivers/base/regmap/regmap-debugfs.c | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
-diff --git a/net/ceph/auth_x.c b/net/ceph/auth_x.c
-index 0eb146d..de6662b 100644
---- a/net/ceph/auth_x.c
-+++ b/net/ceph/auth_x.c
-@@ -13,8 +13,6 @@
- #include "auth_x.h"
- #include "auth_x_protocol.h"
+diff --git a/drivers/base/regmap/regmap-debugfs.c b/drivers/base/regmap/regmap-debugfs.c
+index 8ab1eab..1db1289 100644
+--- a/drivers/base/regmap/regmap-debugfs.c
++++ b/drivers/base/regmap/regmap-debugfs.c
+@@ -244,7 +244,12 @@ static const struct file_operations regmap_access_fops = {
  
--#define TEMP_TICKET_BUF_LEN	256
--
- static void ceph_x_validate_tickets(struct ceph_auth_client *ac, int *pneed);
- 
- static int ceph_x_is_authenticated(struct ceph_auth_client *ac)
-@@ -64,7 +62,7 @@ static int ceph_x_encrypt(struct ceph_crypto_key *secret,
- }
- 
- static int ceph_x_decrypt(struct ceph_crypto_key *secret,
--			  void **p, void *end, void *obuf, size_t olen)
-+			  void **p, void *end, void **obuf, size_t olen)
+ void regmap_debugfs_init(struct regmap *map)
  {
- 	struct ceph_x_encrypt_header head;
- 	size_t head_len = sizeof(head);
-@@ -75,8 +73,14 @@ static int ceph_x_decrypt(struct ceph_crypto_key *secret,
- 		return -EINVAL;
- 
- 	dout("ceph_x_decrypt len %d\n", len);
--	ret = ceph_decrypt2(secret, &head, &head_len, obuf, &olen,
--			    *p, len);
-+	if (*obuf == NULL) {
-+		*obuf = kmalloc(len, GFP_NOFS);
-+		if (!*obuf)
-+			return -ENOMEM;
-+		olen = len;
-+	}
+-	map->debugfs = debugfs_create_dir(dev_name(map->dev),
++	const char *devname = "dummy";
 +
-+	ret = ceph_decrypt2(secret, &head, &head_len, *obuf, &olen, *p, len);
- 	if (ret)
- 		return ret;
- 	if (head.struct_v != 1 || le64_to_cpu(head.magic) != CEPHX_ENC_MAGIC)
-@@ -131,18 +135,19 @@ static void remove_ticket_handler(struct ceph_auth_client *ac,
- 
- static int process_one_ticket(struct ceph_auth_client *ac,
- 			      struct ceph_crypto_key *secret,
--			      void **p, void *end,
--			      void *dbuf, void *ticket_buf)
-+			      void **p, void *end)
- {
- 	struct ceph_x_info *xi = ac->private;
- 	int type;
- 	u8 tkt_struct_v, blob_struct_v;
- 	struct ceph_x_ticket_handler *th;
-+	void *dbuf = NULL;
- 	void *dp, *dend;
- 	int dlen;
- 	char is_enc;
- 	struct timespec validity;
- 	struct ceph_crypto_key old_key;
-+	void *ticket_buf = NULL;
- 	void *tp, *tpend;
- 	struct ceph_timespec new_validity;
- 	struct ceph_crypto_key new_session_key;
-@@ -167,8 +172,7 @@ static int process_one_ticket(struct ceph_auth_client *ac,
- 	}
- 
- 	/* blob for me */
--	dlen = ceph_x_decrypt(secret, p, end, dbuf,
--			      TEMP_TICKET_BUF_LEN);
-+	dlen = ceph_x_decrypt(secret, p, end, &dbuf, 0);
- 	if (dlen <= 0) {
- 		ret = dlen;
- 		goto out;
-@@ -195,20 +199,25 @@ static int process_one_ticket(struct ceph_auth_client *ac,
- 
- 	/* ticket blob for service */
- 	ceph_decode_8_safe(p, end, is_enc, bad);
--	tp = ticket_buf;
- 	if (is_enc) {
- 		/* encrypted */
- 		dout(" encrypted ticket\n");
--		dlen = ceph_x_decrypt(&old_key, p, end, ticket_buf,
--				      TEMP_TICKET_BUF_LEN);
-+		dlen = ceph_x_decrypt(&old_key, p, end, &ticket_buf, 0);
- 		if (dlen < 0) {
- 			ret = dlen;
- 			goto out;
- 		}
-+		tp = ticket_buf;
- 		dlen = ceph_decode_32(&tp);
- 	} else {
- 		/* unencrypted */
- 		ceph_decode_32_safe(p, end, dlen, bad);
-+		ticket_buf = kmalloc(dlen, GFP_NOFS);
-+		if (!ticket_buf) {
-+			ret = -ENOMEM;
-+			goto out;
-+		}
-+		tp = ticket_buf;
- 		ceph_decode_need(p, end, dlen, bad);
- 		ceph_decode_copy(p, ticket_buf, dlen);
- 	}
-@@ -237,6 +246,8 @@ static int process_one_ticket(struct ceph_auth_client *ac,
- 	xi->have_keys |= th->service;
- 
- out:
-+	kfree(ticket_buf);
-+	kfree(dbuf);
- 	return ret;
- 
- bad:
-@@ -249,21 +260,10 @@ static int ceph_x_proc_ticket_reply(struct ceph_auth_client *ac,
- 				    void *buf, void *end)
- {
- 	void *p = buf;
--	char *dbuf;
--	char *ticket_buf;
- 	u8 reply_struct_v;
- 	u32 num;
- 	int ret;
- 
--	dbuf = kmalloc(TEMP_TICKET_BUF_LEN, GFP_NOFS);
--	if (!dbuf)
--		return -ENOMEM;
--
--	ret = -ENOMEM;
--	ticket_buf = kmalloc(TEMP_TICKET_BUF_LEN, GFP_NOFS);
--	if (!ticket_buf)
--		goto out_dbuf;
--
- 	ceph_decode_8_safe(&p, end, reply_struct_v, bad);
- 	if (reply_struct_v != 1)
- 		return -EINVAL;
-@@ -272,22 +272,15 @@ static int ceph_x_proc_ticket_reply(struct ceph_auth_client *ac,
- 	dout("%d tickets\n", num);
- 
- 	while (num--) {
--		ret = process_one_ticket(ac, secret, &p, end,
--					 dbuf, ticket_buf);
-+		ret = process_one_ticket(ac, secret, &p, end);
- 		if (ret)
--			goto out;
-+			return ret;
- 	}
- 
--	ret = 0;
--out:
--	kfree(ticket_buf);
--out_dbuf:
--	kfree(dbuf);
--	return ret;
-+	return 0;
- 
- bad:
--	ret = -EINVAL;
--	goto out;
-+	return -EINVAL;
- }
- 
- static int ceph_x_build_authorizer(struct ceph_auth_client *ac,
-@@ -603,13 +596,14 @@ static int ceph_x_verify_authorizer_reply(struct ceph_auth_client *ac,
- 	struct ceph_x_ticket_handler *th;
- 	int ret = 0;
- 	struct ceph_x_authorize_reply reply;
-+	void *preply = &reply;
- 	void *p = au->reply_buf;
- 	void *end = p + sizeof(au->reply_buf);
- 
- 	th = get_ticket_handler(ac, au->service);
- 	if (IS_ERR(th))
- 		return PTR_ERR(th);
--	ret = ceph_x_decrypt(&th->session_key, &p, end, &reply, sizeof(reply));
-+	ret = ceph_x_decrypt(&th->session_key, &p, end, &preply, sizeof(reply));
- 	if (ret < 0)
- 		return ret;
- 	if (ret != sizeof(reply))
++	if (map->dev)
++		devname = dev_name(map->dev);
++
++	map->debugfs = debugfs_create_dir(devname,
+ 					  regmap_debugfs_root);
+ 	if (!map->debugfs) {
+ 		dev_warn(map->dev, "Failed to create debugfs directory\n");
 -- 
 1.9.1
 
