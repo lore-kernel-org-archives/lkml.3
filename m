@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964877AbbA1CWE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 21:22:04 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41028 "EHLO
+	id S933279AbbA1Bi0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 20:38:26 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41411 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755721AbbA1B2I (ORCPT
+	with ESMTP id S1759052AbbA1BiS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 20:28:08 -0500
+	Tue, 27 Jan 2015 20:38:18 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dan Carpenter <dan.carpenter@oracle.com>, Julian Anastasov <ja@ssi.bg>,
-        Simon Horman <horms@verge.net.au>
-Subject: [PATCH 3.10 24/32] ipvs: uninitialized data with IP_VS_IPV6
-Date: Tue, 27 Jan 2015 17:26:54 -0800
-Message-Id: <20150128012630.526483648@linuxfoundation.org>
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        John Stultz <john.stultz@linaro.org>
+Subject: [PATCH 3.14 17/77] time: adjtimex: Validate the ADJ_FREQUENCY values
+Date: Tue, 27 Jan 2015 17:26:55 -0800
+Message-Id: <20150128012746.480339545@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150128012627.081285723@linuxfoundation.org>
-References: <20150128012627.081285723@linuxfoundation.org>
+In-Reply-To: <20150128012745.971137091@linuxfoundation.org>
+References: <20150128012745.971137091@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -25,68 +26,44 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Sasha Levin <sasha.levin@oracle.com>
 
-commit 3b05ac3824ed9648c0d9c02d51d9b54e4e7e874f upstream.
+commit 5e5aeb4367b450a28f447f6d5ab57d8f2ab16a5f upstream.
 
-The app_tcp_pkt_out() function expects "*diff" to be set and ends up
-using uninitialized data if CONFIG_IP_VS_IPV6 is turned on.
+Verify that the frequency value from userspace is valid and makes sense.
 
-The same issue is there in app_tcp_pkt_in().  Thanks to Julian Anastasov
-for noticing that.
+Unverified values can cause overflows later on.
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Acked-by: Julian Anastasov <ja@ssi.bg>
-Signed-off-by: Simon Horman <horms@verge.net.au>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+[jstultz: Fix up bug for negative values and drop redunent cap check]
+Signed-off-by: John Stultz <john.stultz@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/netfilter/ipvs/ip_vs_ftp.c |   10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+ kernel/time/ntp.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
---- a/net/netfilter/ipvs/ip_vs_ftp.c
-+++ b/net/netfilter/ipvs/ip_vs_ftp.c
-@@ -183,6 +183,8 @@ static int ip_vs_ftp_out(struct ip_vs_ap
- 	struct nf_conn *ct;
- 	struct net *net;
+--- a/kernel/time/ntp.c
++++ b/kernel/time/ntp.c
+@@ -631,6 +631,13 @@ int ntp_validate_timex(struct timex *txc
+ 	if ((txc->modes & ADJ_SETOFFSET) && (!capable(CAP_SYS_TIME)))
+ 		return -EPERM;
  
-+	*diff = 0;
++	if (txc->modes & ADJ_FREQUENCY) {
++		if (LONG_MIN / PPM_SCALE > txc->freq)
++			return -EINVAL;
++		if (LONG_MAX / PPM_SCALE < txc->freq)
++			return -EINVAL;
++	}
 +
- #ifdef CONFIG_IP_VS_IPV6
- 	/* This application helper doesn't work with IPv6 yet,
- 	 * so turn this into a no-op for IPv6 packets
-@@ -191,8 +193,6 @@ static int ip_vs_ftp_out(struct ip_vs_ap
- 		return 1;
- #endif
+ 	return 0;
+ }
  
--	*diff = 0;
--
- 	/* Only useful for established sessions */
- 	if (cp->state != IP_VS_TCP_S_ESTABLISHED)
- 		return 1;
-@@ -321,6 +321,9 @@ static int ip_vs_ftp_in(struct ip_vs_app
- 	struct ip_vs_conn *n_cp;
- 	struct net *net;
- 
-+	/* no diff required for incoming packets */
-+	*diff = 0;
-+
- #ifdef CONFIG_IP_VS_IPV6
- 	/* This application helper doesn't work with IPv6 yet,
- 	 * so turn this into a no-op for IPv6 packets
-@@ -329,9 +332,6 @@ static int ip_vs_ftp_in(struct ip_vs_app
- 		return 1;
- #endif
- 
--	/* no diff required for incoming packets */
--	*diff = 0;
--
- 	/* Only useful for established sessions */
- 	if (cp->state != IP_VS_TCP_S_ESTABLISHED)
- 		return 1;
 
 
