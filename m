@@ -1,79 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761593AbbA1WNg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 17:13:36 -0500
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:42365 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755335AbbA1UQu (ORCPT
+	id S934234AbbA1UrS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 15:47:18 -0500
+Received: from mail-lb0-f181.google.com ([209.85.217.181]:59039 "EHLO
+	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756081AbbA1UrL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 15:16:50 -0500
-X-AuditID: cbfec7f5-b7fc86d0000066b7-2b-54c9249eb040
-Message-id: <54C92522.7050207@samsung.com>
-Date: Wed, 28 Jan 2015 19:06:26 +0100
-From: Sylwester Nawrocki <s.nawrocki@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
- Thunderbird/31.1.2
-MIME-version: 1.0
-To: Mike Turquette <mturquette@linaro.org>
-Cc: Tomasz Figa <tomasz.figa@gmail.com>, Stephen Boyd <sboyd@codeaurora.org>,
-        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org
-Subject: [GIT PULL] clk/samsung updates for v3.20
-Content-type: text/plain; charset=utf-8
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprCLMWRmVeSWpSXmKPExsVy+t/xy7rzVE6GGFx9xWJxedccNosZ5/cx
-	WTydcJHN4seZbhaLVbv+MDqwelzu62Xy2DnrLrvHnWt72Dw+b5ILYInisklJzcksSy3St0vg
-	ymg91shecJyn4udSuQbGxVxdjJwcEgImEteam5ggbDGJC/fWs3UxcnEICSxllDj6ZhIrhPOJ
-	UeLInM9AVRwcvAJaEjPPmII0sAioShx/c4IVxGYTMJToPdrHCGKLCkRInLy7hx3E5hUQlPgx
-	+R4LiC0C1LrtQCvYAmaBfkaJq2e3gjULAzV/2zWVFWQ+s4C6xJQpuSBhZgF5ic1r3jJPYOSb
-	hWTULISqWUiqFjAyr2IUTS1NLihOSs810itOzC0uzUvXS87P3cQICcmvOxiXHrM6xCjAwajE
-	w8vgcyJEiDWxrLgy9xCjBAezkghvP8vJECHelMTKqtSi/Pii0pzU4kOMTBycUg2MTQusv58u
-	TjurarHgbw+/j+vZ9p6J1/6dP/mZ2f5DfueF1Q7q5QJRj6bzlMz70Gp72sBh/RQOYat3Ib02
-	plrTPkQHfOu/buzeafZR4Y/ItoteC6Wnn5Rlq7vLZeEiZnZd//4ujqkP3vH9/lS1V7dgyfEt
-	3AELpb8qsmzSvidQLrtkSsWfC+WFSizFGYmGWsxFxYkAO1wxGCcCAAA=
+	Wed, 28 Jan 2015 15:47:11 -0500
+Date: Wed, 28 Jan 2015 19:06:54 +0100
+From: Johan Hovold <johan@kernel.org>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: Johan Hovold <johan@kernel.org>, stable@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: [PATCH 3.12 140/176] gpio: sysfs: fix gpio device-attribute leak
+Message-ID: <20150128180654.GF2433@localhost>
+References: <cover.1422455352.git.jslaby@suse.cz>
+ <e66a96f38a5a35c96eadcabbe20921ad32ed087a.1422455352.git.jslaby@suse.cz>
+ <20150128161007.GC2433@localhost>
+ <54C92072.9080404@suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54C92072.9080404@suse.cz>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Jan 28, 2015 at 06:46:26PM +0100, Jiri Slaby wrote:
+> On 01/28/2015, 05:10 PM, Johan Hovold wrote:
+> > On Wed, Jan 28, 2015 at 03:29:30PM +0100, Jiri Slaby wrote:
+> >> From: Johan Hovold <johan@kernel.org>
+> >>
+> >> 3.12-stable review patch.  If anyone has any objections, please let me know.
+> >>
+> >> ===============
+> >>
+> >> commit 0915e6feb38de8d3601819992a5bd050201a56fa upstream.
+> >>
+> >> The gpio device attributes were never destroyed when the gpio was
+> >> unexported (or on export failures).
+> >>
+> >> Use device_create_with_groups() to create the default device attributes
+> >> of the gpio class device. Note that this also fixes the
+> >> attribute-creation race with userspace for these attributes.
+> >>
+> >> Remove contingent attributes in export error path and on unexport.
+> >>
+> >> Fixes: d8f388d8dc8d ("gpio: sysfs interface")
+> >> Signed-off-by: Johan Hovold <johan@kernel.org>
+> >> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+> >> Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+> > 
+> > There was a mistake in the 3.14 (and 3.12) backport. A fixed v2 backport
+> > has been posted in this thread:
+> > 
+> > 	https://marc.info/?l=linux-kernel&m=142241055931689&w=2
+> 
+> But there is no thread. Could you repost?
 
-Hi Mike,
+Just hasn't shown up in the archives yet.
 
-The following changes since commit 97bf6af1f928216fd6c5a66e8a57bfa95a659672:
+You can find it in the stable queue:
 
-  Linux 3.19-rc1 (2014-12-20 17:08:50 -0800)
+	https://git.kernel.org/cgit/linux/kernel/git/stable/stable-queue.git/tree/queue-3.14/gpio-sysfs-fix-gpio-device-attribute-leak.patch
 
-are available in the git repository at:
-
-  git://linuxtv.org/snawrocki/samsung.git tags/v3.20-exynos-clk
-
-for you to fetch changes up to e64fb42da4c6c713cfc7cad607e97e0773fa41ff:
-
-  clk: samsung: exynos4: Add divider clock id for memory bus frequency
-(2015-01-28 15:51:17 +0100)
-
-----------------------------------------------------------------
-Exynos 3250, 4415 drivers cleanup by using common code
-and addition of clock definitions for DVFS on Exynos4.
-
-----------------------------------------------------------------
-
-It's just couple mostly cleanup patches this time, we have a clk driver
-for exynos5433 pending yet but I'll likely send it after the coming merge
-window.
-
-Chanwoo Choi (4):
-      clk: samsung: Change the return value of samsung_cmu_register_one()
-      clk: samsung: exynos3250: Use samsung_cmu_register_one() to simplify code
-      clk: samsung: exynos4415: Use samsung_cmu_register_one() to simplify code
-      clk: samsung: exynos4: Add divider clock id for memory bus frequency
-
- drivers/clk/samsung/clk-exynos3250.c |  217 ++++++++--------------------------
- drivers/clk/samsung/clk-exynos4.c    |   10 +-
- drivers/clk/samsung/clk-exynos4415.c |  216 ++++++++-------------------------
- drivers/clk/samsung/clk.c            |   13 +-
- drivers/clk/samsung/clk.h            |    3 +-
- include/dt-bindings/clock/exynos4.h  |    7 +-
- 6 files changed, 118 insertions(+), 348 deletions(-)
-
---
-Thanks
-Sylwester
+Johan
