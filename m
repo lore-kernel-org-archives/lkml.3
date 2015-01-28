@@ -1,23 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763202AbbA2Cxc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 21:53:32 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:47032 "EHLO
+	id S1760487AbbA2Cor (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 21:44:47 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:47055 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965501AbbA2CiS (ORCPT
+	with ESMTP id S1762370AbbA2Cim (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 21:38:18 -0500
+	Wed, 28 Jan 2015 21:38:42 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Gwendal Grignou <gwendal@chromium.org>, Jiri Kosina <jkosina@suse.cz>,
+Cc: =?UTF-8?q?Andreas=20M=C3=BCller?= <goo@stapelspeicher.org>,
+        Johannes Berg <johannes.berg@intel.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13.y-ckt 114/139] HID: i2c-hid: prevent buffer overflow in early IRQ
-Date: Wed, 28 Jan 2015 14:20:57 -0800
-Message-Id: <1422483682-15393-115-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13.y-ckt 115/139] mac80211: fix multicast LED blinking and counter
+Date: Wed, 28 Jan 2015 14:20:58 -0800
+Message-Id: <1422483682-15393-116-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422483682-15393-1-git-send-email-kamal@canonical.com>
 References: <1422483682-15393-1-git-send-email-kamal@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,41 +31,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Gwendal Grignou <gwendal@chromium.org>
+From: =?UTF-8?q?Andreas=20M=C3=BCller?= <goo@stapelspeicher.org>
 
-commit d1c7e29e8d276c669e8790bb8be9f505ddc48888 upstream.
+commit d025933e29872cb1fe19fc54d80e4dfa4ee5779c upstream.
 
-Before ->start() is called, bufsize size is set to HID_MIN_BUFFER_SIZE,
-64 bytes. While processing the IRQ, we were asking to receive up to
-wMaxInputLength bytes, which can be bigger than 64 bytes.
+As multicast-frames can't be fragmented, "dot11MulticastReceivedFrameCount"
+stopped being incremented after the use-after-free fix. Furthermore, the
+RX-LED will be triggered by every multicast frame (which wouldn't happen
+before) which wouldn't allow the LED to rest at all.
 
-Later, when ->start is run, a proper bufsize will be calculated.
+Fixes https://bugzilla.kernel.org/show_bug.cgi?id=89431 which also had the
+patch.
 
-Given wMaxInputLength is said to be unreliable in other part of the
-code, set to receive only what we can even if it results in truncated
-reports.
-
-Signed-off-by: Gwendal Grignou <gwendal@chromium.org>
-Reviewed-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Fixes: b8fff407a180 ("mac80211: fix use-after-free in defragmentation")
+Signed-off-by: Andreas Müller <goo@stapelspeicher.org>
+[rewrite commit message]
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/hid/i2c-hid/i2c-hid.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/mac80211/rx.c | 11 ++++++-----
+ 1 file changed, 6 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/hid/i2c-hid/i2c-hid.c b/drivers/hid/i2c-hid/i2c-hid.c
-index bd13205..05c2134 100644
---- a/drivers/hid/i2c-hid/i2c-hid.c
-+++ b/drivers/hid/i2c-hid/i2c-hid.c
-@@ -356,7 +356,7 @@ static int i2c_hid_hwreset(struct i2c_client *client)
- static void i2c_hid_get_input(struct i2c_hid *ihid)
- {
- 	int ret, ret_size;
--	int size = le16_to_cpu(ihid->hdesc.wMaxInputLength);
-+	int size = ihid->bufsize;
+diff --git a/net/mac80211/rx.c b/net/mac80211/rx.c
+index 7b9e78a..10109f4 100644
+--- a/net/mac80211/rx.c
++++ b/net/mac80211/rx.c
+@@ -1647,14 +1647,14 @@ ieee80211_rx_h_defragment(struct ieee80211_rx_data *rx)
+ 	sc = le16_to_cpu(hdr->seq_ctrl);
+ 	frag = sc & IEEE80211_SCTL_FRAG;
  
- 	ret = i2c_master_recv(ihid->client, ihid->inbuf, size);
- 	if (ret != size) {
+-	if (likely(!ieee80211_has_morefrags(fc) && frag == 0))
+-		goto out;
+-
+ 	if (is_multicast_ether_addr(hdr->addr1)) {
+ 		rx->local->dot11MulticastReceivedFrameCount++;
+-		goto out;
++		goto out_no_led;
+ 	}
+ 
++	if (likely(!ieee80211_has_morefrags(fc) && frag == 0))
++		goto out;
++
+ 	I802_DEBUG_INC(rx->local->rx_handlers_fragments);
+ 
+ 	if (skb_linearize(rx->skb))
+@@ -1745,9 +1745,10 @@ ieee80211_rx_h_defragment(struct ieee80211_rx_data *rx)
+ 	status->rx_flags |= IEEE80211_RX_FRAGMENTED;
+ 
+  out:
++	ieee80211_led_rx(rx->local);
++ out_no_led:
+ 	if (rx->sta)
+ 		rx->sta->rx_packets++;
+-	ieee80211_led_rx(rx->local);
+ 	return RX_CONTINUE;
+ }
+ 
 -- 
 1.9.1
 
