@@ -1,152 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760107AbbA2B64 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 20:58:56 -0500
-Received: from galahad.ideasonboard.com ([185.26.127.97]:49595 "EHLO
-	galahad.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754080AbbA2B6y (ORCPT
+	id S1752607AbbA2BPt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 20:15:49 -0500
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:57653 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751035AbbA2BPp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 20:58:54 -0500
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Will Deacon <will.deacon@arm.com>
-Cc: Murali Karicheri <m-karicheri2@ti.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Joerg Roedel <joro@8bytes.org>, Rob Herring <robh+dt@kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        "suravee.suthikulpanit@amd.com" <suravee.suthikulpanit@amd.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>
-Subject: Re: [PATCH v4 1/6] of: iommu: add ptr to OF node arg to of_iommu_configure()
-Date: Thu, 29 Jan 2015 01:32 +0200
-Message-ID: <5349994.6VHXzPdIxs@avalon>
-User-Agent: KMail/4.14.3 (Linux/3.17.7-gentoo; KDE/4.14.3; x86_64; ; )
-In-Reply-To: <20150128133219.GM1569@arm.com>
-References: <1422052359-12384-1-git-send-email-m-karicheri2@ti.com> <13812499.ICbNgSDOae@avalon> <20150128133219.GM1569@arm.com>
+	Wed, 28 Jan 2015 20:15:45 -0500
+Date: Thu, 29 Jan 2015 08:33:43 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Nitin Gupta <ngupta@vflare.org>,
+        Jerome Marchand <jmarchan@redhat.com>,
+        Ganesh Mahendran <opensource.ganesh@gmail.com>
+Subject: Re: [PATCH v1 2/2] zram: remove init_lock in zram_make_request
+Message-ID: <20150128233343.GC4706@blaptop>
+References: <1422432945-6764-1-git-send-email-minchan@kernel.org>
+ <1422432945-6764-2-git-send-email-minchan@kernel.org>
+ <20150128145651.GB965@swordfish>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150128145651.GB965@swordfish>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Will,
-
-On Wednesday 28 January 2015 13:32:19 Will Deacon wrote:
-> On Wed, Jan 28, 2015 at 01:15:10PM +0000, Laurent Pinchart wrote:
-> > On Wednesday 28 January 2015 12:29:42 Will Deacon wrote:
-> >> On Wed, Jan 28, 2015 at 12:23:03PM +0000, Laurent Pinchart wrote:
-> >>> On Wednesday 28 January 2015 11:33:00 Will Deacon wrote:
-> >>>> On Mon, Jan 26, 2015 at 06:49:01PM +0000, Murali Karicheri wrote:
-> >>>>> On 01/25/2015 08:32 AM, Laurent Pinchart wrote:
-> >>>>>> On Friday 23 January 2015 17:32:34 Murali Karicheri wrote:
-> >>>>>>> Function of_iommu_configure() is called from of_dma_configure() to
-> >>>>>>> setup iommu ops using DT property. This API is currently used for
-> >>>>>>> platform devices for which DMA configuration (including iommu ops)
-> >>>>>>> may come from device's parent. To extend this functionality for
-> >>>>>>> PCI devices, this API need to take a parent node ptr as an argument
-> >>>>>>> instead of assuming device's parent. This is needed since for PCI,
-> >>>>>>> the dma configuration may be defined in the DT node of the root
-> >>>>>>> bus bridge's parent device. Currently only dma-range is used for PCI
-> >>>>>>> and iommu is not supported. So return error if the device is PCI.
-> >>>>>>> 
-> >>>>>>> Cc: Joerg Roedel<joro@8bytes.org>
-> >>>>>>> Cc: Grant Likely<grant.likely@linaro.org>
-> >>>>>>> Cc: Rob Herring<robh+dt@kernel.org>
-> >>>>>>> Cc: Bjorn Helgaas<bhelgaas@google.com>
-> >>>>>>> Cc: Will Deacon<will.deacon@arm.com>
-> >>>>>>> Cc: Russell King<linux@arm.linux.org.uk>
-> >>>>>>> Cc: Arnd Bergmann<arnd@arndb.de>
-> >>>>>>> Cc: Suravee Suthikulpanit<Suravee.Suthikulpanit@amd.com>
-> >>>>>>> 
-> >>>>>>> Signed-off-by: Murali Karicheri<m-karicheri2@ti.com>
-> >>>>>>> ---
-> >>>>>>> 
-> >>>>>>>   drivers/iommu/of_iommu.c |   10 ++++++++--
-> >>>>>>>   drivers/of/platform.c    |    2 +-
-> >>>>>>>   include/linux/of_iommu.h |    6 ++++--
-> >>>>>>>   3 files changed, 13 insertions(+), 5 deletions(-)
-> >>>>>>> 
-> >>>>>>> diff --git a/drivers/iommu/of_iommu.c b/drivers/iommu/of_iommu.c
-> >>>>>>> index af1dc6a..439235b 100644
-> >>>>>>> --- a/drivers/iommu/of_iommu.c
-> >>>>>>> +++ b/drivers/iommu/of_iommu.c
-> >>>>>>> @@ -133,19 +133,25 @@ struct iommu_ops *of_iommu_get_ops(struct
-> >>>>>>> device_node *np)
-> >>>>>>>   	return ops;
-> >>>>>>>  }
-> >>>>>>> 
-> >>>>>>> -struct iommu_ops *of_iommu_configure(struct device *dev)
-> >>>>>>> +struct iommu_ops *of_iommu_configure(struct device *dev,
-> >>>>>>> +				     struct device_node *iommu_np)
-> >>>>>>>  {
-> >>>>>>>   	struct of_phandle_args iommu_spec;
-> >>>>>>>   	struct device_node *np;
-> >>>>>>>   	struct iommu_ops *ops = NULL;
-> >>>>>>>   	int idx = 0;
-> >>>>>>> 
-> >>>>>>> +	if (dev_is_pci(dev)) {
-> >>>>>>> +		dev_err(dev, "iommu is currently not supported for PCI\n");
-> >>>>>>> +		return NULL;
-> >>>>>>> +	}
-> >>>>>>> +
-> >>>>>>>   	/*
-> >>>>>>>   	 * We don't currently walk up the tree looking for a parent
-> >>>>>>>   	 IOMMU.
-> >>>>>>>   	 * See the `Notes:' section of
-> >>>>>>>   	 * Documentation/devicetree/bindings/iommu/iommu.txt
-> >>>>>>>   	 */
-> >>>>>> 
-> >>>>>> Wouldn't it be better to fix this rather than passing the device
-> >>>>>> node pointer to the function ? The solution would be more generic.
-> >>>>> 
-> >>>>> Will Deacon (Copied here) is working on this as we alteady discussed
-> >>>>> in this thread. So it will be addressed by him in another series.
-> >>>> 
-> >>>> Well, "working on this" equates to "has it somewhere near the bottom
-> >>>> of a very long list" :)
-> >>> 
-> >>> What's your opinion on this patch then, do you think adding the
-> >>> iommu_np argument makes sense as a temporary hack, or should we instead
-> >>> walk up the tree looking for an iommus attribute in parent nodes ? I
-> >>> don't expect that to be insanely difficult to code.
-> >> 
-> >> If walking up the tree is useful, then I think we should do that and
-> >> update the Documentation to reflect the new behaviour.
+On Wed, Jan 28, 2015 at 11:56:51PM +0900, Sergey Senozhatsky wrote:
+> On (01/28/15 17:15), Minchan Kim wrote:
+> > Admin could reset zram during I/O operation going on so we have
+> > used zram->init_lock as read-side lock in I/O path to prevent
+> > sudden zram meta freeing.
 > > 
-> > If I understand Murali's patch set right (please correct me if that's not
-> > the case) the PCI code walks up the DT nodes hierarchy to the parent node
-> > that contains the iommus attribute and passes a pointer to that node to
-> > this function. It's thus a PCI-specific solution. As a temporary hack
-> > that's OK I suppose, but if implementing it right straight away isn't
-> > difficult that would be better.
+> > However, the init_lock is really troublesome.
+> > We can't do call zram_meta_alloc under init_lock due to lockdep splat
+> > because zram_rw_page is one of the function under reclaim path and
+> > hold it as read_lock while other places in process context hold it
+> > as write_lock. So, we have used allocation out of the lock to avoid
+> > lockdep warn but it's not good for readability and fainally, I met
+> > another lockdep splat between init_lock and cpu_hotpulug from
+> > kmem_cache_destroy during wokring zsmalloc compaction. :(
+> > 
+> > Yes, the ideal is to remove horrible init_lock of zram in rw path.
+> > This patch removes it in rw path and instead, put init_done bool
+> > variable to check initialization done with smp_[wmb|rmb] and
+> > srcu_[un]read_lock to prevent sudden zram meta freeing
+> > during I/O operation.
+> > 
+> > Signed-off-by: Minchan Kim <minchan@kernel.org>
+> > ---
+> >  drivers/block/zram/zram_drv.c | 85 +++++++++++++++++++++++++++++++------------
+> >  drivers/block/zram/zram_drv.h |  5 +++
+> >  2 files changed, 66 insertions(+), 24 deletions(-)
+> > 
+> > diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
+> > index a598ada817f0..b33add453027 100644
+> > --- a/drivers/block/zram/zram_drv.c
+> > +++ b/drivers/block/zram/zram_drv.c
+> > @@ -32,6 +32,7 @@
+> >  #include <linux/string.h>
+> >  #include <linux/vmalloc.h>
+> >  #include <linux/err.h>
+> > +#include <linux/srcu.h>
+> >  
+> >  #include "zram_drv.h"
+> >  
+> > @@ -53,9 +54,31 @@ static ssize_t name##_show(struct device *d,		\
+> >  }									\
+> >  static DEVICE_ATTR_RO(name);
+> >  
+> > -static inline int init_done(struct zram *zram)
+> > +static inline bool init_done(struct zram *zram)
+> >  {
+> > -	return zram->meta != NULL;
+> > +	/*
+> > +	 * init_done can be used without holding zram->init_lock in
+> > +	 * read/write handler(ie, zram_make_request) but we should make sure
+> > +	 * that zram->init_done should set up after meta initialization is
+> > +	 * done. Look at setup_init_done.
+> > +	 */
+> > +	bool ret = zram->init_done;
 > 
-> It looks to me like the code walks the PCI topology to get the DT node for
-> the host controller, and passes *that* to of_dma_configure. That sounds
-> like the right thing to do to me, especially since the PCI topology is
-> likely not encoded in the device-tree. So actually, it is passing the
-> first parent node afaict.
+> I don't like re-introduced ->init_done.
+> another idea... how about using `zram->disksize == 0' instead of
+> `->init_done' (previously `->meta != NULL')? should do the trick.
 
-Indeed, that's right. I forgot for a moment that we have non-DT devices ;-)
+It could be.
 
-Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+> 
+> 
+> and I'm not sure I get this rmb...
 
-Murali, nitpicking a bit, shouldn't the iommu_np parameter be renamed ? It 
-points to the node containing the iommus parameter, not to the iommu node, so 
-the current name is slightly confusing. A brief kerneldoc above the function 
-would also help. This can be the subject of a separate patch.
+What makes you not sure?
+I think it's clear and common pattern for smp_[wmb|rmb]. :)
 
-> The part I'm more interested in is the mapping of RequesterID (PCI dma
-> alias) to IOMMU ID when we transition from the PCI topology to the DT
-> topology. Currently, it seems to be 1:1 on the platforms I have, but I
-> doubt this will always be the case.
+
+> 
+> 	-ss
 
 -- 
-Regards,
-
-Laurent Pinchart
-
+Kind regards,
+Minchan Kim
