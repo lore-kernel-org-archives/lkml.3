@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755856AbbA2JAY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 04:00:24 -0500
+	id S1761813AbbA2KsD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 05:48:03 -0500
 Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:44737 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755429AbbA2JAQ (ORCPT
+	by vger.kernel.org with ESMTP id S1753281AbbA2I7d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 04:00:16 -0500
+	Thu, 29 Jan 2015 03:59:33 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org,
-        Tobias Jakobi <tjakobi@math.uni-bielefeld.de>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 155/176] clocksource: exynos_mct: Fix bitmask regression for exynos4_mct_write
-Date: Wed, 28 Jan 2015 15:29:45 +0100
-Message-Id: <5fd6b8ef126ff49ec1d79e13c10ff52d16f528cf.1422455352.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, "K. Y. Srinivasan" <kys@microsoft.com>,
+        gregkh@linuxfoundation.org, devel@linuxdriverproject.org,
+        olaf@aepfle.de, apw@canonical.com,
+        Thomas Gleixner <tglx@linutronix.de>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 156/176] x86, hyperv: Mark the Hyper-V clocksource as being continuous
+Date: Wed, 28 Jan 2015 15:29:46 +0100
+Message-Id: <70f9c75300a2004d025e2cd39ef300b537225169.1422455352.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <ce4a451f616a1e7ab58cfeceea5e49c8b1c68c81.1422455352.git.jslaby@suse.cz>
 References: <ce4a451f616a1e7ab58cfeceea5e49c8b1c68c81.1422455352.git.jslaby@suse.cz>
@@ -25,48 +25,41 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tobias Jakobi <tjakobi@math.uni-bielefeld.de>
+From: "K. Y. Srinivasan" <kys@microsoft.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 8c38d28ba8da98f7102c31d35359b4dbe9d1f329 upstream.
+commit 32c6590d126836a062b3140ed52d898507987017 upstream.
 
-EXYNOS4_MCT_L_MASK is defined as 0xffffff00, so applying this bitmask
-produces a number outside the range 0x00 to 0xff, which always results
-in execution of the default switch statement.
+The Hyper-V clocksource is continuous; mark it accordingly.
 
-Obviously this is wrong and git history shows that the bitmask inversion
-was incorrectly set during a refactoring of the MCT code.
-
-Fix this by putting the inversion at the correct position again.
-
-Acked-by: Kukjin Kim <kgene.kim@samsung.com>
-Reported-by: GP Orcullo <kinsamanka@gmail.com>
-Reviewed-by: Doug Anderson <dianders@chromium.org>
-Signed-off-by: Tobias Jakobi <tjakobi@math.uni-bielefeld.de>
-Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Acked-by: jasowang@redhat.com
+Cc: gregkh@linuxfoundation.org
+Cc: devel@linuxdriverproject.org
+Cc: olaf@aepfle.de
+Cc: apw@canonical.com
+Link: http://lkml.kernel.org/r/1421108762-3331-1-git-send-email-kys@microsoft.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/clocksource/exynos_mct.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ arch/x86/kernel/cpu/mshyperv.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/clocksource/exynos_mct.c b/drivers/clocksource/exynos_mct.c
-index 70f3a597ec57..12fbec743fac 100644
---- a/drivers/clocksource/exynos_mct.c
-+++ b/drivers/clocksource/exynos_mct.c
-@@ -94,8 +94,8 @@ static void exynos4_mct_write(unsigned int value, unsigned long offset)
- 	__raw_writel(value, reg_base + offset);
+diff --git a/arch/x86/kernel/cpu/mshyperv.c b/arch/x86/kernel/cpu/mshyperv.c
+index 71a39f3621ba..647480716ff1 100644
+--- a/arch/x86/kernel/cpu/mshyperv.c
++++ b/arch/x86/kernel/cpu/mshyperv.c
+@@ -63,6 +63,7 @@ static struct clocksource hyperv_cs = {
+ 	.rating		= 400, /* use this when running on Hyperv*/
+ 	.read		= read_hv_clock,
+ 	.mask		= CLOCKSOURCE_MASK(64),
++	.flags		= CLOCK_SOURCE_IS_CONTINUOUS,
+ };
  
- 	if (likely(offset >= EXYNOS4_MCT_L_BASE(0))) {
--		stat_addr = (offset & ~EXYNOS4_MCT_L_MASK) + MCT_L_WSTAT_OFFSET;
--		switch (offset & EXYNOS4_MCT_L_MASK) {
-+		stat_addr = (offset & EXYNOS4_MCT_L_MASK) + MCT_L_WSTAT_OFFSET;
-+		switch (offset & ~EXYNOS4_MCT_L_MASK) {
- 		case MCT_L_TCON_OFFSET:
- 			mask = 1 << 3;		/* L_TCON write status */
- 			break;
+ static void __init ms_hyperv_init_platform(void)
 -- 
 2.2.2
 
