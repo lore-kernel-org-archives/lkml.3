@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1764001AbbA2DSX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 22:18:23 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:46953 "EHLO
+	id S1763898AbbA2DPH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 22:15:07 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:46963 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965004AbbA2CgI (ORCPT
+	with ESMTP id S1762200AbbA2CgZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 21:36:08 -0500
+	Wed, 28 Jan 2015 21:36:25 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Chris Wilson <chris@chris-wilson.co.uk>,
-        Daniel Vetter <daniel.vetter@intel.com>,
+Cc: Thomas Hellstrom <thellstrom@vmware.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13.y-ckt 075/139] drm/i915: Disallow pin ioctl completely for kms drivers
-Date: Wed, 28 Jan 2015 14:20:18 -0800
-Message-Id: <1422483682-15393-76-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13.y-ckt 076/139] drm/vmwgfx: Don't use memory accounting for kernel-side fence objects
+Date: Wed, 28 Jan 2015 14:20:19 -0800
+Message-Id: <1422483682-15393-77-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422483682-15393-1-git-send-email-kamal@canonical.com>
 References: <1422483682-15393-1-git-send-email-kamal@canonical.com>
@@ -28,83 +27,82 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
+From: Thomas Hellstrom <thellstrom@vmware.com>
 
-commit d472fcc8379c062bd56a3876fc6ef22258f14a91 upstream.
+commit 1f563a6a46544602183e7493b6ef69769d3d76d9 upstream.
 
-The problem here is that SNA pins batchbuffers to etch out a bit more
-performance. Iirc it started out as a w/a for i830M (which we've
-implemented in the kernel since a long time already). The problem is
-that the pin ioctl wasn't added in
+Kernel side fence objects are used when unbinding resources and may thus be
+created as part of a memory reclaim operation. This might trigger recursive
+memory reclaims and result in the kernel running out of stack space.
 
-commit d23db88c3ab233daed18709e3a24d6c95344117f
-Author: Chris Wilson <chris@chris-wilson.co.uk>
-Date:   Fri May 23 08:48:08 2014 +0200
+So a simple way out is to avoid accounting of these fence objects.
+In principle this is OK since while user-space can trigger the creation of
+such objects, it can't really hold on to them. However, their lifetime is
+quite long, so some form of accounting should perhaps be implemented in the
+future.
 
-    drm/i915: Prevent negative relocation deltas from wrapping
+Fixes kernel crashes when running, for example viewperf11 ensight-04 test 3
+with low system memory settings.
 
-Fix this by simply disallowing pinning from userspace so that the
-kernel is in full control of batch placement again. Especially since
-distros are moving towards running X as non-root, so most users won't
-even be able to see any benefits.
-
-UMS support is dead now, but we need this minimal patch for
-backporting. Follow-up patch will remove the pin ioctl code
-completely.
-
-Note to backporters: You must have both
-
-commit b45305fce5bb1abec263fcff9d81ebecd6306ede
-Author: Daniel Vetter <daniel.vetter@ffwll.ch>
-Date:   Mon Dec 17 16:21:27 2012 +0100
-
-    drm/i915: Implement workaround for broken CS tlb on i830/845
-
-which laned in 3.8 and
-
-commit c4d69da167fa967749aeb70bc0e94a457e5d00c1
-Author: Chris Wilson <chris@chris-wilson.co.uk>
-Date:   Mon Sep 8 14:25:41 2014 +0100
-
-    drm/i915: Evict CS TLBs between batches
-
-which is also marked cc: stable. Otherwise this could introduce a
-regression by disabling the userspace w/a without the kernel w/a being
-fully functional on i830/45.
-
-References: https://bugs.freedesktop.org/show_bug.cgi?id=76554#c116
-Cc: Chris Wilson <chris@chris-wilson.co.uk>
-Signed-off-by: Daniel Vetter <daniel.vetter@intel.com>
-[ kamal: backport to 3.13-stable ]
+Signed-off-by: Thomas Hellstrom <thellstrom@vmware.com>
+Reviewed-by: Jakob Bornecrantz <jakob@vmware.com>
+Reviewed-by: Sinclair Yeh <syeh@vmware.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/gpu/drm/i915/i915_gem.c | 6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/gpu/drm/vmwgfx/vmwgfx_fence.c | 21 ++-------------------
+ 1 file changed, 2 insertions(+), 19 deletions(-)
 
-diff --git a/drivers/gpu/drm/i915/i915_gem.c b/drivers/gpu/drm/i915/i915_gem.c
-index f264654..1287fcf 100644
---- a/drivers/gpu/drm/i915/i915_gem.c
-+++ b/drivers/gpu/drm/i915/i915_gem.c
-@@ -3926,6 +3926,9 @@ i915_gem_pin_ioctl(struct drm_device *dev, void *data,
- 	struct drm_i915_gem_object *obj;
+diff --git a/drivers/gpu/drm/vmwgfx/vmwgfx_fence.c b/drivers/gpu/drm/vmwgfx/vmwgfx_fence.c
+index c62d20e..dc338fe 100644
+--- a/drivers/gpu/drm/vmwgfx/vmwgfx_fence.c
++++ b/drivers/gpu/drm/vmwgfx/vmwgfx_fence.c
+@@ -485,14 +485,7 @@ void vmw_fence_obj_flush(struct vmw_fence_obj *fence)
+ 
+ static void vmw_fence_destroy(struct vmw_fence_obj *fence)
+ {
+-	struct vmw_fence_manager *fman = fence->fman;
+-
+ 	kfree(fence);
+-	/*
+-	 * Free kernel space accounting.
+-	 */
+-	ttm_mem_global_free(vmw_mem_glob(fman->dev_priv),
+-			    fman->fence_size);
+ }
+ 
+ int vmw_fence_create(struct vmw_fence_manager *fman,
+@@ -500,20 +493,12 @@ int vmw_fence_create(struct vmw_fence_manager *fman,
+ 		     uint32_t mask,
+ 		     struct vmw_fence_obj **p_fence)
+ {
+-	struct ttm_mem_global *mem_glob = vmw_mem_glob(fman->dev_priv);
+ 	struct vmw_fence_obj *fence;
  	int ret;
  
-+	if (drm_core_check_feature(dev, DRIVER_MODESET))
-+		return -ENODEV;
-+
- 	ret = i915_mutex_lock_interruptible(dev);
- 	if (ret)
- 		return ret;
-@@ -3979,6 +3982,9 @@ i915_gem_unpin_ioctl(struct drm_device *dev, void *data,
- 	struct drm_i915_gem_object *obj;
- 	int ret;
+-	ret = ttm_mem_global_alloc(mem_glob, fman->fence_size,
+-				   false, false);
+-	if (unlikely(ret != 0))
+-		return ret;
+-
+ 	fence = kzalloc(sizeof(*fence), GFP_KERNEL);
+-	if (unlikely(fence == NULL)) {
+-		ret = -ENOMEM;
+-		goto out_no_object;
+-	}
++	if (unlikely(fence == NULL))
++		return -ENOMEM;
  
-+	if (drm_core_check_feature(dev, DRIVER_MODESET))
-+		return -ENODEV;
-+
- 	ret = i915_mutex_lock_interruptible(dev);
- 	if (ret)
- 		return ret;
+ 	ret = vmw_fence_obj_init(fman, fence, seqno, mask,
+ 				 vmw_fence_destroy);
+@@ -525,8 +510,6 @@ int vmw_fence_create(struct vmw_fence_manager *fman,
+ 
+ out_err_init:
+ 	kfree(fence);
+-out_no_object:
+-	ttm_mem_global_free(mem_glob, fman->fence_size);
+ 	return ret;
+ }
+ 
 -- 
 1.9.1
 
