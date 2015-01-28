@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933453AbbA1EPP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 23:15:15 -0500
-Received: from mail.kernel.org ([198.145.29.136]:37260 "EHLO mail.kernel.org"
+	id S1762830AbbA1FZG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 00:25:06 -0500
+Received: from mail.kernel.org ([198.145.29.136]:37269 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760740AbbA1EPI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 23:15:08 -0500
+	id S933404AbbA1EPK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 23:15:10 -0500
 From: lizf@kernel.org
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        Mark Brown <broonie@kernel.org>, Zefan Li <lizefan@huawei.com>
-Subject: [PATCH 3.4 021/177] spi: dw-mid: respect 8 bit mode
-Date: Wed, 28 Jan 2015 12:06:48 +0800
-Message-Id: <1422418236-12852-41-git-send-email-lizf@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Felipe Balbi <balbi@ti.com>,
+        Zefan Li <lizefan@huawei.com>
+Subject: [PATCH 3.4 21/91] usb: dwc3: core: fix order of PM runtime calls
+Date: Wed, 28 Jan 2015 12:06:49 +0800
+Message-Id: <1422418236-12852-42-git-send-email-lizf@kernel.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422418050-12581-1-git-send-email-lizf@kernel.org>
 References: <1422418050-12581-1-git-send-email-lizf@kernel.org>
@@ -21,47 +20,57 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+From: Felipe Balbi <balbi@ti.com>
 
-3.4.106-rc1 review patch.  If anyone has any objections, please let me know.
+3.4.105-rc1 review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
 
-commit b41583e7299046abdc578c33f25ed83ee95b9b31 upstream.
+commit fed33afce0eda44a46ae24d93aec1b5198c0bac4 upstream.
 
-In case of 8 bit mode and DMA usage we end up with every second byte written as
-0. We have to respect bits_per_word settings what this patch actually does.
+Currently, we disable pm_runtime before all register
+accesses are done, this is dangerous and might lead
+to abort exceptions due to the driver trying to access
+a register which is clocked by a clock which was long
+gated.
 
-Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Signed-off-by: Mark Brown <broonie@kernel.org>
+Fix that by moving pm_runtime_put_sync() and pm_runtime_disable()
+as the last thing we do before returning from our ->remove()
+method.
+
+Fixes: 72246da (usb: Introduce DesignWare USB3 DRD Driver)
+Signed-off-by: Felipe Balbi <balbi@ti.com>
+[lizf: Backported to 3.4: adjust context]
 Signed-off-by: Zefan Li <lizefan@huawei.com>
 ---
- drivers/spi/spi-dw-mid.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/usb/dwc3/core.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/spi/spi-dw-mid.c b/drivers/spi/spi-dw-mid.c
-index b9f0192..58fa14d 100644
---- a/drivers/spi/spi-dw-mid.c
-+++ b/drivers/spi/spi-dw-mid.c
-@@ -136,7 +136,7 @@ static int mid_spi_dma_transfer(struct dw_spi *dws, int cs_change)
- 	txconf.dst_addr = dws->dma_addr;
- 	txconf.dst_maxburst = LNW_DMA_MSIZE_16;
- 	txconf.src_addr_width = DMA_SLAVE_BUSWIDTH_4_BYTES;
--	txconf.dst_addr_width = DMA_SLAVE_BUSWIDTH_2_BYTES;
-+	txconf.dst_addr_width = dws->dma_width;
- 	txconf.device_fc = false;
+diff --git a/drivers/usb/dwc3/core.c b/drivers/usb/dwc3/core.c
+index 99b58d84..6da4435 100644
+--- a/drivers/usb/dwc3/core.c
++++ b/drivers/usb/dwc3/core.c
+@@ -563,9 +563,6 @@ static int __devexit dwc3_remove(struct platform_device *pdev)
  
- 	txchan->device->device_control(txchan, DMA_SLAVE_CONFIG,
-@@ -159,7 +159,7 @@ static int mid_spi_dma_transfer(struct dw_spi *dws, int cs_change)
- 	rxconf.src_addr = dws->dma_addr;
- 	rxconf.src_maxburst = LNW_DMA_MSIZE_16;
- 	rxconf.dst_addr_width = DMA_SLAVE_BUSWIDTH_4_BYTES;
--	rxconf.src_addr_width = DMA_SLAVE_BUSWIDTH_2_BYTES;
-+	rxconf.src_addr_width = dws->dma_width;
- 	rxconf.device_fc = false;
+ 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
  
- 	rxchan->device->device_control(rxchan, DMA_SLAVE_CONFIG,
+-	pm_runtime_put(&pdev->dev);
+-	pm_runtime_disable(&pdev->dev);
+-
+ 	dwc3_debugfs_exit(dwc);
+ 
+ 	switch (dwc->mode) {
+@@ -586,6 +583,9 @@ static int __devexit dwc3_remove(struct platform_device *pdev)
+ 
+ 	dwc3_core_exit(dwc);
+ 
++	pm_runtime_put(&pdev->dev);
++	pm_runtime_disable(&pdev->dev);
++
+ 	return 0;
+ }
+ 
 -- 
 1.9.1
 
