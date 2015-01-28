@@ -1,80 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754492AbbA1U4D (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 15:56:03 -0500
-Received: from outbound-smtp03.blacknight.com ([81.17.249.16]:48247 "EHLO
-	outbound-smtp03.blacknight.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754416AbbA1Uz7 (ORCPT
+	id S1760788AbbA1Utq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 15:49:46 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:40980 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762036AbbA1Utm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 15:55:59 -0500
-From: "Bryan O'Donoghue" <pure.logic@nexus-software.ie>
-To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
-        dvhart@infradead.org, andy.shevchenko@gmail.com,
-        boon.leong.ong@intel.com, linux-kernel@vger.kernel.org
-Cc: "Bryan O'Donoghue" <pure.logic@nexus-software.ie>
-Subject: [PATCH v5 2/2] x86, quark: Add Intel Quark platform support
-Date: Wed, 28 Jan 2015 15:00:42 +0000
-Message-Id: <1422457242-18095-3-git-send-email-pure.logic@nexus-software.ie>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1422457242-18095-1-git-send-email-pure.logic@nexus-software.ie>
-References: <1422457242-18095-1-git-send-email-pure.logic@nexus-software.ie>
+	Wed, 28 Jan 2015 15:49:42 -0500
+Date: Wed, 28 Jan 2015 07:00:48 -0800
+From: tip-bot for Rabin Vincent <tipbot@zytor.com>
+Message-ID: <tip-be81908c2289f405df75d2511ccf5da785945400@git.kernel.org>
+Cc: peterz@infradead.org, tglx@linutronix.de, paulus@samba.org, rabin@rab.in,
+        linux-kernel@vger.kernel.org, mingo@kernel.org, acme@redhat.com,
+        hpa@zytor.com
+Reply-To: acme@redhat.com, hpa@zytor.com, peterz@infradead.org,
+        tglx@linutronix.de, rabin@rab.in, paulus@samba.org,
+        linux-kernel@vger.kernel.org, mingo@kernel.org
+In-Reply-To: <1421607621-15005-1-git-send-email-rabin@rab.in>
+References: <1421607621-15005-1-git-send-email-rabin@rab.in>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf annotate: Handle ins parsing failures
+Git-Commit-ID: be81908c2289f405df75d2511ccf5da785945400
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add Intel Quark platform support. Quark needs to pull down all unlocked IMRs
-to ensure agreement with the EFI memory map post boot.
+Commit-ID:  be81908c2289f405df75d2511ccf5da785945400
+Gitweb:     http://git.kernel.org/tip/be81908c2289f405df75d2511ccf5da785945400
+Author:     Rabin Vincent <rabin@rab.in>
+AuthorDate: Sun, 18 Jan 2015 20:00:20 +0100
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Wed, 21 Jan 2015 10:05:17 -0300
 
-This patch adds an entry in Kconfig for Quark as a platform and makes IMR
-support mandatory if selected.
+perf annotate: Handle ins parsing failures
 
-Signed-off-by: Bryan O'Donoghue <pure.logic@nexus-software.ie>
-Suggested-by: Thomas Gleixner <tglx@linutronix.de>
-Suggested-by: Andy Shevchenko <andy.shevchenko@gmail.com>
+Don't use the ins's ->sncprintf() if the parsing failed.
+
+For example, this fixes the display of "imul %edx".  Without this patch:
+
+       |      imul   (null),(null)
+
+After this patch:
+
+       |      imul   %edx
+
+Signed-off-by: Rabin Vincent <rabin@rab.in>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/1421607621-15005-1-git-send-email-rabin@rab.in
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- arch/x86/Kconfig           | 16 ++++++++++++++++
- arch/x86/platform/Makefile |  1 +
- 2 files changed, 17 insertions(+)
+ tools/perf/util/annotate.c | 9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index 0dc9d01..36d50cd 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -485,6 +485,22 @@ config X86_INTEL_MID
- 	  Intel MID platforms are based on an Intel processor and chipset which
- 	  consume less power than most of the x86 derivatives.
+diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
+index 79999ce..d5da1b8 100644
+--- a/tools/perf/util/annotate.c
++++ b/tools/perf/util/annotate.c
+@@ -183,8 +183,9 @@ static int lock__parse(struct ins_operands *ops)
+ 	if (!ops->locked.ins->ops)
+ 		return 0;
  
-+config X86_INTEL_QUARK
-+	bool "Intel Quark platform support"
-+	depends on X86_32
-+	depends on X86_EXTENDED_PLATFORM
-+	depends on X86_PLATFORM_DEVICES
-+	depends on X86_TSC
-+	depends on PCI
-+	depends on PCI_GOANY
-+	depends on X86_IO_APIC
-+	select IOSF_MBI
-+	select INTEL_IMR
-+	---help---
-+	  Select to include support for Quark X1000 SoC.
-+	  Say Y here if you have a Quark based system such as the Arduino
-+	  compatible Intel Galileo.
-+
- config X86_INTEL_LPSS
- 	bool "Intel Low Power Subsystem Support"
- 	depends on ACPI
-diff --git a/arch/x86/platform/Makefile b/arch/x86/platform/Makefile
-index 85afde1..a62e0be 100644
---- a/arch/x86/platform/Makefile
-+++ b/arch/x86/platform/Makefile
-@@ -5,6 +5,7 @@ obj-y	+= geode/
- obj-y	+= goldfish/
- obj-y	+= iris/
- obj-y	+= intel-mid/
-+obj-y	+= intel-quark/
- obj-y	+= olpc/
- obj-y	+= scx200/
- obj-y	+= sfi/
--- 
-1.9.1
-
+-	if (ops->locked.ins->ops->parse)
+-		ops->locked.ins->ops->parse(ops->locked.ops);
++	if (ops->locked.ins->ops->parse &&
++	    ops->locked.ins->ops->parse(ops->locked.ops) < 0)
++		goto out_free_ops;
+ 
+ 	return 0;
+ 
+@@ -531,8 +532,8 @@ static void disasm_line__init_ins(struct disasm_line *dl)
+ 	if (!dl->ins->ops)
+ 		return;
+ 
+-	if (dl->ins->ops->parse)
+-		dl->ins->ops->parse(&dl->ops);
++	if (dl->ins->ops->parse && dl->ins->ops->parse(&dl->ops) < 0)
++		dl->ins = NULL;
+ }
+ 
+ static int disasm_line__parse(char *line, char **namep, char **rawp)
