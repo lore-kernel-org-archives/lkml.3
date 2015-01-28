@@ -1,75 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759567AbbA2Bzh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 20:55:37 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:47954 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754208AbbA2Bze (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 20:55:34 -0500
-Date: Wed, 28 Jan 2015 16:31:25 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Scot Doyle <lkml14@scotdoyle.com>
-Cc: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
-        lkml <linux-kernel@vger.kernel.org>,
-        "linux-man@vger.kernel.org" <linux-man@vger.kernel.org>,
-        Kexec Mailing List <kexec@lists.infradead.org>,
-        Andy Lutomirski <luto@amacapital.net>, Dave Young <dyoung@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@alien8.de>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: Re: Edited kexec_load(2) [kexec_file_load()] man page for review
-Message-ID: <20150128213125.GH15342@redhat.com>
-References: <20141111213037.GA31445@redhat.com>
- <54ADA284.30502@gmail.com>
- <20150112221634.GD16162@redhat.com>
- <54B91271.3000600@gmail.com>
- <20150127142459.GA12851@redhat.com>
- <54C89816.8030709@gmail.com>
- <20150128144803.GC15342@redhat.com>
- <CAKgNAkhhVq5fuqwH0aPdgR1bKkAPPPuS84hfAFg3grGEJNxS4w@mail.gmail.com>
- <20150128203402.GG15342@redhat.com>
- <alpine.DEB.2.11.1501282104490.9275@localhost.localdomain>
+	id S1752121AbbA2BH4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 20:07:56 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:35194 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751214AbbA2BHx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jan 2015 20:07:53 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.11.1501282104490.9275@localhost.localdomain>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1404458911-8214-2-git-send-email-takahiro.akashi@linaro.org>
+References: <1404458911-8214-1-git-send-email-takahiro.akashi@linaro.org>
+	<1404458911-8214-2-git-send-email-takahiro.akashi@linaro.org>
+Date: Wed, 28 Jan 2015 15:31:49 -0600
+Message-ID: <CAOZdJXUhpmi0SM5izDYQnx8SHjWjqOFVduV0+boPw6+YCKP5+g@mail.gmail.com>
+Subject: Re: [PATCH v10 1/3] arm64: Add __NR_* definitions for compat syscalls
+From: Timur Tabi <timur@codeaurora.org>
+To: AKASHI Takahiro <takahiro.akashi@linaro.org>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, eparis@redhat.com, rgb@redhat.com,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>, linaro-kernel@lists.linaro.org,
+        Deepak Saxena <dsaxena@linaro.org>,
+        lkml <linux-kernel@vger.kernel.org>, linux-audit@redhat.com,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 28, 2015 at 09:14:03PM +0000, Scot Doyle wrote:
-> On Wed, 28 Jan 2015, Vivek Goyal wrote:
-> > On Wed, Jan 28, 2015 at 04:49:34PM +0100, Michael Kerrisk (man-pages) wrote:
-> > > Hello Vivek,
-> > > 
-> > > >> I've made various adjustments to the page in the light of your comments
-> > > >> above. Thanks!
-> > > >
-> > > > Thank you for following it up and improving kexec man page.
-> > > 
-> > > You're welcome. So, by now, I've made quite a lot of changes
-> > > (including adding a number of cases under ERRORS). I think the revised
-> > > kexec_load/kexec_file_load page is pretty much ready to go, but would
-> > > you be willing to give the text below a check over first?
-> > > 
-> > 
-> > Hi Michael,
-> > 
-> > I had a quick look and it looks good to me.
-> > 
-> > Thanks
-> > Vivek
-> 
-> When I tested, kexec_file_load required CONFIG_RELOCATABLE. Is the same 
-> true for kexec_load? Would it make sense to note this in the man pages 
-> along with the need for CONFIG_KEXEC_FILE, etc? Or as an error message?
+On Fri, Jul 4, 2014 at 2:28 AM, AKASHI Takahiro
+<takahiro.akashi@linaro.org> wrote:
+> +#define __ARM_NR_COMPAT_BASE           0x0f0000
+> +#define __ARM_NR_compat_cacheflush     (__ARM_NR_COMPAT_BASE+2)
+> +#define __ARM_NR_compat_set_tls                (__ARM_NR_COMPAT_BASE+5)
 
-Hmm.., I can't see an explicity dependency between RELOCATABLE and
-KEXEC. Both KEXEC and KEXEC_FILE should be able to load a kernel
-even if it had RELOCATABLE=n.
+I know this patch is six months old, but I was wondering if anyone
+knows of any plans to make these syscalls available to 64-bit apps?
+We have a 32-bit app that uses __ARM_NR_compat_cacheflush, and we'd
+like to port that app to 64-bit.  I'm just not sure how to start doing
+that, since there don't appear to be any 64-bit ARM-specific syscalls.
 
-Just that kernel will run from the address it has been built for.
-
-Thanks
-Vivek
+-- 
+Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+a Linux Foundation Collaborative Project.
