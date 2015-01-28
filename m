@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934454AbbA1EXS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 23:23:18 -0500
-Received: from mail.kernel.org ([198.145.29.136]:40236 "EHLO mail.kernel.org"
+	id S934611AbbA1Eqc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 23:46:32 -0500
+Received: from mail.kernel.org ([198.145.29.136]:40272 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934403AbbA1EXO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 23:23:14 -0500
+	id S933951AbbA1EXR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 23:23:17 -0500
 From: lizf@kernel.org
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Brian Silverman <bsilver16384@gmail.com>,
-        austin.linux@gmail.com, darren@dvhart.com, peterz@infradead.org,
-        Thomas Gleixner <tglx@linutronix.de>, Zefan Li <lizefan@huawei.com>
-Subject: [PATCH 3.4 106/177] futex: Fix a race condition between REQUEUE_PI and task death
-Date: Wed, 28 Jan 2015 12:09:24 +0800
-Message-Id: <1422418236-12852-197-git-send-email-lizf@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Imre Deak <imre.deak@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Zefan Li <lizefan@huawei.com>
+Subject: [PATCH 3.4 107/177] PM / Sleep: fix recovery during resuming from hibernation
+Date: Wed, 28 Jan 2015 12:09:25 +0800
+Message-Id: <1422418236-12852-198-git-send-email-lizf@kernel.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422418050-12581-1-git-send-email-lizf@kernel.org>
 References: <1422418050-12581-1-git-send-email-lizf@kernel.org>
@@ -21,120 +21,47 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Brian Silverman <bsilver16384@gmail.com>
+From: Imre Deak <imre.deak@intel.com>
 
 3.4.106-rc1 review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
 
-commit 30a6b8031fe14031ab27c1fa3483cb9780e7f63c upstream.
+commit 94fb823fcb4892614f57e59601bb9d4920f24711 upstream.
 
-free_pi_state and exit_pi_state_list both clean up futex_pi_state's.
-exit_pi_state_list takes the hb lock first, and most callers of
-free_pi_state do too. requeue_pi doesn't, which means free_pi_state
-can free the pi_state out from under exit_pi_state_list. For example:
+If a device's dev_pm_ops::freeze callback fails during the QUIESCE
+phase, we don't rollback things correctly calling the thaw and complete
+callbacks. This could leave some devices in a suspended state in case of
+an error during resuming from hibernation.
 
-task A                            |  task B
-exit_pi_state_list                |
-  pi_state =                      |
-      curr->pi_state_list->next   |
-                                  |  futex_requeue(requeue_pi=1)
-                                  |    // pi_state is the same as
-                                  |    // the one in task A
-                                  |    free_pi_state(pi_state)
-                                  |      list_del_init(&pi_state->list)
-                                  |      kfree(pi_state)
-  list_del_init(&pi_state->list)  |
-
-Move the free_pi_state calls in requeue_pi to before it drops the hb
-locks which it's already holding.
-
-[ tglx: Removed a pointless free_pi_state() call and the hb->lock held
-  	debugging. The latter comes via a seperate patch ]
-
-Signed-off-by: Brian Silverman <bsilver16384@gmail.com>
-Cc: austin.linux@gmail.com
-Cc: darren@dvhart.com
-Cc: peterz@infradead.org
-Link: http://lkml.kernel.org/r/1414282837-23092-1-git-send-email-bsilver16384@gmail.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-[lizf: Backported to 3.4: adjust context]
+Signed-off-by: Imre Deak <imre.deak@intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Zefan Li <lizefan@huawei.com>
 ---
- kernel/futex.c | 22 +++++++++++-----------
- 1 file changed, 11 insertions(+), 11 deletions(-)
+ kernel/power/hibernate.c | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
-diff --git a/kernel/futex.c b/kernel/futex.c
-index fafc54f..6b320c2 100644
---- a/kernel/futex.c
-+++ b/kernel/futex.c
-@@ -486,8 +486,14 @@ static struct futex_pi_state * alloc_pi_state(void)
- 	return pi_state;
- }
- 
-+/*
-+ * Must be called with the hb lock held.
-+ */
- static void free_pi_state(struct futex_pi_state *pi_state)
- {
-+	if (!pi_state)
-+		return;
-+
- 	if (!atomic_dec_and_test(&pi_state->refcount))
- 		return;
- 
-@@ -1401,15 +1407,6 @@ static int futex_requeue(u32 __user *uaddr1, unsigned int flags,
+diff --git a/kernel/power/hibernate.c b/kernel/power/hibernate.c
+index 52a1817..dd875cb 100644
+--- a/kernel/power/hibernate.c
++++ b/kernel/power/hibernate.c
+@@ -486,8 +486,14 @@ int hibernation_restore(int platform_mode)
+ 	error = dpm_suspend_start(PMSG_QUIESCE);
+ 	if (!error) {
+ 		error = resume_target_kernel(platform_mode);
+-		dpm_resume_end(PMSG_RECOVER);
++		/*
++		 * The above should either succeed and jump to the new kernel,
++		 * or return with an error. Otherwise things are just
++		 * undefined, so let's be paranoid.
++		 */
++		BUG_ON(!error);
  	}
- 
- retry:
--	if (pi_state != NULL) {
--		/*
--		 * We will have to lookup the pi_state again, so free this one
--		 * to keep the accounting correct.
--		 */
--		free_pi_state(pi_state);
--		pi_state = NULL;
--	}
--
- 	ret = get_futex_key(uaddr1, flags & FLAGS_SHARED, &key1, VERIFY_READ);
- 	if (unlikely(ret != 0))
- 		goto out;
-@@ -1497,6 +1494,8 @@ retry_private:
- 		case 0:
- 			break;
- 		case -EFAULT:
-+			free_pi_state(pi_state);
-+			pi_state = NULL;
- 			double_unlock_hb(hb1, hb2);
- 			put_futex_key(&key2);
- 			put_futex_key(&key1);
-@@ -1506,6 +1505,8 @@ retry_private:
- 			goto out;
- 		case -EAGAIN:
- 			/* The owner was exiting, try again. */
-+			free_pi_state(pi_state);
-+			pi_state = NULL;
- 			double_unlock_hb(hb1, hb2);
- 			put_futex_key(&key2);
- 			put_futex_key(&key1);
-@@ -1582,6 +1583,7 @@ retry_private:
- 	}
- 
- out_unlock:
-+	free_pi_state(pi_state);
- 	double_unlock_hb(hb1, hb2);
- 
- 	/*
-@@ -1598,8 +1600,6 @@ out_put_keys:
- out_put_key1:
- 	put_futex_key(&key1);
- out:
--	if (pi_state != NULL)
--		free_pi_state(pi_state);
- 	return ret ? ret : task_count;
- }
- 
++	dpm_resume_end(PMSG_RECOVER);
+ 	pm_restore_gfp_mask();
+ 	ftrace_start();
+ 	resume_console();
 -- 
 1.9.1
 
