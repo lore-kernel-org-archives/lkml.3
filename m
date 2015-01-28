@@ -1,54 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758191AbbA1AKl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 19:10:41 -0500
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:39790 "EHLO
-	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754708AbbA1AKk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 19:10:40 -0500
-X-Sasl-enc: fYzzAhZh3jqgPQ4DiUO5WkXwJBkMRHkQWu/CuyftEi1i 1422403839
-Date: Tue, 27 Jan 2015 16:10:38 -0800
-From: Greg KH <greg@kroah.com>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: stable@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        David Vrabel <david.vrabel@citrix.com>, xen-devel@lists.xensource.com,
-        catalin.marinas@arm.com, Ian Campbell <ian.campbell@citrix.com>
-Subject: Re: backport a4dba130891271084344c12537731542ec77cb85 to 3.16+
-Message-ID: <20150128001038.GB17677@kroah.com>
-References: <alpine.DEB.2.02.1501121704380.3058@kaball.uk.xensource.com>
+	id S1759169AbbA1ALF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 19:11:05 -0500
+Received: from ozlabs.org ([103.22.144.67]:47904 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758735AbbA1ALD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 19:11:03 -0500
+Date: Wed, 28 Jan 2015 11:10:55 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Bjorn Helgaas <bhelgaas@google.com>, Ralf Baechle <ralf@linux-mips.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Rob Herring <robh@kernel.org>
+Subject: linux-next: manual merge of the pci tree with the mips tree
+Message-ID: <20150128111055.41091d7e@canb.auug.org.au>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1501121704380.3058@kaball.uk.xensource.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/cWUmR9g2AYdMXeDOdb3TzP1"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 12, 2015 at 06:09:33PM +0000, Stefano Stabellini wrote:
-> Hi all,
-> I would like to request a backport of the following commit:
-> 
-> 
-> commit a4dba130891271084344c12537731542ec77cb85
-> Author: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> Date:   Fri Nov 21 11:07:39 2014 +0000
-> 
->     xen/arm/arm64: introduce xen_arch_need_swiotlb
-> 
-> 
-> to stable trees from 3.16 onward (3.16 included).
-> 
-> 
-> The commit needs to be slightly modified because is_device_dma_coherent
-> is not available on kernels < 3.19, so I just removed the call,
-> thus assuming that the device is not coherent on arm (slower but safe):
+--Sig_/cWUmR9g2AYdMXeDOdb3TzP1
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-A diff of a diff is hard to apply, please send the reworked patch in a
-format that I can apply it in.
+Hi Bjorn,
 
-thanks,
+Today's linux-next merge of the pci tree got conflicts in
+arch/mips/pci/pci-bcm1480.c, arch/mips/pci/pci-octeon.c and
+arch/mips/pci/pcie-octeon.c between commit 7b09777c187d ("MIPS: Add
+struct pci_ops member names to initialization") from the mips tree and
+commit ab1d7f9646fe ("MIPS: PCI: Add struct pci_ops member names to
+initialization") from the pci tree.
 
-greg k-h
+I fixed it up (same patch, different white space - I used the ones from
+the mips tree) and can carry the fix as necessary (no action is
+required).
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Sig_/cWUmR9g2AYdMXeDOdb3TzP1
+Content-Type: application/pgp-signature
+Content-Description: OpenPGP digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJUyCkUAAoJEMDTa8Ir7ZwVGiQP/i97LjqxWnA46OWXyBKirc/v
+4vQUw3ms4jEMVkLpysxrtGOWSap5AB5HOAC6GCArY19BgjgAKy3fzRCn95I6n1Mw
+zebGz+JtAnF2kHx2dsugeHGxMVf6Hq5HTc1QZ+XlLAwqY1051DtIPTMOXMx0sPrl
+Jfz5Ko3GHHFDvjcPjelSOXLxW0OwKYLvpx417wO29r49FgopG+gzWkdCWvFKxf1n
+Jrwi1xac0FEQ2PeBQ13bXqzQJJMr5pgMAsrmX72jYajjZbHQuQpE7tHVhwBnJwiZ
+LoIMFjnnzzBK8DXG2gWuBezNRdSdT9XoQm8CH8SO3ugET/BKK4Dfk7b8yzTjeFbq
+djwPFG9H4z7qgp3E87W/a/yxlZva4w7j2se+M5tE+vHYVDcDF5mh71v33T6M0tbF
+YsbI9V44i0WklNLdDlSFoFNN6yQuHWys6xMK4WrdgKzfxII8j94xVsas2qg48fK/
+7qvls+dfkDok62lHM7STAyZj9CcWtqlObRSMWvIizJwdf/vCTnzBqpb+dMoW1vNf
+5Jpl8x2x7QEMM2lmGKleBHfRrZGQVizZir+2OImUkGQ3FpoYD9tfYn1ChQb6CQd2
+rU2WTJWUHzaBl+X1L6Ily+avCz88LHUpMboEUoXYfuEq+c/ooIW4SpBYVdjWkygV
+AQVwMZ7X0TeYG+qx8EBH
+=QTbX
+-----END PGP SIGNATURE-----
+
+--Sig_/cWUmR9g2AYdMXeDOdb3TzP1--
