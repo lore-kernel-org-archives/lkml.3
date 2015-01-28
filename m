@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761665AbbA1EWM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 23:22:12 -0500
-Received: from mail.kernel.org ([198.145.29.136]:39783 "EHLO mail.kernel.org"
+	id S934723AbbA1EwD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 23:52:03 -0500
+Received: from mail.kernel.org ([198.145.29.136]:39816 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755169AbbA1EWG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 23:22:06 -0500
+	id S1761653AbbA1EWK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 23:22:10 -0500
 From: lizf@kernel.org
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Ben Hutchings <ben@decadent.org.uk>, Zefan Li <lizefan@huawei.com>
-Subject: [PATCH 3.4 88/91] ipv6: reuse ip6_frag_id from ip6_ufo_append_data
-Date: Wed, 28 Jan 2015 12:09:02 +0800
-Message-Id: <1422418236-12852-175-git-send-email-lizf@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Jonathan Cameron <jic23@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Zefan Li <lizefan@huawei.com>
+Subject: [PATCH 3.4 088/177] staging:iio:impedance-analyzer:ad5933 unwind use of IIO_CHAN macro.
+Date: Wed, 28 Jan 2015 12:09:03 +0800
+Message-Id: <1422418236-12852-176-git-send-email-lizf@kernel.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422418050-12581-1-git-send-email-lizf@kernel.org>
 References: <1422418050-12581-1-git-send-email-lizf@kernel.org>
@@ -22,48 +21,84 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+From: Jonathan Cameron <jic23@kernel.org>
 
-3.4.105-rc1 review patch.  If anyone has any objections, please let me know.
+3.4.106-rc1 review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
 
-commit 916e4cf46d0204806c062c8c6c4d1f633852c5b6 upstream.
+commit cdacc05bfa479997424fa9a3b54c07573b0ce4ed upstream.
 
-Currently we generate a new fragmentation id on UFO segmentation. It
-is pretty hairy to identify the correct net namespace and dst there.
-Especially tunnels use IFF_XMIT_DST_RELEASE and thus have no skb_dst
-available at all.
+This macro is being removed to simplify ongoing maintenance
+so we need to unwind and remaining users.
 
-This causes unreliable or very predictable ipv6 fragmentation id
-generation while segmentation.
-
-Luckily we already have pregenerated the ip6_frag_id in
-ip6_ufo_append_data and can use it here.
-
-Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-[bwh: Backported to 3.2: adjust filename, indentation]
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: Jonathan Cameron <jic23@kernel.org>
+Acked-by: Lars-Peter Clausen <lars@metafoo.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Zefan Li <lizefan@huawei.com>
 ---
- net/ipv6/udp.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/staging/iio/impedance-analyzer/ad5933.c | 47 ++++++++++++++++++++-----
+ 1 file changed, 38 insertions(+), 9 deletions(-)
 
-diff --git a/net/ipv6/udp.c b/net/ipv6/udp.c
-index 98fd738..ef9052f 100644
---- a/net/ipv6/udp.c
-+++ b/net/ipv6/udp.c
-@@ -1366,7 +1366,7 @@ static struct sk_buff *udp6_ufo_fragment(struct sk_buff *skb,
- 	fptr = (struct frag_hdr *)(skb_network_header(skb) + unfrag_ip6hlen);
- 	fptr->nexthdr = nexthdr;
- 	fptr->reserved = 0;
--	ipv6_select_ident(fptr, (struct rt6_info *)skb_dst(skb));
-+	fptr->identification = skb_shinfo(skb)->ip6_frag_id;
+diff --git a/drivers/staging/iio/impedance-analyzer/ad5933.c b/drivers/staging/iio/impedance-analyzer/ad5933.c
+index cd82b56..06b9fe2 100644
+--- a/drivers/staging/iio/impedance-analyzer/ad5933.c
++++ b/drivers/staging/iio/impedance-analyzer/ad5933.c
+@@ -109,15 +109,44 @@ static struct ad5933_platform_data ad5933_default_pdata  = {
+ };
  
- 	/* Fragment the skb. ipv6 header and the remaining fields of the
- 	 * fragment header are updated in ipv6_gso_segment()
+ static struct iio_chan_spec ad5933_channels[] = {
+-	IIO_CHAN(IIO_TEMP, 0, 1, 1, NULL, 0, 0, 0,
+-		 0, AD5933_REG_TEMP_DATA, IIO_ST('s', 14, 16, 0), 0),
+-	/* Ring Channels */
+-	IIO_CHAN(IIO_VOLTAGE, 0, 1, 0, "real_raw", 0, 0,
+-		 IIO_CHAN_INFO_SCALE_SEPARATE_BIT,
+-		 AD5933_REG_REAL_DATA, 0, IIO_ST('s', 16, 16, 0), 0),
+-	IIO_CHAN(IIO_VOLTAGE, 0, 1, 0, "imag_raw", 0, 0,
+-		 IIO_CHAN_INFO_SCALE_SEPARATE_BIT,
+-		 AD5933_REG_IMAG_DATA, 1, IIO_ST('s', 16, 16, 0), 0),
++	{
++		.type = IIO_TEMP,
++		.indexed = 1,
++		.processed_val = 1,
++		.channel = 0,
++		.address = AD5933_REG_TEMP_DATA,
++		.scan_type = {
++			.sign = 's',
++			.realbits = 14,
++			.storagebits = 16,
++		},
++	}, { /* Ring Channels */
++		.type = IIO_VOLTAGE,
++		.indexed = 1,
++		.channel = 0,
++		.extend_name = "real_raw",
++		.info_mask = IIO_CHAN_INFO_SCALE_SEPARATE_BIT,
++		.address = AD5933_REG_REAL_DATA,
++		.scan_index = 0,
++		.scan_type = {
++			.sign = 's',
++			.realbits = 16,
++			.storagebits = 16,
++		},
++	}, {
++		.type = IIO_VOLTAGE,
++		.indexed = 1,
++		.channel = 0,
++		.extend_name = "imag_raw",
++		.info_mask = IIO_CHAN_INFO_SCALE_SEPARATE_BIT,
++		.address = AD5933_REG_IMAG_DATA,
++		.scan_index = 1,
++		.scan_type = {
++			.sign = 's',
++			.realbits = 16,
++			.storagebits = 16,
++		},
++	},
+ };
+ 
+ static int ad5933_i2c_write(struct i2c_client *client,
 -- 
 1.9.1
 
