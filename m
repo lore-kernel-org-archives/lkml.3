@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934091AbbA1CMG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 21:12:06 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41202 "EHLO
+	id S1759760AbbA1B3t (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 20:29:49 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41199 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932069AbbA1B2V (ORCPT
+	with ESMTP id S1759686AbbA1B2f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 20:28:21 -0500
+	Tue, 27 Jan 2015 20:28:35 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Mauro Carvalho Chehab <mchehab@osg.samsung.com>
-Subject: [PATCH 3.18 26/61] [media] vb2: fix vb2_thread_stop race conditions
-Date: Tue, 27 Jan 2015 17:26:38 -0800
-Message-Id: <20150128012639.863011842@linuxfoundation.org>
+        Johan Hovold <johan@kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH 3.14 01/77] gpio: sysfs: fix gpio-chip device-attribute leak
+Date: Tue, 27 Jan 2015 17:26:39 -0800
+Message-Id: <20150128012746.015151675@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150128012636.936333725@linuxfoundation.org>
-References: <20150128012636.936333725@linuxfoundation.org>
+In-Reply-To: <20150128012745.971137091@linuxfoundation.org>
+References: <20150128012745.971137091@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -25,85 +25,72 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.18-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Hans Verkuil <hans.verkuil@cisco.com>
+From: Johan Hovold <johan@kernel.org>
 
-commit 6cf11ee6300f38b7cfc43af9b7be2afaa5e05869 upstream.
+commit 121b6a79955a3a3fd7bbb9b8cb88d5b9dad6283d upstream.
 
-The locking scheme inside the vb2 thread is unsafe when stopping the
-thread. In particular kthread_stop was called *after* internal data
-structures were cleaned up instead of doing that before. In addition,
-internal vb2 functions were called after threadio->stop was set to
-true and vb2_internal_streamoff was called. This is also not allowed.
+The gpio-chip device attributes were never destroyed when the device was
+removed.
 
-All this led to a variety of race conditions and kernel warnings and/or
-oopses.
+Fix by using device_create_with_groups() to create the device attributes
+of the chip class device.
 
-Fixed by moving the kthread_stop call up before the cleanup takes
-place, and by checking threadio->stop before calling internal vb2
-queuing operations.
+Note that this also fixes the attribute-creation race with userspace.
 
-Signed-off-by: Hans Verkuil <hans.verkuil@cisco.com>
-Signed-off-by: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
+Fixes: d8f388d8dc8d ("gpio: sysfs interface")
+Signed-off-by: Johan Hovold <johan@kernel.org>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
----
- drivers/media/v4l2-core/videobuf2-core.c |   19 +++++++++----------
- 1 file changed, 9 insertions(+), 10 deletions(-)
 
---- a/drivers/media/v4l2-core/videobuf2-core.c
-+++ b/drivers/media/v4l2-core/videobuf2-core.c
-@@ -3142,27 +3142,26 @@ static int vb2_thread(void *data)
- 			prequeue--;
- 		} else {
- 			call_void_qop(q, wait_finish, q);
--			ret = vb2_internal_dqbuf(q, &fileio->b, 0);
-+			if (!threadio->stop)
-+				ret = vb2_internal_dqbuf(q, &fileio->b, 0);
- 			call_void_qop(q, wait_prepare, q);
- 			dprintk(5, "file io: vb2_dqbuf result: %d\n", ret);
- 		}
--		if (threadio->stop)
--			break;
--		if (ret)
-+		if (ret || threadio->stop)
- 			break;
- 		try_to_freeze();
+---
+ drivers/gpio/gpiolib.c |   19 ++++++++-----------
+ 1 file changed, 8 insertions(+), 11 deletions(-)
+
+--- a/drivers/gpio/gpiolib.c
++++ b/drivers/gpio/gpiolib.c
+@@ -680,16 +680,13 @@ static ssize_t chip_ngpio_show(struct de
+ }
+ static DEVICE_ATTR(ngpio, 0444, chip_ngpio_show, NULL);
  
- 		vb = q->bufs[fileio->b.index];
- 		if (!(fileio->b.flags & V4L2_BUF_FLAG_ERROR))
--			ret = threadio->fnc(vb, threadio->priv);
--		if (ret)
--			break;
-+			if (threadio->fnc(vb, threadio->priv))
-+				break;
- 		call_void_qop(q, wait_finish, q);
- 		if (set_timestamp)
- 			v4l2_get_timestamp(&fileio->b.timestamp);
--		ret = vb2_internal_qbuf(q, &fileio->b);
-+		if (!threadio->stop)
-+			ret = vb2_internal_qbuf(q, &fileio->b);
- 		call_void_qop(q, wait_prepare, q);
--		if (ret)
-+		if (ret || threadio->stop)
- 			break;
- 	}
+-static const struct attribute *gpiochip_attrs[] = {
++static struct attribute *gpiochip_attrs[] = {
+ 	&dev_attr_base.attr,
+ 	&dev_attr_label.attr,
+ 	&dev_attr_ngpio.attr,
+ 	NULL,
+ };
+-
+-static const struct attribute_group gpiochip_attr_group = {
+-	.attrs = (struct attribute **) gpiochip_attrs,
+-};
++ATTRIBUTE_GROUPS(gpiochip);
  
-@@ -3231,11 +3230,11 @@ int vb2_thread_stop(struct vb2_queue *q)
- 	threadio->stop = true;
- 	vb2_internal_streamoff(q, q->type);
- 	call_void_qop(q, wait_prepare, q);
-+	err = kthread_stop(threadio->thread);
- 	q->fileio = NULL;
- 	fileio->req.count = 0;
- 	vb2_reqbufs(q, &fileio->req);
- 	kfree(fileio);
--	err = kthread_stop(threadio->thread);
- 	threadio->thread = NULL;
- 	kfree(threadio);
- 	q->fileio = NULL;
+ /*
+  * /sys/class/gpio/export ... write-only
+@@ -1030,13 +1027,13 @@ static int gpiochip_export(struct gpio_c
+ 
+ 	/* use chip->base for the ID; it's already known to be unique */
+ 	mutex_lock(&sysfs_lock);
+-	dev = device_create(&gpio_class, chip->dev, MKDEV(0, 0), chip,
+-				"gpiochip%d", chip->base);
+-	if (!IS_ERR(dev)) {
+-		status = sysfs_create_group(&dev->kobj,
+-				&gpiochip_attr_group);
+-	} else
++	dev = device_create_with_groups(&gpio_class, chip->dev, MKDEV(0, 0),
++					chip, gpiochip_groups,
++					"gpiochip%d", chip->base);
++	if (IS_ERR(dev))
+ 		status = PTR_ERR(dev);
++	else
++		status = 0;
+ 	chip->exported = (status == 0);
+ 	mutex_unlock(&sysfs_lock);
+ 
 
 
