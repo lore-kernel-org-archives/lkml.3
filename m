@@ -1,39 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762014AbbA1UtY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 15:49:24 -0500
-Received: from resqmta-ch2-03v.sys.comcast.net ([69.252.207.35]:42943 "EHLO
-	resqmta-ch2-03v.sys.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758735AbbA1UtU (ORCPT
+	id S1757908AbbA1U0w (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 15:26:52 -0500
+Received: from mail-lb0-f176.google.com ([209.85.217.176]:58816 "EHLO
+	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752829AbbA1U0s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 15:49:20 -0500
-Date: Wed, 28 Jan 2015 10:31:43 -0600 (CST)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Vladimir Davydov <vdavydov@parallels.com>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Pekka Enberg <penberg@kernel.org>,
-        David Rientjes <rientjes@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -mm v2 1/3] slub: never fail to shrink cache
-In-Reply-To: <012683fc3a0f9fb20a288986fd63fe9f6d25e8ee.1422461573.git.vdavydov@parallels.com>
-Message-ID: <alpine.DEB.2.11.1501281031190.32147@gentwo.org>
-References: <cover.1422461573.git.vdavydov@parallels.com> <012683fc3a0f9fb20a288986fd63fe9f6d25e8ee.1422461573.git.vdavydov@parallels.com>
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 28 Jan 2015 15:26:48 -0500
+MIME-Version: 1.0
+In-Reply-To: <CALCETrXtA-xbec2oGBXW6KUFMY8v=MN2gS5trn1J221OSDDuJA@mail.gmail.com>
+References: <cover.1416604491.git.luto@amacapital.net> <7665538633a500255d7da9ca5985547f6a2aa191.1416604491.git.luto@amacapital.net>
+ <54C17139.1040706@oracle.com> <CALCETrWEUXHOaG-WzDkteoMP=6=tAvyNLfrbg=Xf8ybvMumAow@mail.gmail.com>
+ <20150123180455.GA3192@pd.tnic> <CALCETrXA+OKGfxV9M=1AxvBSBPAt_+VmjDH0A+Rq4Ss+tKmTBw@mail.gmail.com>
+ <54C2B396.9090106@oracle.com> <CALCETrXtA-xbec2oGBXW6KUFMY8v=MN2gS5trn1J221OSDDuJA@mail.gmail.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Wed, 28 Jan 2015 08:33:06 -0800
+Message-ID: <CALCETrVN0DyQw+7ArX1zrKJRqSso2py6xH2k7QCS_b6J9a=8Gg@mail.gmail.com>
+Subject: Re: [PATCH v4 2/5] x86, traps: Track entry into and exit from IST context
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: Borislav Petkov <bp@alien8.de>, X86 ML <x86@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
+        Tony Luck <tony.luck@intel.com>, Andi Kleen <andi@firstfloor.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Josh Triplett <josh@joshtriplett.org>,
+        =?UTF-8?B?RnLDqWTDqXJpYyBXZWlzYmVja2Vy?= <fweisbec@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 28 Jan 2015, Vladimir Davydov wrote:
+On Fri, Jan 23, 2015 at 5:25 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+> On Fri, Jan 23, 2015 at 12:48 PM, Sasha Levin <sasha.levin@oracle.com> wrote:
+>> On 01/23/2015 01:34 PM, Andy Lutomirski wrote:
+>>> On Fri, Jan 23, 2015 at 10:04 AM, Borislav Petkov <bp@alien8.de> wrote:
+>>>> On Fri, Jan 23, 2015 at 09:58:01AM -0800, Andy Lutomirski wrote:
+>>>>>> [  543.999079] Call Trace:
+>>>>>> [  543.999079] dump_stack (lib/dump_stack.c:52)
+>>>>>> [  543.999079] lockdep_rcu_suspicious (kernel/locking/lockdep.c:4259)
+>>>>>> [  543.999079] atomic_notifier_call_chain (include/linux/rcupdate.h:892 kernel/notifier.c:182 kernel/notifier.c:193)
+>>>>>> [  543.999079] ? atomic_notifier_call_chain (kernel/notifier.c:192)
+>>>>>> [  543.999079] notify_die (kernel/notifier.c:538)
+>>>>>> [  543.999079] ? atomic_notifier_call_chain (kernel/notifier.c:538)
+>>>>>> [  543.999079] ? debug_smp_processor_id (lib/smp_processor_id.c:57)
+>>>>>> [  543.999079] do_debug (arch/x86/kernel/traps.c:652)
+>>>>>> [  543.999079] ? trace_hardirqs_on (kernel/locking/lockdep.c:2609)
+>>>>>> [  543.999079] ? do_int3 (arch/x86/kernel/traps.c:610)
+>>>>>> [  543.999079] ? trace_hardirqs_on_caller (kernel/locking/lockdep.c:2554 kernel/locking/lockdep.c:2601)
+>>>>>> [  543.999079] debug (arch/x86/kernel/entry_64.S:1310)
+>>>>>
+>>>>> I don't know how to read this stack trace.  Are we in do_int3,
+>>>>> do_debug, or both?  I didn't change do_debug at all.
+>>>>
+>>>> It looks like we're in do_debug. do_int3 is only on the stack but not
+>>>> part of the current frame if I can trust the '?' ...
+>>>>
+>>>
+>>> It's possible that an int3 happened and I did something wrong on
+>>> return that caused a subsequent do_debug to screw up, but I don't see
+>>> how my patch would have caused that.
+>>>
+>>> Were there any earlier log messages?
+>>
+>> Nope, nothing odd before or after.
+>
+> Trinity just survived for a decent amount of time for me with my
+> patches, other than a bunch of apparently expected OOM kills.  I have
+> no idea how to tell trinity how much memory to use.
+>
 
-> This patch therefore makes __kmem_cache_shrink() allocate the array on
-> stack instead of calling kmalloc, which may fail. The array size is
-> chosen to be equal to 32, because most SLUB caches store not more than
-> 32 objects per slab page. Slab pages with <= 32 free objects are sorted
-> using the array by the number of objects in use and promoted to the head
-> of the partial list, while slab pages with > 32 free objects are left in
-> the end of the list without any ordering imposed on them.
+A longer trinity run on a larger VM survived (still with some OOM
+kills, but no taint) with these patches.  I suspect that it's a
+regression somewhere else in the RCU changes.  I have
+CONFIG_PROVE_RCU=y, so I should have seen the failure if it was there,
+I think.
 
-Acked-by: Christoph Lameter <cl@linux.com>
+--Andy
