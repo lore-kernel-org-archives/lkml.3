@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756691AbbA2JAs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 04:00:48 -0500
+	id S1762034AbbA2K2h (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 05:28:37 -0500
 Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:44737 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756266AbbA2JAi (ORCPT
+	by vger.kernel.org with ESMTP id S1755767AbbA2JAg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 04:00:38 -0500
+	Thu, 29 Jan 2015 04:00:36 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Brian King <brking@linux.vnet.ibm.com>,
-        Christoph Hellwig <hch@lst.de>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 147/176] ipr: wait for aborted command responses
-Date: Wed, 28 Jan 2015 15:29:37 +0100
-Message-Id: <75ddcd068c810282f57747c3d3bb05ca8a93f0a2.1422455352.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Joe Thornber <ejt@redhat.com>,
+        Mike Snitzer <snitzer@redhat.com>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 148/176] dm cache: share cache-metadata object across inactive and active DM tables
+Date: Wed, 28 Jan 2015 15:29:38 +0100
+Message-Id: <806a7659a58ba3c8d22af1e1a72e9ff1a53fd27c.1422455352.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <ce4a451f616a1e7ab58cfeceea5e49c8b1c68c81.1422455352.git.jslaby@suse.cz>
 References: <ce4a451f616a1e7ab58cfeceea5e49c8b1c68c81.1422455352.git.jslaby@suse.cz>
@@ -23,191 +23,166 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Brian King <brking@linux.vnet.ibm.com>
+From: Joe Thornber <ejt@redhat.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 6cdb08172bc89f0a39e1643c5e7eab362692fd1b upstream.
+commit 9b1cc9f251affdd27f29fe46d0989ba76c33faf6 upstream.
 
-Fixes a race condition in abort handling that was injected
-when multiple interrupt support was added. When only a single
-interrupt is present, the adapter guarantees it will send
-responses for aborted commands prior to the response for the
-abort command itself. With multiple interrupts, these responses
-generally come back on different interrupts, so we need to
-ensure the abort thread waits until the aborted command is
-complete so we don't perform a double completion. This race
-condition was being hit frequently in environments which
-were triggering command timeouts, which was resulting in
-a double completion causing a kernel oops.
+If a DM table is reloaded with an inactive table when the device is not
+suspended (normal procedure for LVM2), then there will be two dm-bufio
+objects that can diverge.  This can lead to a situation where the
+inactive table uses bufio to read metadata at the same time the active
+table writes metadata -- resulting in the inactive table having stale
+metadata buffers once it is promoted to the active table slot.
 
-Signed-off-by: Brian King <brking@linux.vnet.ibm.com>
-Reviewed-by: Wendy Xiong <wenxiong@linux.vnet.ibm.com>
-Tested-by: Wendy Xiong <wenxiong@linux.vnet.ibm.com>
-Signed-off-by: Christoph Hellwig <hch@lst.de>
+Fix this by using reference counting and a global list of cache metadata
+objects to ensure there is only one metadata object per metadata device.
+
+Signed-off-by: Joe Thornber <ejt@redhat.com>
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/scsi/ipr.c | 92 ++++++++++++++++++++++++++++++++++++++++++++++++++++++
- drivers/scsi/ipr.h |  1 +
- 2 files changed, 93 insertions(+)
+ drivers/md/dm-cache-metadata.c | 101 ++++++++++++++++++++++++++++++++++++++---
+ 1 file changed, 95 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/scsi/ipr.c b/drivers/scsi/ipr.c
-index 074f278f7dab..5f841652886e 100644
---- a/drivers/scsi/ipr.c
-+++ b/drivers/scsi/ipr.c
-@@ -683,6 +683,7 @@ static void ipr_init_ipr_cmnd(struct ipr_cmnd *ipr_cmd,
- 	ipr_reinit_ipr_cmnd(ipr_cmd);
- 	ipr_cmd->u.scratch = 0;
- 	ipr_cmd->sibling = NULL;
-+	ipr_cmd->eh_comp = NULL;
- 	ipr_cmd->fast_done = fast_done;
- 	init_timer(&ipr_cmd->timer);
- }
-@@ -848,6 +849,8 @@ static void ipr_scsi_eh_done(struct ipr_cmnd *ipr_cmd)
+diff --git a/drivers/md/dm-cache-metadata.c b/drivers/md/dm-cache-metadata.c
+index b564c0610259..0bfd9c0611a0 100644
+--- a/drivers/md/dm-cache-metadata.c
++++ b/drivers/md/dm-cache-metadata.c
+@@ -88,6 +88,9 @@ struct cache_disk_superblock {
+ } __packed;
  
- 	scsi_dma_unmap(ipr_cmd->scsi_cmd);
- 	scsi_cmd->scsi_done(scsi_cmd);
-+	if (ipr_cmd->eh_comp)
-+		complete(ipr_cmd->eh_comp);
- 	list_add_tail(&ipr_cmd->queue, &ipr_cmd->hrrq->hrrq_free_q);
+ struct dm_cache_metadata {
++	atomic_t ref_count;
++	struct list_head list;
++
+ 	struct block_device *bdev;
+ 	struct dm_block_manager *bm;
+ 	struct dm_space_map *metadata_sm;
+@@ -650,10 +653,10 @@ static void unpack_value(__le64 value_le, dm_oblock_t *block, unsigned *flags)
+ 
+ /*----------------------------------------------------------------*/
+ 
+-struct dm_cache_metadata *dm_cache_metadata_open(struct block_device *bdev,
+-						 sector_t data_block_size,
+-						 bool may_format_device,
+-						 size_t policy_hint_size)
++static struct dm_cache_metadata *metadata_open(struct block_device *bdev,
++					       sector_t data_block_size,
++					       bool may_format_device,
++					       size_t policy_hint_size)
+ {
+ 	int r;
+ 	struct dm_cache_metadata *cmd;
+@@ -664,6 +667,7 @@ struct dm_cache_metadata *dm_cache_metadata_open(struct block_device *bdev,
+ 		return NULL;
+ 	}
+ 
++	atomic_set(&cmd->ref_count, 1);
+ 	init_rwsem(&cmd->root_lock);
+ 	cmd->bdev = bdev;
+ 	cmd->data_block_size = data_block_size;
+@@ -686,10 +690,95 @@ struct dm_cache_metadata *dm_cache_metadata_open(struct block_device *bdev,
+ 	return cmd;
  }
  
-@@ -4805,6 +4808,84 @@ static int ipr_slave_alloc(struct scsi_device *sdev)
- 	return rc;
- }
- 
-+/**
-+ * ipr_match_lun - Match function for specified LUN
-+ * @ipr_cmd:	ipr command struct
-+ * @device:		device to match (sdev)
-+ *
-+ * Returns:
-+ *	1 if command matches sdev / 0 if command does not match sdev
-+ **/
-+static int ipr_match_lun(struct ipr_cmnd *ipr_cmd, void *device)
++/*
++ * We keep a little list of ref counted metadata objects to prevent two
++ * different target instances creating separate bufio instances.  This is
++ * an issue if a table is reloaded before the suspend.
++ */
++static DEFINE_MUTEX(table_lock);
++static LIST_HEAD(table);
++
++static struct dm_cache_metadata *lookup(struct block_device *bdev)
 +{
-+	if (ipr_cmd->scsi_cmd && ipr_cmd->scsi_cmd->device == device)
-+		return 1;
-+	return 0;
-+}
++	struct dm_cache_metadata *cmd;
 +
-+/**
-+ * ipr_wait_for_ops - Wait for matching commands to complete
-+ * @ipr_cmd:	ipr command struct
-+ * @device:		device to match (sdev)
-+ * @match:		match function to use
-+ *
-+ * Returns:
-+ *	SUCCESS / FAILED
-+ **/
-+static int ipr_wait_for_ops(struct ipr_ioa_cfg *ioa_cfg, void *device,
-+			    int (*match)(struct ipr_cmnd *, void *))
-+{
-+	struct ipr_cmnd *ipr_cmd;
-+	int wait;
-+	unsigned long flags;
-+	struct ipr_hrr_queue *hrrq;
-+	signed long timeout = IPR_ABORT_TASK_TIMEOUT;
-+	DECLARE_COMPLETION_ONSTACK(comp);
-+
-+	ENTER;
-+	do {
-+		wait = 0;
-+
-+		for_each_hrrq(hrrq, ioa_cfg) {
-+			spin_lock_irqsave(hrrq->lock, flags);
-+			list_for_each_entry(ipr_cmd, &hrrq->hrrq_pending_q, queue) {
-+				if (match(ipr_cmd, device)) {
-+					ipr_cmd->eh_comp = &comp;
-+					wait++;
-+				}
-+			}
-+			spin_unlock_irqrestore(hrrq->lock, flags);
++	list_for_each_entry(cmd, &table, list)
++		if (cmd->bdev == bdev) {
++			atomic_inc(&cmd->ref_count);
++			return cmd;
 +		}
 +
-+		if (wait) {
-+			timeout = wait_for_completion_timeout(&comp, timeout);
-+
-+			if (!timeout) {
-+				wait = 0;
-+
-+				for_each_hrrq(hrrq, ioa_cfg) {
-+					spin_lock_irqsave(hrrq->lock, flags);
-+					list_for_each_entry(ipr_cmd, &hrrq->hrrq_pending_q, queue) {
-+						if (match(ipr_cmd, device)) {
-+							ipr_cmd->eh_comp = NULL;
-+							wait++;
-+						}
-+					}
-+					spin_unlock_irqrestore(hrrq->lock, flags);
-+				}
-+
-+				if (wait)
-+					dev_err(&ioa_cfg->pdev->dev, "Timed out waiting for aborted commands\n");
-+				LEAVE;
-+				return wait ? FAILED : SUCCESS;
-+			}
-+		}
-+	} while (wait);
-+
-+	LEAVE;
-+	return SUCCESS;
++	return NULL;
 +}
 +
- static int ipr_eh_host_reset(struct scsi_cmnd *cmd)
- {
- 	struct ipr_ioa_cfg *ioa_cfg;
-@@ -5023,11 +5104,17 @@ static int __ipr_eh_dev_reset(struct scsi_cmnd *scsi_cmd)
- static int ipr_eh_dev_reset(struct scsi_cmnd *cmd)
- {
- 	int rc;
-+	struct ipr_ioa_cfg *ioa_cfg;
++static struct dm_cache_metadata *lookup_or_open(struct block_device *bdev,
++						sector_t data_block_size,
++						bool may_format_device,
++						size_t policy_hint_size)
++{
++	struct dm_cache_metadata *cmd, *cmd2;
 +
-+	ioa_cfg = (struct ipr_ioa_cfg *) cmd->device->host->hostdata;
- 
- 	spin_lock_irq(cmd->device->host->host_lock);
- 	rc = __ipr_eh_dev_reset(cmd);
- 	spin_unlock_irq(cmd->device->host->host_lock);
- 
-+	if (rc == SUCCESS)
-+		rc = ipr_wait_for_ops(ioa_cfg, cmd->device, ipr_match_lun);
++	mutex_lock(&table_lock);
++	cmd = lookup(bdev);
++	mutex_unlock(&table_lock);
 +
- 	return rc;
++	if (cmd)
++		return cmd;
++
++	cmd = metadata_open(bdev, data_block_size, may_format_device, policy_hint_size);
++	if (cmd) {
++		mutex_lock(&table_lock);
++		cmd2 = lookup(bdev);
++		if (cmd2) {
++			mutex_unlock(&table_lock);
++			__destroy_persistent_data_objects(cmd);
++			kfree(cmd);
++			return cmd2;
++		}
++		list_add(&cmd->list, &table);
++		mutex_unlock(&table_lock);
++	}
++
++	return cmd;
++}
++
++static bool same_params(struct dm_cache_metadata *cmd, sector_t data_block_size)
++{
++	if (cmd->data_block_size != data_block_size) {
++		DMERR("data_block_size (%llu) different from that in metadata (%llu)\n",
++		      (unsigned long long) data_block_size,
++		      (unsigned long long) cmd->data_block_size);
++		return false;
++	}
++
++	return true;
++}
++
++struct dm_cache_metadata *dm_cache_metadata_open(struct block_device *bdev,
++						 sector_t data_block_size,
++						 bool may_format_device,
++						 size_t policy_hint_size)
++{
++	struct dm_cache_metadata *cmd = lookup_or_open(bdev, data_block_size,
++						       may_format_device, policy_hint_size);
++	if (cmd && !same_params(cmd, data_block_size)) {
++		dm_cache_metadata_close(cmd);
++		return NULL;
++	}
++
++	return cmd;
++}
++
+ void dm_cache_metadata_close(struct dm_cache_metadata *cmd)
+ {
+-	__destroy_persistent_data_objects(cmd);
+-	kfree(cmd);
++	if (atomic_dec_and_test(&cmd->ref_count)) {
++		mutex_lock(&table_lock);
++		list_del(&cmd->list);
++		mutex_unlock(&table_lock);
++
++		__destroy_persistent_data_objects(cmd);
++		kfree(cmd);
++	}
  }
  
-@@ -5205,13 +5292,18 @@ static int ipr_eh_abort(struct scsi_cmnd *scsi_cmd)
- {
- 	unsigned long flags;
- 	int rc;
-+	struct ipr_ioa_cfg *ioa_cfg;
- 
- 	ENTER;
- 
-+	ioa_cfg = (struct ipr_ioa_cfg *) scsi_cmd->device->host->hostdata;
-+
- 	spin_lock_irqsave(scsi_cmd->device->host->host_lock, flags);
- 	rc = ipr_cancel_op(scsi_cmd);
- 	spin_unlock_irqrestore(scsi_cmd->device->host->host_lock, flags);
- 
-+	if (rc == SUCCESS)
-+		rc = ipr_wait_for_ops(ioa_cfg, scsi_cmd->device, ipr_match_lun);
- 	LEAVE;
- 	return rc;
- }
-diff --git a/drivers/scsi/ipr.h b/drivers/scsi/ipr.h
-index 58c6630fe3e2..c5f2e9a0a4a4 100644
---- a/drivers/scsi/ipr.h
-+++ b/drivers/scsi/ipr.h
-@@ -1588,6 +1588,7 @@ struct ipr_cmnd {
- 		struct scsi_device *sdev;
- 	} u;
- 
-+	struct completion *eh_comp;
- 	struct ipr_hrr_queue *hrrq;
- 	struct ipr_ioa_cfg *ioa_cfg;
- };
+ int dm_cache_resize(struct dm_cache_metadata *cmd, dm_cblock_t new_cache_size)
 -- 
 2.2.2
 
