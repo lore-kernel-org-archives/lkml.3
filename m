@@ -1,60 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1764689AbbA2Dr7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 22:47:59 -0500
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:41235 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754808AbbA2BZR (ORCPT
+	id S1754517AbbA2BWy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 20:22:54 -0500
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:33850 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754386AbbA2BWO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 20:25:17 -0500
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Cihangir Akturk <cakturk@gmail.com>
-Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        Kiran Padwal <kiran.padwal21@gmail.com>,
-        Gulsah Kose <gulsah.1004@gmail.com>,
-        Aybuke Ozdemir <aybuke.147@gmail.com>,
-        Abel Moyo <abelmoyo.ab@gmail.com>,
-        Alexey Khoroshilov <khoroshilov@ispras.ru>,
-        Dan Carpenter <dan.carpenter@oracle.com>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] staging: gdm724x: gdm_usb: Removed variables that is never used
-Date: Wed, 28 Jan 2015 23:45:50 +0100
-Message-Id: <1422485150-10877-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-X-Mailer: git-send-email 1.7.10.4
+	Wed, 28 Jan 2015 20:22:14 -0500
+From: Dan Ehrenberg <dehrenberg@chromium.org>
+To: dm-devel@redhat.com, linux-kernel@vger.kernel.org, agk@redhat.com
+Cc: gwendal@chromium.org, grundler@chromium.org, drewry@chromium.org,
+        Dan Ehrenberg <dehrenberg@chromium.org>
+Subject: [PATCH 1/2] init: Stricter checking of major:minor root= values
+Date: Wed, 28 Jan 2015 14:45:56 -0800
+Message-Id: <1422485157-33423-1-git-send-email-dehrenberg@chromium.org>
+X-Mailer: git-send-email 2.2.0.rc0.207.ga3a616c
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Variable ar assigned a value that is never used.
-I have also removed all the code that thereby serves no purpose.
+In the kernel command-line, previously, root=1:2jakshflaksjdhfa would
+be accepted and interpreted just like root=1:2. This patch adds
+stricter checking so that additional characters after major:minor are
+rejected by root=.
 
-This was found using a static code analysis program called cppcheck
+The patch also makes name_to_dev_t take a const char * rather than a
+char * for improved possibilities for checking const correctness.
 
-Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+The goal of this patch is to help in unifying dm's interpretation of
+its block device argument with the interpretation in other parts of
+the kernel. dm rejects malformed major:minor pairs, and it seems
+reasonable that root= should reject them as well.
+
+Signed-off-by: Dan Ehrenberg <dehrenberg@chromium.org>
 ---
- drivers/staging/gdm724x/gdm_usb.c |    4 ----
- 1 file changed, 4 deletions(-)
+ include/linux/mount.h | 2 +-
+ init/do_mounts.c      | 5 +++--
+ 2 files changed, 4 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/staging/gdm724x/gdm_usb.c b/drivers/staging/gdm724x/gdm_usb.c
-index d2a3b35..28fa01e 100644
---- a/drivers/staging/gdm724x/gdm_usb.c
-+++ b/drivers/staging/gdm724x/gdm_usb.c
-@@ -891,14 +891,10 @@ static void gdm_usb_disconnect(struct usb_interface *intf)
+diff --git a/include/linux/mount.h b/include/linux/mount.h
+index c2c561d..bca086d 100644
+--- a/include/linux/mount.h
++++ b/include/linux/mount.h
+@@ -92,6 +92,6 @@ extern struct vfsmount *vfs_kern_mount(struct file_system_type *type,
+ extern void mnt_set_expiry(struct vfsmount *mnt, struct list_head *expiry_list);
+ extern void mark_mounts_for_expiry(struct list_head *mounts);
+ 
+-extern dev_t name_to_dev_t(char *name);
++extern dev_t name_to_dev_t(const char *name);
+ 
+ #endif /* _LINUX_MOUNT_H */
+diff --git a/init/do_mounts.c b/init/do_mounts.c
+index eb41008..7e06620 100644
+--- a/init/do_mounts.c
++++ b/init/do_mounts.c
+@@ -207,7 +207,7 @@ done:
+  *	bangs.
+  */
+ 
+-dev_t name_to_dev_t(char *name)
++dev_t name_to_dev_t(const char *name)
  {
- 	struct phy_dev *phy_dev;
- 	struct lte_udev *udev;
--	u16 idVendor, idProduct;
- 	struct usb_device *usbdev;
+ 	char s[32];
+ 	char *p;
+@@ -226,8 +226,9 @@ dev_t name_to_dev_t(char *name)
  
- 	usbdev = interface_to_usbdev(intf);
+ 	if (strncmp(name, "/dev/", 5) != 0) {
+ 		unsigned maj, min;
++		char dummy;
  
--	idVendor = __le16_to_cpu(usbdev->descriptor.idVendor);
--	idProduct = __le16_to_cpu(usbdev->descriptor.idProduct);
--
- 	phy_dev = usb_get_intfdata(intf);
- 
- 	udev = phy_dev->priv_dev;
+-		if (sscanf(name, "%u:%u", &maj, &min) == 2) {
++		if (sscanf(name, "%u:%u%c", &maj, &min, &dummy) == 2) {
+ 			res = MKDEV(maj, min);
+ 			if (maj != MAJOR(res) || min != MINOR(res))
+ 				goto fail;
 -- 
-1.7.10.4
+2.2.0.rc0.207.ga3a616c
 
