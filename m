@@ -1,70 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762895AbbA1F0u (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 00:26:50 -0500
-Received: from mail.kernel.org ([198.145.29.136]:37176 "EHLO mail.kernel.org"
+	id S933098AbbA1EO6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 23:14:58 -0500
+Received: from mail.kernel.org ([198.145.29.136]:37207 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933283AbbA1EOw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 23:14:52 -0500
+	id S932639AbbA1EOz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 23:14:55 -0500
 From: lizf@kernel.org
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, "K. Y. Srinivasan" <kys@microsoft.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Zefan Li <lizefan@huawei.com>
-Subject: [PATCH 3.4 018/177] Drivers: hv: vmbus: Cleanup vmbus_establish_gpadl()
-Date: Wed, 28 Jan 2015 12:06:42 +0800
-Message-Id: <1422418236-12852-35-git-send-email-lizf@kernel.org>
+Cc: linux-kernel@vger.kernel.org,
+        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
+        Johan Hovold <johan@kernel.org>, Zefan Li <lizefan@huawei.com>
+Subject: [PATCH 3.4 18/91] USB: sierra: add 1199:68AA device ID
+Date: Wed, 28 Jan 2015 12:06:43 +0800
+Message-Id: <1422418236-12852-36-git-send-email-lizf@kernel.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422418050-12581-1-git-send-email-lizf@kernel.org>
 References: <1422418050-12581-1-git-send-email-lizf@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "K. Y. Srinivasan" <kys@microsoft.com>
+From: Bjørn Mork <bjorn@mork.no>
 
-3.4.106-rc1 review patch.  If anyone has any objections, please let me know.
+3.4.105-rc1 review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
 
-commit 72c6b71c245dac8f371167d97ef471b367d0b66b upstream.
+commit 5b3da69285c143b7ea76b3b9f73099ff1093ab73 upstream.
 
-Eliminate the call to BUG_ON() by waiting for the host to respond. We are
-trying to reclaim the ownership of memory that was given to the host and so
-we will have to wait until the host responds.
+This VID:PID is used for some Direct IP devices behaving
+identical to the already supported 0F3D:68AA devices.
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-Tested-by: Sitsofe Wheeler <sitsofe@yahoo.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Reported-by: Lars Melin <larsm17@gmail.com>
+Signed-off-by: Bjørn Mork <bjorn@mork.no>
+Signed-off-by: Johan Hovold <johan@kernel.org>
 Signed-off-by: Zefan Li <lizefan@huawei.com>
 ---
- drivers/hv/channel.c | 5 +----
- 1 file changed, 1 insertion(+), 4 deletions(-)
+ drivers/usb/serial/sierra.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/drivers/hv/channel.c b/drivers/hv/channel.c
-index fa59090..1211d38 100644
---- a/drivers/hv/channel.c
-+++ b/drivers/hv/channel.c
-@@ -400,7 +400,6 @@ int vmbus_establish_gpadl(struct vmbus_channel *channel, void *kbuffer,
- 	u32 next_gpadl_handle;
- 	unsigned long flags;
- 	int ret = 0;
--	int t;
- 
- 	next_gpadl_handle = atomic_read(&vmbus_connection.next_gpadl_handle);
- 	atomic_inc(&vmbus_connection.next_gpadl_handle);
-@@ -447,9 +446,7 @@ int vmbus_establish_gpadl(struct vmbus_channel *channel, void *kbuffer,
- 
- 		}
- 	}
--	t = wait_for_completion_timeout(&msginfo->waitevent, 5*HZ);
--	BUG_ON(t == 0);
--
-+	wait_for_completion(&msginfo->waitevent);
- 
- 	/* At this point, we received the gpadl created msg */
- 	*gpadl_handle = gpadlmsg->gpadl;
+diff --git a/drivers/usb/serial/sierra.c b/drivers/usb/serial/sierra.c
+index 64df565..e3ddec0 100644
+--- a/drivers/usb/serial/sierra.c
++++ b/drivers/usb/serial/sierra.c
+@@ -300,6 +300,9 @@ static const struct usb_device_id id_table[] = {
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(0x1199, 0x68A3, 0xFF, 0xFF, 0xFF),
+ 	  .driver_info = (kernel_ulong_t)&direct_ip_interface_blacklist
+ 	},
++	{ USB_DEVICE_AND_INTERFACE_INFO(0x1199, 0x68AA, 0xFF, 0xFF, 0xFF),
++	  .driver_info = (kernel_ulong_t)&direct_ip_interface_blacklist
++	},
+ 	/* AT&T Direct IP LTE modems */
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(0x0F3D, 0x68AA, 0xFF, 0xFF, 0xFF),
+ 	  .driver_info = (kernel_ulong_t)&direct_ip_interface_blacklist
 -- 
 1.9.1
 
