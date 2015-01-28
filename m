@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761543AbbA1EeF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 23:34:05 -0500
-Received: from mail.kernel.org ([198.145.29.136]:41156 "EHLO mail.kernel.org"
+	id S934585AbbA1EZm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 23:25:42 -0500
+Received: from mail.kernel.org ([198.145.29.136]:41165 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965229AbbA1EZf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 23:25:35 -0500
+	id S965246AbbA1EZh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 23:25:37 -0500
 From: lizf@kernel.org
 To: stable@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org,
         =?UTF-8?q?Pali=20Roh=C3=A1r?= <pali.rohar@gmail.com>,
         Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         Zefan Li <lizefan@huawei.com>
-Subject: [PATCH 3.4 154/177] Input: alps - ignore potential bare packets when device is out of sync
-Date: Wed, 28 Jan 2015 12:10:12 +0800
-Message-Id: <1422418236-12852-245-git-send-email-lizf@kernel.org>
+Subject: [PATCH 3.4 155/177] Input: alps - allow up to 2 invalid packets without resetting device
+Date: Wed, 28 Jan 2015 12:10:13 +0800
+Message-Id: <1422418236-12852-246-git-send-email-lizf@kernel.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422418050-12581-1-git-send-email-lizf@kernel.org>
 References: <1422418050-12581-1-git-send-email-lizf@kernel.org>
@@ -32,33 +32,22 @@ From: Pali Rohár <pali.rohar@gmail.com>
 ------------------
 
 
-commit 4ab8f7f320f91f279c3f06a9795cfea5c972888a upstream.
+commit 9d720b34c0a432639252f63012e18b0507f5b432 upstream.
 
-5th and 6th byte of ALPS trackstick V3 protocol match condition for first
-byte of PS/2 3 bytes packet. When driver enters out of sync state and ALPS
-trackstick is sending data then driver match 5th, 6th and next 1st bytes as
-PS/2.
+On some Dell Latitude laptops ALPS device or Dell EC send one invalid byte
+in 6 bytes ALPS packet. In this case psmouse driver enter out of sync
+state. It looks like that all other bytes in packets are valid and also
+device working properly. So there is no need to do full device reset, just
+need to wait for byte which match condition for first byte (start of
+packet). Because ALPS packets are bigger (6 or 8 bytes) default limit is
+small.
 
-It basically means if user is using trackstick when driver is in out of
-sync state driver will never resync. Processing these bytes as 3 bytes PS/2
-data cause total mess (random cursor movements, random clicks) and make
-trackstick unusable until psmouse driver decide to do full device reset.
+This patch increase number of invalid bytes to size of 2 ALPS packets which
+psmouse driver can drop before do full reset.
 
-Lot of users reported problems with ALPS devices on Dell Latitude E6440,
-E6540 and E7440 laptops. ALPS device or Dell EC for unknown reason send
-some invalid ALPS PS/2 bytes which cause driver out of sync. It looks like
-that i8042 and psmouse/alps driver always receive group of 6 bytes packets
-so there are no missing bytes and no bytes were inserted between valid
-ones.
-
-This patch does not fix root of problem with ALPS devices found in Dell
-Latitude laptops but it does not allow to process some (invalid)
-subsequence of 6 bytes ALPS packets as 3 bytes PS/2 when driver is out of
-sync.
-
-So with this patch trackstick input device does not report bogus data when
-also driver is out of sync, so trackstick should be usable on those
-machines.
+Resetting ALPS devices take some time and when doing reset on some Dell
+laptops touchpad, trackstick and also keyboard do not respond. So it is
+better to do it only if really necessary.
 
 Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
 Tested-by: Pali Rohár <pali.rohar@gmail.com>
@@ -66,28 +55,23 @@ Reviewed-by: Hans de Goede <hdegoede@redhat.com>
 Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Signed-off-by: Zefan Li <lizefan@huawei.com>
 ---
- drivers/input/mouse/alps.c | 8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+ drivers/input/mouse/alps.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
 diff --git a/drivers/input/mouse/alps.c b/drivers/input/mouse/alps.c
-index 4c6a72d..e03a0ae 100644
+index e03a0ae..9854a1f 100644
 --- a/drivers/input/mouse/alps.c
 +++ b/drivers/input/mouse/alps.c
-@@ -787,7 +787,13 @@ static psmouse_ret_t alps_process_byte(struct psmouse *psmouse)
- 	struct alps_data *priv = psmouse->private;
- 	const struct alps_model_info *model = priv->i;
+@@ -1625,6 +1625,9 @@ int alps_init(struct psmouse *psmouse)
+ 	/* We are having trouble resyncing ALPS touchpads so disable it for now */
+ 	psmouse->resync_time = 0;
  
--	if ((psmouse->packet[0] & 0xc8) == 0x08) { /* PS/2 packet */
-+	/*
-+	 * Check if we are dealing with a bare PS/2 packet, presumably from
-+	 * a device connected to the external PS/2 port. Because bare PS/2
-+	 * protocol does not have enough constant bits to self-synchronize
-+	 * properly we only do this if the device is fully synchronized.
-+	 */
-+	if (!psmouse->out_of_sync_cnt && (psmouse->packet[0] & 0xc8) == 0x08) {
- 		if (psmouse->pktcnt == 3) {
- 			alps_report_bare_ps2_packet(psmouse, psmouse->packet,
- 						    true);
++	/* Allow 2 invalid packets without resetting device */
++	psmouse->resetafter = psmouse->pktsize * 2;
++
+ 	return 0;
+ 
+ init_fail:
 -- 
 1.9.1
 
