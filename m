@@ -1,72 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753619AbbA2BZ6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 20:25:58 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:38409 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752162AbbA2BZy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 20:25:54 -0500
-Date: Wed, 28 Jan 2015 11:06:32 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Liam Girdwood <lgirdwood@gmail.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Lars-Peter Clausen <lars@metafoo.de>
-Message-ID: <20150128110632.GR21293@sirena.org.uk>
-References: <20150128130047.2311c637@canb.auug.org.au>
- <20150128090935.GH14516@opensource.wolfsonmicro.com>
- <20150128095040.GI14516@opensource.wolfsonmicro.com>
+	id S1760835AbbA1Ufm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 15:35:42 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:57363 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760807AbbA1Ufg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jan 2015 15:35:36 -0500
+Date: Wed, 28 Jan 2015 12:06:34 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org, james@dingwall.me.uk,
+        stable@vger.kernel.org.#.3.18
+Subject: Re: [PATCH] x86, microcode: Return error from driver init code when
+ loader is disabled
+Message-ID: <20150128110634.GG12929@pd.tnic>
+References: <1422411669-25147-1-git-send-email-boris.ostrovsky@oracle.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
-	protocol="application/pgp-signature"; boundary="79RLYUToM/4jl2vV"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20150128095040.GI14516@opensource.wolfsonmicro.com>
-X-Cookie: My LESLIE GORE record is BROKEN ...
+In-Reply-To: <1422411669-25147-1-git-send-email-boris.ostrovsky@oracle.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: linux-next: build failure after merge of the sound-asoc tree
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Jan 27, 2015 at 09:21:09PM -0500, Boris Ostrovsky wrote:
+> Commits 65cef1311d5d ("x86, microcode: Add a disable chicken bit") and
+> a18a0f6850d4 ("x86, microcode: Don't initialize microcode code on
+> paravirt") allow microcode driver skip initialization when microcode
+> loading is not permitted.
+> 
+> However, they don't prevent the driver from being loaded since the
+> init code returns 0. If at some point later the driver gets unloaded
+> this will result in an oops while trying to deregister the (never
+> registered) device.
+> 
+> To avoid this, make init code return an error on paravirt or when
+> microcode loading is disabled. The driver will then never be loaded.
+> 
+> Signed-off-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+> Reported-by: James Digwall <james@dingwall.me.uk>
+> Cc: stable@vger.kernel.org # 3.18
 
---79RLYUToM/4jl2vV
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Applied, thanks.
 
-On Wed, Jan 28, 2015 at 09:50:40AM +0000, Charles Keepax wrote:
-> On Wed, Jan 28, 2015 at 09:09:35AM +0000, Charles Keepax wrote:
+-- 
+Regards/Gruss,
+    Boris.
 
-> > Very sorry guys my fault, not sure how that slipped through. Mark
-> > do you want an incremental fix or shall I respin the two patches
-> > in question?
-
-> Ah... ok I think I just timed my patch very badly in relation to
-> Lar's changes and it was building here so I failed to notice the
-> error. I see you have fixed it in the merge are you happy to go
-> with that solution?
-
-It should be fixed for tomorrow I think - the zero day tester was quite
-slow for some reason.
-
---79RLYUToM/4jl2vV
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBCAAGBQJUyMK3AAoJECTWi3JdVIfQTtwH+wesOWVOVHHRceeFmLExpWv+
-5wGu9zwonNJ0CaTfWNSrs8MwV+7o4qa/sQWYThJuJAg4XS6VtvtMiVyuPsvymRRO
-fJGvJph49n63VNm0WKLHWNRwAThLZU9rQldGdQPWNqs/v2bCbaseqpa10AsNEiZN
-eX3N8cXH5uuWlvXGOVgmiKY7S+uahbjY0mXFYdytpAqtto+v2oMVHYk3w8rS1OhF
-EdUuzVhsWaUxVL2yDsKf1wwI8Fea5ilNYRYRyAjXtj/1IreMq/9P9mdgthDPHSrz
-jD7NkK/Kr2N4CMRSqLe6RZl0De52jofGf1NFALJlAZbPepbZvbQN0/27psfj/Hs=
-=ozMb
------END PGP SIGNATURE-----
-
---79RLYUToM/4jl2vV--
+ECO tip #101: Trim your mails when you reply.
+--
