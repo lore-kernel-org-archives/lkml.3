@@ -1,69 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760797AbbA1VgN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 16:36:13 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:45524 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934110AbbA1UnH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 15:43:07 -0500
-Date: Wed, 28 Jan 2015 18:14:53 +0000
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Timur Tabi <timur@codeaurora.org>
-Cc: "hanjun.guo@linaro.org" <hanjun.guo@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
-        "wangyijing@huawei.com" <wangyijing@huawei.com>,
-        Rob Herring <robh@kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "phoenix.liyi@huawei.com" <phoenix.liyi@huawei.com>,
-        Robert Richter <rric@kernel.org>, Jason Cooper <jason@lakedaemon.net>,
-        Marc Zyngier <Marc.Zyngier@arm.com>, "jcm@redhat.com" <jcm@redhat.com>,
-        Mark Brown <broonie@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [Linaro-acpi] [PATCH v7 04/17] ARM64 / ACPI: Introduce
- early_param for "acpi" and pass acpi=force to enable ACPI
-Message-ID: <20150128181453.GG31752@e104818-lin.cambridge.arm.com>
-References: <1421247905-3749-1-git-send-email-hanjun.guo@linaro.org>
- <1421247905-3749-5-git-send-email-hanjun.guo@linaro.org>
- <CAOZdJXU2bFR1T4ZnGavvnrUXAp5e=vNt9g6WKX46H8qs1wz-TQ@mail.gmail.com>
- <CAOZdJXXe+29rux1L3QYBX0yHLy3kdi+ZJrXVd=XfgYN=R6DtKA@mail.gmail.com>
+	id S965052AbbA2Cgq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 21:36:46 -0500
+Received: from bitmer.com ([213.157.87.50]:51872 "EHLO bitmer.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965031AbbA2Cgn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jan 2015 21:36:43 -0500
+X-Greylist: delayed 21599 seconds by postgrey-1.27 at vger.kernel.org; Wed, 28 Jan 2015 21:36:43 EST
+Message-ID: <54C92752.9000004@bitmer.com>
+Date: Wed, 28 Jan 2015 20:15:46 +0200
+From: Jarkko Nikula <jarkko.nikula@bitmer.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAOZdJXXe+29rux1L3QYBX0yHLy3kdi+ZJrXVd=XfgYN=R6DtKA@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Peter Ujfalusi <peter.ujfalusi@ti.com>, Pavel Machek <pavel@ucw.cz>,
+        pali.rohar@gmail.com, sre@debian.org, sre@ring0.de,
+        kernel list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        linux-omap@vger.kernel.org, tony@atomide.com, khilman@kernel.org,
+        aaro.koskinen@iki.fi, ivo.g.dimitrov.75@gmail.com
+Subject: Re: 3.19 on Nokia n900: audio quality awful
+References: <20150106170433.GA5408@amd> <20150118120139.GA1509@amd> <54C63F1C.6010703@ti.com>
+In-Reply-To: <54C63F1C.6010703@ti.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 28, 2015 at 06:08:24PM +0000, Timur Tabi wrote:
-> On Wed, Jan 28, 2015 at 11:58 AM, Timur Tabi <timur@codeaurora.org> wrote:
-> > What is the reason to assume that DT is preferred over ACPI?  I would
-> > have thought that if ACPI is present, then it means we're on an ARM64
-> > server platform, and therefore it should be used.  It seems silly to
-> > require acpi=force on every ARM64 server platform.
+On 01/26/2015 03:20 PM, Peter Ujfalusi wrote:
+> On 01/18/2015 02:01 PM, Pavel Machek wrote:
+>> In 2.6.28-nokia, it is neccessary to set "Input select" na "digital
+>> mic", then it works. Input select being in "playback" option makes it
+>> easy to miss.
+>>
+>> In 3.18 and 3.19-rc3, all I can record are zeros.
+>>
+>> Does playback/recording work for you on OMAP 3430-based machines?
 > 
-> So it looks like there's a whole conversation about this already in
-> this thread that I didn't notice.  However, reading through all of it,
-> I still don't understand sure why the presence of ACPI tables is
-> insufficient to enable ACPI.  
+> Same codec (tlv320aic3106) works fine on my am335x and omap-l138 boards.
+> BeagleBoard-xM also fine with twl4030 codec.
+> 
+> I don't have my n900 in hacking mode (it is still in use time-to-time) but
+> looking at the dts file: you might want to add ai3x-micbias-vg property to the
+> aic3x nodes to select the correct mic bias voltage. I can't recall what is
+> appropriate for n900, but 2.6.28-nokia sources might give you the answer.
+> 
+No need to go that far. N900 has been supported in mainline since 2.6.39
+or so. Part A of AIC34 (which is basically dual AIC33 in a same package)
+drives 2 V for the digital microphone bias and part B 2.5 V for the headset.
 
-Because ACPI on arm64 is still experimental, no matter how many people
-claim that it is production ready in their private setups.
-
-> In what situation would we want to ignore ACPI tables that are
-> present?
-
-When DT tables are also present (and for the first platforms, that's
-highly recommended, though not easily enforceable at the kernel level).
+Unfortunately I haven't had time recently to try what might have caused
+that regression after 3.18.
 
 -- 
-Catalin
+Jarkko
