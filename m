@@ -1,24 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933790AbbA1Bpm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 20:45:42 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41450 "EHLO
+	id S933774AbbA1Bpk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 20:45:40 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41746 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933364AbbA1Bih (ORCPT
+	with ESMTP id S933365AbbA1Bih (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 27 Jan 2015 20:38:37 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Hugh Dickins <hughd@google.com>, Sasha Levin <sasha.levin@oracle.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>,
+        Dave Hansen <dave.hansen@intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Vlastimil Babka <vbabka@suse.cz>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>,
         "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Konstantin Khlebnikov <koct9i@gmail.com>,
+        Bob Liu <bob.liu@oracle.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 3.14 65/77] mm/memory.c: use entry = ACCESS_ONCE(*pte) in handle_pte_fault()
-Date: Tue, 27 Jan 2015 17:27:43 -0800
-Message-Id: <20150128012747.919048398@linuxfoundation.org>
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.14 66/77] mm, thp: only collapse hugepages to nodes with affinity for zone_reclaim_mode
+Date: Tue, 27 Jan 2015 17:27:44 -0800
+Message-Id: <20150128012747.947520308@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <20150128012745.971137091@linuxfoundation.org>
 References: <20150128012745.971137091@linuxfoundation.org>
@@ -33,48 +36,87 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hugh Dickins <hughd@google.com>
+From: David Rientjes <rientjes@google.com>
 
-commit c0d73261f5c1355a35b8b40e871d31578ce0c044 upstream.
+commit 14a4e2141e24304fff2c697be6382ffb83888185 upstream.
 
-Use ACCESS_ONCE() in handle_pte_fault() when getting the entry or
-orig_pte upon which all subsequent decisions and pte_same() tests will
-be made.
+Commit 9f1b868a13ac ("mm: thp: khugepaged: add policy for finding target
+node") improved the previous khugepaged logic which allocated a
+transparent hugepages from the node of the first page being collapsed.
 
-I have no evidence that its lack is responsible for the mm/filemap.c:202
-BUG_ON(page_mapped(page)) in __delete_from_page_cache() found by
-trinity, and I am not optimistic that it will fix it.  But I have found
-no other explanation, and ACCESS_ONCE() here will surely not hurt.
+However, it is still possible to collapse pages to remote memory which
+may suffer from additional access latency.  With the current policy, it
+is possible that 255 pages (with PAGE_SHIFT == 12) will be collapsed
+remotely if the majority are allocated from that node.
 
-If gcc does re-access the pte before passing it down, then that would be
-disastrous for correct page fault handling, and certainly could explain
-the page_mapped() BUGs seen (concurrent fault causing page to be mapped
-in a second time on top of itself: mapcount 2 for a single pte).
+When zone_reclaim_mode is enabled, it means the VM should make every
+attempt to allocate locally to prevent NUMA performance degradation.  In
+this case, we do not want to collapse hugepages to remote nodes that
+would suffer from increased access latency.  Thus, when
+zone_reclaim_mode is enabled, only allow collapsing to nodes with
+RECLAIM_DISTANCE or less.
 
-Signed-off-by: Hugh Dickins <hughd@google.com>
-Cc: Sasha Levin <sasha.levin@oracle.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
+There is no functional change for systems that disable
+zone_reclaim_mode.
+
+Signed-off-by: David Rientjes <rientjes@google.com>
+Cc: Dave Hansen <dave.hansen@intel.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
+Acked-by: Vlastimil Babka <vbabka@suse.cz>
+Acked-by: Mel Gorman <mgorman@suse.de>
+Cc: Rik van Riel <riel@redhat.com>
 Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Cc: Konstantin Khlebnikov <koct9i@gmail.com>
+Cc: Bob Liu <bob.liu@oracle.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/memory.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ mm/huge_memory.c |   26 ++++++++++++++++++++++++++
+ 1 file changed, 26 insertions(+)
 
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -3646,7 +3646,7 @@ static int handle_pte_fault(struct mm_st
- 	pte_t entry;
- 	spinlock_t *ptl;
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -2273,6 +2273,30 @@ static void khugepaged_alloc_sleep(void)
  
--	entry = *pte;
-+	entry = ACCESS_ONCE(*pte);
- 	if (!pte_present(entry)) {
- 		if (pte_none(entry)) {
- 			if (vma->vm_ops) {
+ static int khugepaged_node_load[MAX_NUMNODES];
+ 
++static bool khugepaged_scan_abort(int nid)
++{
++	int i;
++
++	/*
++	 * If zone_reclaim_mode is disabled, then no extra effort is made to
++	 * allocate memory locally.
++	 */
++	if (!zone_reclaim_mode)
++		return false;
++
++	/* If there is a count for this node already, it must be acceptable */
++	if (khugepaged_node_load[nid])
++		return false;
++
++	for (i = 0; i < MAX_NUMNODES; i++) {
++		if (!khugepaged_node_load[i])
++			continue;
++		if (node_distance(nid, i) > RECLAIM_DISTANCE)
++			return true;
++	}
++	return false;
++}
++
+ #ifdef CONFIG_NUMA
+ static int khugepaged_find_target_node(void)
+ {
+@@ -2589,6 +2613,8 @@ static int khugepaged_scan_pmd(struct mm
+ 		 * hit record.
+ 		 */
+ 		node = page_to_nid(page);
++		if (khugepaged_scan_abort(node))
++			goto out_unmap;
+ 		khugepaged_node_load[node]++;
+ 		VM_BUG_ON_PAGE(PageCompound(page), page);
+ 		if (!PageLRU(page) || PageLocked(page) || !PageAnon(page))
 
 
