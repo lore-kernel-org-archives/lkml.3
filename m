@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1764208AbbA2DYJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 22:24:09 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:46934 "EHLO
+	id S1764058AbbA2DTz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 22:19:55 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:46948 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964863AbbA2Cff (ORCPT
+	with ESMTP id S964974AbbA2Cf7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 21:35:35 -0500
+	Wed, 28 Jan 2015 21:35:59 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        Lee Jones <lee.jones@linaro.org>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13.y-ckt 053/139] mfd: tc6393xb: Fail ohci suspend if full state restore is required
-Date: Wed, 28 Jan 2015 14:19:56 -0800
-Message-Id: <1422483682-15393-54-git-send-email-kamal@canonical.com>
+Cc: Robert Baldyga <r.baldyga@samsung.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13.y-ckt 054/139] serial: samsung: wait for transfer completion before clock disable
+Date: Wed, 28 Jan 2015 14:19:57 -0800
+Message-Id: <1422483682-15393-55-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422483682-15393-1-git-send-email-kamal@canonical.com>
 References: <1422483682-15393-1-git-send-email-kamal@canonical.com>
@@ -27,57 +28,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+From: Robert Baldyga <r.baldyga@samsung.com>
 
-commit 1a5fb99de4850cba710d91becfa2c65653048589 upstream.
+commit 1ff383a4c3eda8893ec61b02831826e1b1f46b41 upstream.
 
-Some boards with TC6393XB chip require full state restore during system
-resume thanks to chip's VCC being cut off during suspend (Sharp SL-6000
-tosa is one of them). Failing to do so would result in ohci Oops on
-resume due to internal memory contentes being changed. Fail ohci suspend
-on tc6393xb is full state restore is required.
+This patch adds waiting until transmit buffer and shifter will be empty
+before clock disabling.
 
-Recommended workaround is to unbind tmio-ohci driver before suspend and
-rebind it after resume.
+Without this fix it's possible to have clock disabled while data was
+not transmited yet, which causes unproper state of TX line and problems
+in following data transfers.
 
-Signed-off-by: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
+Signed-off-by: Robert Baldyga <r.baldyga@samsung.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/mfd/tc6393xb.c | 13 ++++++++++++-
- 1 file changed, 12 insertions(+), 1 deletion(-)
+ drivers/tty/serial/samsung.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/drivers/mfd/tc6393xb.c b/drivers/mfd/tc6393xb.c
-index 11c19e5..48579e5 100644
---- a/drivers/mfd/tc6393xb.c
-+++ b/drivers/mfd/tc6393xb.c
-@@ -263,6 +263,17 @@ static int tc6393xb_ohci_disable(struct platform_device *dev)
- 	return 0;
- }
- 
-+static int tc6393xb_ohci_suspend(struct platform_device *dev)
-+{
-+	struct tc6393xb_platform_data *tcpd = dev_get_platdata(dev->dev.parent);
-+
-+	/* We can't properly store/restore OHCI state, so fail here */
-+	if (tcpd->resume_restore)
-+		return -EBUSY;
-+
-+	return tc6393xb_ohci_disable(dev);
-+}
-+
- static int tc6393xb_fb_enable(struct platform_device *dev)
+diff --git a/drivers/tty/serial/samsung.c b/drivers/tty/serial/samsung.c
+index c1af04d..6097355 100644
+--- a/drivers/tty/serial/samsung.c
++++ b/drivers/tty/serial/samsung.c
+@@ -544,11 +544,15 @@ static void s3c24xx_serial_pm(struct uart_port *port, unsigned int level,
+ 			      unsigned int old)
  {
- 	struct tc6393xb *tc6393xb = dev_get_drvdata(dev->dev.parent);
-@@ -403,7 +414,7 @@ static struct mfd_cell tc6393xb_cells[] = {
- 		.num_resources = ARRAY_SIZE(tc6393xb_ohci_resources),
- 		.resources = tc6393xb_ohci_resources,
- 		.enable = tc6393xb_ohci_enable,
--		.suspend = tc6393xb_ohci_disable,
-+		.suspend = tc6393xb_ohci_suspend,
- 		.resume = tc6393xb_ohci_enable,
- 		.disable = tc6393xb_ohci_disable,
- 	},
+ 	struct s3c24xx_uart_port *ourport = to_ourport(port);
++	int timeout = 10000;
+ 
+ 	ourport->pm_level = level;
+ 
+ 	switch (level) {
+ 	case 3:
++		while (--timeout && !s3c24xx_serial_txempty_nofifo(port))
++			udelay(100);
++
+ 		if (!IS_ERR(ourport->baudclk))
+ 			clk_disable_unprepare(ourport->baudclk);
+ 
 -- 
 1.9.1
 
