@@ -1,18 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761558AbbA1ETW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 23:19:22 -0500
-Received: from mail.kernel.org ([198.145.29.136]:38723 "EHLO mail.kernel.org"
+	id S1761544AbbA1ETU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 23:19:20 -0500
+Received: from mail.kernel.org ([198.145.29.136]:38733 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761499AbbA1ETI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 23:19:08 -0500
+	id S1761509AbbA1ETM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 23:19:12 -0500
 From: lizf@kernel.org
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, "Darrick J. Wong" <darrick.wong@oracle.com>,
-        "Theodore Ts'o" <tytso@mit.edu>, Zefan Li <lizefan@huawei.com>
-Subject: [PATCH 3.4 059/177] ext4: check EA value offset when loading
-Date: Wed, 28 Jan 2015 12:08:05 +0800
-Message-Id: <1422418236-12852-118-git-send-email-lizf@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Anton Altaparmakov <aia21@cam.ac.uk>,
+        Anton Altaparmakov <aia21@cantab.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Zefan Li <lizefan@huawei.com>
+Subject: [PATCH 3.4 60/91] Fix nasty 32-bit overflow bug in buffer i/o code.
+Date: Wed, 28 Jan 2015 12:08:06 +0800
+Message-Id: <1422418236-12852-119-git-send-email-lizf@kernel.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422418050-12581-1-git-send-email-lizf@kernel.org>
 References: <1422418050-12581-1-git-send-email-lizf@kernel.org>
@@ -20,108 +22,80 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Darrick J. Wong" <darrick.wong@oracle.com>
+From: Anton Altaparmakov <aia21@cam.ac.uk>
 
-3.4.106-rc1 review patch.  If anyone has any objections, please let me know.
+3.4.105-rc1 review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
 
-commit a0626e75954078cfacddb00a4545dde821170bc5 upstream.
+commit f2d5a94436cc7cc0221b9a81bba2276a25187dd3 upstream.
 
-When loading extended attributes, check each entry's value offset to
-make sure it doesn't collide with the entries.
+On 32-bit architectures, the legacy buffer_head functions are not always
+handling the sector number with the proper 64-bit types, and will thus
+fail on 4TB+ disks.
 
-Without this check it is easy to crash the kernel by mounting a
-malicious FS containing a file with an EA wherein e_value_offs = 0 and
-e_value_size > 0 and then deleting the EA, which corrupts the name
-list.
+Any code that uses __getblk() (and thus bread(), breadahead(),
+sb_bread(), sb_breadahead(), sb_getblk()), and calls it using a 64-bit
+block on a 32-bit arch (where "long" is 32-bit) causes an inifinite loop
+in __getblk_slow() with an infinite stream of errors logged to dmesg
+like this:
 
-(See the f_ea_value_crash test's FS image in e2fsprogs for an example.)
+  __find_get_block_slow() failed. block=6740375944, b_blocknr=2445408648
+  b_state=0x00000020, b_size=512
+  device sda1 blocksize: 512
 
-Signed-off-by: Darrick J. Wong <darrick.wong@oracle.com>
-Signed-off-by: Theodore Ts'o <tytso@mit.edu>
-[lizf: Backported to 3.4: adjust context]
+Note how in hex block is 0x191C1F988 and b_blocknr is 0x91C1F988 i.e. the
+top 32-bits are missing (in this case the 0x1 at the top).
+
+This is because grow_dev_page() is broken and has a 32-bit overflow due
+to shifting the page index value (a pgoff_t - which is just 32 bits on
+32-bit architectures) left-shifted as the block number.  But the top
+bits to get lost as the pgoff_t is not type cast to sector_t / 64-bit
+before the shift.
+
+This patch fixes this issue by type casting "index" to sector_t before
+doing the left shift.
+
+Note this is not a theoretical bug but has been seen in the field on a
+4TiB hard drive with logical sector size 512 bytes.
+
+This patch has been verified to fix the infinite loop problem on 3.17-rc5
+kernel using a 4TB disk image mounted using "-o loop".  Without this patch
+doing a "find /nt" where /nt is an NTFS volume causes the inifinite loop
+100% reproducibly whilst with the patch it works fine as expected.
+
+Signed-off-by: Anton Altaparmakov <aia21@cantab.net>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Zefan Li <lizefan@huawei.com>
 ---
- fs/ext4/xattr.c | 32 ++++++++++++++++++++++++--------
- 1 file changed, 24 insertions(+), 8 deletions(-)
+ fs/buffer.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/fs/ext4/xattr.c b/fs/ext4/xattr.c
-index 5743e9d..96455e6 100644
---- a/fs/ext4/xattr.c
-+++ b/fs/ext4/xattr.c
-@@ -144,14 +144,28 @@ ext4_listxattr(struct dentry *dentry, char *buffer, size_t size)
- }
- 
- static int
--ext4_xattr_check_names(struct ext4_xattr_entry *entry, void *end)
-+ext4_xattr_check_names(struct ext4_xattr_entry *entry, void *end,
-+		       void *value_start)
- {
--	while (!IS_LAST_ENTRY(entry)) {
--		struct ext4_xattr_entry *next = EXT4_XATTR_NEXT(entry);
-+	struct ext4_xattr_entry *e = entry;
-+
-+	while (!IS_LAST_ENTRY(e)) {
-+		struct ext4_xattr_entry *next = EXT4_XATTR_NEXT(e);
- 		if ((void *)next >= end)
- 			return -EIO;
--		entry = next;
-+		e = next;
- 	}
-+
-+	while (!IS_LAST_ENTRY(entry)) {
-+		if (entry->e_value_size != 0 &&
-+		    (value_start + le16_to_cpu(entry->e_value_offs) <
-+		     (void *)e + sizeof(__u32) ||
-+		     value_start + le16_to_cpu(entry->e_value_offs) +
-+		    le32_to_cpu(entry->e_value_size) > end))
-+			return -EIO;
-+		entry = EXT4_XATTR_NEXT(entry);
-+	}
-+
- 	return 0;
- }
- 
-@@ -161,7 +175,8 @@ ext4_xattr_check_block(struct buffer_head *bh)
- 	if (BHDR(bh)->h_magic != cpu_to_le32(EXT4_XATTR_MAGIC) ||
- 	    BHDR(bh)->h_blocks != cpu_to_le32(1))
- 		return -EIO;
--	return ext4_xattr_check_names(BFIRST(bh), bh->b_data + bh->b_size);
-+	return ext4_xattr_check_names(BFIRST(bh), bh->b_data + bh->b_size,
-+				      bh->b_data);
- }
- 
- static inline int
-@@ -274,7 +289,7 @@ ext4_xattr_ibody_get(struct inode *inode, int name_index, const char *name,
- 	header = IHDR(inode, raw_inode);
- 	entry = IFIRST(header);
- 	end = (void *)raw_inode + EXT4_SB(inode->i_sb)->s_inode_size;
--	error = ext4_xattr_check_names(entry, end);
-+	error = ext4_xattr_check_names(entry, end, entry);
- 	if (error)
- 		goto cleanup;
- 	error = ext4_xattr_find_entry(&entry, name_index, name,
-@@ -402,7 +417,7 @@ ext4_xattr_ibody_list(struct dentry *dentry, char *buffer, size_t buffer_size)
- 	raw_inode = ext4_raw_inode(&iloc);
- 	header = IHDR(inode, raw_inode);
- 	end = (void *)raw_inode + EXT4_SB(inode->i_sb)->s_inode_size;
--	error = ext4_xattr_check_names(IFIRST(header), end);
-+	error = ext4_xattr_check_names(IFIRST(header), end, IFIRST(header));
- 	if (error)
- 		goto cleanup;
- 	error = ext4_xattr_list_entries(dentry, IFIRST(header),
-@@ -914,7 +929,8 @@ ext4_xattr_ibody_find(struct inode *inode, struct ext4_xattr_info *i,
- 	is->s.here = is->s.first;
- 	is->s.end = (void *)raw_inode + EXT4_SB(inode->i_sb)->s_inode_size;
- 	if (ext4_test_inode_state(inode, EXT4_STATE_XATTR)) {
--		error = ext4_xattr_check_names(IFIRST(header), is->s.end);
-+		error = ext4_xattr_check_names(IFIRST(header), is->s.end,
-+					       IFIRST(header));
- 		if (error)
- 			return error;
- 		/* Find the named attribute. */
+diff --git a/fs/buffer.c b/fs/buffer.c
+index 9bf31ac..f235e18 100644
+--- a/fs/buffer.c
++++ b/fs/buffer.c
+@@ -971,7 +971,8 @@ grow_dev_page(struct block_device *bdev, sector_t block,
+ 		bh = page_buffers(page);
+ 		if (bh->b_size == size) {
+ 			end_block = init_page_buffers(page, bdev,
+-						index << sizebits, size);
++						(sector_t)index << sizebits,
++						size);
+ 			goto done;
+ 		}
+ 		if (!try_to_free_buffers(page))
+@@ -992,7 +993,8 @@ grow_dev_page(struct block_device *bdev, sector_t block,
+ 	 */
+ 	spin_lock(&inode->i_mapping->private_lock);
+ 	link_dev_buffers(page, bh);
+-	end_block = init_page_buffers(page, bdev, index << sizebits, size);
++	end_block = init_page_buffers(page, bdev, (sector_t)index << sizebits,
++			size);
+ 	spin_unlock(&inode->i_mapping->private_lock);
+ done:
+ 	ret = (block < end_block) ? 1 : -ENXIO;
 -- 
 1.9.1
 
