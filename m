@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763046AbbA2Cvc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 21:51:32 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:47037 "EHLO
+	id S1763171AbbA2CxL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 21:53:11 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:47033 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965534AbbA2CiW (ORCPT
+	with ESMTP id S965460AbbA2CiS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 21:38:22 -0500
+	Wed, 28 Jan 2015 21:38:18 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Takashi Iwai <tiwai@suse.de>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13.y-ckt 086/139] ALSA: hda - Fix built-in mic at resume on Lenovo Ideapad S210
-Date: Wed, 28 Jan 2015 14:20:29 -0800
-Message-Id: <1422483682-15393-87-git-send-email-kamal@canonical.com>
+Cc: Stephane Grosjean <s.grosjean@peak-system.com>,
+        Marc Kleine-Budde <mkl@pengutronix.de>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13.y-ckt 087/139] can: peak_usb: fix memset() usage
+Date: Wed, 28 Jan 2015 14:20:30 -0800
+Message-Id: <1422483682-15393-88-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422483682-15393-1-git-send-email-kamal@canonical.com>
 References: <1422483682-15393-1-git-send-email-kamal@canonical.com>
@@ -26,33 +28,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Stephane Grosjean <s.grosjean@peak-system.com>
 
-commit fedb2245cbb8d823e449ebdd48ba9bb35c071ce0 upstream.
+commit dc50ddcd4c58a5a0226038307d6ef884bec9f8c2 upstream.
 
-The built-in mic boost volume gets almost muted after suspend/resume
-on Lenovo Ideapad S210.
+This patchs fixes a misplaced call to memset() that fills the request
+buffer with 0. The problem was with sending PCAN_USBPRO_REQ_FCT
+requests, the content set by the caller was thus lost.
 
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=88121
-Reported-and-tested-by: Roman Kagan <rkagan@mail.ru>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+With this patch, the memory area is zeroed only when requesting info
+from the device.
+
+Signed-off-by: Stephane Grosjean <s.grosjean@peak-system.com>
+Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- sound/pci/hda/patch_realtek.c | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/net/can/usb/peak_usb/pcan_usb_pro.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/sound/pci/hda/patch_realtek.c b/sound/pci/hda/patch_realtek.c
-index 29e378c..7f57874 100644
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -4547,6 +4547,7 @@ static const struct snd_pci_quirk alc269_fixup_tbl[] = {
- 	SND_PCI_QUIRK(0x17aa, 0x2212, "Thinkpad", ALC269_FIXUP_LIMIT_INT_MIC_BOOST),
- 	SND_PCI_QUIRK(0x17aa, 0x2214, "Thinkpad", ALC269_FIXUP_LIMIT_INT_MIC_BOOST),
- 	SND_PCI_QUIRK(0x17aa, 0x2215, "Thinkpad", ALC269_FIXUP_LIMIT_INT_MIC_BOOST),
-+	SND_PCI_QUIRK(0x17aa, 0x3977, "IdeaPad S210", ALC283_FIXUP_INT_MIC),
- 	SND_PCI_QUIRK(0x17aa, 0x3978, "IdeaPad Y410P", ALC269_FIXUP_NO_SHUTUP),
- 	SND_PCI_QUIRK(0x17aa, 0x5013, "Thinkpad", ALC269_FIXUP_LIMIT_INT_MIC_BOOST),
- 	SND_PCI_QUIRK(0x17aa, 0x501a, "Thinkpad", ALC283_FIXUP_INT_MIC),
+diff --git a/drivers/net/can/usb/peak_usb/pcan_usb_pro.c b/drivers/net/can/usb/peak_usb/pcan_usb_pro.c
+index 263dd92..f7f796a 100644
+--- a/drivers/net/can/usb/peak_usb/pcan_usb_pro.c
++++ b/drivers/net/can/usb/peak_usb/pcan_usb_pro.c
+@@ -333,8 +333,6 @@ static int pcan_usb_pro_send_req(struct peak_usb_device *dev, int req_id,
+ 	if (!(dev->state & PCAN_USB_STATE_CONNECTED))
+ 		return 0;
+ 
+-	memset(req_addr, '\0', req_size);
+-
+ 	req_type = USB_TYPE_VENDOR | USB_RECIP_OTHER;
+ 
+ 	switch (req_id) {
+@@ -345,6 +343,7 @@ static int pcan_usb_pro_send_req(struct peak_usb_device *dev, int req_id,
+ 	default:
+ 		p = usb_rcvctrlpipe(dev->udev, 0);
+ 		req_type |= USB_DIR_IN;
++		memset(req_addr, '\0', req_size);
+ 		break;
+ 	}
+ 
 -- 
 1.9.1
 
