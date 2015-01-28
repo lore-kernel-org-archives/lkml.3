@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933618AbbA1EPs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 23:15:48 -0500
-Received: from mail.kernel.org ([198.145.29.136]:37517 "EHLO mail.kernel.org"
+	id S1762714AbbA1FWR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 00:22:17 -0500
+Received: from mail.kernel.org ([198.145.29.136]:37525 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933131AbbA1EPp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 23:15:45 -0500
+	id S933599AbbA1EPr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 23:15:47 -0500
 From: lizf@kernel.org
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Stanislaw Gruszka <sgruszka@redhat.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
+Cc: linux-kernel@vger.kernel.org, Thomas Pugliese <thomas.pugliese@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Zefan Li <lizefan@huawei.com>
-Subject: [PATCH 3.4 027/177] rt2800: correct BBP1_TX_POWER_CTRL mask
-Date: Wed, 28 Jan 2015 12:07:00 +0800
-Message-Id: <1422418236-12852-53-git-send-email-lizf@kernel.org>
+Subject: [PATCH 3.4 27/91] uwb: init beacon cache entry before registering uwb device
+Date: Wed, 28 Jan 2015 12:07:01 +0800
+Message-Id: <1422418236-12852-54-git-send-email-lizf@kernel.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422418050-12581-1-git-send-email-lizf@kernel.org>
 References: <1422418050-12581-1-git-send-email-lizf@kernel.org>
@@ -21,39 +21,66 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stanislaw Gruszka <sgruszka@redhat.com>
+From: Thomas Pugliese <thomas.pugliese@gmail.com>
 
-3.4.106-rc1 review patch.  If anyone has any objections, please let me know.
+3.4.105-rc1 review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
 
-commit 01f7feeaf4528bec83798316b3c811701bac5d3e upstream.
+commit 675f0ab2fe5a0f7325208e60b617a5f32b86d72c upstream.
 
-Two bits control TX power on BBP_R1 register. Correct the mask,
-otherwise we clear additional bit on BBP_R1 register, what can have
-unknown, possible negative effect.
+Make sure the uwb_dev->bce entry is set before calling uwb_dev_add in
+uwbd_dev_onair so that usermode will only see the device after it is
+properly initialized.  This fixes a kernel panic that can occur if
+usermode tries to access the IEs sysfs attribute of a UWB device before
+the driver has had a chance to set the beacon cache entry.
 
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Thomas Pugliese <thomas.pugliese@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+[lizf: Backported to 3.4: adjust context]
 Signed-off-by: Zefan Li <lizefan@huawei.com>
 ---
- drivers/net/wireless/rt2x00/rt2800.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/uwb/lc-dev.c | 13 +++++++++----
+ 1 file changed, 9 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/net/wireless/rt2x00/rt2800.h b/drivers/net/wireless/rt2x00/rt2800.h
-index 063bfa8..9105493 100644
---- a/drivers/net/wireless/rt2x00/rt2800.h
-+++ b/drivers/net/wireless/rt2x00/rt2800.h
-@@ -1751,7 +1751,7 @@ struct mac_iveiv_entry {
-  * 2 - drop tx power by 12dBm,
-  * 3 - increase tx power by 6dBm
-  */
--#define BBP1_TX_POWER_CTRL		FIELD8(0x07)
-+#define BBP1_TX_POWER_CTRL		FIELD8(0x03)
- #define BBP1_TX_ANTENNA			FIELD8(0x18)
+diff --git a/drivers/uwb/lc-dev.c b/drivers/uwb/lc-dev.c
+index 5241f1d..3c9e929 100644
+--- a/drivers/uwb/lc-dev.c
++++ b/drivers/uwb/lc-dev.c
+@@ -441,16 +441,19 @@ void uwbd_dev_onair(struct uwb_rc *rc, struct uwb_beca_e *bce)
+ 	uwb_dev->mac_addr = *bce->mac_addr;
+ 	uwb_dev->dev_addr = bce->dev_addr;
+ 	dev_set_name(&uwb_dev->dev, macbuf);
++
++	/* plug the beacon cache */
++	bce->uwb_dev = uwb_dev;
++	uwb_dev->bce = bce;
++	uwb_bce_get(bce);		/* released in uwb_dev_sys_release() */
++
+ 	result = uwb_dev_add(uwb_dev, &rc->uwb_dev.dev, rc);
+ 	if (result < 0) {
+ 		dev_err(dev, "new device %s: cannot instantiate device\n",
+ 			macbuf);
+ 		goto error_dev_add;
+ 	}
+-	/* plug the beacon cache */
+-	bce->uwb_dev = uwb_dev;
+-	uwb_dev->bce = bce;
+-	uwb_bce_get(bce);		/* released in uwb_dev_sys_release() */
++
+ 	dev_info(dev, "uwb device (mac %s dev %s) connected to %s %s\n",
+ 		 macbuf, devbuf, rc->uwb_dev.dev.parent->bus->name,
+ 		 dev_name(rc->uwb_dev.dev.parent));
+@@ -458,6 +461,8 @@ void uwbd_dev_onair(struct uwb_rc *rc, struct uwb_beca_e *bce)
+ 	return;
  
- /*
+ error_dev_add:
++	bce->uwb_dev = NULL;
++	uwb_bce_put(bce);
+ 	kfree(uwb_dev);
+ 	return;
+ }
 -- 
 1.9.1
 
