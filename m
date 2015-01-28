@@ -1,73 +1,211 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756634AbbA2BlX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 20:41:23 -0500
-Received: from casper.infradead.org ([85.118.1.10]:51061 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755275AbbA2BlV (ORCPT
+	id S1764019AbbA2DSb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 22:18:31 -0500
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:63557 "EHLO
+	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757562AbbA2DS1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 20:41:21 -0500
-Date: Wed, 28 Jan 2015 16:50:44 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH 3/4] sched: Pull preemption disablement to __schedule()
- caller
-Message-ID: <20150128155044.GJ23038@twins.programming.kicks-ass.net>
-References: <1422404652-29067-1-git-send-email-fweisbec@gmail.com>
- <1422404652-29067-4-git-send-email-fweisbec@gmail.com>
+	Wed, 28 Jan 2015 22:18:27 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1422404652-29067-4-git-send-email-fweisbec@gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <CACzj_yW2j7Bqs=9iOgQ0Wh6SwAHNkH3SYMboKFaWzRT+yarfwA@mail.gmail.com>
+References: <CACzj_yW2j7Bqs=9iOgQ0Wh6SwAHNkH3SYMboKFaWzRT+yarfwA@mail.gmail.com>
+From: Wincy Van <fanwenyi0529@gmail.com>
+Date: Wed, 28 Jan 2015 23:52:25 +0800
+Message-ID: <CACzj_yVAyAm1UHtqV6TbZ-Qa5w4GH723JF_+4ptZTm+JE1yj3g@mail.gmail.com>
+Subject: Re: [PATCH v4 1/6] KVM: nVMX: Use hardware MSR bitmap
+To: Paolo Bonzini <pbonzini@redhat.com>, "gleb@kernel.org" <gleb@kernel.org>,
+        "Zhang, Yang Z" <yang.z.zhang@intel.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        Wanpeng Li <wanpeng.li@linux.intel.com>,
+        Jan Kiszka <jan.kiszka@web.de>,
+        =?UTF-8?B?6IyD5paH5LiA?= <fanwenyi0529@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 28, 2015 at 01:24:11AM +0100, Frederic Weisbecker wrote:
-> +++ b/kernel/sched/core.c
-> @@ -2760,7 +2760,6 @@ static void __sched __schedule(void)
->  	struct rq *rq;
->  	int cpu;
->  
-> -	preempt_disable();
+Sorry, please ignore this mail, the subject is wrong : (
 
-Implies barrier();
-
->  	cpu = smp_processor_id();
->  	rq = cpu_rq(cpu);
->  	rcu_note_context_switch();
-> @@ -2822,8 +2821,6 @@ static void __sched __schedule(void)
->  		raw_spin_unlock_irq(&rq->lock);
->  
->  	post_schedule(rq);
-
-implies barrier();
-
-> -
-> -	sched_preempt_enable_no_resched();
+On Wed, Jan 28, 2015 at 11:50 PM, Wincy Van <fanwenyi0529@gmail.com> wrote:
+> Currently, if L1 enables MSR_BITMAP, we will emulate this feature,
+> all of L2's msr access is intercepted by L0. Since many features
+> like virtualize x2apic mode has a complicated logic and it is
+> difficult for us to emulate, we should use hardware and merge
+> the bitmap.
+>
+> This patch introduces nested_vmx_merge_msr_bitmap for future use.
+>
+> Signed-off-by: Wincy Van <fanwenyi0529@gmail.com>
+> ---
+>  arch/x86/kvm/vmx.c |   77 ++++++++++++++++++++++++++++++++++++++++++++-------
+>  1 files changed, 66 insertions(+), 11 deletions(-)
+>
+> diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+> index c987374..787f886 100644
+> --- a/arch/x86/kvm/vmx.c
+> +++ b/arch/x86/kvm/vmx.c
+> @@ -798,6 +798,7 @@ static unsigned long *vmx_msr_bitmap_legacy;
+>  static unsigned long *vmx_msr_bitmap_longmode;
+>  static unsigned long *vmx_msr_bitmap_legacy_x2apic;
+>  static unsigned long *vmx_msr_bitmap_longmode_x2apic;
+> +static unsigned long *vmx_msr_bitmap_nested;
+>  static unsigned long *vmx_vmread_bitmap;
+>  static unsigned long *vmx_vmwrite_bitmap;
+>
+> @@ -5812,13 +5813,21 @@ static __init int hardware_setup(void)
+>                                 (unsigned long *)__get_free_page(GFP_KERNEL);
+>         if (!vmx_msr_bitmap_longmode_x2apic)
+>                 goto out4;
+> +
+> +       if (nested) {
+> +               vmx_msr_bitmap_nested =
+> +                       (unsigned long *)__get_free_page(GFP_KERNEL);
+> +               if (!vmx_msr_bitmap_nested)
+> +                       goto out5;
+> +       }
+> +
+>         vmx_vmread_bitmap = (unsigned long *)__get_free_page(GFP_KERNEL);
+>         if (!vmx_vmread_bitmap)
+> -               goto out5;
+> +               goto out6;
+>
+>         vmx_vmwrite_bitmap = (unsigned long *)__get_free_page(GFP_KERNEL);
+>         if (!vmx_vmwrite_bitmap)
+> -               goto out6;
+> +               goto out7;
+>
+>         memset(vmx_vmread_bitmap, 0xff, PAGE_SIZE);
+>         memset(vmx_vmwrite_bitmap, 0xff, PAGE_SIZE);
+> @@ -5834,10 +5843,12 @@ static __init int hardware_setup(void)
+>
+>         memset(vmx_msr_bitmap_legacy, 0xff, PAGE_SIZE);
+>         memset(vmx_msr_bitmap_longmode, 0xff, PAGE_SIZE);
+> +       if (nested)
+> +               memset(vmx_msr_bitmap_nested, 0xff, PAGE_SIZE);
+>
+>         if (setup_vmcs_config(&vmcs_config) < 0) {
+>                 r = -EIO;
+> -               goto out7;
+> +               goto out8;
+>         }
+>
+>         if (boot_cpu_has(X86_FEATURE_NX))
+> @@ -5944,10 +5955,13 @@ static __init int hardware_setup(void)
+>
+>         return alloc_kvm_area();
+>
+> -out7:
+> +out8:
+>         free_page((unsigned long)vmx_vmwrite_bitmap);
+> -out6:
+> +out7:
+>         free_page((unsigned long)vmx_vmread_bitmap);
+> +out6:
+> +       if (nested)
+> +               free_page((unsigned long)vmx_msr_bitmap_nested);
+>  out5:
+>         free_page((unsigned long)vmx_msr_bitmap_longmode_x2apic);
+>  out4:
+> @@ -5974,6 +5988,8 @@ static __exit void hardware_unsetup(void)
+>         free_page((unsigned long)vmx_io_bitmap_a);
+>         free_page((unsigned long)vmx_vmwrite_bitmap);
+>         free_page((unsigned long)vmx_vmread_bitmap);
+> +       if (nested)
+> +               free_page((unsigned long)vmx_msr_bitmap_nested);
+>
+>         free_kvm_area();
 >  }
->  
->  static inline void sched_submit_work(struct task_struct *tsk)
-
-> @@ -2883,9 +2882,9 @@ void __sched schedule_preempt_disabled(void)
->  static void preempt_schedule_common(void)
->  {
->  	do {
-> -		preempt_count_add(PREEMPT_ACTIVE);
-> +		preempt_count_add(PREEMPT_ACTIVE + PREEMPT_CHECK_OFFSET);
-
-Does _NOT_ imply barrier();
-
->  		__schedule();
-> -		preempt_count_sub(PREEMPT_ACTIVE);
-
-idem.
-
-> +		preempt_count_sub(PREEMPT_ACTIVE + PREEMPT_CHECK_OFFSET);
->  
->  		/*
->  		 * Check again in case we missed a preemption opportunity
+> @@ -8305,6 +8321,38 @@ static void vmx_start_preemption_timer(struct
+> kvm_vcpu *vcpu)
+>                       ns_to_ktime(preemption_timeout), HRTIMER_MODE_REL);
+>  }
+>
+> +static int nested_vmx_check_msr_bitmap_controls(struct kvm_vcpu *vcpu,
+> +                                               struct vmcs12 *vmcs12)
+> +{
+> +       int maxphyaddr;
+> +       u64 addr;
+> +
+> +       if (!nested_cpu_has(vmcs12, CPU_BASED_USE_MSR_BITMAPS))
+> +               return 0;
+> +
+> +       if (vmcs12_read_any(vcpu, MSR_BITMAP, &addr)) {
+> +               WARN_ON(1);
+> +               return -EINVAL;
+> +       }
+> +       maxphyaddr = cpuid_maxphyaddr(vcpu);
+> +
+> +       if (!PAGE_ALIGNED(vmcs12->msr_bitmap) ||
+> +          ((addr + PAGE_SIZE) >> maxphyaddr))
+> +               return -EINVAL;
+> +
+> +       return 0;
+> +}
+> +
+> +/*
+> + * Merge L0's and L1's MSR bitmap, return false to indicate that
+> + * we do not use the hardware.
+> + */
+> +static inline bool nested_vmx_merge_msr_bitmap(struct kvm_vcpu *vcpu,
+> +                                              struct vmcs12 *vmcs12)
+> +{
+> +       return false;
+> +}
+> +
+>  static int nested_vmx_check_msr_switch(struct kvm_vcpu *vcpu,
+>                                        unsigned long count_field,
+>                                        unsigned long addr_field,
+> @@ -8637,11 +8685,17 @@ static void prepare_vmcs02(struct kvm_vcpu
+> *vcpu, struct vmcs12 *vmcs12)
+>                 vmcs_write32(TPR_THRESHOLD, vmcs12->tpr_threshold);
+>         }
+>
+> +       if (cpu_has_vmx_msr_bitmap() &&
+> +           exec_control & CPU_BASED_USE_MSR_BITMAPS &&
+> +           nested_vmx_merge_msr_bitmap(vcpu, vmcs12)) {
+> +               vmcs_write64(MSR_BITMAP, __pa(vmx_msr_bitmap_nested));
+> +       } else
+> +               exec_control &= ~CPU_BASED_USE_MSR_BITMAPS;
+> +
+>         /*
+> -        * Merging of IO and MSR bitmaps not currently supported.
+> +        * Merging of IO bitmap not currently supported.
+>          * Rather, exit every time.
+>          */
+> -       exec_control &= ~CPU_BASED_USE_MSR_BITMAPS;
+>         exec_control &= ~CPU_BASED_USE_IO_BITMAPS;
+>         exec_control |= CPU_BASED_UNCOND_IO_EXITING;
+>
+> @@ -8792,15 +8846,13 @@ static int nested_vmx_run(struct kvm_vcpu
+> *vcpu, bool launch)
+>                 return 1;
+>         }
+>
+> -       if ((vmcs12->cpu_based_vm_exec_control & CPU_BASED_USE_MSR_BITMAPS) &&
+> -                       !PAGE_ALIGNED(vmcs12->msr_bitmap)) {
+> +       if (!nested_get_vmcs12_pages(vcpu, vmcs12)) {
+>                 /*TODO: Also verify bits beyond physical address width are 0*/
+>                 nested_vmx_failValid(vcpu, VMXERR_ENTRY_INVALID_CONTROL_FIELD);
+>                 return 1;
+>         }
+>
+> -       if (!nested_get_vmcs12_pages(vcpu, vmcs12)) {
+> -               /*TODO: Also verify bits beyond physical address width are 0*/
+> +       if (nested_vmx_check_msr_bitmap_controls(vcpu, vmcs12)) {
+>                 nested_vmx_failValid(vcpu, VMXERR_ENTRY_INVALID_CONTROL_FIELD);
+>                 return 1;
+>         }
+> @@ -9356,6 +9408,9 @@ static void load_vmcs12_host_state(struct kvm_vcpu *vcpu,
+>         kvm_set_dr(vcpu, 7, 0x400);
+>         vmcs_write64(GUEST_IA32_DEBUGCTL, 0);
+>
+> +       if (cpu_has_vmx_msr_bitmap())
+> +               vmx_set_msr_bitmap(vcpu);
+> +
+>         if (nested_vmx_load_msr(vcpu, vmcs12->vm_exit_msr_load_addr,
+>                                 vmcs12->vm_exit_msr_load_count))
+>                 nested_vmx_abort(vcpu, VMX_ABORT_LOAD_HOST_MSR_FAIL);
+> --
+> 1.7.1
