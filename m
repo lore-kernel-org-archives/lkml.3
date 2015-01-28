@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964837AbbA1CME (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 21:12:04 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41037 "EHLO
+	id S1761338AbbA1CW4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 21:22:56 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41020 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932104AbbA1B2V (ORCPT
+	with ESMTP id S1755546AbbA1B2H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 20:28:21 -0500
+	Tue, 27 Jan 2015 20:28:07 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Joe Thornber <ejt@redhat.com>, Mike Snitzer <snitzer@redhat.com>
-Subject: [PATCH 3.18 27/61] dm cache: share cache-metadata object across inactive and active DM tables
+Subject: [PATCH 3.10 09/32] dm cache: share cache-metadata object across inactive and active DM tables
 Date: Tue, 27 Jan 2015 17:26:39 -0800
-Message-Id: <20150128012639.917484125@linuxfoundation.org>
+Message-Id: <20150128012628.423051691@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150128012636.936333725@linuxfoundation.org>
-References: <20150128012636.936333725@linuxfoundation.org>
+In-Reply-To: <20150128012627.081285723@linuxfoundation.org>
+References: <20150128012627.081285723@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -24,7 +24,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.18-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
@@ -52,7 +52,7 @@ Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 --- a/drivers/md/dm-cache-metadata.c
 +++ b/drivers/md/dm-cache-metadata.c
-@@ -94,6 +94,9 @@ struct cache_disk_superblock {
+@@ -88,6 +88,9 @@ struct cache_disk_superblock {
  } __packed;
  
  struct dm_cache_metadata {
@@ -62,7 +62,7 @@ Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
  	struct block_device *bdev;
  	struct dm_block_manager *bm;
  	struct dm_space_map *metadata_sm;
-@@ -669,10 +672,10 @@ static void unpack_value(__le64 value_le
+@@ -634,10 +637,10 @@ static void unpack_value(__le64 value_le
  
  /*----------------------------------------------------------------*/
  
@@ -77,7 +77,7 @@ Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
  {
  	int r;
  	struct dm_cache_metadata *cmd;
-@@ -683,6 +686,7 @@ struct dm_cache_metadata *dm_cache_metad
+@@ -648,6 +651,7 @@ struct dm_cache_metadata *dm_cache_metad
  		return NULL;
  	}
  
@@ -85,7 +85,7 @@ Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
  	init_rwsem(&cmd->root_lock);
  	cmd->bdev = bdev;
  	cmd->data_block_size = data_block_size;
-@@ -705,10 +709,95 @@ struct dm_cache_metadata *dm_cache_metad
+@@ -670,10 +674,95 @@ struct dm_cache_metadata *dm_cache_metad
  	return cmd;
  }
  
@@ -182,6 +182,6 @@ Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 +	}
  }
  
- /*
+ int dm_cache_resize(struct dm_cache_metadata *cmd, dm_cblock_t new_cache_size)
 
 
