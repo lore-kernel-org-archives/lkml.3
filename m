@@ -1,137 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755330AbbA2EQr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 23:16:47 -0500
-Received: from numascale.com ([213.162.240.84]:47703 "EHLO numascale.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751984AbbA2EQq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 23:16:46 -0500
-Message-ID: <54C8A10B.3070207@numascale.com>
-Date: Wed, 28 Jan 2015 16:42:51 +0800
-From: Daniel J Blueman <daniel@numascale.com>
-Organization: Numascale AS
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
-MIME-Version: 1.0
-To: Bjorn Helgaas <bhelgaas@google.com>, Ingo Molnar <mingo@redhat.com>,
-        Jiang Liu <jiang.liu@linux.intel.com>, H Peter Anvin <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-CC: Linux Kernel <linux-kernel@vger.kernel.org>,
-        Steffen Persvold <sp@numascale.com>, "x86@kernel.org" <x86@kernel.org>
-Subject: PCIe 32-bit MMIO exhaustion
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - cpanel21.proisp.no
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - numascale.com
-X-Get-Message-Sender-Via: cpanel21.proisp.no: authenticated_id: daniel@numascale.com
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+	id S1753424AbbA1Ux5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 15:53:57 -0500
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:43466 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753319AbbA1Uxs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jan 2015 15:53:48 -0500
+X-AuditID: cbfec7f5-b7fc86d0000066b7-18-54c8a09f0888
+Message-id: <54C8A130.8000807@samsung.com>
+Date: Wed, 28 Jan 2015 09:43:28 +0100
+From: Jacek Anaszewski <j.anaszewski@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130804
+ Thunderbird/17.0.8
+MIME-version: 1.0
+To: Pavel Machek <pavel@ucw.cz>
+Cc: Greg KH <greg@kroah.com>, kernel list <linux-kernel@vger.kernel.org>,
+        linux-leds@vger.kernel.org, devicetree@vger.kernel.org,
+        kyungmin.park@samsung.com, b.zolnierkie@samsung.com,
+        cooloney@gmail.com, rpurdie@rpsys.net, sakari.ailus@iki.fi,
+        s.nawrocki@samsung.com
+Subject: Re: Reading /sys with side effects (was Re: [PATCH 1/2] Documentation:
+ leds: Add description of LED Flash class extension)
+References: <1422346028-16739-1-git-send-email-j.anaszewski@samsung.com>
+ <20150127221958.GA18993@amd>
+In-reply-to: <20150127221958.GA18993@amd>
+Content-type: text/plain; charset=ISO-8859-1; format=flowed
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrDLMWRmVeSWpSXmKPExsVy+t/xy7rzF5wIMVjw2cxi44z1rBZHd05k
+	sph/5ByrxbkFMxgtzja9Ybe4vGsOm8XWN+sYLe6eOspmsXvXU1aLw2/aWS3O7F/J5sDtsXPW
+	XXaPw18Xsni8fRjgsWf+D1aPvi2rGD1WrP7O7vF5k1wAexSXTUpqTmZZapG+XQJXxtMnnxkL
+	nohU9JzqZG1g3CzQxcjJISFgIjFh7WpWCFtM4sK99WxdjFwcQgJLGSXezeuFcj4ySlzr/8wG
+	UsUroCWxe/oadhCbRUBV4s+z+SwgNpuAocTPF6+ZQGxRgQiJP6f3sULUC0r8mHwPrEZEQF5i
+	a98KZpChzAL9TBKTd3aCDRIWaGWUOHuSB8QWEkiX+Pd8LdgyTgFNieZTh8GamQWsJVZO2sYI
+	YctLbF7zlnkCo8AsJDtmISmbhaRsASPzKkbR1NLkguKk9FwjveLE3OLSvHS95PzcTYyQGPm6
+	g3HpMatDjAIcjEo8vAw+J0KEWBPLiitzDzFKcDArifDGTwMK8aYkVlalFuXHF5XmpBYfYmTi
+	4JRqYFycHP7Dp3FT2g+TScHC825l3WwyXbl1gtzNa7vn5l7ua2ptlzL3ZTNfK7Ci8mXdo0qL
+	3oMLtwqYz/G6+/RDl3xCSsU1O7sb8zjFFuhNXPtzwrx1b09LMDB8e677hNXg6Qb1p69fuBZW
+	Kcnx5M662NHgKCv8peyHxCfnI5MkX4vt4H6VfOt64wklluKMREMt5qLiRACYXT+qbwIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With systems with a large number of PCI devices, we're seeing lack of 
-32-bit MMIO space, eg one quad-port NetXtreme-2 adapter takes 128MB of 
-space [1].
+Hi Pavel,
 
-An errata to the PCIe 2.1 spec provides guidance on limitations with 
-64-bit non-prefetchable BARs (since bridges have only 32-bit 
-non-prefetchable ranges) stating that vendors can enable the 
-prefetchable bit in BARs under certain circumstances to allow 64-bit 
-allocation [2].
+On 01/27/2015 11:37 PM, Pavel Machek wrote:
+> Hi!
+>
+>> +	- flash_fault - list of flash faults that may have occurred:
+>> +		* led-over-voltage - flash controller voltage to the flash LED
+>> +			has exceededthe limit specific to the flash controller
+>> +		* flash-timeout-exceeded - the flash strobe was still on when
+>> +			the timeout set by the user has expired; not all flash
+>> +			controllers may set this in all such conditions
+>> +		* controller-over-temperature - the flash controller has
+>> +			overheated
+>> +		* controller-short-circuit - the short circuit protection
+>> +			of the flash controller has been triggered
+>> +		* led-power-supply-over-current - current in the LED power
+>> +			supply has exceeded the limit specific to the flash
+>> +			controller
+>> +		* indicator-led-fault - the flash controller has detected
+>> +			a short or open circuit condition on the indicator LED
+>> +		* led-under-voltage - flash controller voltage to the flash
+>> +			LED has been below the minimum limit specific to
+>> +			the flash
+>> +		* controller-under-voltage - the input voltage of the flash
+>> +			controller is below the limit under which strobing the
+>> +			flash at full current will not be possible. The condition
+>> +			persists until this flag is no longer set
+>> +		* led-over-temperature - the temperature of the LED has exceeded
+>> +			its allowed upper limit
+>> +
+>> +		Flash faults are cleared, if possible, by reading the attribute.
+>
+> That's bad. Now you can no longer present flash_fault file as readable
+> to non-root users, and grep -ri foo /sys will interfere with your
+> camera application.
+>
+> Bad interface, just fix it.
 
-The problem with that, is that vendors can't know apriori what hosts 
-their products will be in, so can't just advertise prefetchable 64-bit 
-BARs. What can be done, is system firmware can use the 64-bit 
-prefetchable BAR in bridges, and assign a 64-bit non-prefetchable device 
-BAR into that area, where it is safe to do so (following the guidance).
+In my opinion it isn't crucial for the user to be aware of the
+fact that some non-persistent fault happened right after strobing the
+flash (e.g. over temperature).
 
-At present, linux denies such allocations [3] and disables the BARs. It 
-seems a practical solution to allow them if the firmware believes it is 
-safe.
+I cannot see anything harmful in the situation when someone does grep
+on /sys and clears non-persistent fault on a flash LED device.
 
-Is this plausible?
+Also, not all devices may be able to report the faults that happened
+earlier but are not valid at the time of I2C readout. In that case the
+user will never now that the fault has ever occurred, unless they read
+the flash_fault attribute at the proper moment.
 
-Thanks,
-   Daniel
+In this case we cannot enforce consistent policy for all devices.
 
---- [1]
+Please describe the use case when clearing the fault on read can be
+harmful, if you have any.
 
-0000:01:00.0 Ethernet controller: Broadcom Corporation NetXtreme II 
-BCM5709 Gigabit Ethernet (rev 20)
-	Subsystem: Dell Device 1f26
-	Flags: bus master, fast devsel, latency 0, IRQ 24
-	Memory at e6000000 (64-bit, non-prefetchable) [size=32M]
-	Capabilities: [48] Power Management version 3
-	Capabilities: [50] Vital Product Data
-	Capabilities: [58] MSI: Enable- Count=1/16 Maskable- 64bit+
-	Capabilities: [a0] MSI-X: Enable+ Count=9 Masked-
-	Capabilities: [ac] Express Endpoint, MSI 00
-	Capabilities: [100] Device Serial Number d4-ae-52-ff-fe-ea-5c-e8
-	Capabilities: [110] Advanced Error Reporting
-	Capabilities: [150] Power Budgeting <?>
-	Capabilities: [160] Virtual Channel
-	Kernel driver in use: bnx2
+Moreover, I don't see your reply to Sakari's message [1], where he
+considers the problem from several perspectives.
 
-0000:01:00.1 Ethernet controller: Broadcom Corporation NetXtreme II 
-BCM5709 Gigabit Ethernet (rev 20)
-	Subsystem: Dell Device 1f26
-	Flags: bus master, fast devsel, latency 0, IRQ 25
-	Memory at e8000000 (64-bit, non-prefetchable) [size=32M]
-	Capabilities: [48] Power Management version 3
-	Capabilities: [50] Vital Product Data
-	Capabilities: [58] MSI: Enable- Count=1/16 Maskable- 64bit+
-	Capabilities: [a0] MSI-X: Enable- Count=9 Masked-
-	Capabilities: [ac] Express Endpoint, MSI 00
-	Capabilities: [100] Device Serial Number d4-ae-52-ff-fe-ea-5c-ea
-	Capabilities: [110] Advanced Error Reporting
-	Capabilities: [150] Power Budgeting <?>
-	Capabilities: [160] Virtual Channel
-	Kernel driver in use: bnx2
+[1] http://www.spinics.net/lists/linux-leds/msg02653.html
 
-0000:02:00.0 Ethernet controller: Broadcom Corporation NetXtreme II 
-BCM5709 Gigabit Ethernet (rev 20)
-	Subsystem: Dell Device 1f26
-	Flags: bus master, fast devsel, latency 0, IRQ 28
-	Memory at ea000000 (64-bit, non-prefetchable) [size=32M]
-	Capabilities: [48] Power Management version 3
-	Capabilities: [50] Vital Product Data
-	Capabilities: [58] MSI: Enable- Count=1/16 Maskable- 64bit+
-	Capabilities: [a0] MSI-X: Enable- Count=9 Masked-
-	Capabilities: [ac] Express Endpoint, MSI 00
-	Capabilities: [100] Device Serial Number d4-ae-52-ff-fe-ea-5c-ec
-	Capabilities: [110] Advanced Error Reporting
-	Capabilities: [150] Power Budgeting <?>
-	Capabilities: [160] Virtual Channel
-	Kernel driver in use: bnx2
-
-0000:02:00.1 Ethernet controller: Broadcom Corporation NetXtreme II 
-BCM5709 Gigabit Ethernet (rev 20)
-	Subsystem: Dell Device 1f26
-	Flags: bus master, fast devsel, latency 0, IRQ 29
-	Memory at ec000000 (64-bit, non-prefetchable) [size=32M]
-	Capabilities: [48] Power Management version 3
-	Capabilities: [50] Vital Product Data
-	Capabilities: [58] MSI: Enable- Count=1/16 Maskable- 64bit+
-	Capabilities: [a0] MSI-X: Enable- Count=9 Masked-
-	Capabilities: [ac] Express Endpoint, MSI 00
-	Capabilities: [100] Device Serial Number d4-ae-52-ff-fe-ea-5c-ee
-	Capabilities: [110] Advanced Error Reporting
-	Capabilities: [150] Power Budgeting <?>
-	Capabilities: [160] Virtual Channel
-	Kernel driver in use: bnx2
-
--- [2] p13
-
-https://www.pcisig.com/specifications/pciexpress/base2/PCIe_Base_r2.1_Errata_08Jun10.pdf
-
--- [3]
-
-pci 0002:01:00.0: BAR 0: [mem size 0x00002000 64bit] conflicts with PCI 
-Bus 0002:00 [mem 0x10020000000-0x10027ffffff pref]
 -- 
-Daniel J Blueman
-Principal Software Engineer, Numascale
+Best Regards,
+Jacek Anaszewski
