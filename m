@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760675AbbA1EOY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 23:14:24 -0500
-Received: from mail.kernel.org ([198.145.29.136]:36934 "EHLO mail.kernel.org"
+	id S1760703AbbA1EO1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 23:14:27 -0500
+Received: from mail.kernel.org ([198.145.29.136]:36966 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760645AbbA1EOT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 23:14:19 -0500
+	id S1759888AbbA1EOW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 23:14:22 -0500
 From: lizf@kernel.org
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Andreas Bomholtz <andreas@seluxit.com>,
-        Johan Hovold <johan@kernel.org>, Zefan Li <lizefan@huawei.com>
-Subject: [PATCH 3.4 012/177] USB: cp210x: add support for Seluxit USB dongle
-Date: Wed, 28 Jan 2015 12:06:30 +0800
-Message-Id: <1422418236-12852-23-git-send-email-lizf@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Alban Crequy <alban.crequy@collabora.co.uk>,
+        Tejun Heo <tj@kernel.org>, Zefan Li <lizefan@huawei.com>
+Subject: [PATCH 3.4 12/91] cgroup: reject cgroup names with ' '
+Date: Wed, 28 Jan 2015 12:06:31 +0800
+Message-Id: <1422418236-12852-24-git-send-email-lizf@kernel.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422418050-12581-1-git-send-email-lizf@kernel.org>
 References: <1422418050-12581-1-git-send-email-lizf@kernel.org>
@@ -20,36 +20,44 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andreas Bomholtz <andreas@seluxit.com>
+From: Alban Crequy <alban.crequy@collabora.co.uk>
 
-3.4.106-rc1 review patch.  If anyone has any objections, please let me know.
+3.4.105-rc1 review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
 
-commit dee80ad12d2b1b304286a707fde7ab05d1fc7bab upstream.
+commit 71b1fb5c4473a5b1e601d41b109bdfe001ec82e0 upstream.
 
-Added the Seluxit ApS USB Serial Dongle to cp210x driver.
+/proc/<pid>/cgroup contains one cgroup path on each line. If cgroup names are
+allowed to contain "\n", applications cannot parse /proc/<pid>/cgroup safely.
 
-Signed-off-by: Andreas Bomholtz <andreas@seluxit.com>
-Signed-off-by: Johan Hovold <johan@kernel.org>
+Signed-off-by: Alban Crequy <alban.crequy@collabora.co.uk>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+[lizf: Backported to 3.4:
+ - adjust context
+ - s/name/dentry->d_name.name/]
 Signed-off-by: Zefan Li <lizefan@huawei.com>
 ---
- drivers/usb/serial/cp210x.c | 1 +
- 1 file changed, 1 insertion(+)
+ kernel/cgroup.c | 5 +++++
+ 1 file changed, 5 insertions(+)
 
-diff --git a/drivers/usb/serial/cp210x.c b/drivers/usb/serial/cp210x.c
-index c91e6f0..37bca6b 100644
---- a/drivers/usb/serial/cp210x.c
-+++ b/drivers/usb/serial/cp210x.c
-@@ -162,6 +162,7 @@ static const struct usb_device_id id_table[] = {
- 	{ USB_DEVICE(0x1ADB, 0x0001) }, /* Schweitzer Engineering C662 Cable */
- 	{ USB_DEVICE(0x1B1C, 0x1C00) }, /* Corsair USB Dongle */
- 	{ USB_DEVICE(0x1BE3, 0x07A6) }, /* WAGO 750-923 USB Service Cable */
-+	{ USB_DEVICE(0x1D6F, 0x0010) }, /* Seluxit ApS RF Dongle */
- 	{ USB_DEVICE(0x1E29, 0x0102) }, /* Festo CPX-USB */
- 	{ USB_DEVICE(0x1E29, 0x0501) }, /* Festo CMSP */
- 	{ USB_DEVICE(0x1FB9, 0x0100) }, /* Lake Shore Model 121 Current Source */
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index 7c8f4f7..c776f89 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -3838,6 +3838,11 @@ static int cgroup_mkdir(struct inode *dir, struct dentry *dentry, umode_t mode)
+ {
+ 	struct cgroup *c_parent = dentry->d_parent->d_fsdata;
+ 
++	/* Do not accept '\n' to prevent making /proc/<pid>/cgroup unparsable.
++	 */
++	if (strchr(dentry->d_name.name, '\n'))
++		return -EINVAL;
++
+ 	/* the vfs holds inode->i_mutex already */
+ 	return cgroup_create(c_parent, dentry, mode | S_IFDIR);
+ }
 -- 
 1.9.1
 
