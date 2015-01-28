@@ -1,18 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762673AbbA1FVh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 00:21:37 -0500
-Received: from mail.kernel.org ([198.145.29.136]:37558 "EHLO mail.kernel.org"
+	id S933733AbbA1EQH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 23:16:07 -0500
+Received: from mail.kernel.org ([198.145.29.136]:37578 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933668AbbA1EPy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 23:15:54 -0500
+	id S933663AbbA1EQA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 23:16:00 -0500
 From: lizf@kernel.org
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+Cc: linux-kernel@vger.kernel.org, Willy Tarreau <w@1wt.eu>,
+        "Don A. Bailey" <donb@securitymouse.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Zefan Li <lizefan@huawei.com>
-Subject: [PATCH 3.4 28/91] Input: synaptics - add support for ForcePads
-Date: Wed, 28 Jan 2015 12:07:03 +0800
-Message-Id: <1422418236-12852-56-git-send-email-lizf@kernel.org>
+Subject: [PATCH 3.4 029/177] Revert "lzo: properly check for overruns"
+Date: Wed, 28 Jan 2015 12:07:04 +0800
+Message-Id: <1422418236-12852-57-git-send-email-lizf@kernel.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422418050-12581-1-git-send-email-lizf@kernel.org>
 References: <1422418050-12581-1-git-send-email-lizf@kernel.org>
@@ -20,157 +22,189 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+From: Willy Tarreau <w@1wt.eu>
 
-3.4.105-rc1 review patch.  If anyone has any objections, please let me know.
+3.4.106-rc1 review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
 
-commit 5715fc764f7753d464dbe094b5ef9cffa6e479a4 upstream.
+commit af958a38a60c7ca3d8a39c918c1baa2ff7b6b233 upstream.
 
-ForcePads are found on HP EliteBook 1040 laptops. They lack any kind of
-physical buttons, instead they generate primary button click when user
-presses somewhat hard on the surface of the touchpad. Unfortunately they
-also report primary button click whenever there are 2 or more contacts
-on the pad, messing up all multi-finger gestures (2-finger scrolling,
-multi-finger tapping, etc). To cope with this behavior we introduce a
-delay (currently 50 msecs) in reporting primary press in case more
-contacts appear.
+This reverts commit 206a81c ("lzo: properly check for overruns").
 
-Reviewed-by: Hans de Goede <hdegoede@redhat.com>
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+As analysed by Willem Pinckaers, this fix is still incomplete on
+certain rare corner cases, and it is easier to restart from the
+original code.
+
+Reported-by: Willem Pinckaers <willem@lekkertech.net>
+Cc: "Don A. Bailey" <donb@securitymouse.com>
+Signed-off-by: Willy Tarreau <w@1wt.eu>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Zefan Li <lizefan@huawei.com>
 ---
- drivers/input/mouse/synaptics.c | 68 +++++++++++++++++++++++++++++++----------
- drivers/input/mouse/synaptics.h | 11 +++++++
- 2 files changed, 63 insertions(+), 16 deletions(-)
+ lib/lzo/lzo1x_decompress_safe.c | 62 ++++++++++++++---------------------------
+ 1 file changed, 21 insertions(+), 41 deletions(-)
 
-diff --git a/drivers/input/mouse/synaptics.c b/drivers/input/mouse/synaptics.c
-index 326e194..32b1363 100644
---- a/drivers/input/mouse/synaptics.c
-+++ b/drivers/input/mouse/synaptics.c
-@@ -517,10 +517,61 @@ static int synaptics_parse_hw_state(const unsigned char buf[],
- 			 ((buf[0] & 0x04) >> 1) |
- 			 ((buf[3] & 0x04) >> 2));
+diff --git a/lib/lzo/lzo1x_decompress_safe.c b/lib/lzo/lzo1x_decompress_safe.c
+index 8563081..569985d 100644
+--- a/lib/lzo/lzo1x_decompress_safe.c
++++ b/lib/lzo/lzo1x_decompress_safe.c
+@@ -19,31 +19,11 @@
+ #include <linux/lzo.h>
+ #include "lzodefs.h"
  
-+		if ((SYN_CAP_ADV_GESTURE(priv->ext_cap_0c) ||
-+			SYN_CAP_IMAGE_SENSOR(priv->ext_cap_0c)) &&
-+		    hw->w == 2) {
-+			synaptics_parse_agm(buf, priv, hw);
-+			return 1;
-+		}
-+
-+		hw->x = (((buf[3] & 0x10) << 8) |
-+			 ((buf[1] & 0x0f) << 8) |
-+			 buf[4]);
-+		hw->y = (((buf[3] & 0x20) << 7) |
-+			 ((buf[1] & 0xf0) << 4) |
-+			 buf[5]);
-+		hw->z = buf[2];
-+
- 		hw->left  = (buf[0] & 0x01) ? 1 : 0;
- 		hw->right = (buf[0] & 0x02) ? 1 : 0;
- 
--		if (SYN_CAP_CLICKPAD(priv->ext_cap_0c)) {
-+		if (SYN_CAP_FORCEPAD(priv->ext_cap_0c)) {
-+			/*
-+			 * ForcePads, like Clickpads, use middle button
-+			 * bits to report primary button clicks.
-+			 * Unfortunately they report primary button not
-+			 * only when user presses on the pad above certain
-+			 * threshold, but also when there are more than one
-+			 * finger on the touchpad, which interferes with
-+			 * out multi-finger gestures.
-+			 */
-+			if (hw->z == 0) {
-+				/* No contacts */
-+				priv->press = priv->report_press = false;
-+			} else if (hw->w >= 4 && ((buf[0] ^ buf[3]) & 0x01)) {
-+				/*
-+				 * Single-finger touch with pressure above
-+				 * the threshold. If pressure stays long
-+				 * enough, we'll start reporting primary
-+				 * button. We rely on the device continuing
-+				 * sending data even if finger does not
-+				 * move.
-+				 */
-+				if  (!priv->press) {
-+					priv->press_start = jiffies;
-+					priv->press = true;
-+				} else if (time_after(jiffies,
-+						priv->press_start +
-+							msecs_to_jiffies(50))) {
-+					priv->report_press = true;
-+				}
-+			} else {
-+				priv->press = false;
-+			}
-+
-+			hw->left = priv->report_press;
-+
-+		} else if (SYN_CAP_CLICKPAD(priv->ext_cap_0c)) {
- 			/*
- 			 * Clickpad's button is transmitted as middle button,
- 			 * however, since it is primary button, we will report
-@@ -539,21 +590,6 @@ static int synaptics_parse_hw_state(const unsigned char buf[],
- 			hw->down = ((buf[0] ^ buf[3]) & 0x02) ? 1 : 0;
- 		}
- 
--		if ((SYN_CAP_ADV_GESTURE(priv->ext_cap_0c) ||
--			SYN_CAP_IMAGE_SENSOR(priv->ext_cap_0c)) &&
--		    hw->w == 2) {
--			synaptics_parse_agm(buf, priv, hw);
--			return 1;
--		}
+-#define HAVE_IP(t, x)					\
+-	(((size_t)(ip_end - ip) >= (size_t)(t + x)) &&	\
+-	 (((t + x) >= t) && ((t + x) >= x)))
 -
--		hw->x = (((buf[3] & 0x10) << 8) |
--			 ((buf[1] & 0x0f) << 8) |
--			 buf[4]);
--		hw->y = (((buf[3] & 0x20) << 7) |
--			 ((buf[1] & 0xf0) << 4) |
--			 buf[5]);
--		hw->z = buf[2];
+-#define HAVE_OP(t, x)					\
+-	(((size_t)(op_end - op) >= (size_t)(t + x)) &&	\
+-	 (((t + x) >= t) && ((t + x) >= x)))
 -
- 		if (SYN_CAP_MULTI_BUTTON_NO(priv->ext_cap) &&
- 		    ((buf[0] ^ buf[3]) & 0x02)) {
- 			switch (SYN_CAP_MULTI_BUTTON_NO(priv->ext_cap) & ~0x01) {
-diff --git a/drivers/input/mouse/synaptics.h b/drivers/input/mouse/synaptics.h
-index fd26ccc..ac1b773 100644
---- a/drivers/input/mouse/synaptics.h
-+++ b/drivers/input/mouse/synaptics.h
-@@ -77,6 +77,11 @@
-  * 2	0x08	image sensor		image sensor tracks 5 fingers, but only
-  *					reports 2.
-  * 2	0x20	report min		query 0x0f gives min coord reported
-+ * 2	0x80	forcepad		forcepad is a variant of clickpad that
-+ *					does not have physical buttons but rather
-+ *					uses pressure above certain threshold to
-+ *					report primary clicks. Forcepads also have
-+ *					clickpad bit set.
-  */
- #define SYN_CAP_CLICKPAD(ex0c)		((ex0c) & 0x100000) /* 1-button ClickPad */
- #define SYN_CAP_CLICKPAD2BTN(ex0c)	((ex0c) & 0x000100) /* 2-button ClickPad */
-@@ -85,6 +90,7 @@
- #define SYN_CAP_ADV_GESTURE(ex0c)	((ex0c) & 0x080000)
- #define SYN_CAP_REDUCED_FILTERING(ex0c)	((ex0c) & 0x000400)
- #define SYN_CAP_IMAGE_SENSOR(ex0c)	((ex0c) & 0x000800)
-+#define SYN_CAP_FORCEPAD(ex0c)		((ex0c) & 0x008000)
+-#define NEED_IP(t, x)					\
+-	do {						\
+-		if (!HAVE_IP(t, x))			\
+-			goto input_overrun;		\
+-	} while (0)
+-
+-#define NEED_OP(t, x)					\
+-	do {						\
+-		if (!HAVE_OP(t, x))			\
+-			goto output_overrun;		\
+-	} while (0)
+-
+-#define TEST_LB(m_pos)					\
+-	do {						\
+-		if ((m_pos) < out)			\
+-			goto lookbehind_overrun;	\
+-	} while (0)
++#define HAVE_IP(x)      ((size_t)(ip_end - ip) >= (size_t)(x))
++#define HAVE_OP(x)      ((size_t)(op_end - op) >= (size_t)(x))
++#define NEED_IP(x)      if (!HAVE_IP(x)) goto input_overrun
++#define NEED_OP(x)      if (!HAVE_OP(x)) goto output_overrun
++#define TEST_LB(m_pos)  if ((m_pos) < out) goto lookbehind_overrun
  
- /* synaptics modes query bits */
- #define SYN_MODE_ABSOLUTE(m)		((m) & (1 << 7))
-@@ -174,6 +180,11 @@ struct synaptics_data {
- 	 */
- 	struct synaptics_hw_state agm;
- 	bool agm_pending;			/* new AGM packet received */
-+
-+	/* ForcePad handling */
-+	unsigned long				press_start;
-+	bool					press;
-+	bool					report_press;
- };
- 
- void synaptics_module_init(void);
+ int lzo1x_decompress_safe(const unsigned char *in, size_t in_len,
+ 			  unsigned char *out, size_t *out_len)
+@@ -78,14 +58,14 @@ int lzo1x_decompress_safe(const unsigned char *in, size_t in_len,
+ 					while (unlikely(*ip == 0)) {
+ 						t += 255;
+ 						ip++;
+-						NEED_IP(1, 0);
++						NEED_IP(1);
+ 					}
+ 					t += 15 + *ip++;
+ 				}
+ 				t += 3;
+ copy_literal_run:
+ #if defined(CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS)
+-				if (likely(HAVE_IP(t, 15) && HAVE_OP(t, 15))) {
++				if (likely(HAVE_IP(t + 15) && HAVE_OP(t + 15))) {
+ 					const unsigned char *ie = ip + t;
+ 					unsigned char *oe = op + t;
+ 					do {
+@@ -101,8 +81,8 @@ copy_literal_run:
+ 				} else
+ #endif
+ 				{
+-					NEED_OP(t, 0);
+-					NEED_IP(t, 3);
++					NEED_OP(t);
++					NEED_IP(t + 3);
+ 					do {
+ 						*op++ = *ip++;
+ 					} while (--t > 0);
+@@ -115,7 +95,7 @@ copy_literal_run:
+ 				m_pos -= t >> 2;
+ 				m_pos -= *ip++ << 2;
+ 				TEST_LB(m_pos);
+-				NEED_OP(2, 0);
++				NEED_OP(2);
+ 				op[0] = m_pos[0];
+ 				op[1] = m_pos[1];
+ 				op += 2;
+@@ -139,10 +119,10 @@ copy_literal_run:
+ 				while (unlikely(*ip == 0)) {
+ 					t += 255;
+ 					ip++;
+-					NEED_IP(1, 0);
++					NEED_IP(1);
+ 				}
+ 				t += 31 + *ip++;
+-				NEED_IP(2, 0);
++				NEED_IP(2);
+ 			}
+ 			m_pos = op - 1;
+ 			next = get_unaligned_le16(ip);
+@@ -157,10 +137,10 @@ copy_literal_run:
+ 				while (unlikely(*ip == 0)) {
+ 					t += 255;
+ 					ip++;
+-					NEED_IP(1, 0);
++					NEED_IP(1);
+ 				}
+ 				t += 7 + *ip++;
+-				NEED_IP(2, 0);
++				NEED_IP(2);
+ 			}
+ 			next = get_unaligned_le16(ip);
+ 			ip += 2;
+@@ -174,7 +154,7 @@ copy_literal_run:
+ #if defined(CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS)
+ 		if (op - m_pos >= 8) {
+ 			unsigned char *oe = op + t;
+-			if (likely(HAVE_OP(t, 15))) {
++			if (likely(HAVE_OP(t + 15))) {
+ 				do {
+ 					COPY8(op, m_pos);
+ 					op += 8;
+@@ -184,7 +164,7 @@ copy_literal_run:
+ 					m_pos += 8;
+ 				} while (op < oe);
+ 				op = oe;
+-				if (HAVE_IP(6, 0)) {
++				if (HAVE_IP(6)) {
+ 					state = next;
+ 					COPY4(op, ip);
+ 					op += next;
+@@ -192,7 +172,7 @@ copy_literal_run:
+ 					continue;
+ 				}
+ 			} else {
+-				NEED_OP(t, 0);
++				NEED_OP(t);
+ 				do {
+ 					*op++ = *m_pos++;
+ 				} while (op < oe);
+@@ -201,7 +181,7 @@ copy_literal_run:
+ #endif
+ 		{
+ 			unsigned char *oe = op + t;
+-			NEED_OP(t, 0);
++			NEED_OP(t);
+ 			op[0] = m_pos[0];
+ 			op[1] = m_pos[1];
+ 			op += 2;
+@@ -214,15 +194,15 @@ match_next:
+ 		state = next;
+ 		t = next;
+ #if defined(CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS)
+-		if (likely(HAVE_IP(6, 0) && HAVE_OP(4, 0))) {
++		if (likely(HAVE_IP(6) && HAVE_OP(4))) {
+ 			COPY4(op, ip);
+ 			op += t;
+ 			ip += t;
+ 		} else
+ #endif
+ 		{
+-			NEED_IP(t, 3);
+-			NEED_OP(t, 0);
++			NEED_IP(t + 3);
++			NEED_OP(t);
+ 			while (t > 0) {
+ 				*op++ = *ip++;
+ 				t--;
 -- 
 1.9.1
 
