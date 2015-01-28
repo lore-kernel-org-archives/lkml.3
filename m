@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933544AbbA2DIx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 22:08:53 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:46986 "EHLO
+	id S933488AbbA2DIa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 22:08:30 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:46987 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965128AbbA2ChG (ORCPT
+	with ESMTP id S965138AbbA2ChH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 21:37:06 -0500
+	Wed, 28 Jan 2015 21:37:07 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Thomas Graf <tgraf@suug.ch>, "David S. Miller" <davem@davemloft.net>,
+Cc: Stephen Hemminger <stephen@networkplumber.org>,
+        "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13.y-ckt 003/139] netlink: Don't reorder loads/stores before marking mmap netlink frame as available
-Date: Wed, 28 Jan 2015 14:19:06 -0800
-Message-Id: <1422483682-15393-4-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13.y-ckt 004/139] in6: fix conflict with glibc
+Date: Wed, 28 Jan 2015 14:19:07 -0800
+Message-Id: <1422483682-15393-5-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422483682-15393-1-git-send-email-kamal@canonical.com>
 References: <1422483682-15393-1-git-send-email-kamal@canonical.com>
@@ -27,53 +28,75 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Graf <tgraf@suug.ch>
+From: stephen hemminger <stephen@networkplumber.org>
 
-[ Upstream commit a18e6a186f53af06937a2c268c72443336f4ab56 ]
+[ Upstream commit 6d08acd2d32e3e877579315dc3202d7a5f336d98 ]
 
-Each mmap Netlink frame contains a status field which indicates
-whether the frame is unused, reserved, contains data or needs to
-be skipped. Both loads and stores may not be reordeded and must
-complete before the status field is changed and another CPU might
-pick up the frame for use. Use an smp_mb() to cover needs of both
-types of callers to netlink_set_status(), callers which have been
-reading data frame from the frame, and callers which have been
-filling or releasing and thus writing to the frame.
+Resolve conflicts between glibc definition of IPV6 socket options
+and those defined in Linux headers. Looks like earlier efforts to
+solve this did not cover all the definitions.
 
-- Example code path requiring a smp_rmb():
-  memcpy(skb->data, (void *)hdr + NL_MMAP_HDRLEN, hdr->nm_len);
-  netlink_set_status(hdr, NL_MMAP_STATUS_UNUSED);
+It resolves warnings during iproute2 build.
+Please consider for stable as well.
 
-- Example code path requiring a smp_wmb():
-  hdr->nm_uid	= from_kuid(sk_user_ns(sk), NETLINK_CB(skb).creds.uid);
-  hdr->nm_gid	= from_kgid(sk_user_ns(sk), NETLINK_CB(skb).creds.gid);
-  netlink_frame_flush_dcache(hdr);
-  netlink_set_status(hdr, NL_MMAP_STATUS_VALID);
-
-Fixes: f9c228 ("netlink: implement memory mapped recvmsg()")
-Reported-by: Eric Dumazet <eric.dumazet@gmail.com>
-Signed-off-by: Thomas Graf <tgraf@suug.ch>
+Signed-off-by: Stephen Hemminger <stephen@networkplumber.org>
+Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/netlink/af_netlink.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ include/uapi/linux/in6.h         | 3 ++-
+ include/uapi/linux/libc-compat.h | 3 +++
+ 2 files changed, 5 insertions(+), 1 deletion(-)
 
-diff --git a/net/netlink/af_netlink.c b/net/netlink/af_netlink.c
-index a8e1f53..a4fbf5d 100644
---- a/net/netlink/af_netlink.c
-+++ b/net/netlink/af_netlink.c
-@@ -527,9 +527,9 @@ static enum nl_mmap_status netlink_get_status(const struct nl_mmap_hdr *hdr)
- static void netlink_set_status(struct nl_mmap_hdr *hdr,
- 			       enum nl_mmap_status status)
- {
-+	smp_mb();
- 	hdr->nm_status = status;
- 	flush_dcache_page(pgvec_to_page(hdr));
--	smp_wmb();
- }
+diff --git a/include/uapi/linux/in6.h b/include/uapi/linux/in6.h
+index 440d5c4..599b0d4 100644
+--- a/include/uapi/linux/in6.h
++++ b/include/uapi/linux/in6.h
+@@ -156,7 +156,7 @@ enum {
+ /*
+  *	IPV6 socket options
+  */
+-
++#if __UAPI_DEF_IPV6_OPTIONS
+ #define IPV6_ADDRFORM		1
+ #define IPV6_2292PKTINFO	2
+ #define IPV6_2292HOPOPTS	3
+@@ -195,6 +195,7 @@ enum {
  
- static struct nl_mmap_hdr *
+ #define IPV6_IPSEC_POLICY	34
+ #define IPV6_XFRM_POLICY	35
++#endif
+ 
+ /*
+  * Multicast:
+diff --git a/include/uapi/linux/libc-compat.h b/include/uapi/linux/libc-compat.h
+index c140620..e28807a 100644
+--- a/include/uapi/linux/libc-compat.h
++++ b/include/uapi/linux/libc-compat.h
+@@ -69,6 +69,7 @@
+ #define __UAPI_DEF_SOCKADDR_IN6		0
+ #define __UAPI_DEF_IPV6_MREQ		0
+ #define __UAPI_DEF_IPPROTO_V6		0
++#define __UAPI_DEF_IPV6_OPTIONS		0
+ 
+ #else
+ 
+@@ -82,6 +83,7 @@
+ #define __UAPI_DEF_SOCKADDR_IN6		1
+ #define __UAPI_DEF_IPV6_MREQ		1
+ #define __UAPI_DEF_IPPROTO_V6		1
++#define __UAPI_DEF_IPV6_OPTIONS		1
+ 
+ #endif /* _NETINET_IN_H */
+ 
+@@ -103,6 +105,7 @@
+ #define __UAPI_DEF_SOCKADDR_IN6		1
+ #define __UAPI_DEF_IPV6_MREQ		1
+ #define __UAPI_DEF_IPPROTO_V6		1
++#define __UAPI_DEF_IPV6_OPTIONS		1
+ 
+ /* Definitions for xattr.h */
+ #define __UAPI_DEF_XATTR		1
 -- 
 1.9.1
 
