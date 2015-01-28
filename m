@@ -1,69 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762488AbbA1FSf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 00:18:35 -0500
-Received: from mail-qg0-f49.google.com ([209.85.192.49]:60558 "EHLO
-	mail-qg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762470AbbA1FSe (ORCPT
+	id S1762783AbbA1FXN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 00:23:13 -0500
+Received: from smtp81.ord1c.emailsrvr.com ([108.166.43.81]:57411 "EHLO
+	smtp81.ord1c.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1762768AbbA1FXK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 00:18:34 -0500
-From: Behan Webster <behanw@converseincode.com>
-To: bcm@fixthebug.org, f.fainelli@gmail.com, linux@arm.linux.org.uk,
-        mporter@linaro.org
-Cc: behanw@converseincode.com, bcm-kernel-feedback-list@broadcom.com,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Alex Elder <elder@linaro.org>
-Subject: [PATCH] bcm: address clang inline asm incompatibility
-Date: Tue, 27 Jan 2015 21:18:26 -0800
-Message-Id: <1422422306-27473-1-git-send-email-behanw@converseincode.com>
-X-Mailer: git-send-email 1.9.1
+	Wed, 28 Jan 2015 00:23:10 -0500
+X-Sender-Id: pramod.gurav@smartplayin.com
+From: Pramod Gurav <pramod.gurav@smartplayin.com>
+To: Kalle Valo <kvalo@codeaurora.org>, John Linville <linville@tuxdriver.com>,
+        Michael Buesch <m@bues.ch>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Pramod Gurav <pramod.gurav@smartplayin.com>
+Subject: [PATCH RESEND] ssb: Fix Sparse error in main
+Date: Wed, 28 Jan 2015 10:52:19 +0530
+Message-Id: <1422422539-18772-1-git-send-email-pramod.gurav@smartplayin.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alex Elder <elder@linaro.org>
+This change fixes below sparse error:
+drivers/ssb/main.c:94:16: warning: symbol 'ssb_sdio_func_to_bus'
+was not declared. Should it be static?
 
-My GCC-based build environment likes to call register r12 by the
-name "ip" in inline asm.  Behan Webster informed me that his Clang-
-based build environment likes "r12" instead.
-
-Try to make them both happy.
-
-Signed-off-by: Alex Elder <elder@linaro.org>
-Signed-off-by: Behan Webster <behanw@converseincode.com>
+Acked-by: Michael Buesch <m@bues.ch>
+Signed-off-by: Pramod Gurav <pramod.gurav@smartplayin.com>
 ---
- arch/arm/mach-bcm/bcm_kona_smc.c | 9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
+ drivers/ssb/main.c |   19 -------------------
+ 1 file changed, 19 deletions(-)
 
-diff --git a/arch/arm/mach-bcm/bcm_kona_smc.c b/arch/arm/mach-bcm/bcm_kona_smc.c
-index a55a7ec..3937bd5 100644
---- a/arch/arm/mach-bcm/bcm_kona_smc.c
-+++ b/arch/arm/mach-bcm/bcm_kona_smc.c
-@@ -106,9 +106,14 @@ int __init bcm_kona_smc_init(void)
-  * request result appropriately.  This result value is found in r0
-  * when the "smc" request completes.
-  */
-+#ifdef __clang__
-+#define R12	"r12"
-+#else  /* !__clang__ */
-+#define R12	"ip"	/* gcc calls r12 "ip" */
-+#endif /* !__clang__ */
- static int bcm_kona_do_smc(u32 service_id, u32 buffer_phys)
- {
--	register u32 ip asm("ip");	/* Also called r12 */
-+	register u32 ip asm(R12);	/* Also called r12 */
- 	register u32 r0 asm("r0");
- 	register u32 r4 asm("r4");
- 	register u32 r5 asm("r5");
-@@ -120,7 +125,7 @@ static int bcm_kona_do_smc(u32 service_id, u32 buffer_phys)
+diff --git a/drivers/ssb/main.c b/drivers/ssb/main.c
+index 2fead38..1e180c4 100644
+--- a/drivers/ssb/main.c
++++ b/drivers/ssb/main.c
+@@ -90,25 +90,6 @@ found:
+ }
+ #endif /* CONFIG_SSB_PCMCIAHOST */
  
- 	asm volatile (
- 		/* Make sure we got the registers we want */
--		__asmeq("%0", "ip")
-+		__asmeq("%0", R12)
- 		__asmeq("%1", "r0")
- 		__asmeq("%2", "r4")
- 		__asmeq("%3", "r5")
+-#ifdef CONFIG_SSB_SDIOHOST
+-struct ssb_bus *ssb_sdio_func_to_bus(struct sdio_func *func)
+-{
+-	struct ssb_bus *bus;
+-
+-	ssb_buses_lock();
+-	list_for_each_entry(bus, &buses, list) {
+-		if (bus->bustype == SSB_BUSTYPE_SDIO &&
+-		    bus->host_sdio == func)
+-			goto found;
+-	}
+-	bus = NULL;
+-found:
+-	ssb_buses_unlock();
+-
+-	return bus;
+-}
+-#endif /* CONFIG_SSB_SDIOHOST */
+-
+ int ssb_for_each_bus_call(unsigned long data,
+ 			  int (*func)(struct ssb_bus *bus, unsigned long data))
+ {
 -- 
-1.9.1
+1.7.9.5
 
