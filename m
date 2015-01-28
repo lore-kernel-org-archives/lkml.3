@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761592AbbA1ETc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 23:19:32 -0500
-Received: from mail.kernel.org ([198.145.29.136]:38871 "EHLO mail.kernel.org"
+	id S1761946AbbA1FEp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 00:04:45 -0500
+Received: from mail.kernel.org ([198.145.29.136]:38897 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761570AbbA1ET2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 23:19:28 -0500
+	id S1761580AbbA1ETb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 23:19:31 -0500
 From: lizf@kernel.org
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Jan Kara <jack@suse.cz>,
-        "Theodore Ts'o" <tytso@mit.edu>, Zefan Li <lizefan@huawei.com>
-Subject: [PATCH 3.4 062/177] vfs: fix data corruption when blocksize < pagesize for mmaped data
-Date: Wed, 28 Jan 2015 12:08:11 +0800
-Message-Id: <1422418236-12852-124-git-send-email-lizf@kernel.org>
+Cc: linux-kernel@vger.kernel.org, "Theodore Ts'o" <tytso@mit.edu>,
+        Zefan Li <lizefan@huawei.com>
+Subject: [PATCH 3.4 063/177] ext4: don't orphan or truncate the boot loader inode
+Date: Wed, 28 Jan 2015 12:08:12 +0800
+Message-Id: <1422418236-12852-125-git-send-email-lizf@kernel.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422418050-12581-1-git-send-email-lizf@kernel.org>
 References: <1422418050-12581-1-git-send-email-lizf@kernel.org>
@@ -20,173 +20,78 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jan Kara <jack@suse.cz>
+From: Theodore Ts'o <tytso@mit.edu>
 
 3.4.106-rc1 review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
 
-commit 90a8020278c1598fafd071736a0846b38510309c upstream.
+commit e2bfb088fac03c0f621886a04cffc7faa2b49b1d upstream.
 
-->page_mkwrite() is used by filesystems to allocate blocks under a page
-which is becoming writeably mmapped in some process' address space. This
-allows a filesystem to return a page fault if there is not enough space
-available, user exceeds quota or similar problem happens, rather than
-silently discarding data later when writepage is called.
+The boot loader inode (inode #5) should never be visible in the
+directory hierarchy, but it's possible if the file system is corrupted
+that there will be a directory entry that points at inode #5.  In
+order to avoid accidentally trashing it, when such a directory inode
+is opened, the inode will be marked as a bad inode, so that it's not
+possible to modify (or read) the inode from userspace.
 
-However VFS fails to call ->page_mkwrite() in all the cases where
-filesystems need it when blocksize < pagesize. For example when
-blocksize = 1024, pagesize = 4096 the following is problematic:
-  ftruncate(fd, 0);
-  pwrite(fd, buf, 1024, 0);
-  map = mmap(NULL, 1024, PROT_WRITE, MAP_SHARED, fd, 0);
-  map[0] = 'a';       ----> page_mkwrite() for index 0 is called
-  ftruncate(fd, 10000); /* or even pwrite(fd, buf, 1, 10000) */
-  mremap(map, 1024, 10000, 0);
-  map[4095] = 'a';    ----> no page_mkwrite() called
+Unfortunately, when we unlink this (invalid/illegal) directory entry,
+we will put the bad inode on the ophan list, and then when try to
+unlink the directory, we don't actually remove the bad inode from the
+orphan list before freeing in-memory inode structure.  This means the
+in-memory orphan list is corrupted, leading to a kernel oops.
 
-At the moment ->page_mkwrite() is called, filesystem can allocate only
-one block for the page because i_size == 1024. Otherwise it would create
-blocks beyond i_size which is generally undesirable. But later at
-->writepage() time, we also need to store data at offset 4095 but we
-don't have block allocated for it.
+In addition, avoid truncating a bad inode in ext4_destroy_inode(),
+since truncating the boot loader inode is not a smart thing to do.
 
-This patch introduces a helper function filesystems can use to have
-->page_mkwrite() called at all the necessary moments.
-
-Signed-off-by: Jan Kara <jack@suse.cz>
+Reported-by: Sami Liedes <sami.liedes@iki.fi>
+Reviewed-by: Jan Kara <jack@suse.cz>
 Signed-off-by: Theodore Ts'o <tytso@mit.edu>
-[lizf: Backported to 3.4:
- - adjust context
- - truncate_setsize() already has an oldsize variable]
+[lizf: Backported to 3.4: adjust context]
 Signed-off-by: Zefan Li <lizefan@huawei.com>
 ---
- fs/buffer.c        |  3 +++
- include/linux/mm.h |  1 +
- mm/truncate.c      | 62 +++++++++++++++++++++++++++++++++++++++++++++++++++---
- 3 files changed, 63 insertions(+), 3 deletions(-)
+ fs/ext4/inode.c | 8 +++-----
+ fs/ext4/namei.c | 2 +-
+ 2 files changed, 4 insertions(+), 6 deletions(-)
 
-diff --git a/fs/buffer.c b/fs/buffer.c
-index 104425b..ed2dc70 100644
---- a/fs/buffer.c
-+++ b/fs/buffer.c
-@@ -1982,6 +1982,7 @@ int generic_write_end(struct file *file, struct address_space *mapping,
- 			struct page *page, void *fsdata)
- {
- 	struct inode *inode = mapping->host;
-+	loff_t old_size = inode->i_size;
- 	int i_size_changed = 0;
+diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
+index 5b6dcba..b9c3995 100644
+--- a/fs/ext4/inode.c
++++ b/fs/ext4/inode.c
+@@ -157,16 +157,14 @@ void ext4_evict_inode(struct inode *inode)
+ 		goto no_delete;
+ 	}
  
- 	copied = block_write_end(file, mapping, pos, len, copied, page, fsdata);
-@@ -2001,6 +2002,8 @@ int generic_write_end(struct file *file, struct address_space *mapping,
- 	unlock_page(page);
- 	page_cache_release(page);
+-	if (!is_bad_inode(inode))
+-		dquot_initialize(inode);
++	if (is_bad_inode(inode))
++		goto no_delete;
++	dquot_initialize(inode);
  
-+	if (old_size < pos)
-+		pagecache_isize_extended(inode, old_size, pos);
- 	/*
- 	 * Don't mark the inode dirty under page lock. First, it unnecessarily
- 	 * makes the holding time of page lock longer. Second, it forces lock
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index dbca4b2..656b4e9 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -953,6 +953,7 @@ static inline void unmap_shared_mapping_range(struct address_space *mapping,
+ 	if (ext4_should_order_data(inode))
+ 		ext4_begin_ordered_truncate(inode, 0);
+ 	truncate_inode_pages(&inode->i_data, 0);
  
- extern void truncate_pagecache(struct inode *inode, loff_t old, loff_t new);
- extern void truncate_setsize(struct inode *inode, loff_t newsize);
-+void pagecache_isize_extended(struct inode *inode, loff_t from, loff_t to);
- extern int vmtruncate(struct inode *inode, loff_t offset);
- extern int vmtruncate_range(struct inode *inode, loff_t offset, loff_t end);
- void truncate_pagecache_range(struct inode *inode, loff_t offset, loff_t end);
-diff --git a/mm/truncate.c b/mm/truncate.c
-index f38055c..708a499 100644
---- a/mm/truncate.c
-+++ b/mm/truncate.c
-@@ -20,6 +20,7 @@
- #include <linux/buffer_head.h>	/* grr. try_to_release_page,
- 				   do_invalidatepage */
- #include <linux/cleancache.h>
-+#include <linux/rmap.h>
- #include "internal.h"
- 
- 
-@@ -571,16 +572,71 @@ EXPORT_SYMBOL(truncate_pagecache);
-  */
- void truncate_setsize(struct inode *inode, loff_t newsize)
- {
--	loff_t oldsize;
+-	if (is_bad_inode(inode))
+-		goto no_delete;
 -
--	oldsize = inode->i_size;
-+	loff_t oldsize = inode->i_size;
- 	i_size_write(inode, newsize);
+ 	handle = ext4_journal_start(inode, ext4_blocks_for_truncate(inode)+3);
+ 	if (IS_ERR(handle)) {
+ 		ext4_std_error(inode->i_sb, PTR_ERR(handle));
+diff --git a/fs/ext4/namei.c b/fs/ext4/namei.c
+index 665e55c..11566d7 100644
+--- a/fs/ext4/namei.c
++++ b/fs/ext4/namei.c
+@@ -1992,7 +1992,7 @@ int ext4_orphan_add(handle_t *handle, struct inode *inode)
+ 	struct ext4_iloc iloc;
+ 	int err = 0, rc;
  
-+	if (newsize > oldsize)
-+		pagecache_isize_extended(inode, oldsize, newsize);
- 	truncate_pagecache(inode, oldsize, newsize);
- }
- EXPORT_SYMBOL(truncate_setsize);
+-	if (!ext4_handle_valid(handle))
++	if (!ext4_handle_valid(handle) || is_bad_inode(inode))
+ 		return 0;
  
- /**
-+ * pagecache_isize_extended - update pagecache after extension of i_size
-+ * @inode:	inode for which i_size was extended
-+ * @from:	original inode size
-+ * @to:		new inode size
-+ *
-+ * Handle extension of inode size either caused by extending truncate or by
-+ * write starting after current i_size. We mark the page straddling current
-+ * i_size RO so that page_mkwrite() is called on the nearest write access to
-+ * the page.  This way filesystem can be sure that page_mkwrite() is called on
-+ * the page before user writes to the page via mmap after the i_size has been
-+ * changed.
-+ *
-+ * The function must be called after i_size is updated so that page fault
-+ * coming after we unlock the page will already see the new i_size.
-+ * The function must be called while we still hold i_mutex - this not only
-+ * makes sure i_size is stable but also that userspace cannot observe new
-+ * i_size value before we are prepared to store mmap writes at new inode size.
-+ */
-+void pagecache_isize_extended(struct inode *inode, loff_t from, loff_t to)
-+{
-+	int bsize = 1 << inode->i_blkbits;
-+	loff_t rounded_from;
-+	struct page *page;
-+	pgoff_t index;
-+
-+	WARN_ON(!mutex_is_locked(&inode->i_mutex));
-+	WARN_ON(to > inode->i_size);
-+
-+	if (from >= to || bsize == PAGE_CACHE_SIZE)
-+		return;
-+	/* Page straddling @from will not have any hole block created? */
-+	rounded_from = round_up(from, bsize);
-+	if (to <= rounded_from || !(rounded_from & (PAGE_CACHE_SIZE - 1)))
-+		return;
-+
-+	index = from >> PAGE_CACHE_SHIFT;
-+	page = find_lock_page(inode->i_mapping, index);
-+	/* Page not cached? Nothing to do */
-+	if (!page)
-+		return;
-+	/*
-+	 * See clear_page_dirty_for_io() for details why set_page_dirty()
-+	 * is needed.
-+	 */
-+	if (page_mkclean(page))
-+		set_page_dirty(page);
-+	unlock_page(page);
-+	page_cache_release(page);
-+}
-+EXPORT_SYMBOL(pagecache_isize_extended);
-+
-+/**
-+ * truncate_pagecache_range - unmap and remove pagecache that is hole-punched
-+ * @inode: inode
-+ * @lstart: offset of beginning of hole
-  * vmtruncate - unmap mappings "freed" by truncate() syscall
-  * @inode: inode of the file used
-  * @newsize: file offset to start truncating
+ 	mutex_lock(&EXT4_SB(sb)->s_orphan_lock);
 -- 
 1.9.1
 
