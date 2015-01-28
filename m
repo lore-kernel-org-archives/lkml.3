@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965304AbbA2Chm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 21:37:42 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:47003 "EHLO
+	id S1764190AbbA2DXq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 22:23:46 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:46935 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965266AbbA2Chg (ORCPT
+	with ESMTP id S964869AbbA2Cfh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 21:37:36 -0500
+	Wed, 28 Jan 2015 21:35:37 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alex Williamson <alex.williamson@redhat.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Myron Stowe <myron.stowe@redhat.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        Matthew Wilcox <willy@linux.intel.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13.y-ckt 031/139] driver core: Fix unbalanced device reference in drivers_probe
-Date: Wed, 28 Jan 2015 14:19:34 -0800
-Message-Id: <1422483682-15393-32-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13.y-ckt 032/139] PCI: Restore detection of read-only BARs
+Date: Wed, 28 Jan 2015 14:19:35 -0800
+Message-Id: <1422483682-15393-33-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422483682-15393-1-git-send-email-kamal@canonical.com>
 References: <1422483682-15393-1-git-send-email-kamal@canonical.com>
@@ -28,83 +28,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Williamson <alex.williamson@redhat.com>
+From: Myron Stowe <myron.stowe@redhat.com>
 
-commit 0372ffb35d00288802265586a29c117911d02fb8 upstream.
+commit 36e8164882ca6d3c41cb91e6f09a3ed236841f80 upstream.
 
-bus_find_device_by_name() acquires a device reference which is never
-released.  This results in an object leak, which on older kernels
-results in failure to release all resources of PCI devices.  libvirt
-uses drivers_probe to re-attach devices to the host after assignment
-and is therefore a common trigger for this leak.
+Commit 6ac665c63dca ("PCI: rewrite PCI BAR reading code") masked off
+low-order bits from 'l', but not from 'sz'.  Both are passed to pci_size(),
+which compares 'base == maxbase' to check for read-only BARs.  The masking
+of 'l' means that comparison will never be 'true', so the check for
+read-only BARs no longer works.
 
-Example:
+Resolve this by also masking off the low-order bits of 'sz' before passing
+it into pci_size() as 'maxbase'.  With this change, pci_size() will once
+again catch the problems that have been encountered to date:
 
-# cd /sys/bus/pci/
-# dmesg -C
-# echo 1 > devices/0000\:01\:00.0/sriov_numvfs
-# echo 0 > devices/0000\:01\:00.0/sriov_numvfs
-# dmesg | grep 01:10
- pci 0000:01:10.0: [8086:10ca] type 00 class 0x020000
- kobject: '0000:01:10.0' (ffff8801d79cd0a8): kobject_add_internal: parent: '0000:00:01.0', set: 'devices'
- kobject: '0000:01:10.0' (ffff8801d79cd0a8): kobject_uevent_env
- kobject: '0000:01:10.0' (ffff8801d79cd0a8): fill_kobj_path: path = '/devices/pci0000:00/0000:00:01.0/0000:01:10.0'
- kobject: '0000:01:10.0' (ffff8801d79cd0a8): kobject_uevent_env
- kobject: '0000:01:10.0' (ffff8801d79cd0a8): fill_kobj_path: path = '/devices/pci0000:00/0000:00:01.0/0000:01:10.0'
- kobject: '0000:01:10.0' (ffff8801d79cd0a8): kobject_uevent_env
- kobject: '0000:01:10.0' (ffff8801d79cd0a8): fill_kobj_path: path = '/devices/pci0000:00/0000:00:01.0/0000:01:10.0'
- kobject: '0000:01:10.0' (ffff8801d79cd0a8): kobject_cleanup, parent           (null)
- kobject: '0000:01:10.0' (ffff8801d79cd0a8): calling ktype release
- kobject: '0000:01:10.0': free name
+  - AGP aperture BAR of AMD-7xx host bridges: if the AGP window is
+    disabled, this BAR is read-only and read as 0x00000008 [1]
 
-[kobject freed as expected]
+  - BARs 0-4 of ALi IDE controllers can be non-zero and read-only [1]
 
-# dmesg -C
-# echo 1 > devices/0000\:01\:00.0/sriov_numvfs
-# echo 0000:01:10.0 > drivers_probe
-# echo 0 > devices/0000\:01\:00.0/sriov_numvfs
-# dmesg | grep 01:10
- pci 0000:01:10.0: [8086:10ca] type 00 class 0x020000
- kobject: '0000:01:10.0' (ffff8801d79ce0a8): kobject_add_internal: parent: '0000:00:01.0', set: 'devices'
- kobject: '0000:01:10.0' (ffff8801d79ce0a8): kobject_uevent_env
- kobject: '0000:01:10.0' (ffff8801d79ce0a8): fill_kobj_path: path = '/devices/pci0000:00/0000:00:01.0/0000:01:10.0'
- kobject: '0000:01:10.0' (ffff8801d79ce0a8): kobject_uevent_env
- kobject: '0000:01:10.0' (ffff8801d79ce0a8): fill_kobj_path: path = '/devices/pci0000:00/0000:00:01.0/0000:01:10.0'
- kobject: '0000:01:10.0' (ffff8801d79ce0a8): kobject_uevent_env
- kobject: '0000:01:10.0' (ffff8801d79ce0a8): fill_kobj_path: path = '/devices/pci0000:00/0000:00:01.0/0000:01:10.0'
+  - Intel Sandy Bridge - Thermal Management Controller [8086:0103];
+    BAR 0 returning 0xfed98004 [2]
 
-[no free]
+  - Intel Xeon E5 v3/Core i7 Power Control Unit [8086:2fc0];
+    Bar 0 returning 0x00001a [3]
 
-Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Link: [1] https://git.kernel.org/cgit/linux/kernel/git/tglx/history.git/commit/drivers/pci/probe.c?id=1307ef6621991f1c4bc3cec1b5a4ebd6fd3d66b9 ("PCI: probing read-only BARs" (pre-git))
+Link: [2] https://bugzilla.kernel.org/show_bug.cgi?id=43331
+Link: [3] https://bugzilla.kernel.org/show_bug.cgi?id=85991
+Reported-by: William Unruh <unruh@physics.ubc.ca>
+Reported-by: Martin Lucina <martin@lucina.net>
+Signed-off-by: Myron Stowe <myron.stowe@redhat.com>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+CC: Matthew Wilcox <willy@linux.intel.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/base/bus.c | 8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+ drivers/pci/probe.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/drivers/base/bus.c b/drivers/base/bus.c
-index 73f6c29..a7ce942 100644
---- a/drivers/base/bus.c
-+++ b/drivers/base/bus.c
-@@ -243,13 +243,15 @@ static ssize_t store_drivers_probe(struct bus_type *bus,
- 				   const char *buf, size_t count)
- {
- 	struct device *dev;
-+	int err = -EINVAL;
+diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
+index 38e403d..ef18351 100644
+--- a/drivers/pci/probe.c
++++ b/drivers/pci/probe.c
+@@ -214,14 +214,17 @@ int __pci_read_base(struct pci_dev *dev, enum pci_bar_type type,
+ 		res->flags |= IORESOURCE_SIZEALIGN;
+ 		if (res->flags & IORESOURCE_IO) {
+ 			l &= PCI_BASE_ADDRESS_IO_MASK;
++			sz &= PCI_BASE_ADDRESS_IO_MASK;
+ 			mask = PCI_BASE_ADDRESS_IO_MASK & (u32) IO_SPACE_LIMIT;
+ 		} else {
+ 			l &= PCI_BASE_ADDRESS_MEM_MASK;
++			sz &= PCI_BASE_ADDRESS_MEM_MASK;
+ 			mask = (u32)PCI_BASE_ADDRESS_MEM_MASK;
+ 		}
+ 	} else {
+ 		res->flags |= (l & IORESOURCE_ROM_ENABLE);
+ 		l &= PCI_ROM_ADDRESS_MASK;
++		sz &= PCI_ROM_ADDRESS_MASK;
+ 		mask = (u32)PCI_ROM_ADDRESS_MASK;
+ 	}
  
- 	dev = bus_find_device_by_name(bus, NULL, buf);
- 	if (!dev)
- 		return -ENODEV;
--	if (bus_rescan_devices_helper(dev, NULL) != 0)
--		return -EINVAL;
--	return count;
-+	if (bus_rescan_devices_helper(dev, NULL) == 0)
-+		err = count;
-+	put_device(dev);
-+	return err;
- }
- 
- static struct device *next_device(struct klist_iter *i)
 -- 
 1.9.1
 
