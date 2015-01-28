@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762116AbbA2KP6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 05:15:58 -0500
+	id S1760760AbbA2KVp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 05:21:45 -0500
 Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:44737 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1757043AbbA2JBN (ORCPT
+	by vger.kernel.org with ESMTP id S1756744AbbA2JAw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 04:01:13 -0500
+	Thu, 29 Jan 2015 04:00:52 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@kernel.org>,
@@ -15,12 +15,12 @@ Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@kernel.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
+        Stephane Eranian <eranian@google.com>, Vince Weaver <vince@deater.net>,
         "Yan, Zheng" <zheng.z.yan@intel.com>, Ingo Molnar <mingo@kernel.org>,
         Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 049/176] perf/x86/intel/uncore: Make sure only uncore events are collected
-Date: Wed, 28 Jan 2015 15:27:59 +0100
-Message-Id: <5f34dcba9ab45437a8de83aab6298dd0183b334c.1422455352.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 050/176] perf: Fix events installation during moving group
+Date: Wed, 28 Jan 2015 15:28:00 +0100
+Message-Id: <a1f8e24798f9d7cdca5bbf438be1a501bb53fa00.1422455352.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <ce4a451f616a1e7ab58cfeceea5e49c8b1c68c81.1422455352.git.jslaby@suse.cz>
 References: <ce4a451f616a1e7ab58cfeceea5e49c8b1c68c81.1422455352.git.jslaby@suse.cz>
@@ -36,29 +36,41 @@ From: Jiri Olsa <jolsa@kernel.org>
 
 ===============
 
-commit af91568e762d04931dcbdd6bef4655433d8b9418 upstream.
+commit 9fc81d87420d0d3fd62d5e5529972c0ad9eab9cc upstream.
 
-The uncore_collect_events functions assumes that event group
-might contain only uncore events which is wrong, because it
-might contain any type of events.
+We allow PMU driver to change the cpu on which the event
+should be installed to. This happened in patch:
 
-This bug leads to uncore framework touching 'not' uncore events,
-which could end up all sorts of bugs.
+  e2d37cd213dc ("perf: Allow the PMU driver to choose the CPU on which to install events")
 
-One was triggered by Vince's perf fuzzer, when the uncore code
-touched breakpoint event private event space as if it was uncore
-event and caused BUG:
+This patch also forces all the group members to follow
+the currently opened events cpu if the group happened
+to be moved.
 
-   BUG: unable to handle kernel paging request at ffffffff82822068
-   IP: [<ffffffff81020338>] uncore_assign_events+0x188/0x250
-   ...
+This and the change of event->cpu in perf_install_in_context()
+function introduced in:
 
-The code in uncore_assign_events() function was looking for
-event->hw.idx data while the event was initialized as a
-breakpoint with different members in event->hw union.
+  0cda4c023132 ("perf: Introduce perf_pmu_migrate_context()")
 
-This patch forces uncore_collect_events() to collect only uncore
-events.
+forces group members to change their event->cpu,
+if the currently-opened-event's PMU changed the cpu
+and there is a group move.
+
+Above behaviour causes problem for breakpoint events,
+which uses event->cpu to touch cpu specific data for
+breakpoints accounting. By changing event->cpu, some
+breakpoints slots were wrongly accounted for given
+cpu.
+
+Vinces's perf fuzzer hit this issue and caused following
+WARN on my setup:
+
+   WARNING: CPU: 0 PID: 20214 at arch/x86/kernel/hw_breakpoint.c:119 arch_install_hw_breakpoint+0x142/0x150()
+   Can't find any breakpoint slot
+   [...]
+
+This patch changes the group moving code to keep the event's
+original cpu.
 
 Reported-by: Vince Weaver <vince@deater.net>
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
@@ -67,58 +79,33 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
+Cc: Vince Weaver <vince@deater.net>
 Cc: Yan, Zheng <zheng.z.yan@intel.com>
-Link: http://lkml.kernel.org/r/1418243031-20367-2-git-send-email-jolsa@kernel.org
+Link: http://lkml.kernel.org/r/1418243031-20367-3-git-send-email-jolsa@kernel.org
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- arch/x86/kernel/cpu/perf_event_intel_uncore.c | 22 +++++++++++++++++++---
- 1 file changed, 19 insertions(+), 3 deletions(-)
+ kernel/events/core.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-index 4118f9f68315..3e1cfbb5a6cf 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-@@ -2764,6 +2764,17 @@ static struct intel_uncore_box *uncore_event_to_box(struct perf_event *event)
- 	return uncore_pmu_to_box(uncore_event_to_pmu(event), smp_processor_id());
- }
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index 63bd27c861fe..452b2b0d7af1 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -7167,11 +7167,11 @@ SYSCALL_DEFINE5(perf_event_open,
  
-+/*
-+ * Using uncore_pmu_event_init pmu event_init callback
-+ * as a detection point for uncore events.
-+ */
-+static int uncore_pmu_event_init(struct perf_event *event);
-+
-+static bool is_uncore_event(struct perf_event *event)
-+{
-+	return event->pmu->event_init == uncore_pmu_event_init;
-+}
-+
- static int
- uncore_collect_events(struct intel_uncore_box *box, struct perf_event *leader, bool dogrp)
- {
-@@ -2778,13 +2789,18 @@ uncore_collect_events(struct intel_uncore_box *box, struct perf_event *leader, b
- 		return -EINVAL;
- 
- 	n = box->n_events;
--	box->event_list[n] = leader;
--	n++;
-+
-+	if (is_uncore_event(leader)) {
-+		box->event_list[n] = leader;
-+		n++;
-+	}
-+
- 	if (!dogrp)
- 		return n;
- 
- 	list_for_each_entry(event, &leader->sibling_list, group_entry) {
--		if (event->state <= PERF_EVENT_STATE_OFF)
-+		if (!is_uncore_event(event) ||
-+		    event->state <= PERF_EVENT_STATE_OFF)
- 			continue;
- 
- 		if (n >= max_count)
+ 	if (move_group) {
+ 		synchronize_rcu();
+-		perf_install_in_context(ctx, group_leader, event->cpu);
++		perf_install_in_context(ctx, group_leader, group_leader->cpu);
+ 		get_ctx(ctx);
+ 		list_for_each_entry(sibling, &group_leader->sibling_list,
+ 				    group_entry) {
+-			perf_install_in_context(ctx, sibling, event->cpu);
++			perf_install_in_context(ctx, sibling, sibling->cpu);
+ 			get_ctx(ctx);
+ 		}
+ 	}
 -- 
 2.2.2
 
