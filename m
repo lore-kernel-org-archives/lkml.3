@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934401AbbA1EW7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 23:22:59 -0500
-Received: from mail.kernel.org ([198.145.29.136]:40145 "EHLO mail.kernel.org"
+	id S965581AbbA1Ern (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 23:47:43 -0500
+Received: from mail.kernel.org ([198.145.29.136]:40170 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934298AbbA1EWz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 23:22:55 -0500
+	id S934390AbbA1EW6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 23:22:58 -0500
 From: lizf@kernel.org
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Jan Kara <jack@suse.cz>,
-        Jens Axboe <axboe@kernel.dk>, linux-scsi@vger.kernel.org,
-        Jens Axboe <axboe@fb.com>, Zefan Li <lizefan@huawei.com>
-Subject: [PATCH 3.4 100/177] scsi: Fix error handling in SCSI_IOCTL_SEND_COMMAND
-Date: Wed, 28 Jan 2015 12:09:18 +0800
-Message-Id: <1422418236-12852-191-git-send-email-lizf@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Perry Hung <iperry@gmail.com>,
+        Johan Hovold <johan@kernel.org>, Zefan Li <lizefan@huawei.com>
+Subject: [PATCH 3.4 101/177] usb: serial: ftdi_sio: add "bricked" FTDI device PID
+Date: Wed, 28 Jan 2015 12:09:19 +0800
+Message-Id: <1422418236-12852-192-git-send-email-lizf@kernel.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422418050-12581-1-git-send-email-lizf@kernel.org>
 References: <1422418050-12581-1-git-send-email-lizf@kernel.org>
@@ -21,54 +20,64 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jan Kara <jack@suse.cz>
+From: Perry Hung <iperry@gmail.com>
 
 3.4.106-rc1 review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
 
-commit 84ce0f0e94ac97217398b3b69c21c7a62ebeed05 upstream.
+commit 7f2719f0003da1ad13124ef00f48d7514c79e30d upstream.
 
-When sg_scsi_ioctl() fails to prepare request to submit in
-blk_rq_map_kern() we jump to a label where we just end up copying
-(luckily zeroed-out) kernel buffer to userspace instead of reporting
-error. Fix the problem by jumping to the right label.
+An official recent Windows driver from FTDI detects counterfeit devices
+and reprograms the internal EEPROM containing the USB PID to 0, effectively
+bricking the device.
 
-CC: Jens Axboe <axboe@kernel.dk>
-CC: linux-scsi@vger.kernel.org
-Coverity-id: 1226871
-Signed-off-by: Jan Kara <jack@suse.cz>
+Add support for this VID/PID pair to correctly bind the driver on these
+devices.
 
-Fixed up the, now unused, out label.
+See:
+http://hackaday.com/2014/10/22/watch-that-windows-update-ftdi-drivers-are-killing-fake-chips/
 
-Signed-off-by: Jens Axboe <axboe@fb.com>
+Signed-off-by: Perry Hung <iperry@gmail.com>
+Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Johan Hovold <johan@kernel.org>
+[lizf: Backported to 3.4: adjust context]
 Signed-off-by: Zefan Li <lizefan@huawei.com>
 ---
- block/scsi_ioctl.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/usb/serial/ftdi_sio.c     | 1 +
+ drivers/usb/serial/ftdi_sio_ids.h | 6 ++++++
+ 2 files changed, 7 insertions(+)
 
-diff --git a/block/scsi_ioctl.c b/block/scsi_ioctl.c
-index 9a87daa..f1c00c9 100644
---- a/block/scsi_ioctl.c
-+++ b/block/scsi_ioctl.c
-@@ -505,7 +505,7 @@ int sg_scsi_ioctl(struct request_queue *q, struct gendisk *disk, fmode_t mode,
+diff --git a/drivers/usb/serial/ftdi_sio.c b/drivers/usb/serial/ftdi_sio.c
+index 7736459..a89433b 100644
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -156,6 +156,7 @@ static struct ftdi_sio_quirk ftdi_8u2232c_quirk = {
+  * /sys/bus/usb/ftdi_sio/new_id, then send patch/report!
+  */
+ static struct usb_device_id id_table_combined [] = {
++	{ USB_DEVICE(FTDI_VID, FTDI_BRICK_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_ZEITCONTROL_TAGTRACE_MIFARE_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_CTI_MINI_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_CTI_NANO_PID) },
+diff --git a/drivers/usb/serial/ftdi_sio_ids.h b/drivers/usb/serial/ftdi_sio_ids.h
+index bd2a2c9..64ee791 100644
+--- a/drivers/usb/serial/ftdi_sio_ids.h
++++ b/drivers/usb/serial/ftdi_sio_ids.h
+@@ -30,6 +30,12 @@
  
- 	if (bytes && blk_rq_map_kern(q, rq, buffer, bytes, __GFP_WAIT)) {
- 		err = DRIVER_ERROR << 24;
--		goto out;
-+		goto error;
- 	}
+ /*** third-party PIDs (using FTDI_VID) ***/
  
- 	memset(sense, 0, sizeof(sense));
-@@ -515,7 +515,6 @@ int sg_scsi_ioctl(struct request_queue *q, struct gendisk *disk, fmode_t mode,
++/*
++ * Certain versions of the official Windows FTDI driver reprogrammed
++ * counterfeit FTDI devices to PID 0. Support these devices anyway.
++ */
++#define FTDI_BRICK_PID		0x0000
++
+ #define FTDI_LUMEL_PD12_PID	0x6002
  
- 	blk_execute_rq(q, disk, rq, 0);
- 
--out:
- 	err = rq->errors & 0xff;	/* only 8 bit SCSI status */
- 	if (err) {
- 		if (rq->sense_len && rq->sense) {
+ /*
 -- 
 1.9.1
 
