@@ -1,23 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760357AbbA1BbH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 20:31:07 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41306 "EHLO
+	id S933661AbbA1BnM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 20:43:12 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41778 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760118AbbA1B2f (ORCPT
+	with ESMTP id S933383AbbA1Bij (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 20:28:35 -0500
+	Tue, 27 Jan 2015 20:38:39 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dan Carpenter <dan.carpenter@oracle.com>, Julian Anastasov <ja@ssi.bg>,
-        Simon Horman <horms@verge.net.au>
-Subject: [PATCH 3.18 55/61] ipvs: uninitialized data with IP_VS_IPV6
+        Bryan ODonoghue <pure.logic@nexus-software.ie>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andy Shevchenko <andy.shevchenko@gmail.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Subject: [PATCH 3.14 29/77] x86/apic: Re-enable PCI_MSI support for non-SMP X86_32
 Date: Tue, 27 Jan 2015 17:27:07 -0800
-Message-Id: <20150128012642.936354417@linuxfoundation.org>
+Message-Id: <20150128012746.847114092@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150128012636.936333725@linuxfoundation.org>
-References: <20150128012636.936333725@linuxfoundation.org>
+In-Reply-To: <20150128012745.971137091@linuxfoundation.org>
+References: <20150128012745.971137091@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -25,68 +27,62 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.18-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Bryan O'Donoghue <pure.logic@nexus-software.ie>
 
-commit 3b05ac3824ed9648c0d9c02d51d9b54e4e7e874f upstream.
+commit 38a1dfda8e77d7ba74c94d06d8bc41ba98a4bc8c upstream.
 
-The app_tcp_pkt_out() function expects "*diff" to be set and ends up
-using uninitialized data if CONFIG_IP_VS_IPV6 is turned on.
+Commit 0dbc6078c06bc0 ('x86, build, pci: Fix PCI_MSI build on !SMP')
+introduced the dependency that X86_UP_APIC is only available when
+PCI_MSI is false. This effectively prevents PCI_MSI support on 32bit
+UP systems because it disables both APIC and IO-APIC. But APIC support
+is architecturally required for PCI_MSI.
 
-The same issue is there in app_tcp_pkt_in().  Thanks to Julian Anastasov
-for noticing that.
+The intention of the patch was to enforce APIC support when PCI_MSI is
+enabled, but failed to do so.
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Acked-by: Julian Anastasov <ja@ssi.bg>
-Signed-off-by: Simon Horman <horms@verge.net.au>
+Remove the !PCI_MSI dependency from X86_UP_APIC and enforce
+X86_UP_APIC when PCI_MSI support is enabled on 32bit UP systems.
+
+[ tglx: Massaged changelog ]
+
+Fixes 0dbc6078c06bc0 'x86, build, pci: Fix PCI_MSI build on !SMP'
+Signed-off-by: Bryan O'Donoghue <pure.logic@nexus-software.ie>
+Suggested-by: Thomas Gleixner <tglx@linutronix.de>
+Reviewed-by: Andy Shevchenko <andy.shevchenko@gmail.com>
+Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Link: http://lkml.kernel.org/r/1421967529-9037-1-git-send-email-pure.logic@nexus-software.ie
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/netfilter/ipvs/ip_vs_ftp.c |   10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+ arch/x86/Kconfig |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
---- a/net/netfilter/ipvs/ip_vs_ftp.c
-+++ b/net/netfilter/ipvs/ip_vs_ftp.c
-@@ -183,6 +183,8 @@ static int ip_vs_ftp_out(struct ip_vs_ap
- 	struct nf_conn *ct;
- 	struct net *net;
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -854,7 +854,7 @@ source "kernel/Kconfig.preempt"
  
-+	*diff = 0;
+ config X86_UP_APIC
+ 	bool "Local APIC support on uniprocessors"
+-	depends on X86_32 && !SMP && !X86_32_NON_STANDARD && !PCI_MSI
++	depends on X86_32 && !SMP && !X86_32_NON_STANDARD
+ 	---help---
+ 	  A local APIC (Advanced Programmable Interrupt Controller) is an
+ 	  integrated interrupt controller in the CPU. If you have a single-CPU
+@@ -865,6 +865,10 @@ config X86_UP_APIC
+ 	  performance counters), and the NMI watchdog which detects hard
+ 	  lockups.
+ 
++config X86_UP_APIC_MSI
++	def_bool y
++	select X86_UP_APIC if X86_32 && !SMP && !X86_32_NON_STANDARD && PCI_MSI
 +
- #ifdef CONFIG_IP_VS_IPV6
- 	/* This application helper doesn't work with IPv6 yet,
- 	 * so turn this into a no-op for IPv6 packets
-@@ -191,8 +193,6 @@ static int ip_vs_ftp_out(struct ip_vs_ap
- 		return 1;
- #endif
- 
--	*diff = 0;
--
- 	/* Only useful for established sessions */
- 	if (cp->state != IP_VS_TCP_S_ESTABLISHED)
- 		return 1;
-@@ -322,6 +322,9 @@ static int ip_vs_ftp_in(struct ip_vs_app
- 	struct ip_vs_conn *n_cp;
- 	struct net *net;
- 
-+	/* no diff required for incoming packets */
-+	*diff = 0;
-+
- #ifdef CONFIG_IP_VS_IPV6
- 	/* This application helper doesn't work with IPv6 yet,
- 	 * so turn this into a no-op for IPv6 packets
-@@ -330,9 +333,6 @@ static int ip_vs_ftp_in(struct ip_vs_app
- 		return 1;
- #endif
- 
--	/* no diff required for incoming packets */
--	*diff = 0;
--
- 	/* Only useful for established sessions */
- 	if (cp->state != IP_VS_TCP_S_ESTABLISHED)
- 		return 1;
+ config X86_UP_IOAPIC
+ 	bool "IO-APIC support on uniprocessors"
+ 	depends on X86_UP_APIC
 
 
