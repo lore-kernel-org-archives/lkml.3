@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965504AbbA1E26 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 23:28:58 -0500
-Received: from mail.kernel.org ([198.145.29.136]:41445 "EHLO mail.kernel.org"
+	id S965376AbbA1E0d (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 23:26:33 -0500
+Received: from mail.kernel.org ([198.145.29.136]:41471 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965349AbbA1E00 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 23:26:26 -0500
+	id S965327AbbA1E03 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 23:26:29 -0500
 From: lizf@kernel.org
 To: stable@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, Andy Lutomirski <luto@amacapital.net>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Ben Hutchings <ben@decadent.org.uk>, Zefan Li <lizefan@huawei.com>
-Subject: [PATCH 3.4 170/177] x86_64, traps: Stop using IST for #SS
-Date: Wed, 28 Jan 2015 12:10:28 +0800
-Message-Id: <1422418236-12852-261-git-send-email-lizf@kernel.org>
+Subject: [PATCH 3.4 171/177] x86_64, traps: Fix the espfix64 #DF fixup and rewrite it in C
+Date: Wed, 28 Jan 2015 12:10:29 +0800
+Message-Id: <1422418236-12852-262-git-send-email-lizf@kernel.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422418050-12581-1-git-send-email-lizf@kernel.org>
 References: <1422418050-12581-1-git-send-email-lizf@kernel.org>
@@ -28,136 +28,122 @@ From: Andy Lutomirski <luto@amacapital.net>
 ------------------
 
 
-commit 6f442be2fb22be02cafa606f1769fa1e6f894441 upstream.
+commit af726f21ed8af2cdaa4e93098dc211521218ae65 upstream.
 
-On a 32-bit kernel, this has no effect, since there are no IST stacks.
+There's nothing special enough about the espfix64 double fault fixup to
+justify writing it in assembly.  Move it to C.
 
-On a 64-bit kernel, #SS can only happen in user code, on a failed iret
-to user space, a canonical violation on access via RSP or RBP, or a
-genuine stack segment violation in 32-bit kernel code.  The first two
-cases don't need IST, and the latter two cases are unlikely fatal bugs,
-and promoting them to double faults would be fine.
+This also fixes a bug: if the double fault came from an IST stack, the
+old asm code would return to a partially uninitialized stack frame.
 
-This fixes a bug in which the espfix64 code mishandles a stack segment
-violation.
-
-This saves 4k of memory per CPU and a tiny bit of code.
-
+Fixes: 3891a04aafd668686239349ea58f3314ea2af86b
 Signed-off-by: Andy Lutomirski <luto@amacapital.net>
 Reviewed-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 [bwh: Backported to 3.2:
- - No need to define trace_stack_segment
- - Use the errorentry macro to generate #SS asm code
- - Adjust context
- - Checked that this matches Luis's backport for Ubuntu]
+ - Keep using the paranoiderrorentry macro to generate the asm code
+ - Adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 Signed-off-by: Zefan Li <lizefan@huawei.com>
 ---
- arch/x86/include/asm/page_32_types.h |  1 -
- arch/x86/include/asm/page_64_types.h | 11 +++++------
- arch/x86/kernel/dumpstack_64.c       |  1 -
- arch/x86/kernel/entry_64.S           |  2 +-
- arch/x86/kernel/traps.c              | 14 +-------------
- 5 files changed, 7 insertions(+), 22 deletions(-)
+ arch/x86/kernel/entry_64.S | 34 ++--------------------------------
+ arch/x86/kernel/traps.c    | 24 ++++++++++++++++++++++++
+ 2 files changed, 26 insertions(+), 32 deletions(-)
 
-diff --git a/arch/x86/include/asm/page_32_types.h b/arch/x86/include/asm/page_32_types.h
-index ade619f..88dae6b3 100644
---- a/arch/x86/include/asm/page_32_types.h
-+++ b/arch/x86/include/asm/page_32_types.h
-@@ -18,7 +18,6 @@
- #define THREAD_ORDER	1
- #define THREAD_SIZE 	(PAGE_SIZE << THREAD_ORDER)
- 
--#define STACKFAULT_STACK 0
- #define DOUBLEFAULT_STACK 1
- #define NMI_STACK 0
- #define DEBUG_STACK 0
-diff --git a/arch/x86/include/asm/page_64_types.h b/arch/x86/include/asm/page_64_types.h
-index 7639dbf..a9e9937 100644
---- a/arch/x86/include/asm/page_64_types.h
-+++ b/arch/x86/include/asm/page_64_types.h
-@@ -14,12 +14,11 @@
- #define IRQ_STACK_ORDER 2
- #define IRQ_STACK_SIZE (PAGE_SIZE << IRQ_STACK_ORDER)
- 
--#define STACKFAULT_STACK 1
--#define DOUBLEFAULT_STACK 2
--#define NMI_STACK 3
--#define DEBUG_STACK 4
--#define MCE_STACK 5
--#define N_EXCEPTION_STACKS 5  /* hw limit: 7 */
-+#define DOUBLEFAULT_STACK 1
-+#define NMI_STACK 2
-+#define DEBUG_STACK 3
-+#define MCE_STACK 4
-+#define N_EXCEPTION_STACKS 4  /* hw limit: 7 */
- 
- #define PUD_PAGE_SIZE		(_AC(1, UL) << PUD_SHIFT)
- #define PUD_PAGE_MASK		(~(PUD_PAGE_SIZE-1))
-diff --git a/arch/x86/kernel/dumpstack_64.c b/arch/x86/kernel/dumpstack_64.c
-index 17107bd..e820606 100644
---- a/arch/x86/kernel/dumpstack_64.c
-+++ b/arch/x86/kernel/dumpstack_64.c
-@@ -24,7 +24,6 @@ static char x86_stack_ids[][8] = {
- 		[ DEBUG_STACK-1			]	= "#DB",
- 		[ NMI_STACK-1			]	= "NMI",
- 		[ DOUBLEFAULT_STACK-1		]	= "#DF",
--		[ STACKFAULT_STACK-1		]	= "#SS",
- 		[ MCE_STACK-1			]	= "#MC",
- #if DEBUG_STKSZ > EXCEPTION_STKSZ
- 		[ N_EXCEPTION_STACKS ...
 diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
-index 42b055e..07db230 100644
+index 07db230..d720885 100644
 --- a/arch/x86/kernel/entry_64.S
 +++ b/arch/x86/kernel/entry_64.S
-@@ -1431,7 +1431,7 @@ apicinterrupt XEN_HVM_EVTCHN_CALLBACK \
+@@ -912,6 +912,7 @@ ENTRY(native_iret)
+ 	jnz native_irq_return_ldt
+ #endif
  
- paranoidzeroentry_ist debug do_debug DEBUG_STACK
- paranoidzeroentry_ist int3 do_int3 DEBUG_STACK
--paranoiderrorentry stack_segment do_stack_segment
-+errorentry stack_segment do_stack_segment
- #ifdef CONFIG_XEN
- zeroentry xen_debug do_debug
- zeroentry xen_int3 do_int3
++.global native_irq_return_iret
+ native_irq_return_iret:
+ 	iretq
+ 
+@@ -1011,37 +1012,6 @@ ENTRY(retint_kernel)
+ 	CFI_ENDPROC
+ END(common_interrupt)
+ 
+-	/*
+-	 * If IRET takes a fault on the espfix stack, then we
+-	 * end up promoting it to a doublefault.  In that case,
+-	 * modify the stack to make it look like we just entered
+-	 * the #GP handler from user space, similar to bad_iret.
+-	 */
+-#ifdef CONFIG_X86_ESPFIX64
+-	ALIGN
+-__do_double_fault:
+-	XCPT_FRAME 1 RDI+8
+-	movq RSP(%rdi),%rax		/* Trap on the espfix stack? */
+-	sarq $PGDIR_SHIFT,%rax
+-	cmpl $ESPFIX_PGD_ENTRY,%eax
+-	jne do_double_fault		/* No, just deliver the fault */
+-	cmpl $__KERNEL_CS,CS(%rdi)
+-	jne do_double_fault
+-	movq RIP(%rdi),%rax
+-	cmpq $native_irq_return_iret,%rax
+-	jne do_double_fault		/* This shouldn't happen... */
+-	movq PER_CPU_VAR(kernel_stack),%rax
+-	subq $(6*8-KERNEL_STACK_OFFSET),%rax	/* Reset to original stack */
+-	movq %rax,RSP(%rdi)
+-	movq $0,(%rax)			/* Missing (lost) #GP error code */
+-	movq $general_protection,RIP(%rdi)
+-	retq
+-	CFI_ENDPROC
+-END(__do_double_fault)
+-#else
+-# define __do_double_fault do_double_fault
+-#endif
+-
+ /*
+  * End of kprobes section
+  */
+@@ -1217,7 +1187,7 @@ zeroentry overflow do_overflow
+ zeroentry bounds do_bounds
+ zeroentry invalid_op do_invalid_op
+ zeroentry device_not_available do_device_not_available
+-paranoiderrorentry double_fault __do_double_fault
++paranoiderrorentry double_fault do_double_fault
+ zeroentry coprocessor_segment_overrun do_coprocessor_segment_overrun
+ errorentry invalid_TSS do_invalid_TSS
+ errorentry segment_not_present do_segment_not_present
 diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
-index ff9281f1..a4643d2 100644
+index a4643d2..ed904b9 100644
 --- a/arch/x86/kernel/traps.c
 +++ b/arch/x86/kernel/traps.c
-@@ -213,24 +213,12 @@ DO_ERROR(X86_TRAP_OLD_MF, SIGFPE, "coprocessor segment overrun",
- 		coprocessor_segment_overrun)
- DO_ERROR(X86_TRAP_TS, SIGSEGV, "invalid TSS", invalid_TSS)
- DO_ERROR(X86_TRAP_NP, SIGBUS, "segment not present", segment_not_present)
--#ifdef CONFIG_X86_32
- DO_ERROR(X86_TRAP_SS, SIGBUS, "stack segment", stack_segment)
--#endif
- DO_ERROR_INFO(X86_TRAP_AC, SIGBUS, "alignment check", alignment_check,
- 		BUS_ADRALN, 0)
- 
- #ifdef CONFIG_X86_64
- /* Runs on IST stack */
--dotraplinkage void do_stack_segment(struct pt_regs *regs, long error_code)
--{
--	if (notify_die(DIE_TRAP, "stack segment", regs, error_code,
--			X86_TRAP_SS, SIGBUS) == NOTIFY_STOP)
--		return;
--	preempt_conditional_sti(regs);
--	do_trap(X86_TRAP_SS, SIGBUS, "stack segment", regs, error_code, NULL);
--	preempt_conditional_cli(regs);
--}
--
- dotraplinkage void do_double_fault(struct pt_regs *regs, long error_code)
- {
+@@ -224,6 +224,30 @@ dotraplinkage void do_double_fault(struct pt_regs *regs, long error_code)
  	static const char str[] = "double fault";
-@@ -694,7 +682,7 @@ void __init trap_init(void)
- 	set_intr_gate(X86_TRAP_OLD_MF, &coprocessor_segment_overrun);
- 	set_intr_gate(X86_TRAP_TS, &invalid_TSS);
- 	set_intr_gate(X86_TRAP_NP, &segment_not_present);
--	set_intr_gate_ist(X86_TRAP_SS, &stack_segment, STACKFAULT_STACK);
-+	set_intr_gate(X86_TRAP_SS, stack_segment);
- 	set_intr_gate(X86_TRAP_GP, &general_protection);
- 	set_intr_gate(X86_TRAP_SPURIOUS, &spurious_interrupt_bug);
- 	set_intr_gate(X86_TRAP_MF, &coprocessor_error);
+ 	struct task_struct *tsk = current;
+ 
++#ifdef CONFIG_X86_ESPFIX64
++	extern unsigned char native_irq_return_iret[];
++
++	/*
++	 * If IRET takes a non-IST fault on the espfix64 stack, then we
++	 * end up promoting it to a doublefault.  In that case, modify
++	 * the stack to make it look like we just entered the #GP
++	 * handler from user space, similar to bad_iret.
++	 */
++	if (((long)regs->sp >> PGDIR_SHIFT) == ESPFIX_PGD_ENTRY &&
++		regs->cs == __KERNEL_CS &&
++		regs->ip == (unsigned long)native_irq_return_iret)
++	{
++		struct pt_regs *normal_regs = task_pt_regs(current);
++
++		/* Fake a #GP(0) from userspace. */
++		memmove(&normal_regs->ip, (void *)regs->sp, 5*8);
++		normal_regs->orig_ax = 0;  /* Missing (lost) #GP error code */
++		regs->ip = (unsigned long)general_protection;
++		regs->sp = (unsigned long)&normal_regs->orig_ax;
++		return;
++	}
++#endif
++
+ 	/* Return not checked because double check cannot be ignored */
+ 	notify_die(DIE_TRAP, str, regs, error_code, X86_TRAP_DF, SIGSEGV);
+ 
 -- 
 1.9.1
 
