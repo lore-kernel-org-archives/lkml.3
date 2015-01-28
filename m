@@ -1,22 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760986AbbA1EQw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 23:16:52 -0500
-Received: from mail.kernel.org ([198.145.29.136]:37876 "EHLO mail.kernel.org"
+	id S1762384AbbA1FRI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 00:17:08 -0500
+Received: from mail.kernel.org ([198.145.29.136]:37891 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760890AbbA1EQs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 23:16:48 -0500
+	id S1760969AbbA1EQu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 23:16:50 -0500
 From: lizf@kernel.org
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Richard Larocque <rlarocque@google.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        Richard Cochran <richardcochran@gmail.com>,
-        Prarit Bhargava <prarit@redhat.com>,
-        Sharvil Nanavati <sharvil@google.com>,
-        John Stultz <john.stultz@linaro.org>, Zefan Li <lizefan@huawei.com>
-Subject: [PATCH 3.4 37/91] alarmtimer: Return relative times in timer_gettime
-Date: Wed, 28 Jan 2015 12:07:20 +0800
-Message-Id: <1422418236-12852-73-git-send-email-lizf@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Borislav Petkov <bp@suse.de>,
+        Zefan Li <lizefan@huawei.com>
+Subject: [PATCH 3.4 037/177] mpc85xx_edac: Make L2 interrupt shared too
+Date: Wed, 28 Jan 2015 12:07:21 +0800
+Message-Id: <1422418236-12852-74-git-send-email-lizf@kernel.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422418050-12581-1-git-send-email-lizf@kernel.org>
 References: <1422418050-12581-1-git-send-email-lizf@kernel.org>
@@ -24,87 +20,83 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Richard Larocque <rlarocque@google.com>
+From: Borislav Petkov <bp@suse.de>
 
-3.4.105-rc1 review patch.  If anyone has any objections, please let me know.
+3.4.106-rc1 review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
 
-commit e86fea764991e00a03ff1e56409ec9cacdbda4c9 upstream.
+commit a18c3f16a907b8977ef65fc8dd71ed3f7b751748 upstream.
 
-Returns the time remaining for an alarm timer, rather than the time at
-which it is scheduled to expire.  If the timer has already expired or it
-is not currently scheduled, the it_value's members are set to zero.
+The other two interrupt handlers in this driver are shared, except this
+one. When loading the driver, it fails like this.
 
-This new behavior matches that of the other posix-timers and the POSIX
-specifications.
+So make the IRQ line shared.
 
-This is a change in user-visible behavior, and may break existing
-applications.  Hopefully, few users rely on the old incorrect behavior.
+Freescale(R) MPC85xx EDAC driver, (C) 2006 Montavista Software
+mpc85xx_mc_err_probe: No ECC DIMMs discovered
+EDAC DEVICE0: Giving out device to module MPC85xx_edac controller mpc85xx_l2_err: DEV mpc85xx_l2_err (INTERRUPT)
+genirq: Flags mismatch irq 16. 00000000 ([EDAC] L2 err) vs. 00000080 ([EDAC] PCI err)
+mpc85xx_l2_err_probe: Unable to request irq 16 for MPC85xx L2 err
+remove_proc_entry: removing non-empty directory 'irq/16', leaking at least 'aerdrv'
+------------[ cut here ]------------
+WARNING: at fs/proc/generic.c:521
+Modules linked in:
+CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.17.0-rc5-dirty #1
+task: ee058000 ti: ee046000 task.ti: ee046000
+NIP: c016c0c4 LR: c016c0c4 CTR: c037b51c
+REGS: ee047c10 TRAP: 0700 Not tainted (3.17.0-rc5-dirty)
+MSR: 00029000 <CE,EE,ME> CR: 22008022 XER: 20000000
 
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Richard Cochran <richardcochran@gmail.com>
-Cc: Prarit Bhargava <prarit@redhat.com>
-Cc: Sharvil Nanavati <sharvil@google.com>
-Signed-off-by: Richard Larocque <rlarocque@google.com>
-[jstultz: minor style tweak]
-Signed-off-by: John Stultz <john.stultz@linaro.org>
-[lizf: Backported to 3.4:
- - add alarm_expires_remaining() introduced by commit 6cffe00f7d4e]
+GPR00: c016c0c4 ee047cc0 ee058000 00000053 00029000 00000000 c037c744 00000003
+GPR08: c09aab28 c09aab24 c09aab28 00000156 20008028 00000000 c0002ac8 00000000
+GPR16: 00000000 00000000 00000000 00000000 00000000 00000000 00000139 c0950394
+GPR24: c09f0000 ee5585b0 ee047d08 c0a10000 ee047d08 ee15f808 00000002 ee03f660
+NIP [c016c0c4] remove_proc_entry
+LR [c016c0c4] remove_proc_entry
+Call Trace:
+remove_proc_entry (unreliable)
+unregister_irq_proc
+free_desc
+irq_free_descs
+mpc85xx_l2_err_probe
+platform_drv_probe
+really_probe
+__driver_attach
+bus_for_each_dev
+bus_add_driver
+driver_register
+mpc85xx_mc_init
+do_one_initcall
+kernel_init_freeable
+kernel_init
+ret_from_kernel_thread
+Instruction dump: ...
+
+Reported-and-tested-by: <lpb_098@163.com>
+Acked-by: Johannes Thumshirn <johannes.thumshirn@men.de>
+Signed-off-by: Borislav Petkov <bp@suse.de>
+[lizf: Backported to 3.4: IRQF_DISABLED hasn't been removed in 3.4]
 Signed-off-by: Zefan Li <lizefan@huawei.com>
 ---
- kernel/time/alarmtimer.c | 24 +++++++++++++++++-------
- 1 file changed, 17 insertions(+), 7 deletions(-)
+ drivers/edac/mpc85xx_edac.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/kernel/time/alarmtimer.c b/kernel/time/alarmtimer.c
-index b704579..c72d3dd 100644
---- a/kernel/time/alarmtimer.c
-+++ b/kernel/time/alarmtimer.c
-@@ -232,6 +232,12 @@ static enum hrtimer_restart alarmtimer_fired(struct hrtimer *timer)
- 
- }
- 
-+ktime_t alarm_expires_remaining(const struct alarm *alarm)
-+{
-+	struct alarm_base *base = &alarm_bases[alarm->type];
-+	return ktime_sub(alarm->node.expires, base->gettime());
-+}
-+
- #ifdef CONFIG_RTC_CLASS
- /**
-  * alarmtimer_suspend - Suspend time callback
-@@ -525,18 +531,22 @@ static int alarm_timer_create(struct k_itimer *new_timer)
-  * @new_timer: k_itimer pointer
-  * @cur_setting: itimerspec data to fill
-  *
-- * Copies the itimerspec data out from the k_itimer
-+ * Copies out the current itimerspec data
-  */
- static void alarm_timer_get(struct k_itimer *timr,
- 				struct itimerspec *cur_setting)
- {
--	memset(cur_setting, 0, sizeof(struct itimerspec));
-+	ktime_t relative_expiry_time =
-+		alarm_expires_remaining(&(timr->it.alarm.alarmtimer));
-+
-+	if (ktime_to_ns(relative_expiry_time) > 0) {
-+		cur_setting->it_value = ktime_to_timespec(relative_expiry_time);
-+	} else {
-+		cur_setting->it_value.tv_sec = 0;
-+		cur_setting->it_value.tv_nsec = 0;
-+	}
- 
--	cur_setting->it_interval =
--			ktime_to_timespec(timr->it.alarm.interval);
--	cur_setting->it_value =
--		ktime_to_timespec(timr->it.alarm.alarmtimer.node.expires);
--	return;
-+	cur_setting->it_interval = ktime_to_timespec(timr->it.alarm.interval);
- }
- 
- /**
+diff --git a/drivers/edac/mpc85xx_edac.c b/drivers/edac/mpc85xx_edac.c
+index 73464a6..0f0bf1a 100644
+--- a/drivers/edac/mpc85xx_edac.c
++++ b/drivers/edac/mpc85xx_edac.c
+@@ -577,7 +577,8 @@ static int __devinit mpc85xx_l2_err_probe(struct platform_device *op)
+ 	if (edac_op_state == EDAC_OPSTATE_INT) {
+ 		pdata->irq = irq_of_parse_and_map(op->dev.of_node, 0);
+ 		res = devm_request_irq(&op->dev, pdata->irq,
+-				       mpc85xx_l2_isr, IRQF_DISABLED,
++				       mpc85xx_l2_isr,
++				       IRQF_DISABLED | IRQF_SHARED,
+ 				       "[EDAC] L2 err", edac_dev);
+ 		if (res < 0) {
+ 			printk(KERN_ERR
 -- 
 1.9.1
 
