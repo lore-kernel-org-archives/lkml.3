@@ -1,153 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964924AbbA1Ut6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 15:49:58 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:40980 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754849AbbA1Utz (ORCPT
+	id S1761467AbbA1UnQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 15:43:16 -0500
+Received: from mail-qg0-f45.google.com ([209.85.192.45]:47299 "EHLO
+	mail-qg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934196AbbA1UnL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 15:49:55 -0500
-Date: Wed, 28 Jan 2015 07:02:11 -0800
-From: tip-bot for Namhyung Kim <tipbot@zytor.com>
-Message-ID: <tip-564c62a4d7f9a4b60920ee0b02cfe890471d87f4@git.kernel.org>
-Cc: acme@redhat.com, jolsa@redhat.com, dsahern@gmail.com, namhyung@kernel.org,
-        hpa@zytor.com, mingo@kernel.org, masami.hiramatsu.pt@hitachi.com,
-        linux-kernel@vger.kernel.org, tglx@linutronix.de
-Reply-To: mingo@kernel.org, masami.hiramatsu.pt@hitachi.com,
-        linux-kernel@vger.kernel.org, tglx@linutronix.de, acme@redhat.com,
-        jolsa@redhat.com, dsahern@gmail.com, namhyung@kernel.org,
-        hpa@zytor.com
-In-Reply-To: <1421234288-22758-3-git-send-email-namhyung@kernel.org>
-References: <1421234288-22758-3-git-send-email-namhyung@kernel.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf probe: Do not rely on map__load()
-  filter to find symbols
-Git-Commit-ID: 564c62a4d7f9a4b60920ee0b02cfe890471d87f4
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Wed, 28 Jan 2015 15:43:11 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <1422379410-7127-1-git-send-email-rklein@nvidia.com>
+References: <1422379410-7127-1-git-send-email-rklein@nvidia.com>
+Date: Wed, 28 Jan 2015 16:02:22 +0100
+Message-ID: <CAPDyKFqZT5OsLXC2Gn+so2jX5GnCEB+SijRS+9Ra5UPAP55rpg@mail.gmail.com>
+Subject: Re: [PATCH] mmc: tegra: Write xfer_mode, CMD regs in together
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: Rhyland Klein <rklein@nvidia.com>
+Cc: Chris Ball <chris@printf.net>, Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        pkunapuli@nvidia.com, Alexandre Courbot <gnurou@gmail.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  564c62a4d7f9a4b60920ee0b02cfe890471d87f4
-Gitweb:     http://git.kernel.org/tip/564c62a4d7f9a4b60920ee0b02cfe890471d87f4
-Author:     Namhyung Kim <namhyung@kernel.org>
-AuthorDate: Wed, 14 Jan 2015 20:18:07 +0900
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Wed, 21 Jan 2015 10:06:02 -0300
+On 27 January 2015 at 18:23, Rhyland Klein <rklein@nvidia.com> wrote:
+> From: Pavan Kunapuli <pkunapuli@nvidia.com>
+>
+> If there is a gap between xfer mode and command register writes,
+> tegra SDMMC controller can sometimes issue a spurious command before
+> the CMD register is written. To avoid this, these two registers need
+> to be written together in a single write operation.'
 
-perf probe: Do not rely on map__load() filter to find symbols
+Please repost to linux-mmc.
 
-The find_probe_trace_events_from_map() searches matching symbol from a
-map (so from a backing dso).  For uprobes, it'll create a new map (and
-dso) and loads it using a filter.  It's a little bit inefficient in that
-it'll read out the symbol table everytime but works well anyway.
+Kind regards
+Uffe
 
-For kprobes however, it'll reuse existing kernel map which might be
-loaded before.  In this case map__load() just returns with no result.
-It makes kprobes always failed to find symbol even if it exists in the
-map (dso).
-
-To fix it, use map__find_symbol_by_name() instead.  It'll load a map
-with full symbols and sorts them by name.  It needs to search sibing
-nodes since there can be multiple (local) symbols with same name.
-
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Link: http://lkml.kernel.org/r/1421234288-22758-3-git-send-email-namhyung@kernel.org
-[ Use symbol__next_by_name ]
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/util/probe-event.c | 38 ++++++++++++++++++++++----------------
- 1 file changed, 22 insertions(+), 16 deletions(-)
-
-diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
-index 94a717b..b24482e 100644
---- a/tools/perf/util/probe-event.c
-+++ b/tools/perf/util/probe-event.c
-@@ -2193,18 +2193,20 @@ static int __add_probe_trace_events(struct perf_probe_event *pev,
- 	return ret;
- }
- 
--static char *looking_function_name;
--static int num_matched_functions;
--
--static int probe_function_filter(struct map *map __maybe_unused,
--				      struct symbol *sym)
-+static int find_probe_functions(struct map *map, char *name)
- {
--	if ((sym->binding == STB_GLOBAL || sym->binding == STB_LOCAL) &&
--	    strcmp(looking_function_name, sym->name) == 0) {
--		num_matched_functions++;
--		return 0;
-+	int found = 0;
-+	struct symbol *sym = map__find_symbol_by_name(map, name, NULL);
-+
-+	while (sym != NULL) {
-+		if (sym->binding == STB_GLOBAL || sym->binding == STB_LOCAL)
-+			found++;
-+		sym = symbol__next_by_name(sym);
-+		if (sym == NULL || strcmp(sym->name, name))
-+			break;
- 	}
--	return 1;
-+
-+	return found;
- }
- 
- #define strdup_or_goto(str, label)	\
-@@ -2222,10 +2224,10 @@ static int find_probe_trace_events_from_map(struct perf_probe_event *pev,
- 	struct kmap *kmap = NULL;
- 	struct ref_reloc_sym *reloc_sym = NULL;
- 	struct symbol *sym;
--	struct rb_node *nd;
- 	struct probe_trace_event *tev;
- 	struct perf_probe_point *pp = &pev->point;
- 	struct probe_trace_point *tp;
-+	int num_matched_functions;
- 	int ret, i;
- 
- 	/* Init maps of given executable or kernel */
-@@ -2242,10 +2244,8 @@ static int find_probe_trace_events_from_map(struct perf_probe_event *pev,
- 	 * Load matched symbols: Since the different local symbols may have
- 	 * same name but different addresses, this lists all the symbols.
- 	 */
--	num_matched_functions = 0;
--	looking_function_name = pp->function;
--	ret = map__load(map, probe_function_filter);
--	if (ret || num_matched_functions == 0) {
-+	num_matched_functions = find_probe_functions(map, pp->function);
-+	if (num_matched_functions == 0) {
- 		pr_err("Failed to find symbol %s in %s\n", pp->function,
- 			target ? : "kernel");
- 		ret = -ENOENT;
-@@ -2275,7 +2275,9 @@ static int find_probe_trace_events_from_map(struct perf_probe_event *pev,
- 	}
- 
- 	ret = 0;
--	map__for_each_symbol(map, sym, nd) {
-+	sym = map__find_symbol_by_name(map, pp->function, NULL);
-+
-+	while (sym != NULL) {
- 		tev = (*tevs) + ret;
- 		tp = &tev->point;
- 		if (ret == num_matched_functions) {
-@@ -2323,6 +2325,10 @@ static int find_probe_trace_events_from_map(struct perf_probe_event *pev,
- 					strdup_or_goto(pev->args[i].type,
- 							nomem_out);
- 		}
-+
-+		sym = symbol__next_by_name(sym);
-+		if (sym == NULL || strcmp(sym->name, pp->function))
-+			break;
- 	}
- 
- out:
+>
+> Signed-off-by: Pavan Kunapuli <pkunapuli@nvidia.com>
+> Signed-off-by: Rhyland Klein <rklein@nvidia.com>
+> ---
+>  drivers/mmc/host/sdhci-tegra.c |   31 ++++++++++++++++++++++++++++++-
+>  1 file changed, 30 insertions(+), 1 deletion(-)
+>
+> diff --git a/drivers/mmc/host/sdhci-tegra.c b/drivers/mmc/host/sdhci-tegra.c
+> index 59797106af93..3d34de47e57e 100644
+> --- a/drivers/mmc/host/sdhci-tegra.c
+> +++ b/drivers/mmc/host/sdhci-tegra.c
+> @@ -41,6 +41,7 @@
+>  #define NVQUIRK_DISABLE_SDR50          BIT(3)
+>  #define NVQUIRK_DISABLE_SDR104         BIT(4)
+>  #define NVQUIRK_DISABLE_DDR50          BIT(5)
+> +#define NVQUIRK_SHADOW_XFER_MODE_REG   BIT(6)
+>
+>  struct sdhci_tegra_soc_data {
+>         const struct sdhci_pltfm_data *pdata;
+> @@ -67,6 +68,32 @@ static u16 tegra_sdhci_readw(struct sdhci_host *host, int reg)
+>         return readw(host->ioaddr + reg);
+>  }
+>
+> +static void tegra_sdhci_writew(struct sdhci_host *host, u16 val, int reg)
+> +{
+> +       struct sdhci_pltfm_host *pltfm_host = sdhci_priv(host);
+> +       struct sdhci_tegra *tegra_host = pltfm_host->priv;
+> +       const struct sdhci_tegra_soc_data *soc_data = tegra_host->soc_data;
+> +
+> +       if (soc_data->nvquirks * NVQUIRK_SHADOW_XFER_MODE_REG) {
+> +               switch (reg) {
+> +               case SDHCI_TRANSFER_MODE:
+> +                       /*
+> +                        * Postpone this write, we must do it together with a
+> +                        * command write that is down below.
+> +                        */
+> +                       pltfm_host->xfer_mode_shadow = val;
+> +                       return;
+> +               case SDHCI_COMMAND:
+> +                       writel((val << 16) | pltfm_host->xfer_mode_shadow,
+> +                               host->ioaddr + SDHCI_TRANSFER_MODE);
+> +                       pltfm_host->xfer_mode_shadow = 0;
+> +                       return;
+> +               }
+> +       }
+> +
+> +       writew(val, host->ioaddr + reg);
+> +}
+> +
+>  static void tegra_sdhci_writel(struct sdhci_host *host, u32 val, int reg)
+>  {
+>         struct sdhci_pltfm_host *pltfm_host = sdhci_priv(host);
+> @@ -147,6 +174,7 @@ static void tegra_sdhci_set_bus_width(struct sdhci_host *host, int bus_width)
+>  static const struct sdhci_ops tegra_sdhci_ops = {
+>         .get_ro     = tegra_sdhci_get_ro,
+>         .read_w     = tegra_sdhci_readw,
+> +       .write_w    = tegra_sdhci_writew,
+>         .write_l    = tegra_sdhci_writel,
+>         .set_clock  = sdhci_set_clock,
+>         .set_bus_width = tegra_sdhci_set_bus_width,
+> @@ -201,7 +229,8 @@ static struct sdhci_tegra_soc_data soc_data_tegra114 = {
+>         .pdata = &sdhci_tegra114_pdata,
+>         .nvquirks = NVQUIRK_DISABLE_SDR50 |
+>                     NVQUIRK_DISABLE_DDR50 |
+> -                   NVQUIRK_DISABLE_SDR104,
+> +                   NVQUIRK_DISABLE_SDR104 |
+> +                   NVQUIRK_SHADOW_XFER_MODE_REG,
+>  };
+>
+>  static const struct of_device_id sdhci_tegra_dt_match[] = {
+> --
+> 1.7.9.5
+>
