@@ -1,90 +1,254 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758391AbbA1VQl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 16:16:41 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:40980 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750894AbbA1Uuf (ORCPT
+	id S1756252AbbA2JAf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 04:00:35 -0500
+Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:44737 "EHLO
+	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755767AbbA2JAY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 15:50:35 -0500
-Date: Wed, 28 Jan 2015 06:29:25 -0800
-From: tip-bot for Jan Beulich <tipbot@zytor.com>
-Message-ID: <tip-81907478c4311a679849216abf723999184ab984@git.kernel.org>
-Cc: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
-        riel@redhat.com, hpa@zytor.com, JBeulich@suse.com,
-        peterz@infradead.org, tglx@linutronix.de, jbeulich@suse.com,
-        mingo@kernel.org
-Reply-To: hpa@zytor.com, riel@redhat.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, jbeulich@suse.com, mingo@kernel.org,
-        peterz@infradead.org, JBeulich@suse.com, tglx@linutronix.de
-In-Reply-To: <54C2139202000078000588F7@mail.emea.novell.com>
-References: <54C2139202000078000588F7@mail.emea.novell.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/urgent] sched/fair:
-  Avoid using uninitialized variable in preferred_group_nid()
-Git-Commit-ID: 81907478c4311a679849216abf723999184ab984
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+	Thu, 29 Jan 2015 04:00:24 -0500
+From: Jiri Slaby <jslaby@suse.cz>
+To: stable@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Sagi Grimberg <sagig@mellanox.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 135/176] iser-target: Handle ADDR_CHANGE event for listener cm_id
+Date: Wed, 28 Jan 2015 15:29:25 +0100
+Message-Id: <7fae5ada6dc27fad507da4c953a84325eacea33b.1422455352.git.jslaby@suse.cz>
+X-Mailer: git-send-email 2.2.2
+In-Reply-To: <ce4a451f616a1e7ab58cfeceea5e49c8b1c68c81.1422455352.git.jslaby@suse.cz>
+References: <ce4a451f616a1e7ab58cfeceea5e49c8b1c68c81.1422455352.git.jslaby@suse.cz>
+In-Reply-To: <cover.1422455352.git.jslaby@suse.cz>
+References: <cover.1422455352.git.jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  81907478c4311a679849216abf723999184ab984
-Gitweb:     http://git.kernel.org/tip/81907478c4311a679849216abf723999184ab984
-Author:     Jan Beulich <JBeulich@suse.com>
-AuthorDate: Fri, 23 Jan 2015 08:25:38 +0000
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 28 Jan 2015 13:14:12 +0100
+From: Sagi Grimberg <sagig@mellanox.com>
 
-sched/fair: Avoid using uninitialized variable in preferred_group_nid()
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-At least some gcc versions - validly afaict - warn about potentially
-using max_group uninitialized: There's no way the compiler can prove
-that the body of the conditional where it and max_faults get set/
-updated gets executed; in fact, without knowing all the details of
-other scheduler code, I can't prove this either.
+===============
 
-Generally the necessary change would appear to be to clear max_group
-prior to entering the inner loop, and break out of the outer loop when
-it ends up being all clear after the inner one. This, however, seems
-inefficient, and afaict the same effect can be achieved by exiting the
-outer loop when max_faults is still zero after the inner loop.
+commit ca6c1d82d12d8013fb75ce015900d62b9754623c upstream.
 
-[ mingo: changed the solution to zero initialization: uninitialized_var()
-  needs to die, as it's an actively dangerous construct: if in the future
-  a known-proven-good piece of code is changed to have a true, buggy
-  uninitialized variable, the compiler warning is then supressed...
+The np listener cm_id will also get ADDR_CHANGE event
+upcall (in case it is bound to a specific IP). Handle
+it correctly by creating a new cm_id and implicitly
+destroy the old one.
 
-  The better long term solution is to clean up the code flow, so that
-  even simple minded compilers (and humans!) are able to read it without
-  getting a headache.  ]
+Since this is the second event a listener np cm_id may
+encounter, we move the np cm_id event handling to a
+routine.
 
-Signed-off-by: Jan Beulich <jbeulich@suse.com>
-Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Link: http://lkml.kernel.org/r/54C2139202000078000588F7@mail.emea.novell.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Squashed:
+
+iser-target: Move cma_id setup to a function
+
+Reported-by: Slava Shwartsman <valyushash@gmail.com>
+Signed-off-by: Sagi Grimberg <sagig@mellanox.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- kernel/sched/fair.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/infiniband/ulp/isert/ib_isert.c | 107 +++++++++++++++++++++++---------
+ drivers/infiniband/ulp/isert/ib_isert.h |   1 +
+ 2 files changed, 77 insertions(+), 31 deletions(-)
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 40667cb..fe331fc 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -1730,7 +1730,7 @@ static int preferred_group_nid(struct task_struct *p, int nid)
- 	nodes = node_online_map;
- 	for (dist = sched_max_numa_distance; dist > LOCAL_DISTANCE; dist--) {
- 		unsigned long max_faults = 0;
--		nodemask_t max_group;
-+		nodemask_t max_group = NODE_MASK_NONE;
- 		int a, b;
+diff --git a/drivers/infiniband/ulp/isert/ib_isert.c b/drivers/infiniband/ulp/isert/ib_isert.c
+index 7102b9427e6e..65dca0051d51 100644
+--- a/drivers/infiniband/ulp/isert/ib_isert.c
++++ b/drivers/infiniband/ulp/isert/ib_isert.c
+@@ -55,6 +55,7 @@ static int
+ isert_rdma_post_recvl(struct isert_conn *isert_conn);
+ static int
+ isert_rdma_accept(struct isert_conn *isert_conn);
++struct rdma_cm_id *isert_setup_id(struct isert_np *isert_np);
  
- 		/* Are there nodes at this distance from each other? */
+ static void
+ isert_qp_event_callback(struct ib_event *e, void *context)
+@@ -503,8 +504,8 @@ err:
+ static int
+ isert_connect_request(struct rdma_cm_id *cma_id, struct rdma_cm_event *event)
+ {
+-	struct iscsi_np *np = cma_id->context;
+-	struct isert_np *isert_np = np->np_context;
++	struct isert_np *isert_np = cma_id->context;
++	struct iscsi_np *np = isert_np->np;
+ 	struct isert_conn *isert_conn;
+ 	struct isert_device *device;
+ 	struct ib_device *ib_dev = cma_id->device;
+@@ -749,17 +750,41 @@ isert_conn_terminate(struct isert_conn *isert_conn)
+ }
+ 
+ static int
+-isert_disconnected_handler(struct rdma_cm_id *cma_id)
++isert_np_cma_handler(struct isert_np *isert_np,
++		     enum rdma_cm_event_type event)
+ {
+-	struct iscsi_np *np = cma_id->context;
+-	struct isert_np *isert_np = np->np_context;
+-	struct isert_conn *isert_conn;
++	pr_debug("isert np %p, handling event %d\n", isert_np, event);
+ 
+-	if (isert_np->np_cm_id == cma_id) {
++	switch (event) {
++	case RDMA_CM_EVENT_DEVICE_REMOVAL:
+ 		isert_np->np_cm_id = NULL;
+-		return -1;
++		break;
++	case RDMA_CM_EVENT_ADDR_CHANGE:
++		isert_np->np_cm_id = isert_setup_id(isert_np);
++		if (IS_ERR(isert_np->np_cm_id)) {
++			pr_err("isert np %p setup id failed: %ld\n",
++				 isert_np, PTR_ERR(isert_np->np_cm_id));
++			isert_np->np_cm_id = NULL;
++		}
++		break;
++	default:
++		pr_err("isert np %p Unexpected event %d\n",
++			  isert_np, event);
+ 	}
+ 
++	return -1;
++}
++
++static int
++isert_disconnected_handler(struct rdma_cm_id *cma_id,
++			   enum rdma_cm_event_type event)
++{
++	struct isert_np *isert_np = cma_id->context;
++	struct isert_conn *isert_conn;
++
++	if (isert_np->np_cm_id == cma_id)
++		return isert_np_cma_handler(cma_id->context, event);
++
+ 	isert_conn = cma_id->qp->qp_context;
+ 
+ 	mutex_lock(&isert_conn->conn_mutex);
+@@ -802,7 +827,7 @@ isert_cma_handler(struct rdma_cm_id *cma_id, struct rdma_cm_event *event)
+ 	case RDMA_CM_EVENT_DISCONNECTED:   /* FALLTHRU */
+ 	case RDMA_CM_EVENT_DEVICE_REMOVAL: /* FALLTHRU */
+ 	case RDMA_CM_EVENT_TIMEWAIT_EXIT:  /* FALLTHRU */
+-		ret = isert_disconnected_handler(cma_id);
++		ret = isert_disconnected_handler(cma_id, event->event);
+ 		break;
+ 	case RDMA_CM_EVENT_REJECTED:       /* FALLTHRU */
+ 	case RDMA_CM_EVENT_UNREACHABLE:    /* FALLTHRU */
+@@ -2550,13 +2575,51 @@ isert_response_queue(struct iscsi_conn *conn, struct iscsi_cmd *cmd, int state)
+ 	return ret;
+ }
+ 
++struct rdma_cm_id *
++isert_setup_id(struct isert_np *isert_np)
++{
++	struct iscsi_np *np = isert_np->np;
++	struct rdma_cm_id *id;
++	struct sockaddr *sa;
++	int ret;
++
++	sa = (struct sockaddr *)&np->np_sockaddr;
++	pr_debug("ksockaddr: %p, sa: %p\n", &np->np_sockaddr, sa);
++
++	id = rdma_create_id(isert_cma_handler, isert_np,
++			    RDMA_PS_TCP, IB_QPT_RC);
++	if (IS_ERR(id)) {
++		pr_err("rdma_create_id() failed: %ld\n", PTR_ERR(id));
++		ret = PTR_ERR(id);
++		goto out;
++	}
++	pr_debug("id %p context %p\n", id, id->context);
++
++	ret = rdma_bind_addr(id, sa);
++	if (ret) {
++		pr_err("rdma_bind_addr() failed: %d\n", ret);
++		goto out_id;
++	}
++
++	ret = rdma_listen(id, ISERT_RDMA_LISTEN_BACKLOG);
++	if (ret) {
++		pr_err("rdma_listen() failed: %d\n", ret);
++		goto out_id;
++	}
++
++	return id;
++out_id:
++	rdma_destroy_id(id);
++out:
++	return ERR_PTR(ret);
++}
++
+ static int
+ isert_setup_np(struct iscsi_np *np,
+ 	       struct __kernel_sockaddr_storage *ksockaddr)
+ {
+ 	struct isert_np *isert_np;
+ 	struct rdma_cm_id *isert_lid;
+-	struct sockaddr *sa;
+ 	int ret;
+ 
+ 	isert_np = kzalloc(sizeof(struct isert_np), GFP_KERNEL);
+@@ -2568,9 +2631,8 @@ isert_setup_np(struct iscsi_np *np,
+ 	mutex_init(&isert_np->np_accept_mutex);
+ 	INIT_LIST_HEAD(&isert_np->np_accept_list);
+ 	init_completion(&isert_np->np_login_comp);
++	isert_np->np = np;
+ 
+-	sa = (struct sockaddr *)ksockaddr;
+-	pr_debug("ksockaddr: %p, sa: %p\n", ksockaddr, sa);
+ 	/*
+ 	 * Setup the np->np_sockaddr from the passed sockaddr setup
+ 	 * in iscsi_target_configfs.c code..
+@@ -2578,37 +2640,20 @@ isert_setup_np(struct iscsi_np *np,
+ 	memcpy(&np->np_sockaddr, ksockaddr,
+ 	       sizeof(struct __kernel_sockaddr_storage));
+ 
+-	isert_lid = rdma_create_id(isert_cma_handler, np, RDMA_PS_TCP,
+-				IB_QPT_RC);
++	isert_lid = isert_setup_id(isert_np);
+ 	if (IS_ERR(isert_lid)) {
+-		pr_err("rdma_create_id() for isert_listen_handler failed: %ld\n",
+-		       PTR_ERR(isert_lid));
+ 		ret = PTR_ERR(isert_lid);
+ 		goto out;
+ 	}
+ 
+-	ret = rdma_bind_addr(isert_lid, sa);
+-	if (ret) {
+-		pr_err("rdma_bind_addr() for isert_lid failed: %d\n", ret);
+-		goto out_lid;
+-	}
+-
+-	ret = rdma_listen(isert_lid, ISERT_RDMA_LISTEN_BACKLOG);
+-	if (ret) {
+-		pr_err("rdma_listen() for isert_lid failed: %d\n", ret);
+-		goto out_lid;
+-	}
+-
+ 	isert_np->np_cm_id = isert_lid;
+ 	np->np_context = isert_np;
+-	pr_debug("Setup isert_lid->context: %p\n", isert_lid->context);
+ 
+ 	return 0;
+ 
+-out_lid:
+-	rdma_destroy_id(isert_lid);
+ out:
+ 	kfree(isert_np);
++
+ 	return ret;
+ }
+ 
+diff --git a/drivers/infiniband/ulp/isert/ib_isert.h b/drivers/infiniband/ulp/isert/ib_isert.h
+index 2f8e48533317..d29970536828 100644
+--- a/drivers/infiniband/ulp/isert/ib_isert.h
++++ b/drivers/infiniband/ulp/isert/ib_isert.h
+@@ -155,6 +155,7 @@ struct isert_device {
+ };
+ 
+ struct isert_np {
++	struct iscsi_np         *np;
+ 	struct semaphore	np_sem;
+ 	struct rdma_cm_id	*np_cm_id;
+ 	struct mutex		np_accept_mutex;
+-- 
+2.2.2
+
