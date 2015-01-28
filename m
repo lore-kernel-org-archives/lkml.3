@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934008AbbA1EUU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 23:20:20 -0500
-Received: from mail.kernel.org ([198.145.29.136]:39139 "EHLO mail.kernel.org"
+	id S933984AbbA1EUS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 23:20:18 -0500
+Received: from mail.kernel.org ([198.145.29.136]:39148 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761631AbbA1EUM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 23:20:12 -0500
+	id S1761634AbbA1EUO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 23:20:14 -0500
 From: lizf@kernel.org
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Robin Murphy <robin.murphy@arm.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Zefan Li <lizefan@huawei.com>
-Subject: [PATCH 3.4 69/91] ARM: 8165/1: alignment: don't break misaligned NEON load/store
-Date: Wed, 28 Jan 2015 12:08:25 +0800
-Message-Id: <1422418236-12852-138-git-send-email-lizf@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Xiubo Li <Li.Xiubo@freescale.com>,
+        Mark Brown <broonie@kernel.org>, Zefan Li <lizefan@huawei.com>
+Subject: [PATCH 3.4 70/91] ASoC: core: fix possible ZERO_SIZE_PTR pointer dereferencing error.
+Date: Wed, 28 Jan 2015 12:08:26 +0800
+Message-Id: <1422418236-12852-139-git-send-email-lizf@kernel.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422418050-12581-1-git-send-email-lizf@kernel.org>
 References: <1422418050-12581-1-git-send-email-lizf@kernel.org>
@@ -21,49 +20,43 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Robin Murphy <robin.murphy@arm.com>
+From: Xiubo Li <Li.Xiubo@freescale.com>
 
 3.4.105-rc1 review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
 
-commit 5ca918e5e3f9df4634077c06585c42bc6a8d699a upstream.
+commit 6596aa047b624aeec2ea321962cfdecf9953a383 upstream.
 
-The alignment fixup incorrectly decodes faulting ARM VLDn/VSTn
-instructions (where the optional alignment hint is given but incorrect)
-as LDR/STR, leading to register corruption. Detect these and correctly
-treat them as unhandled, so that userspace gets the fault it expects.
+Since we cannot make sure the 'params->num_regs' will always be none
+zero here, and then if it equals to zero, the kmemdup() will return
+ZERO_SIZE_PTR, which equals to ((void *)16).
 
-Reported-by: Simon Hosie <simon.hosie@arm.com>
-Signed-off-by: Robin Murphy <robin.murphy@arm.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+So this patch fix this with just doing the zero check before calling
+kmemdup().
+
+Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
+Signed-off-by: Mark Brown <broonie@kernel.org>
+[lizf: Backported to 3.4: adjust context]
 Signed-off-by: Zefan Li <lizefan@huawei.com>
 ---
- arch/arm/mm/alignment.c | 3 +++
- 1 file changed, 3 insertions(+)
+ sound/soc/soc-core.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/arm/mm/alignment.c b/arch/arm/mm/alignment.c
-index fc000e3..17f4ea2 100644
---- a/arch/arm/mm/alignment.c
-+++ b/arch/arm/mm/alignment.c
-@@ -39,6 +39,7 @@
-  * This code is not portable to processors with late data abort handling.
-  */
- #define CODING_BITS(i)	(i & 0x0e000000)
-+#define COND_BITS(i)	(i & 0xf0000000)
+diff --git a/sound/soc/soc-core.c b/sound/soc/soc-core.c
+index c88d974..34c1fbb 100644
+--- a/sound/soc/soc-core.c
++++ b/sound/soc/soc-core.c
+@@ -2799,7 +2799,7 @@ int snd_soc_bytes_put(struct snd_kcontrol *kcontrol,
+ 	unsigned int val;
+ 	void *data;
  
- #define LDST_I_BIT(i)	(i & (1 << 26))		/* Immediate constant	*/
- #define LDST_P_BIT(i)	(i & (1 << 24))		/* Preindex		*/
-@@ -813,6 +814,8 @@ do_alignment(unsigned long addr, unsigned int fsr, struct pt_regs *regs)
- 		break;
+-	if (!codec->using_regmap)
++	if (!codec->using_regmap || !params->num_regs)
+ 		return -EINVAL;
  
- 	case 0x04000000:	/* ldr or str immediate */
-+		if (COND_BITS(instr) == 0xf0000000) /* NEON VLDn, VSTn */
-+			goto bad;
- 		offset.un = OFFSET_BITS(instr);
- 		handler = do_alignment_ldrstr;
- 		break;
+ 	data = ucontrol->value.bytes.data;
 -- 
 1.9.1
 
