@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757879AbbA2JBs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 04:01:48 -0500
-Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:44747 "EHLO
+	id S933238AbbA2KGy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 05:06:54 -0500
+Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:44750 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1757655AbbA2JBl (ORCPT
+	by vger.kernel.org with ESMTP id S1757586AbbA2JBr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 04:01:41 -0500
+	Thu, 29 Jan 2015 04:01:47 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 083/176] genirq: Prevent proc race against freeing of irq descriptors
-Date: Wed, 28 Jan 2015 15:28:33 +0100
-Message-Id: <b3bc17d5bf7eb79e2c84ed93cfc5972239f61dfb.1422455352.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Nicholas Bellinger <nab@linux-iscsi.org>,
+        "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 084/176] iscsi-target: Fail connection on short sendmsg writes
+Date: Wed, 28 Jan 2015 15:28:34 +0100
+Message-Id: <32f04f1f001a1ee45bc071323bb04f600a8dbb84.1422455352.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <ce4a451f616a1e7ab58cfeceea5e49c8b1c68c81.1422455352.git.jslaby@suse.cz>
 References: <ce4a451f616a1e7ab58cfeceea5e49c8b1c68c81.1422455352.git.jslaby@suse.cz>
@@ -23,243 +23,92 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thomas Gleixner <tglx@linutronix.de>
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit c291ee622165cb2c8d4e7af63fffd499354a23be upstream.
+commit 6bf6ca7515c1df06f5c03737537f5e0eb191e29e upstream.
 
-Since the rework of the sparse interrupt code to actually free the
-unused interrupt descriptors there exists a race between the /proc
-interfaces to the irq subsystem and the code which frees the interrupt
-descriptor.
+This patch changes iscsit_do_tx_data() to fail on short writes
+when kernel_sendmsg() returns a value different than requested
+transfer length, returning -EPIPE and thus causing a connection
+reset to occur.
 
-CPU0				CPU1
-				show_interrupts()
-				  desc = irq_to_desc(X);
-free_desc(desc)
-  remove_from_radix_tree();
-  kfree(desc);
-				  raw_spinlock_irq(&desc->lock);
+This avoids a potential bug in the original code where a short
+write would result in kernel_sendmsg() being called again with
+the original iovec base + length.
 
-/proc/interrupts is the only interface which can actively corrupt
-kernel memory via the lock access. /proc/stat can only read from freed
-memory. Extremly hard to trigger, but possible.
+In practice this has not been an issue because iscsit_do_tx_data()
+is only used for transferring 48 byte headers + 4 byte digests,
+along with seldom used control payloads from NOPIN + TEXT_RSP +
+REJECT with less than 32k of data.
 
-The interfaces in /proc/irq/N/ are not affected by this because the
-removal of the proc file is serialized in procfs against concurrent
-readers/writers. The removal happens before the descriptor is freed.
+So following Al's audit of iovec consumers, go ahead and fail
+the connection on short writes for now, and remove the bogus
+logic ahead of his proper upstream fix.
 
-For architectures which have CONFIG_SPARSE_IRQ=n this is a non issue
-as the descriptor is never freed. It's merely cleared out with the irq
-descriptor lock held. So any concurrent proc access will either see
-the old correct value or the cleared out ones.
-
-Protect the lookup and access to the irq descriptor in
-show_interrupts() with the sparse_irq_lock.
-
-Provide kstat_irqs_usr() which is protecting the lookup and access
-with sparse_irq_lock and switch /proc/stat to use it.
-
-Document the existing kstat_irqs interfaces so it's clear that the
-caller needs to take care about protection. The users of these
-interfaces are either not affected due to SPARSE_IRQ=n or already
-protected against removal.
-
-Fixes: 1f5a5b87f78f "genirq: Implement a sane sparse_irq allocator"
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Reported-by: Al Viro <viro@zeniv.linux.org.uk>
+Cc: David S. Miller <davem@davemloft.net>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- fs/proc/stat.c              |  2 +-
- include/linux/kernel_stat.h |  1 +
- kernel/irq/internals.h      |  8 +++++++
- kernel/irq/irqdesc.c        | 52 +++++++++++++++++++++++++++++++++++++++++++++
- kernel/irq/proc.c           | 22 ++++++++++++++++++-
- 5 files changed, 83 insertions(+), 2 deletions(-)
+ drivers/target/iscsi/iscsi_target_util.c | 26 +++++++++++---------------
+ 1 file changed, 11 insertions(+), 15 deletions(-)
 
-diff --git a/fs/proc/stat.c b/fs/proc/stat.c
-index 1cf86c0e8689..b5c72a3be359 100644
---- a/fs/proc/stat.c
-+++ b/fs/proc/stat.c
-@@ -159,7 +159,7 @@ static int show_stat(struct seq_file *p, void *v)
- 
- 	/* sum again ? it could be updated? */
- 	for_each_irq_nr(j)
--		seq_put_decimal_ull(p, ' ', kstat_irqs(j));
-+		seq_put_decimal_ull(p, ' ', kstat_irqs_usr(j));
- 
- 	seq_printf(p,
- 		"\nctxt %llu\n"
-diff --git a/include/linux/kernel_stat.h b/include/linux/kernel_stat.h
-index 51c72be4a7c3..4b2053a232c9 100644
---- a/include/linux/kernel_stat.h
-+++ b/include/linux/kernel_stat.h
-@@ -74,6 +74,7 @@ static inline unsigned int kstat_softirqs_cpu(unsigned int irq, int cpu)
-  * Number of interrupts per specific IRQ source, since bootup
-  */
- extern unsigned int kstat_irqs(unsigned int irq);
-+extern unsigned int kstat_irqs_usr(unsigned int irq);
- 
- /*
-  * Number of interrupts per cpu, since bootup
-diff --git a/kernel/irq/internals.h b/kernel/irq/internals.h
-index 001fa5bab490..8a160e8a44e8 100644
---- a/kernel/irq/internals.h
-+++ b/kernel/irq/internals.h
-@@ -74,6 +74,14 @@ extern void irq_percpu_disable(struct irq_desc *desc, unsigned int cpu);
- extern void mask_irq(struct irq_desc *desc);
- extern void unmask_irq(struct irq_desc *desc);
- 
-+#ifdef CONFIG_SPARSE_IRQ
-+extern void irq_lock_sparse(void);
-+extern void irq_unlock_sparse(void);
-+#else
-+static inline void irq_lock_sparse(void) { }
-+static inline void irq_unlock_sparse(void) { }
-+#endif
-+
- extern void init_kstat_irqs(struct irq_desc *desc, int node, int nr);
- 
- irqreturn_t handle_irq_event_percpu(struct irq_desc *desc, struct irqaction *action);
-diff --git a/kernel/irq/irqdesc.c b/kernel/irq/irqdesc.c
-index 8ab8e9390297..07d45516b540 100644
---- a/kernel/irq/irqdesc.c
-+++ b/kernel/irq/irqdesc.c
-@@ -131,6 +131,16 @@ static void free_masks(struct irq_desc *desc)
- static inline void free_masks(struct irq_desc *desc) { }
- #endif
- 
-+void irq_lock_sparse(void)
-+{
-+	mutex_lock(&sparse_irq_lock);
-+}
-+
-+void irq_unlock_sparse(void)
-+{
-+	mutex_unlock(&sparse_irq_lock);
-+}
-+
- static struct irq_desc *alloc_desc(int irq, int node, struct module *owner)
+diff --git a/drivers/target/iscsi/iscsi_target_util.c b/drivers/target/iscsi/iscsi_target_util.c
+index 658c9c77ec04..c5c98559f7f6 100644
+--- a/drivers/target/iscsi/iscsi_target_util.c
++++ b/drivers/target/iscsi/iscsi_target_util.c
+@@ -1355,15 +1355,15 @@ static int iscsit_do_tx_data(
+ 	struct iscsi_conn *conn,
+ 	struct iscsi_data_count *count)
  {
- 	struct irq_desc *desc;
-@@ -167,6 +177,12 @@ static void free_desc(unsigned int irq)
+-	int data = count->data_length, total_tx = 0, tx_loop = 0, iov_len;
++	int ret, iov_len;
+ 	struct kvec *iov_p;
+ 	struct msghdr msg;
  
- 	unregister_irq_proc(irq, desc);
+ 	if (!conn || !conn->sock || !conn->conn_ops)
+ 		return -1;
  
-+	/*
-+	 * sparse_irq_lock protects also show_interrupts() and
-+	 * kstat_irq_usr(). Once we deleted the descriptor from the
-+	 * sparse tree we can free it. Access in proc will fail to
-+	 * lookup the descriptor.
-+	 */
- 	mutex_lock(&sparse_irq_lock);
- 	delete_irq_desc(irq);
- 	mutex_unlock(&sparse_irq_lock);
-@@ -489,6 +505,15 @@ void dynamic_irq_cleanup(unsigned int irq)
- 	raw_spin_unlock_irqrestore(&desc->lock, flags);
- }
- 
-+/**
-+ * kstat_irqs_cpu - Get the statistics for an interrupt on a cpu
-+ * @irq:	The interrupt number
-+ * @cpu:	The cpu number
-+ *
-+ * Returns the sum of interrupt counts on @cpu since boot for
-+ * @irq. The caller must ensure that the interrupt is not removed
-+ * concurrently.
-+ */
- unsigned int kstat_irqs_cpu(unsigned int irq, int cpu)
- {
- 	struct irq_desc *desc = irq_to_desc(irq);
-@@ -497,6 +522,14 @@ unsigned int kstat_irqs_cpu(unsigned int irq, int cpu)
- 			*per_cpu_ptr(desc->kstat_irqs, cpu) : 0;
- }
- 
-+/**
-+ * kstat_irqs - Get the statistics for an interrupt
-+ * @irq:	The interrupt number
-+ *
-+ * Returns the sum of interrupt counts on all cpus since boot for
-+ * @irq. The caller must ensure that the interrupt is not removed
-+ * concurrently.
-+ */
- unsigned int kstat_irqs(unsigned int irq)
- {
- 	struct irq_desc *desc = irq_to_desc(irq);
-@@ -509,3 +542,22 @@ unsigned int kstat_irqs(unsigned int irq)
- 		sum += *per_cpu_ptr(desc->kstat_irqs, cpu);
- 	return sum;
- }
-+
-+/**
-+ * kstat_irqs_usr - Get the statistics for an interrupt
-+ * @irq:	The interrupt number
-+ *
-+ * Returns the sum of interrupt counts on all cpus since boot for
-+ * @irq. Contrary to kstat_irqs() this can be called from any
-+ * preemptible context. It's protected against concurrent removal of
-+ * an interrupt descriptor when sparse irqs are enabled.
-+ */
-+unsigned int kstat_irqs_usr(unsigned int irq)
-+{
-+	int sum;
-+
-+	irq_lock_sparse();
-+	sum = kstat_irqs(irq);
-+	irq_unlock_sparse();
-+	return sum;
-+}
-diff --git a/kernel/irq/proc.c b/kernel/irq/proc.c
-index 36f6ee181b0c..095cd7230aef 100644
---- a/kernel/irq/proc.c
-+++ b/kernel/irq/proc.c
-@@ -15,6 +15,23 @@
- 
- #include "internals.h"
- 
-+/*
-+ * Access rules:
-+ *
-+ * procfs protects read/write of /proc/irq/N/ files against a
-+ * concurrent free of the interrupt descriptor. remove_proc_entry()
-+ * immediately prevents new read/writes to happen and waits for
-+ * already running read/write functions to complete.
-+ *
-+ * We remove the proc entries first and then delete the interrupt
-+ * descriptor from the radix tree and free it. So it is guaranteed
-+ * that irq_to_desc(N) is valid as long as the read/writes are
-+ * permitted by procfs.
-+ *
-+ * The read from /proc/interrupts is a different problem because there
-+ * is no protection. So the lookup and the access to irqdesc
-+ * information must be protected by sparse_irq_lock.
-+ */
- static struct proc_dir_entry *root_irq_dir;
- 
- #ifdef CONFIG_SMP
-@@ -437,9 +454,10 @@ int show_interrupts(struct seq_file *p, void *v)
- 		seq_putc(p, '\n');
+-	if (data <= 0) {
+-		pr_err("Data length is: %d\n", data);
++	if (count->data_length <= 0) {
++		pr_err("Data length is: %d\n", count->data_length);
+ 		return -1;
  	}
  
-+	irq_lock_sparse();
- 	desc = irq_to_desc(i);
- 	if (!desc)
--		return 0;
-+		goto outsparse;
+@@ -1372,20 +1372,16 @@ static int iscsit_do_tx_data(
+ 	iov_p = count->iov;
+ 	iov_len = count->iov_count;
  
- 	raw_spin_lock_irqsave(&desc->lock, flags);
- 	for_each_online_cpu(j)
-@@ -479,6 +497,8 @@ int show_interrupts(struct seq_file *p, void *v)
- 	seq_putc(p, '\n');
- out:
- 	raw_spin_unlock_irqrestore(&desc->lock, flags);
-+outsparse:
-+	irq_unlock_sparse();
- 	return 0;
+-	while (total_tx < data) {
+-		tx_loop = kernel_sendmsg(conn->sock, &msg, iov_p, iov_len,
+-					(data - total_tx));
+-		if (tx_loop <= 0) {
+-			pr_debug("tx_loop: %d total_tx %d\n",
+-				tx_loop, total_tx);
+-			return tx_loop;
+-		}
+-		total_tx += tx_loop;
+-		pr_debug("tx_loop: %d, total_tx: %d, data: %d\n",
+-					tx_loop, total_tx, data);
++	ret = kernel_sendmsg(conn->sock, &msg, iov_p, iov_len,
++			     count->data_length);
++	if (ret != count->data_length) {
++		pr_err("Unexpected ret: %d send data %d\n",
++		       ret, count->data_length);
++		return -EPIPE;
+ 	}
++	pr_debug("ret: %d, sent data: %d\n", ret, count->data_length);
+ 
+-	return total_tx;
++	return ret;
  }
- #endif
+ 
+ int rx_data(
 -- 
 2.2.2
 
