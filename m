@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760550AbbA1BtK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 20:49:10 -0500
-Received: from nasmtp01.atmel.com ([192.199.1.245]:27182 "EHLO
-	DVREDG01.corp.atmel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1760045AbbA1BtI (ORCPT
+	id S1760600AbbA1Btp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 20:49:45 -0500
+Received: from nasmtp01.atmel.com ([192.199.1.246]:12358 "EHLO
+	DVREDG02.corp.atmel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1760163AbbA1Btn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 20:49:08 -0500
+	Tue, 27 Jan 2015 20:49:43 -0500
 From: Wenyou Yang <wenyou.yang@atmel.com>
 To: <nicolas.ferre@atmel.com>, <linux@arm.linux.org.uk>
 CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
         <alexandre.belloni@free-electrons.com>, <sylvain.rochet@finsecur.com>,
         <peda@axentia.se>, <sergei.shtylyov@cogentembedded.com>,
         <linux@maxim.org.za>, <wenyou.yang@atmel.com>
-Subject: [PATCH v4 10/13] pm: at91: rename function name: at91_slow_clock()-->at91_pm_suspend_sram_fn
-Date: Wed, 28 Jan 2015 09:46:48 +0800
-Message-ID: <1422409608-24574-1-git-send-email-wenyou.yang@atmel.com>
+Subject: [PATCH v4 11/13] pm: at91: remove the at91_xxx_standby() function definitions in the pm.h
+Date: Wed, 28 Jan 2015 09:47:31 +0800
+Message-ID: <1422409651-24608-1-git-send-email-wenyou.yang@atmel.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1422409172-24178-1-git-send-email-wenyou.yang@atmel.com>
 References: <1422409172-24178-1-git-send-email-wenyou.yang@atmel.com>
@@ -25,126 +25,128 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As the file name's renaming, rename the file name at91_slow_clock()-->
-at91_pm_suspend_sram_fn, rename the function handler's name at the same time.
+Because the the suspend to standby mode uses the sram function,
+these functions will not used, remove the redundant code.
 
 Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
 Acked-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
 ---
- arch/arm/mach-at91/pm.c         |   25 +++++++++++++------------
- arch/arm/mach-at91/pm_suspend.S |   24 ++++++++++--------------
- 2 files changed, 23 insertions(+), 26 deletions(-)
+ arch/arm/mach-at91/pm.h |   97 -----------------------------------------------
+ 1 file changed, 97 deletions(-)
 
-diff --git a/arch/arm/mach-at91/pm.c b/arch/arm/mach-at91/pm.c
-index f571109..144521d 100644
---- a/arch/arm/mach-at91/pm.c
-+++ b/arch/arm/mach-at91/pm.c
-@@ -129,13 +129,12 @@ int at91_suspend_entering_slow_clock(void)
- }
- EXPORT_SYMBOL(at91_suspend_entering_slow_clock);
+diff --git a/arch/arm/mach-at91/pm.h b/arch/arm/mach-at91/pm.h
+index 5bc9c33..158575e 100644
+--- a/arch/arm/mach-at91/pm.h
++++ b/arch/arm/mach-at91/pm.h
+@@ -12,7 +12,6 @@
+ #define __ARCH_ARM_MACH_AT91_PM
  
+ #include <asm/proc-fns.h>
 -
--static void (*slow_clock)(void __iomem *pmc, void __iomem *ramc0,
-+static void (*at91_suspend_sram_fn)(void __iomem *pmc, void __iomem *ramc0,
- 			  void __iomem *ramc1, int memctrl);
+ #include <mach/at91_ramc.h>
  
--extern void at91_slow_clock(void __iomem *pmc, void __iomem *ramc0,
-+extern void at91_pm_suspend_in_sram(void __iomem *pmc, void __iomem *ramc0,
- 			    void __iomem *ramc1, int memctrl);
--extern u32 at91_slow_clock_sz;
-+extern u32 at91_pm_suspend_in_sram_sz;
+ #define	AT91_PM_MEMCTRL_MASK	0x0f
+@@ -22,100 +21,4 @@
  
- static void at91_pm_suspend(suspend_state_t state)
- {
-@@ -144,8 +143,8 @@ static void at91_pm_suspend(suspend_state_t state)
- 	pm_data |= (state == PM_SUSPEND_MEM) ?
- 				AT91_PM_MODE(AT91_PM_SLOW_CLOCK) : 0;
+ #define	AT91_PM_SLOW_CLOCK	0x01
  
--	slow_clock(at91_pmc_base, at91_ramc_base[0],
--			at91_ramc_base[1], pm_data);
-+	at91_suspend_sram_fn(at91_pmc_base, at91_ramc_base[0],
-+				at91_ramc_base[1], pm_data);
- }
- 
- static int at91_pm_enter(suspend_state_t state)
-@@ -249,17 +248,19 @@ static void __init at91_pm_sram_init(void)
- 		goto put_node;
- 	}
- 
--	sram_base = gen_pool_alloc(sram_pool, at91_slow_clock_sz);
-+	sram_base = gen_pool_alloc(sram_pool, at91_pm_suspend_in_sram_sz);
- 	if (!sram_base) {
--		pr_warn("%s: unable to alloc ocram!\n", __func__);
-+		pr_warn("%s: unable to alloc sram!\n", __func__);
- 		goto put_node;
- 	}
- 
- 	sram_pbase = gen_pool_virt_to_phys(sram_pool, sram_base);
--	slow_clock = __arm_ioremap_exec(sram_pbase, at91_slow_clock_sz, false);
-+	at91_suspend_sram_fn = __arm_ioremap_exec(sram_pbase,
-+					at91_pm_suspend_in_sram_sz, false);
- 
--	/* Copy the slow_clock handler to SRAM */
--	memcpy(slow_clock, at91_slow_clock, at91_slow_clock_sz);
-+	/* Copy the pm suspend handler to SRAM */
-+	memcpy(at91_suspend_sram_fn,
-+		at91_pm_suspend_in_sram, at91_pm_suspend_in_sram_sz);
- 
- put_node:
- 	of_node_put(node);
-@@ -272,7 +273,7 @@ static void __init at91_pm_init(void)
- 	if (at91_cpuidle_device.dev.platform_data)
- 		platform_device_register(&at91_cpuidle_device);
- 
--	if (slow_clock)
-+	if (at91_suspend_sram_fn)
- 		suspend_set_ops(&at91_pm_ops);
- 	else
- 		pr_info("AT91: PM : Not supported, due to no sram allocated\n");
-diff --git a/arch/arm/mach-at91/pm_suspend.S b/arch/arm/mach-at91/pm_suspend.S
-index 8edbad0..122a3f1 100644
---- a/arch/arm/mach-at91/pm_suspend.S
-+++ b/arch/arm/mach-at91/pm_suspend.S
-@@ -55,23 +55,19 @@ mode	.req	r6
- 
- 	.text
- 
--/* void at91_slow_clock(void __iomem *pmc, void __iomem *sdramc,
-+/*
-+ * void at91_pm_suspend_in_sram(void __iomem *pmc, void __iomem *sdramc,
-  *			void __iomem *ramc1, int memctrl)
-+ * @input param:
-+ * 	@r0: the base address of AT91_PMC
-+ *  	@r1: the base address of SDRAM Controller (SDRAM, DDRSDR, or AT91_SYS)
-+ *	@r2: the base address of second SDRAM Controller or 0 if not present
-+ *	@r3: the pm information
-  */
--ENTRY(at91_slow_clock)
-+ENTRY(at91_pm_suspend_in_sram)
- 	/* Save registers on stack */
- 	stmfd	sp!, {r4 - r12, lr}
- 
--	/*
--	 * Register usage:
--	 *  R0 = Base address of AT91_PMC
--	 *  R1 = Base address of RAM Controller (SDRAM, DDRSDR, or AT91_SYS)
--	 *  R2 = Base address of second RAM Controller or 0 if not present
--	 *  R3 = Memory controller
--	 *  R4 = temporary register
--	 *  R5 = temporary register
--	 */
+-#ifdef CONFIG_PM
+-extern void at91_pm_set_standby(void (*at91_standby)(void));
+-#else
+-static inline void at91_pm_set_standby(void (*at91_standby)(void)) { }
+-#endif
 -
- 	/* Drain write buffer */
- 	mov	tmp1, #0
- 	mcr	p15, 0, tmp1, c7, c10, 4
-@@ -277,5 +273,5 @@ ram_restored:
- .saved_sam9_mdr1:
- 	.word 0
- 
--ENTRY(at91_slow_clock_sz)
--	.word .-at91_slow_clock
-+ENTRY(at91_pm_suspend_in_sram_sz)
-+	.word .-at91_pm_suspend_in_sram
+-/*
+- * The AT91RM9200 goes into self-refresh mode with this command, and will
+- * terminate self-refresh automatically on the next SDRAM access.
+- *
+- * Self-refresh mode is exited as soon as a memory access is made, but we don't
+- * know for sure when that happens. However, we need to restore the low-power
+- * mode if it was enabled before going idle. Restoring low-power mode while
+- * still in self-refresh is "not recommended", but seems to work.
+- */
+-
+-static inline void at91rm9200_standby(void)
+-{
+-	u32 lpr = at91_ramc_read(0, AT91RM9200_SDRAMC_LPR);
+-
+-	asm volatile(
+-		"b    1f\n\t"
+-		".align    5\n\t"
+-		"1:  mcr    p15, 0, %0, c7, c10, 4\n\t"
+-		"    str    %0, [%1, %2]\n\t"
+-		"    str    %3, [%1, %4]\n\t"
+-		"    mcr    p15, 0, %0, c7, c0, 4\n\t"
+-		"    str    %5, [%1, %2]"
+-		:
+-		: "r" (0), "r" (AT91_BASE_SYS), "r" (AT91RM9200_SDRAMC_LPR),
+-		  "r" (1), "r" (AT91RM9200_SDRAMC_SRR),
+-		  "r" (lpr));
+-}
+-
+-/* We manage both DDRAM/SDRAM controllers, we need more than one value to
+- * remember.
+- */
+-static inline void at91_ddr_standby(void)
+-{
+-	/* Those two values allow us to delay self-refresh activation
+-	 * to the maximum. */
+-	u32 lpr0, lpr1 = 0;
+-	u32 saved_lpr0, saved_lpr1 = 0;
+-
+-	if (at91_ramc_base[1]) {
+-		saved_lpr1 = at91_ramc_read(1, AT91_DDRSDRC_LPR);
+-		lpr1 = saved_lpr1 & ~AT91_DDRSDRC_LPCB;
+-		lpr1 |= AT91_DDRSDRC_LPCB_SELF_REFRESH;
+-	}
+-
+-	saved_lpr0 = at91_ramc_read(0, AT91_DDRSDRC_LPR);
+-	lpr0 = saved_lpr0 & ~AT91_DDRSDRC_LPCB;
+-	lpr0 |= AT91_DDRSDRC_LPCB_SELF_REFRESH;
+-
+-	/* self-refresh mode now */
+-	at91_ramc_write(0, AT91_DDRSDRC_LPR, lpr0);
+-	if (at91_ramc_base[1])
+-		at91_ramc_write(1, AT91_DDRSDRC_LPR, lpr1);
+-
+-	cpu_do_idle();
+-
+-	at91_ramc_write(0, AT91_DDRSDRC_LPR, saved_lpr0);
+-	if (at91_ramc_base[1])
+-		at91_ramc_write(1, AT91_DDRSDRC_LPR, saved_lpr1);
+-}
+-
+-/* We manage both DDRAM/SDRAM controllers, we need more than one value to
+- * remember.
+- */
+-static inline void at91sam9_sdram_standby(void)
+-{
+-	u32 lpr0, lpr1 = 0;
+-	u32 saved_lpr0, saved_lpr1 = 0;
+-
+-	if (at91_ramc_base[1]) {
+-		saved_lpr1 = at91_ramc_read(1, AT91_SDRAMC_LPR);
+-		lpr1 = saved_lpr1 & ~AT91_SDRAMC_LPCB;
+-		lpr1 |= AT91_SDRAMC_LPCB_SELF_REFRESH;
+-	}
+-
+-	saved_lpr0 = at91_ramc_read(0, AT91_SDRAMC_LPR);
+-	lpr0 = saved_lpr0 & ~AT91_SDRAMC_LPCB;
+-	lpr0 |= AT91_SDRAMC_LPCB_SELF_REFRESH;
+-
+-	/* self-refresh mode now */
+-	at91_ramc_write(0, AT91_SDRAMC_LPR, lpr0);
+-	if (at91_ramc_base[1])
+-		at91_ramc_write(1, AT91_SDRAMC_LPR, lpr1);
+-
+-	cpu_do_idle();
+-
+-	at91_ramc_write(0, AT91_SDRAMC_LPR, saved_lpr0);
+-	if (at91_ramc_base[1])
+-		at91_ramc_write(1, AT91_SDRAMC_LPR, saved_lpr1);
+-}
+-
+ #endif
 -- 
 1.7.9.5
 
