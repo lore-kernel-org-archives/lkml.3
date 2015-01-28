@@ -1,72 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763408AbbA2C6c (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 21:58:32 -0500
-Received: from mail-yk0-f179.google.com ([209.85.160.179]:51165 "EHLO
-	mail-yk0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761064AbbA2C61 (ORCPT
+	id S933986AbbA1Ulm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 15:41:42 -0500
+Received: from pandora.arm.linux.org.uk ([78.32.30.218]:60818 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933955AbbA1Ulk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 21:58:27 -0500
+	Wed, 28 Jan 2015 15:41:40 -0500
+Date: Wed, 28 Jan 2015 16:13:17 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Rob Herring <robherring2@gmail.com>
+Cc: Nicolas Pitre <nico@fluxnic.net>,
+        Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
+        Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>,
+        Tony Lindgren <tony@atomide.com>, Sebastian Reichel <sre@debian.org>,
+        Will Deacon <will.deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Pavel Machek <pavel@ucw.cz>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] ARM: /proc/atags: Export also for DT
+Message-ID: <20150128161316.GS26493@n2100.arm.linux.org.uk>
+References: <1403110464-29646-1-git-send-email-pali.rohar@gmail.com>
+ <20150127174818.GM26493@n2100.arm.linux.org.uk>
+ <20150128005032.GK28663@atomide.com>
+ <201501281458.22088@pali>
+ <alpine.LFD.2.11.1501280925400.1322@knanqh.ubzr>
+ <CAL_Jsq+rESm8q44ABRbh9hqMsfcMNx0kcXJ5ONbn1=ue-RvHFg@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1421770899-4136-1-git-send-email-pang.xunlei@linaro.org>
-References: <1421770899-4136-1-git-send-email-pang.xunlei@linaro.org>
-Date: Thu, 29 Jan 2015 00:12:09 +0800
-Message-ID: <CADcy93WBXjHs8A3Wo4ajiRcM2CHkN0DXSR2uB8Ww5ywe5KTDdA@mail.gmail.com>
-Subject: Re: [RFC PATCH v3 0/8] Provide y2038/y2106 safe rtc_class_ops.set_mmss64()
-From: Xunlei Pang <pang.xunlei@linaro.org>
-To: lkml <linux-kernel@vger.kernel.org>
-Cc: "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Richard Henderson <rth@twiddle.net>,
-        Uwe Kleine-Koenig <u.kleine-koenig@pengutronix.de>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Arnd Bergmann <arnd.bergmann@linaro.org>,
-        Xunlei Pang <pang.xunlei@linaro.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAL_Jsq+rESm8q44ABRbh9hqMsfcMNx0kcXJ5ONbn1=ue-RvHFg@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ping Alessandro
+On Wed, Jan 28, 2015 at 09:57:18AM -0600, Rob Herring wrote:
+> I'm fine with that, but we just need to have a standard kernel
+> userspace interface in addition to something like
+> /proc/device-tree/bootreason. Perhaps this can be the default
+> implementation for the watchdog dev. Someday when we decide DT is crap
+> and have a new boot interface, we'll have people relying on
+> /proc/device-tree. I hope to be retired when that happens...
 
-On 21 January 2015 at 00:21, Xunlei Pang <pang.xunlei@linaro.org> wrote:
-> This patch series relies on a former patchset[1], it provides y2038/y2106
-> safe rtc_class_ops.set_mmss64(), and converts some possible users of set_mmss()
-> to use set_mmss64(), in the hope that making these users(i.e. rtc drivers)
-> y2038/y2106 safe.
->
-> [1] https://lkml.org/lkml/2014/11/18/218
-> [2] v1: https://lkml.org/lkml/2014/11/27/341
-> [3] v2: https://lkml.org/lkml/2015/1/13/403
->
-> v2->v3:
-> * Remove get_seconds64(), use ktime_get_real_seconds() to replace get_seconds()
-> * Refine rtc-test.c
->
-> Xunlei Pang (8):
->   rtc: Provide y2038 safe rtc_class_ops.set_mmss() replacement
->   rtc/test: Update driver to address y2038/y2106 issues
->   rtc/ab3100: Update driver to address y2038/y2106 issues
->   rtc/mc13xxx: Update driver to address y2038/y2106 issues
->   rtc/mxc: Modify rtc_update_alarm() not to touch the alarm time
->   rtc/mxc: Convert get_alarm_or_time()/set_alarm_or_time() to use
->     time64_t
->   rtc/mxc: Update driver to address y2038/y2106 issues
->   alpha: rtc: change to use rtc_class_ops's set_mmss64()
->
->  arch/alpha/kernel/rtc.c   |  8 +++----
->  drivers/rtc/interface.c   |  7 +++++-
->  drivers/rtc/rtc-ab3100.c  | 55 +++++++++++++++++++++++------------------------
->  drivers/rtc/rtc-mc13xxx.c | 32 ++++++++++++---------------
->  drivers/rtc/rtc-mxc.c     | 55 +++++++++++++++++------------------------------
->  drivers/rtc/rtc-test.c    | 19 ++++++++++++++--
->  drivers/rtc/systohc.c     |  5 ++++-
->  include/linux/rtc.h       |  1 +
->  8 files changed, 93 insertions(+), 89 deletions(-)
->
-> --
-> 1.9.1
->
+Anyone who thinks that DT can be replaced in the same way that we made
+the mistake with ATAGs would really need their head examined.
+
+As you point out, removing DT removes the /proc/device-tree/ sub-tree.
+Whether we like it or not, that is a userspace API, one which we have
+users of already.  That pretty much means that we can't remove DT for
+existing platforms or any platform we have now converted to DT.
+
+-- 
+FTTC broadband for 0.8mile line: currently at 10.5Mbps down 400kbps up
+according to speedtest.net.
