@@ -1,102 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754880AbbA1U4i (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 15:56:38 -0500
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:56451 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754746AbbA1U4c (ORCPT
+	id S1760806AbbA2CD3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 21:03:29 -0500
+Received: from bh-25.webhostbox.net ([208.91.199.152]:41679 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755994AbbA2CDW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 15:56:32 -0500
-Message-ID: <54C9125D.5040706@mvista.com>
-Date: Wed, 28 Jan 2015 10:46:21 -0600
-From: Corey Minyard <cminyard@mvista.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Wed, 28 Jan 2015 21:03:22 -0500
+Date: Wed, 28 Jan 2015 08:48:30 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: stable@vger.kernel.org, satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3.12 000/176] 3.12.37-stable review
+Message-ID: <20150128164830.GA27644@roeck-us.net>
+References: <cover.1422455352.git.jslaby@suse.cz>
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>, minyard@acm.org
-CC: openipmi-developer@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] ipmi: avoid gcc warning
-References: <2457592.UIVPJ2WNL3@wuerfel>
-In-Reply-To: <2457592.UIVPJ2WNL3@wuerfel>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <cover.1422455352.git.jslaby@suse.cz>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Authenticated_sender: guenter@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020203.54C912E7.00F9,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.001
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: C_4847,
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 5
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks, queued for 3.20.
+On Wed, Jan 28, 2015 at 03:29:35PM +0100, Jiri Slaby wrote:
+> This is the start of the stable review cycle for the 3.12.37 release.
+> There are 176 patches in this series, all will be posted as a response
+> to this one.  If anyone has any issues with these being applied, please
+> let me know.
+> 
+> Responses should be made by Fri Jan 30 15:29:12 CET 2015.
+> Anything received after that time might be too late.
+> 
 
--corey
+Build results:
+	total: 135 pass: 112 fail: 23
+Failed builds:
+	arm:davinci_all_defconfig
+	arm:vexpress_defconfig
+	arm:imx_v4_v5_defconfig
+	arm:lpc32xx_defconfig
+	arm:orion5x_defconfig
+	arm:msm_defconfig
+	microblaze:mmu_defconfig
+	microblaze:nommu_defconfig
+	mips:cavium_octeon_defconfig
+	openrisc:defconfig
+	powerpc:allmodconfig
+	powerpc:ppc64e_defconfig
+	powerpc:ppc6xx_defconfig
+	powerpc:mpc83xx_defconfig
+	powerpc:mpc85xx_defconfig
+	powerpc:mpc85xx_smp_defconfig
+	powerpc:allmodconfig
+	powerpc:ppc64e_defconfig
+	powerpc:ppc6xx_defconfig
+	powerpc:mpc83xx_defconfig
+	powerpc:mpc85xx_defconfig
+	powerpc:mpc85xx_smp_defconfig
+	xtensa:allmodconfig
 
-On 01/28/2015 09:00 AM, Arnd Bergmann wrote:
-> A new harmless warning has come up on ARM builds with gcc-4.9:
->
-> drivers/char/ipmi/ipmi_msghandler.c: In function 'smi_send.isra.11':
-> include/linux/spinlock.h:372:95: warning: 'flags' may be used uninitialized in this function [-Wmaybe-uninitialized]
->   raw_spin_unlock_irqrestore(&lock->rlock, flags);
->                                                                                                ^
-> drivers/char/ipmi/ipmi_msghandler.c:1490:16: note: 'flags' was declared here
->   unsigned long flags;
->                 ^
->
-> This could be worked around by initializing the 'flags' variable, but it
-> seems better to rework the code to avoid this.
->
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> Fixes: 7ea0ed2b5be81 ("ipmi: Make the message handler easier to use for SMI interfaces")
->
-> diff --git a/drivers/char/ipmi/ipmi_msghandler.c b/drivers/char/ipmi/ipmi_msghandler.c
-> index 6b65fa4e0c55..fb0f8eacd208 100644
-> --- a/drivers/char/ipmi/ipmi_msghandler.c
-> +++ b/drivers/char/ipmi/ipmi_msghandler.c
-> @@ -1483,14 +1483,10 @@ static inline void format_lan_msg(struct ipmi_smi_msg   *smi_msg,
->  	smi_msg->msgid = msgid;
->  }
->  
-> -static void smi_send(ipmi_smi_t intf, struct ipmi_smi_handlers *handlers,
-> -		     struct ipmi_smi_msg *smi_msg, int priority)
-> +static struct ipmi_smi_msg *smi_add_send_msg(ipmi_smi_t intf,
-> +					     struct ipmi_smi_msg *smi_msg,
-> +					     int priority)
->  {
-> -	int run_to_completion = intf->run_to_completion;
-> -	unsigned long flags;
-> -
-> -	if (!run_to_completion)
-> -		spin_lock_irqsave(&intf->xmit_msgs_lock, flags);
->  	if (intf->curr_msg) {
->  		if (priority > 0)
->  			list_add_tail(&smi_msg->link, &intf->hp_xmit_msgs);
-> @@ -1500,8 +1496,24 @@ static void smi_send(ipmi_smi_t intf, struct ipmi_smi_handlers *handlers,
->  	} else {
->  		intf->curr_msg = smi_msg;
->  	}
-> -	if (!run_to_completion)
-> +
-> +	return smi_msg;
-> +}
-> +
-> +
-> +static void smi_send(ipmi_smi_t intf, struct ipmi_smi_handlers *handlers,
-> +		     struct ipmi_smi_msg *smi_msg, int priority)
-> +{
-> +	int run_to_completion = intf->run_to_completion;
-> +
-> +	if (run_to_completion) {
-> +		smi_msg = smi_add_send_msg(intf, smi_msg, priority);
-> +	} else {
-> +		unsigned long flags;
-> +		spin_lock_irqsave(&intf->xmit_msgs_lock, flags);
-> +		smi_msg = smi_add_send_msg(intf, smi_msg, priority);
->  		spin_unlock_irqrestore(&intf->xmit_msgs_lock, flags);
-> +	}
->  
->  	if (smi_msg)
->  		handlers->sender(intf->send_info, smi_msg);
->
->
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+Qemu tests:
+	total: 27 pass: 25 fail: 2
+Failed tests:
+	arm:arm_vexpress_defconfig
+	openrisc:openrisc_defconfig
 
+Details are available at http://server.roeck-us.net:8010/builders.
+
+---
+Common error message:
+
+drivers/gpio/gpiolib-of.c: In function ‘of_gpiochip_find_and_xlate’:
+drivers/gpio/gpiolib-of.c:50:3: error: implicit declaration of function ‘ERR_PTR’
+   gg_data->out_gpio = ERR_PTR(ret);
+
+"#include <linux/err.h>" is missing in drivers/gpio/gpiolib-of.c.
+
+Guenter
