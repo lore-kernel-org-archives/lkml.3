@@ -1,192 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763027AbbA2Cvb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 21:51:31 -0500
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:40397 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760738AbbA2Cv2 (ORCPT
+	id S1760646AbbA1UfT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 15:35:19 -0500
+Received: from bombadil.infradead.org ([198.137.202.9]:51484 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760590AbbA1UfQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 21:51:28 -0500
+	Wed, 28 Jan 2015 15:35:16 -0500
+Date: Wed, 28 Jan 2015 16:46:37 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [RFC PATCH 4/4] sched: Account PREEMPT_ACTIVE context as atomic
+Message-ID: <20150128154637.GI23038@twins.programming.kicks-ass.net>
+References: <1422404652-29067-1-git-send-email-fweisbec@gmail.com>
+ <1422404652-29067-5-git-send-email-fweisbec@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20150128110523.GC6646@e104818-lin.cambridge.arm.com>
-References: <1422052359-12384-1-git-send-email-m-karicheri2@ti.com>
- <1422052359-12384-4-git-send-email-m-karicheri2@ti.com> <54C77616.80301@arm.com>
- <54C7DF13.20402@ti.com> <20150128110523.GC6646@e104818-lin.cambridge.arm.com>
-From: Rob Herring <robherring2@gmail.com>
-Date: Wed, 28 Jan 2015 09:45:19 -0600
-Message-ID: <CAL_JsqJiCKW0ny=_ueq=A7RH3octpEhN+KZuLZhbNEHusyjcig@mail.gmail.com>
-Subject: Re: [PATCH v4 3/6] of: fix size when dma-range is not used
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Murali Karicheri <m-karicheri2@ti.com>,
-        Robin Murphy <Robin.Murphy@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Joerg Roedel <joro@8bytes.org>, Will Deacon <Will.Deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        "suravee.suthikulpanit@amd.com" <suravee.suthikulpanit@amd.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1422404652-29067-5-git-send-email-fweisbec@gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 28, 2015 at 5:05 AM, Catalin Marinas
-<catalin.marinas@arm.com> wrote:
-> On Tue, Jan 27, 2015 at 06:55:15PM +0000, Murali Karicheri wrote:
->> On 01/27/2015 06:27 AM, Robin Murphy wrote:
->> > On 23/01/15 22:32, Murali Karicheri wrote:
->> >> Fix the dma-range size when the DT attribute is missing. i.e set size to
->> >> dev->coherent_dma_mask + 1 instead of dev->coherent_dma_mask. To detect
->> >> overflow when mask is set to max of u64, add a check, log error and
->> >> return.
->> >> Some platform use mask format for size in DTS. So add a work around to
->> >> catch this and fix.
->> >>
->> >> Cc: Joerg Roedel <joro@8bytes.org>
->> >> Cc: Grant Likely <grant.likely@linaro.org>
->> >> Cc: Rob Herring <robh+dt@kernel.org>
->> >> Cc: Bjorn Helgaas <bhelgaas@google.com>
->> >> Cc: Will Deacon <will.deacon@arm.com>
->> >> Cc: Russell King <linux@arm.linux.org.uk>
->> >> Cc: Arnd Bergmann <arnd@arndb.de>
->> >> Cc: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
->> >>
->> >> Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
->> >> ---
->> >> drivers/of/device.c | 14 +++++++++++++-
->> >> 1 file changed, 13 insertions(+), 1 deletion(-)
->> >>
->> >> diff --git a/drivers/of/device.c b/drivers/of/device.c
->> >> index 2de320d..0a5ff54 100644
->> >> --- a/drivers/of/device.c
->> >> +++ b/drivers/of/device.c
->> >> @@ -105,12 +105,24 @@ void of_dma_configure(struct device *dev, struct
->> >> device_node *np)
->> >> ret = of_dma_get_range(np, &dma_addr, &paddr, &size);
->> >> if (ret < 0) {
->> >> dma_addr = offset = 0;
->> >> - size = dev->coherent_dma_mask;
->> >> + size = dev->coherent_dma_mask + 1;
->> >> } else {
->> >> offset = PFN_DOWN(paddr - dma_addr);
->> >> + /*
->> >> + * Add a work around to treat the size as mask + 1 in case
->> >> + * it is defined in DT as a mask.
->> >> + */
->> >> + if (size & 1)
->> >> + size = size + 1;
->> >> dev_dbg(dev, "dma_pfn_offset(%#08lx)\n", offset);
->> >> }
->> >>
->> >> + /* if size is 0, we have an overflow of u64 */
->> >> + if (!size) {
->> >> + dev_err(dev, "invalid size\n");
->> >> + return;
->> >> + }
->> >> +
->> >
->> > This seems potentially fragile to dodgy DTs given that we might also be
->> > using size to make a mask later. Would it make sense to double-up a
->> > sanity check as mask-format detection? Something like:
->> >
->> > if is_power_of_2(size)
->> > // use size
->> > else if is_power_of_2(size + 1)
->> > // use size + 1
->> > else
->> > // cry
->>
->> How about having the logic like this?
->>
->>       ret = of_dma_get_range(np, &dma_addr, &paddr, &size);
->>       if (ret < 0) {
->>               dma_addr = offset = 0;
->>               size = dev->coherent_dma_mask + 1;
->>       } else {
->>               offset = PFN_DOWN(paddr - dma_addr);
->>               dev_dbg(dev, "dma_pfn_offset(%#08lx)\n", offset);
->>       }
->>
->>       if (is_power_of_2(size + 1))
->>               size = size + 1;
->>       else if (!is_power_of_2(size))
->>       {
->>               dev_err(dev, "invalid size\n");
->>               return;
->>       }
->
-> In of_dma_configure(), we currently assume that the default coherent
-> mask is 32-bit. In this thread:
->
-> http://article.gmane.org/gmane.linux.kernel/1835096
->
-> we talked about setting the coherent mask based on size automatically.
-> I'm not sure about the size but I think we can assume is 32-bit mask + 1
-> if it is not specified in the DT. Instead of just assuming a default
-> mask, let's assume a default size and create the mask based on this
-> (untested):
->
-> diff --git a/drivers/of/platform.c b/drivers/of/platform.c
-> index 5b33c6a21807..9ff8d1286b44 100644
-> --- a/drivers/of/platform.c
-> +++ b/drivers/of/platform.c
-> @@ -170,10 +170,10 @@ static void of_dma_configure(struct device *dev)
->         struct iommu_ops *iommu;
->
->         /*
-> -        * Set default dma-mask to 32 bit. Drivers are expected to setup
-> -        * the correct supported dma_mask.
-> +        * Set default size to cover the 32-bit. Drivers are expected to setup
-> +        * the correct size and dma_mask.
->          */
-> -       dev->coherent_dma_mask = DMA_BIT_MASK(32);
-> +       size = 1ULL << 32;
->
->         /*
->          * Set it to coherent_dma_mask by default if the architecture
-> @@ -185,13 +185,24 @@ static void of_dma_configure(struct device *dev)
->         ret = of_dma_get_range(dev->of_node, &dma_addr, &paddr, &size);
->         if (ret < 0) {
->                 dma_addr = offset = 0;
-> -               size = dev->coherent_dma_mask;
+On Wed, Jan 28, 2015 at 01:24:12AM +0100, Frederic Weisbecker wrote:
+> PREEMPT_ACTIVE implies non-preemptible context and thus atomic context
+> despite what in_atomic*() APIs reports about it. These functions
+> shouldn't ignore this value like they are currently doing.
+> 
+> It appears that these APIs were ignoring PREEMPT_ACTIVE in order to
+> ease the check in schedule_debug(). Meanwhile it is sufficient to rely
+> on PREEMPT_ACTIVE in order to disable preemption in __schedule().
+> 
+> So lets fix the in_atomic*() APIs and simplify the preempt count ops
+> on __schedule() callers.
 
-Are we assuming dma_addr, paddr and size are not touched on error? If
-so, we can get rid of this clause entirely.
+So what I think the history is here is that PREEMPT_ACTIVE is/was seen
+as a flag, protecting recursion, not so much a preempt-disable.
 
->         } else {
->                 offset = PFN_DOWN(paddr - dma_addr);
->                 dev_dbg(dev, "dma_pfn_offset(%#08lx)\n", dev->dma_pfn_offset);
->         }
->         dev->dma_pfn_offset = offset;
->
-> +       /*
-> +        * Workaround for DTs setting the size to a mask or 0.
-> +        */
-> +       if (is_power_of_2(size + 1))
-> +               size += 1;
+By doing this, you loose that separation.
 
-As I mentioned, I think power of 2 is too restrictive (from a DT
-perspective even though the kernel may require a power of 2 here for
-the mask). Just checking bit0 set should be enough.
+Note that (at least on x86) we have another flag in the preempt count.
 
-Also, we need a WARN here so DTs get fixed.
-
-> +
-> +       /*
-> +        * Coherent DMA masks larger than 32-bit must be explicitly set by the
-> +        * driver.
-> +        */
-> +       dev->coherent_dma_mask = min(DMA_BIT_MASK(32), DMA_BIT_MASK(ilog2(size)));
-> +
->         coherent = of_dma_is_coherent(dev->of_node);
->         dev_dbg(dev, "device is%sdma coherent\n",
->                 coherent ? " " : " not ");
->
-> --
-> Catalin
+And I don't think the generated code really changes, the only difference
+is the value added/subtracted and that's an encoded immediate I think.
