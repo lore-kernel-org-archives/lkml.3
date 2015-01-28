@@ -1,67 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752900AbbA1UxH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 15:53:07 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:45531 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752764AbbA1UxB (ORCPT
+	id S1752438AbbA2BIw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 20:08:52 -0500
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:63388 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752375AbbA2BIu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 15:53:01 -0500
-Date: Wed, 28 Jan 2015 13:46:39 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: Jiang Liu <jiang.liu@linux.intel.com>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>,
-        Borislav Petkov <bp@alien8.de>, Lv Zheng <lv.zheng@intel.com>,
-        Russell King <linux@arm.linux.org.uk>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>,
-        Tanmay Inamdar <tinamdar@apm.com>,
-        Michal Simek <michal.simek@xilinx.com>,
-        =?iso-8859-1?Q?S=F6ren?= Brinkmann <soren.brinkmann@xilinx.com>,
-        Yijing Wang <wangyijing@huawei.com>,
-        Murali Karicheri <m-karicheri2@ti.com>,
-        Srikanth Thokala <sthokal@xilinx.com>, Tony Luck <tony.luck@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [Patch v2 18/22] PCI: Use common resource list management code
- instead of private implementation
-Message-ID: <20150128134639.GN1569@arm.com>
-References: <1422442660-455-1-git-send-email-jiang.liu@linux.intel.com>
- <1422442660-455-19-git-send-email-jiang.liu@linux.intel.com>
+	Wed, 28 Jan 2015 20:08:50 -0500
+Message-ID: <54C8E847.10506@linaro.org>
+Date: Wed, 28 Jan 2015 13:46:47 +0000
+From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1422442660-455-19-git-send-email-jiang.liu@linux.intel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Ulf Hansson <ulf.hansson@linaro.org>
+CC: linux-mmc <linux-mmc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Kumar Gala <galak@codeaurora.org>, Rob Herring <robh+dt@kernel.org>
+Subject: Re: [PATCH 0/2] mmc: pwrseq: Add support to multiple gpios in pwrseq
+ simple
+References: <1422450981-9328-1-git-send-email-srinivas.kandagatla@linaro.org> <CAPDyKFquQgut1ZC9Jj=rbNwRKs3Qwr5LsUy_cmY7g2L8MG657Q@mail.gmail.com>
+In-Reply-To: <CAPDyKFquQgut1ZC9Jj=rbNwRKs3Qwr5LsUy_cmY7g2L8MG657Q@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 28, 2015 at 10:57:36AM +0000, Jiang Liu wrote:
-> Use common resource list management data structure and interfaces
-> instead of private implementation.
-> 
-> Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
-> ---
->  arch/arm/kernel/bios32.c            |    5 ++---
->  arch/x86/pci/bus_numa.c             |    4 ++--
->  drivers/pci/bus.c                   |   18 ++++++------------
->  drivers/pci/host-bridge.c           |    8 ++++----
->  drivers/pci/host/pci-host-generic.c |    4 ++--
->  drivers/pci/host/pci-xgene.c        |    4 ++--
->  drivers/pci/host/pcie-xilinx.c      |    4 ++--
->  drivers/pci/probe.c                 |   10 +++++-----
->  include/linux/pci.h                 |    9 ++-------
->  9 files changed, 27 insertions(+), 39 deletions(-)
 
-The arch/arm/ and drivers/pci/host/pci-host-generic.c bits look fine to
-me:
+On 28/01/15 13:35, Ulf Hansson wrote:
+> On 28 January 2015 at 14:16, Srinivas Kandagatla
+> <srinivas.kandagatla@linaro.org> wrote:
+>> This patchset adds support to reset/powerup multiple gpio pins on a given
+>> sdio bus. The use case is simple, on sdio we could have multiple devices
+>> like WLAN, BT which are controlled by there own reset lines. So having
+>> multiple reset is something more useful in such cases.
+>>
+>> Without this patch I could not get BT and WLAN working at same time on IFC6410.
+>>
+>> Thanks,
+>> srini
+>>
+>> Srinivas Kandagatla (2):
+>>    mmc: pwrseq: Add support to control multiple gpios in simple pwrseq
+>>    mmc: pwrseq: Update document with multiple gpios support
+>>
+>>   .../devicetree/bindings/mmc/mmc-pwrseq-simple.txt  |  7 ++-
+>>   drivers/mmc/core/pwrseq_simple.c                   | 64 +++++++++++++++-------
+>>   2 files changed, 49 insertions(+), 22 deletions(-)
+>>
+>> --
+>> 1.9.1
+>>
+>
+> Hi Srinivas,
+>
+> I noticed that Javier a few hours ago posted a patchset which
+> implement the same thing as yours, I guess this is a wanted feature.
+> :-)
+yes.
 
-  Acked-by: Will Deacon <will.deacon@arm.com>
+>
+> I am going to review Javier's patchset, would be nice if you could
+> have a look at it as well.
+Sure.. they look very similar..
 
-Will
+!!!  Should have sent my patches yesterday :-)
+>
+> Kind regards
+> Uffe
+>
