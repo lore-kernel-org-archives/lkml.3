@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760620AbbA2JSs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 04:18:48 -0500
-Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:44908 "EHLO
+	id S1760271AbbA2JG3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 04:06:29 -0500
+Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:44865 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753863AbbA2JHl (ORCPT
+	by vger.kernel.org with ESMTP id S1760231AbbA2JGV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 04:07:41 -0500
+	Thu, 29 Jan 2015 04:06:21 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, Alex Deucher <alexander.deucher@amd.com>,
         Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 073/176] drm/radeon: fix typo in CI dpm disable
-Date: Wed, 28 Jan 2015 15:28:23 +0100
-Message-Id: <2ae5f6c0b469c5eb92716f583b8d10f76f68a0b8.1422455352.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 074/176] drm/radeon: work around a hw bug in MGCG on CIK
+Date: Wed, 28 Jan 2015 15:28:24 +0100
+Message-Id: <5d531ee5e76b84da1c114dddd9077d1e3a2d1ff7.1422455352.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <ce4a451f616a1e7ab58cfeceea5e49c8b1c68c81.1422455352.git.jslaby@suse.cz>
 References: <ce4a451f616a1e7ab58cfeceea5e49c8b1c68c81.1422455352.git.jslaby@suse.cz>
@@ -29,29 +29,38 @@ From: Alex Deucher <alexander.deucher@amd.com>
 
 ===============
 
-commit 129acb7c0b682512e89c4f65c33593d50f2f49a9 upstream.
+commit 4bb62c95a7e781a238b2ab374f34b1bf91e01ddc upstream.
 
-Need to disable DS, not enable it when disabling dpm.
+Always need to set bit 0 of RLC_CGTT_MGCG_OVERRIDE
+to avoid unreliable doorbell updates in some cases.
 
 Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/gpu/drm/radeon/ci_dpm.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/gpu/drm/radeon/cik.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/gpu/drm/radeon/ci_dpm.c b/drivers/gpu/drm/radeon/ci_dpm.c
-index 95f4ab99c44b..0a8fc92f6eab 100644
---- a/drivers/gpu/drm/radeon/ci_dpm.c
-+++ b/drivers/gpu/drm/radeon/ci_dpm.c
-@@ -4698,7 +4698,7 @@ void ci_dpm_disable(struct radeon_device *rdev)
- 	ci_enable_spread_spectrum(rdev, false);
- 	ci_enable_auto_throttle_source(rdev, RADEON_DPM_AUTO_THROTTLE_SRC_THERMAL, false);
- 	ci_stop_dpm(rdev);
--	ci_enable_ds_master_switch(rdev, true);
-+	ci_enable_ds_master_switch(rdev, false);
- 	ci_enable_ulv(rdev, false);
- 	ci_clear_vc(rdev);
- 	ci_reset_to_default(rdev);
+diff --git a/drivers/gpu/drm/radeon/cik.c b/drivers/gpu/drm/radeon/cik.c
+index 0fc5fd6b3b41..cdc7f408bd18 100644
+--- a/drivers/gpu/drm/radeon/cik.c
++++ b/drivers/gpu/drm/radeon/cik.c
+@@ -5167,6 +5167,7 @@ static void cik_enable_mgcg(struct radeon_device *rdev, bool enable)
+ 		}
+ 
+ 		orig = data = RREG32(RLC_CGTT_MGCG_OVERRIDE);
++		data |= 0x00000001;
+ 		data &= 0xfffffffd;
+ 		if (orig != data)
+ 			WREG32(RLC_CGTT_MGCG_OVERRIDE, data);
+@@ -5198,7 +5199,7 @@ static void cik_enable_mgcg(struct radeon_device *rdev, bool enable)
+ 		}
+ 	} else {
+ 		orig = data = RREG32(RLC_CGTT_MGCG_OVERRIDE);
+-		data |= 0x00000002;
++		data |= 0x00000003;
+ 		if (orig != data)
+ 			WREG32(RLC_CGTT_MGCG_OVERRIDE, data);
+ 
 -- 
 2.2.2
 
