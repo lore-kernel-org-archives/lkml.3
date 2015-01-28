@@ -1,83 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752004AbbA1ULh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 15:11:37 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:47598 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751191AbbA1UKo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 15:10:44 -0500
-Message-ID: <54C91328.6030208@ti.com>
-Date: Wed, 28 Jan 2015 11:49:44 -0500
-From: Murali Karicheri <m-karicheri2@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1760097AbbA1Vxi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 16:53:38 -0500
+Received: from lists.s-osg.org ([54.187.51.154]:40707 "EHLO lists.s-osg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759429AbbA1U3K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jan 2015 15:29:10 -0500
+Message-ID: <54C91363.6040801@osg.samsung.com>
+Date: Wed, 28 Jan 2015 09:50:43 -0700
+From: Shuah Khan <shuahkh@osg.samsung.com>
+Organization: Samsung Open Source Group
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: David Miller <davem@davemloft.net>, <devicetree@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <netdev@vger.kernel.org>
-Subject: Re: [PATCH net-next v8 0/4] net: Add Keystone NetCP ethernet driver
- support
-References: <1421367007-19744-1-git-send-email-m-karicheri2@ti.com> <20150119.151106.822126941934010309.davem@davemloft.net> <54BE7A00.2020205@ti.com> <25883654.BLFxICW9P0@wuerfel>
-In-Reply-To: <25883654.BLFxICW9P0@wuerfel>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+CC: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        linux@roeck-us.net, satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
+        stable@vger.kernel.org
+Subject: Re: [PATCH 3.18 00/61] 3.18.5-stable review
+References: <20150128012636.936333725@linuxfoundation.org>
+In-Reply-To: <20150128012636.936333725@linuxfoundation.org>
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/27/2015 05:28 PM, Arnd Bergmann wrote:
-> On Tuesday 20 January 2015 10:53:36 Murali Karicheri wrote:
->> On 01/19/2015 03:11 PM, David Miller wrote:
->>> From: Murali Karicheri<m-karicheri2@ti.com>
->>> Date: Thu, 15 Jan 2015 19:10:03 -0500
->>>
->>>> The Network Coprocessor (NetCP) is a hardware accelerator that processes
->>>> Ethernet packets. NetCP has a gigabit Ethernet (GbE) subsystem with a ethernet
->>>> switch sub-module to send and receive packets. NetCP also includes a packet
->>>> accelerator (PA) module to perform packet classification operations such as
->>>> header matching, and packet modification operations such as checksum
->>>> generation. NetCP can also optionally include a Security Accelerator(SA)
->>>> capable of performing IPSec operations on ingress/egress packets.
->>>>
->>>> Keystone SoC's also have a 10 Gigabit Ethernet Subsystem (XGbE) which
->>>> includes a 3-port Ethernet switch sub-module capable of 10Gb/s and
->>>> 1Gb/s rates per Ethernet port.
->>>>
->>>> Both GBE and XGBE network processors supported using common driver. It
->>>> is also designed to handle future variants of NetCP.
->>>
->>> Series applied to net-next, thanks.
->> David,
->>
->> Thanks a lot for applying this series. This helps us move forward to
->> work on the next set of patches.
->
-> Hi Murali,
->
-> Building an ARM 'allmodconfig' kernel now runs into two separate problems
-> from your driver:
->
-> - you have two module_init() instances in one module, which conflict.
->
-> - you have two files that are linked into more than one module, so building
->    both TI_CPSW and TI_KEYSTONE_NETCP in the same kernel fails.
->
-> The answer to both of these is probably to have separate loadable modules,
-> but you might be able to come up with a different solution.
-Arnd,
+On 01/27/2015 06:26 PM, Greg Kroah-Hartman wrote:
+> This is the start of the stable review cycle for the 3.18.5 release.
+> There are 61 patches in this series, all will be posted as a response
+> to this one.  If anyone has any issues with these being applied, please
+> let me know.
+> 
+> Responses should be made by Fri Jan 30 01:26:13 UTC 2015.
+> Anything received after that time might be too late.
+> 
+> The whole patch series can be found in one patch at:
+> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.18.5-rc1.gz
+> and the diffstat can be found below.
+> 
+> thanks,
+> 
+> greg k-h
+> 
 
-Thanks for letting us know. We will look into this.
+Compiled and booted on my test system. No dmesg regressions.
 
-How do I reproduce this? Is there a defconfig used for allmodconfig? I 
-am unable to find one. Any details to reproduce this will be useful.
-
-Thanks.
-
-Murali
->
-> 	Arnd
+thanks,
+-- Shuah
 
 
 -- 
-Murali Karicheri
-Linux Kernel, Texas Instruments
+Shuah Khan
+Sr. Linux Kernel Developer
+Open Source Innovation Group
+Samsung Research America (Silicon Valley)
+shuahkh@osg.samsung.com | (970) 217-8978
