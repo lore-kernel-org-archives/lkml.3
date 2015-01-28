@@ -1,94 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756531AbbA1UWu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 15:22:50 -0500
-Received: from service88.mimecast.com ([195.130.217.12]:37088 "EHLO
-	service88.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756457AbbA1UWp convert rfc822-to-8bit (ORCPT
+	id S932971AbbA2Bv0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 20:51:26 -0500
+Received: from mout.kundenserver.de ([212.227.17.13]:54176 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758843AbbA2BvW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 15:22:45 -0500
-Message-ID: <54C8C652.8050507@arm.com>
-Date: Wed, 28 Jan 2015 11:21:54 +0000
-From: Robin Murphy <robin.murphy@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
+	Wed, 28 Jan 2015 20:51:22 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Zubair Lutfullah Kakakhel <Zubair.Kakakhel@imgtec.com>
+Cc: Guenter Roeck <linux@roeck-us.net>, wim@iguana.be,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-watchdog@vger.kernel.org, paul@crapouillou.net
+Subject: Re: [PATCH 1/2] dt: watchdog: Add DT binding documentation for jz47xx watchdog timer
+Date: Wed, 28 Jan 2015 12:23:48 +0100
+Message-ID: <9831838.T0biTLFe1N@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <54C8B974.8030703@imgtec.com>
+References: <1422371490-44402-1-git-send-email-Zubair.Kakakhel@imgtec.com> <9081741.fTg5kD1W54@wuerfel> <54C8B974.8030703@imgtec.com>
 MIME-Version: 1.0
-To: Murali Karicheri <m-karicheri2@ti.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-CC: Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Will Deacon <Will.Deacon@arm.com>, Rob Herring <robh+dt@kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>
-Subject: Re: [PATCH v5 3/8] of: fix size when dma-range is not used
-References: <1422392405-32196-1-git-send-email-m-karicheri2@ti.com> <1422392405-32196-4-git-send-email-m-karicheri2@ti.com>
-In-Reply-To: <1422392405-32196-4-git-send-email-m-karicheri2@ti.com>
-X-OriginalArrivalTime: 28 Jan 2015 11:21:54.0851 (UTC) FILETIME=[9F078F30:01D03AEC]
-X-MC-Unique: 115012811215711801
-Content-Type: text/plain; charset=WINDOWS-1252; format=flowed
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V03:K0:WuTvrsnsGBLG5WSxNH6mBLAjQZ1bjEovJlFREJYCIpY7q0jJhaS
+ vQCISJV6rUE2HBhEE+lxjdBTjd/tLNjwJZvOXVrX8OX5VvOeWRh+tgUT2d7Sg/Hrx4z2ju+
+ RG7w5+nSQpefEjxA2D9kz5aRhpLggrqrvWliPfEN/TGpETKrcFKQKSa+zonDHegAX0bidER
+ O96YDjT3cCYXDKdwMozkA==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Murali,
+On Wednesday 28 January 2015 10:27:00 Zubair Lutfullah Kakakhel wrote:
+> 
+> There is on-going work to fix jz4740, add jz4780 and shake the entire clock tree as well.
+> 
+> Patch 14 onwards in this series
+> http://patchwork.linux-mips.org/bundle/paulburton/ci20-v3.20/
 
-[sorry, missed replying to yesterday's version]
+Right, that looks good.
+ 
+> Instead of lumping things out in huge changesets, I intended to push out the minor patches that are disjoint.
+> 
+> That was the purpose of sending these two patches.
+> 
+> Current binding requires the clock-name to be "rtc". Hence the name at the moment.
 
-On 27/01/15 21:00, Murali Karicheri wrote:
-> Fix the dma-range size when the DT attribute is missing. i.e  set size to
-> dev->coherent_dma_mask + 1 instead of dev->coherent_dma_mask. Also add
-> code to check invalid values of size configured in DT and log error.
->
-> Cc: Joerg Roedel <joro@8bytes.org>
-> Cc: Grant Likely <grant.likely@linaro.org>
-> Cc: Rob Herring <robh+dt@kernel.org>
-> Cc: Bjorn Helgaas <bhelgaas@google.com>
-> Cc: Will Deacon <will.deacon@arm.com>
-> Cc: Russell King <linux@arm.linux.org.uk>
-> Cc: Arnd Bergmann <arnd@arndb.de>
-> Cc: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
->
-> Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
-> ---
->   drivers/of/device.c |    9 ++++++++-
->   1 file changed, 8 insertions(+), 1 deletion(-)
->
-> diff --git a/drivers/of/device.c b/drivers/of/device.c
-> index 2de320d..17504f4 100644
-> --- a/drivers/of/device.c
-> +++ b/drivers/of/device.c
-> @@ -105,12 +105,19 @@ void of_dma_configure(struct device *dev, struct device_node *np)
->   	ret = of_dma_get_range(np, &dma_addr, &paddr, &size);
->   	if (ret < 0) {
->   		dma_addr = offset = 0;
-> -		size = dev->coherent_dma_mask;
-> +		size = dev->coherent_dma_mask + 1;
->   	} else {
->   		offset = PFN_DOWN(paddr - dma_addr);
->   		dev_dbg(dev, "dma_pfn_offset(%#08lx)\n", offset);
->   	}
->
-> +	if (is_power_of_2(size + 1))
-> +		size = size + 1;
-> +	else if (!is_power_of_2(size)) {
-> +		dev_err(dev, "invalid size\n");
-> +		return;
-> +	}
-> +
+The problem with the binding is that once you've established it, it
+is very hard to change. One possible solution would be to try
+'of_clk_get(dev->of_node, 0)' in the driver first, and only then
+call clk_get(dev, "rtc"). Doing that, you can have an anonymous clock
+in the DT without waiting for the clock driver to get merged first
+or breaking the existing setup.
 
-Couldn't these checks go into the "else" path above? We don't need to 
-check the non-DT case, because we know we've just set it to something 
-sensible.
-
-Robin.
-
->   	dev->dma_pfn_offset = offset;
->
->   	coherent = of_dma_is_coherent(np);
->
-
-
+	Arnd
