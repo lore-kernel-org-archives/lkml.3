@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933617AbbA1B5e (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 20:57:34 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41499 "EHLO
+	id S1760765AbbA1B5S (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 20:57:18 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41450 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760012AbbA1BiZ (ORCPT
+	with ESMTP id S933261AbbA1BiZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 27 Jan 2015 20:38:25 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Kees Cook <keescook@chromium.org>,
-        Mathias Krause <minipli@googlemail.com>,
-        Herbert Xu <herbert@gondor.apana.org.au>
-Subject: [PATCH 3.14 39/77] crypto: add missing crypto module aliases
-Date: Tue, 27 Jan 2015 17:27:17 -0800
-Message-Id: <20150128012747.135157576@linuxfoundation.org>
+        Peter Zijlstra <peterz@infradead.org>,
+        Vineet Gupta <vgupta@synopsys.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.14 40/77] ARC: Delete stale barrier.h
+Date: Tue, 27 Jan 2015 17:27:18 -0800
+Message-Id: <20150128012747.163667477@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <20150128012745.971137091@linuxfoundation.org>
 References: <20150128012745.971137091@linuxfoundation.org>
@@ -30,218 +30,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mathias Krause <minipli@googlemail.com>
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
 
-commit 3e14dcf7cb80b34a1f38b55bc96f02d23fdaaaaf upstream.
+commit 64ee9f32c33cbd53545284742e73c17fedf9d429 upstream.
 
-Commit 5d26a105b5a7 ("crypto: prefix module autoloading with "crypto-"")
-changed the automatic module loading when requesting crypto algorithms
-to prefix all module requests with "crypto-". This requires all crypto
-modules to have a crypto specific module alias even if their file name
-would otherwise match the requested crypto algorithm.
+Commit 93ea02bb8435 ("arch: Clean up asm/barrier.h implementations")
+wired generic barrier.h for ARC, but failed to delete the existing file.
 
-Even though commit 5d26a105b5a7 added those aliases for a vast amount of
-modules, it was missing a few. Add the required MODULE_ALIAS_CRYPTO
-annotations to those files to make them get loaded automatically, again.
-This fixes, e.g., requesting 'ecb(blowfish-generic)', which used to work
-with kernels v3.18 and below.
+In 3.15, due to rcupdate.h updates, this causes a build breakage on ARC:
 
-Also change MODULE_ALIAS() lines to MODULE_ALIAS_CRYPTO(). The former
-won't work for crypto modules any more.
+      CC      arch/arc/kernel/asm-offsets.s
+    In file included from include/linux/sched.h:45:0,
+                     from arch/arc/kernel/asm-offsets.c:9:
+    include/linux/rculist.h: In function __list_add_rcu:
+    include/linux/rculist.h:54:2: error: implicit declaration of function smp_store_release [-Werror=implicit-function-declaration]
+      rcu_assign_pointer(list_next_rcu(prev), new);
+      ^
 
-Fixes: 5d26a105b5a7 ("crypto: prefix module autoloading with "crypto-"")
-Cc: Kees Cook <keescook@chromium.org>
-Signed-off-by: Mathias Krause <minipli@googlemail.com>
-Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/crypto/sha1.c |    1 +
- crypto/aes_generic.c       |    1 +
- crypto/ansi_cprng.c        |    1 +
- crypto/blowfish_generic.c  |    1 +
- crypto/camellia_generic.c  |    1 +
- crypto/cast5_generic.c     |    1 +
- crypto/cast6_generic.c     |    1 +
- crypto/crct10dif_generic.c |    1 +
- crypto/des_generic.c       |    5 +++--
- crypto/ghash-generic.c     |    1 +
- crypto/krng.c              |    1 +
- crypto/salsa20_generic.c   |    1 +
- crypto/serpent_generic.c   |    1 +
- crypto/sha1_generic.c      |    1 +
- crypto/sha256_generic.c    |    2 ++
- crypto/sha512_generic.c    |    2 ++
- crypto/tea.c               |    1 +
- crypto/tgr192.c            |    1 +
- crypto/twofish_generic.c   |    1 +
- crypto/wp512.c             |    1 +
- 20 files changed, 24 insertions(+), 2 deletions(-)
+ arch/arc/include/asm/barrier.h |   37 -------------------------------------
+ 1 file changed, 37 deletions(-)
 
---- a/arch/powerpc/crypto/sha1.c
-+++ b/arch/powerpc/crypto/sha1.c
-@@ -154,4 +154,5 @@ module_exit(sha1_powerpc_mod_fini);
- MODULE_LICENSE("GPL");
- MODULE_DESCRIPTION("SHA1 Secure Hash Algorithm");
- 
-+MODULE_ALIAS_CRYPTO("sha1");
- MODULE_ALIAS_CRYPTO("sha1-powerpc");
---- a/crypto/aes_generic.c
-+++ b/crypto/aes_generic.c
-@@ -1475,3 +1475,4 @@ module_exit(aes_fini);
- MODULE_DESCRIPTION("Rijndael (AES) Cipher Algorithm");
- MODULE_LICENSE("Dual BSD/GPL");
- MODULE_ALIAS_CRYPTO("aes");
-+MODULE_ALIAS_CRYPTO("aes-generic");
---- a/crypto/ansi_cprng.c
-+++ b/crypto/ansi_cprng.c
-@@ -477,3 +477,4 @@ MODULE_PARM_DESC(dbg, "Boolean to enable
- module_init(prng_mod_init);
- module_exit(prng_mod_fini);
- MODULE_ALIAS_CRYPTO("stdrng");
-+MODULE_ALIAS_CRYPTO("ansi_cprng");
---- a/crypto/blowfish_generic.c
-+++ b/crypto/blowfish_generic.c
-@@ -139,3 +139,4 @@ module_exit(blowfish_mod_fini);
- MODULE_LICENSE("GPL");
- MODULE_DESCRIPTION("Blowfish Cipher Algorithm");
- MODULE_ALIAS_CRYPTO("blowfish");
-+MODULE_ALIAS_CRYPTO("blowfish-generic");
---- a/crypto/camellia_generic.c
-+++ b/crypto/camellia_generic.c
-@@ -1099,3 +1099,4 @@ module_exit(camellia_fini);
- MODULE_DESCRIPTION("Camellia Cipher Algorithm");
- MODULE_LICENSE("GPL");
- MODULE_ALIAS_CRYPTO("camellia");
-+MODULE_ALIAS_CRYPTO("camellia-generic");
---- a/crypto/cast5_generic.c
-+++ b/crypto/cast5_generic.c
-@@ -550,3 +550,4 @@ module_exit(cast5_mod_fini);
- MODULE_LICENSE("GPL");
- MODULE_DESCRIPTION("Cast5 Cipher Algorithm");
- MODULE_ALIAS_CRYPTO("cast5");
-+MODULE_ALIAS_CRYPTO("cast5-generic");
---- a/crypto/cast6_generic.c
-+++ b/crypto/cast6_generic.c
-@@ -292,3 +292,4 @@ module_exit(cast6_mod_fini);
- MODULE_LICENSE("GPL");
- MODULE_DESCRIPTION("Cast6 Cipher Algorithm");
- MODULE_ALIAS_CRYPTO("cast6");
-+MODULE_ALIAS_CRYPTO("cast6-generic");
---- a/crypto/crct10dif_generic.c
-+++ b/crypto/crct10dif_generic.c
-@@ -125,3 +125,4 @@ MODULE_AUTHOR("Tim Chen <tim.c.chen@linu
- MODULE_DESCRIPTION("T10 DIF CRC calculation.");
- MODULE_LICENSE("GPL");
- MODULE_ALIAS_CRYPTO("crct10dif");
-+MODULE_ALIAS_CRYPTO("crct10dif-generic");
---- a/crypto/des_generic.c
-+++ b/crypto/des_generic.c
-@@ -971,8 +971,6 @@ static struct crypto_alg des_algs[2] = {
- 	.cia_decrypt		=	des3_ede_decrypt } }
- } };
- 
--MODULE_ALIAS_CRYPTO("des3_ede");
+--- a/arch/arc/include/asm/barrier.h
++++ /dev/null
+@@ -1,37 +0,0 @@
+-/*
+- * Copyright (C) 2004, 2007-2010, 2011-2012 Synopsys, Inc. (www.synopsys.com)
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License version 2 as
+- * published by the Free Software Foundation.
+- */
 -
- static int __init des_generic_mod_init(void)
- {
- 	return crypto_register_algs(des_algs, ARRAY_SIZE(des_algs));
-@@ -990,3 +988,6 @@ MODULE_LICENSE("GPL");
- MODULE_DESCRIPTION("DES & Triple DES EDE Cipher Algorithms");
- MODULE_AUTHOR("Dag Arne Osvik <da@osvik.no>");
- MODULE_ALIAS_CRYPTO("des");
-+MODULE_ALIAS_CRYPTO("des-generic");
-+MODULE_ALIAS_CRYPTO("des3_ede");
-+MODULE_ALIAS_CRYPTO("des3_ede-generic");
---- a/crypto/ghash-generic.c
-+++ b/crypto/ghash-generic.c
-@@ -173,3 +173,4 @@ module_exit(ghash_mod_exit);
- MODULE_LICENSE("GPL");
- MODULE_DESCRIPTION("GHASH Message Digest Algorithm");
- MODULE_ALIAS_CRYPTO("ghash");
-+MODULE_ALIAS_CRYPTO("ghash-generic");
---- a/crypto/krng.c
-+++ b/crypto/krng.c
-@@ -63,3 +63,4 @@ module_exit(krng_mod_fini);
- MODULE_LICENSE("GPL");
- MODULE_DESCRIPTION("Kernel Random Number Generator");
- MODULE_ALIAS_CRYPTO("stdrng");
-+MODULE_ALIAS_CRYPTO("krng");
---- a/crypto/salsa20_generic.c
-+++ b/crypto/salsa20_generic.c
-@@ -249,3 +249,4 @@ module_exit(salsa20_generic_mod_fini);
- MODULE_LICENSE("GPL");
- MODULE_DESCRIPTION ("Salsa20 stream cipher algorithm");
- MODULE_ALIAS_CRYPTO("salsa20");
-+MODULE_ALIAS_CRYPTO("salsa20-generic");
---- a/crypto/serpent_generic.c
-+++ b/crypto/serpent_generic.c
-@@ -667,3 +667,4 @@ MODULE_DESCRIPTION("Serpent and tnepres
- MODULE_AUTHOR("Dag Arne Osvik <osvik@ii.uib.no>");
- MODULE_ALIAS_CRYPTO("tnepres");
- MODULE_ALIAS_CRYPTO("serpent");
-+MODULE_ALIAS_CRYPTO("serpent-generic");
---- a/crypto/sha1_generic.c
-+++ b/crypto/sha1_generic.c
-@@ -154,3 +154,4 @@ MODULE_LICENSE("GPL");
- MODULE_DESCRIPTION("SHA1 Secure Hash Algorithm");
- 
- MODULE_ALIAS_CRYPTO("sha1");
-+MODULE_ALIAS_CRYPTO("sha1-generic");
---- a/crypto/sha256_generic.c
-+++ b/crypto/sha256_generic.c
-@@ -385,4 +385,6 @@ MODULE_LICENSE("GPL");
- MODULE_DESCRIPTION("SHA-224 and SHA-256 Secure Hash Algorithm");
- 
- MODULE_ALIAS_CRYPTO("sha224");
-+MODULE_ALIAS_CRYPTO("sha224-generic");
- MODULE_ALIAS_CRYPTO("sha256");
-+MODULE_ALIAS_CRYPTO("sha256-generic");
---- a/crypto/sha512_generic.c
-+++ b/crypto/sha512_generic.c
-@@ -288,4 +288,6 @@ MODULE_LICENSE("GPL");
- MODULE_DESCRIPTION("SHA-512 and SHA-384 Secure Hash Algorithms");
- 
- MODULE_ALIAS_CRYPTO("sha384");
-+MODULE_ALIAS_CRYPTO("sha384-generic");
- MODULE_ALIAS_CRYPTO("sha512");
-+MODULE_ALIAS_CRYPTO("sha512-generic");
---- a/crypto/tea.c
-+++ b/crypto/tea.c
-@@ -270,6 +270,7 @@ static void __exit tea_mod_fini(void)
- 	crypto_unregister_algs(tea_algs, ARRAY_SIZE(tea_algs));
- }
- 
-+MODULE_ALIAS_CRYPTO("tea");
- MODULE_ALIAS_CRYPTO("xtea");
- MODULE_ALIAS_CRYPTO("xeta");
- 
---- a/crypto/tgr192.c
-+++ b/crypto/tgr192.c
-@@ -676,6 +676,7 @@ static void __exit tgr192_mod_fini(void)
- 	crypto_unregister_shashes(tgr_algs, ARRAY_SIZE(tgr_algs));
- }
- 
-+MODULE_ALIAS_CRYPTO("tgr192");
- MODULE_ALIAS_CRYPTO("tgr160");
- MODULE_ALIAS_CRYPTO("tgr128");
- 
---- a/crypto/twofish_generic.c
-+++ b/crypto/twofish_generic.c
-@@ -212,3 +212,4 @@ module_exit(twofish_mod_fini);
- MODULE_LICENSE("GPL");
- MODULE_DESCRIPTION ("Twofish Cipher Algorithm");
- MODULE_ALIAS_CRYPTO("twofish");
-+MODULE_ALIAS_CRYPTO("twofish-generic");
---- a/crypto/wp512.c
-+++ b/crypto/wp512.c
-@@ -1167,6 +1167,7 @@ static void __exit wp512_mod_fini(void)
- 	crypto_unregister_shashes(wp_algs, ARRAY_SIZE(wp_algs));
- }
- 
-+MODULE_ALIAS_CRYPTO("wp512");
- MODULE_ALIAS_CRYPTO("wp384");
- MODULE_ALIAS_CRYPTO("wp256");
- 
+-#ifndef __ASM_BARRIER_H
+-#define __ASM_BARRIER_H
+-
+-#ifndef __ASSEMBLY__
+-
+-/* TODO-vineetg: Need to see what this does, don't we need sync anywhere */
+-#define mb() __asm__ __volatile__ ("" : : : "memory")
+-#define rmb() mb()
+-#define wmb() mb()
+-#define set_mb(var, value)  do { var = value; mb(); } while (0)
+-#define set_wmb(var, value) do { var = value; wmb(); } while (0)
+-#define read_barrier_depends()  mb()
+-
+-/* TODO-vineetg verify the correctness of macros here */
+-#ifdef CONFIG_SMP
+-#define smp_mb()        mb()
+-#define smp_rmb()       rmb()
+-#define smp_wmb()       wmb()
+-#else
+-#define smp_mb()        barrier()
+-#define smp_rmb()       barrier()
+-#define smp_wmb()       barrier()
+-#endif
+-
+-#define smp_read_barrier_depends()      do { } while (0)
+-
+-#endif
+-
+-#endif
 
 
