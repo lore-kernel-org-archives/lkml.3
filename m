@@ -1,103 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757155AbbA2CO0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 21:14:26 -0500
-Received: from mailapp01.imgtec.com ([195.59.15.196]:22421 "EHLO
-	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755241AbbA2COX (ORCPT
+	id S1761025AbbA1UhP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 15:37:15 -0500
+Received: from mail.kmu-office.ch ([178.209.48.109]:34700 "EHLO
+	mail.kmu-office.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753971AbbA1UhA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 21:14:23 -0500
-Message-ID: <54C8B974.8030703@imgtec.com>
-Date: Wed, 28 Jan 2015 10:27:00 +0000
-From: Zubair Lutfullah Kakakhel <Zubair.Kakakhel@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
+	Wed, 28 Jan 2015 15:37:00 -0500
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>, Guenter Roeck <linux@roeck-us.net>
-CC: <wim@iguana.be>, <devicetree@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-watchdog@vger.kernel.org>,
-        <paul@crapouillou.net>
-Subject: Re: [PATCH 1/2] dt: watchdog: Add DT binding documentation for jz47xx
- watchdog timer
-References: <1422371490-44402-1-git-send-email-Zubair.Kakakhel@imgtec.com> <20150127221909.GA21671@roeck-us.net> <2960717.ZtXrNMeS1F@wuerfel> <9081741.fTg5kD1W54@wuerfel>
-In-Reply-To: <9081741.fTg5kD1W54@wuerfel>
-Content-Type: text/plain; charset="windows-1252"
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.154.89]
+Date: Wed, 28 Jan 2015 11:31:23 +0100
+From: Stefan Agner <stefan@agner.ch>
+To: Mark Rutland <mark.rutland@arm.com>
+Cc: tglx@linutronix.de, jason@lakedaemon.net,
+        Marc Zyngier <Marc.Zyngier@arm.com>, u.kleine-koenig@pengutronix.de,
+        shawn.guo@linaro.org, kernel@pengutronix.de, arnd@arndb.de,
+        robh+dt@kernel.org, Pawel Moll <Pawel.Moll@arm.com>,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        linux@arm.linux.org.uk, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RESEND v3 2/3] irqchip: vf610-mscm: dt-bindings: add
+ MSCM bindings
+In-Reply-To: <e8f5ff60a8da4c7539d9a33d162bb773@agner.ch>
+References: <1421309046-22452-1-git-send-email-stefan@agner.ch>
+ <1421309046-22452-3-git-send-email-stefan@agner.ch>
+ <20150126133602.GG23313@leverpostej>
+ <e8f5ff60a8da4c7539d9a33d162bb773@agner.ch>
+Message-ID: <96a334f3e775b6e5db51383e3ae94f7d@agner.ch>
+User-Agent: Roundcube Webmail/1.0.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On 27/01/15 22:42, Arnd Bergmann wrote:
-> On Tuesday 27 January 2015 23:36:36 Arnd Bergmann wrote:
->> On Tuesday 27 January 2015 14:19:09 Guenter Roeck wrote:
->>> On Tue, Jan 27, 2015 at 10:29:49PM +0100, Arnd Bergmann wrote:
->>>> On Tuesday 27 January 2015 12:52:29 Guenter Roeck wrote:
->>>>> Driver does this (today):
->>>>>
->>>>>          drvdata->rtc_clk = clk_get(&pdev->dev, "rtc");
->>>>>
->>>>> Isn't that the name to use ? Just wondering.
->>>>
->>>> Just because the driver uses it at the moment does not mean it's the name
->>>> that the IP block uses.
->>>>
->>>> clk_get() has the unpleasant property of doing fuzzy matching
->>>> on the name that is passed. It first tries to use the string
->>>> as the name of the clock input of the device, but if that is
->>>> not there, it falls back to looking for a global clk with a con_id.
->>>>
->>>> In DT, we only support the first kind, but if a driver currently
->>>> uses the second, you get the wrong name.
->>>>
->>>> Looking at arch/mips/jz4740/clock.c now, this seems to be exactly
->>>> what is going on here: there is no clkdev_add call to associate
->>>> the device clocks, so it can only match a global clock entry. 
->>>>
->>> Me confused :-(.
+On 2015-01-26 15:18, Stefan Agner wrote:
+> On 2015-01-26 14:36, Mark Rutland wrote:
+>> On Thu, Jan 15, 2015 at 08:04:05AM +0000, Stefan Agner wrote:
+>>> Add binding documentation for Miscellaneous System Control Module
+>>> found in Freescale Vybrid SoC's.
 >>>
->>> Does that mean the driver needs to be fixed, that the DT property
->>> needs to change (to what ?), or both ?
+>>> Signed-off-by: Stefan Agner <stefan@agner.ch>
+>>> ---
+>>>  .../bindings/arm/freescale/fsl,vf610-mscm.txt         | 19 +++++++++++++++++++
+>>>  1 file changed, 19 insertions(+)
+>>>  create mode 100644 Documentation/devicetree/bindings/arm/freescale/fsl,vf610-mscm.txt
+>>>
+>>> diff --git a/Documentation/devicetree/bindings/arm/freescale/fsl,vf610-mscm.txt b/Documentation/devicetree/bindings/arm/freescale/fsl,vf610-mscm.txt
+>>> new file mode 100644
+>>> index 0000000..e051b88
+>>> --- /dev/null
+>>> +++ b/Documentation/devicetree/bindings/arm/freescale/fsl,vf610-mscm.txt
+>>> @@ -0,0 +1,19 @@
+>>> +Freescale Vybrid Miscellaneous System Control Module
+>>> +
+>>> +The MSCM IP contains Access Control and TrustZone Security hardware,
+>>> +CPU Configuration registers and Interrupt Router control.
+>>> +
+>>> +Required properties:
+>>> +- compatible : "fsl,vf610-mscm", "syscon"
 >>
->> Both.
+>> I'm a little concerned by this also being a syscon. What other devices
+>> need to refer to this block as a syscon?
 >>
->> The jz47xx clock driver should register a clkdev lookup table with
->> proper clock input names for each clock that is referenced by a
->> device, and then the drivers can use the right names.
+> 
+> The block offers several functionality. I'm happy we can discuss this
+> here a bit more in depth, since I'm really not sure if the current
+> solution is the best solution...
+> 
+> Due to the general rule to not split hardware modules, I hesitated to
+> make different nodes out of it. However, this module has some quite
+> distinct sub-modules, hence I guess it would be also feasible to do so:
+> 
+> 0x40001000-0x4000105C - Processor information e.g. which processor ID is
+> the accessing processor (processor identity), cache size etc...
+> 0x40001800-0x40001820 - CPU2CPU directed interrupt generation/clear
+> registers...
+> 0x40001880-0x4000195E - the actual interrupt router
+> 0x40001C00-0x40001DDC - ACTZS TrustZone registers...
+> 
+> This driver accesses the first and the third block. The first block is
+> necessary since the driver needs to know which CPU ID it is running on
+> to actually program the interrupt router (Note: this is a heterogeneous
+> multiprocessing system. This are actually treated as two independent UP
+> systems, considering that Linux can also run on the Cortex-M4).
+> 
+> Hence, the syscon definition which would allow to access other areas as
+> needed, especially the processor information might be needed by any
+> other peripheral (driver) which needs to know what CPU it is running on.
+> What do you think?
+> 
+> OTH, we could as well split it up in three or even four nodes. The MSCM
+> interrupt router part just needs to access the the MSCM processor
+> information part somehow (syscon?)...
+> 
+> Fwiw, in our downstream kernel, the CPU2CPU interrupts are used for
+> Freescales messaging system (MCC). I hacked a special interface in that
+> early version of this driver, to export this functionality. But then I
+> guess such a functionality should not affect the device tree
+> bindings...?
+> http://git.toradex.com/cgit/linux-toradex.git/commit/?h=toradex_vf_3.18-next&id=6f0bbad6b805cf2014eec54531dbe4ddb4867a91
+> 
+> For detailed information, the module is documented in the public
+> reference manual, chapter 64.
+> http://www.freescale.com/webapp/sps/site/prod_summary.jsp?code=VF6xx&fpsp=1&tab=Documentation_Tab
+> 
+
+The MSCM module described as individual sub-modules would look something
+like this:
+
+
+	mscm_cpucfg: cpucfg@40001000 {
+		compatible = "fsl,vf610-mscm-cpucfg", "syscon";
+		reg = <0x40001000 0x800>;
+	};
+
+	mscm_ir: interrupt-controller@40001800 {
+		compatible = "fsl,vf610-mscm-ir";
+		reg = <0x40001800 0x400>;
+		fsl,cpucfg = <&mscm_cpucfg>;
+		interrupt-controller;
+		#interrupt-cells = <2>;
+		interrupt-parent = <&intc>;
+	};
+
+With this layout, only the CPU information part would be syscon, whereas
+the MSCM interrupt router driver would be its first user. The TrustZone
+registers are left out for now...
+
+What do you think? Advice appreciated.
+
+--
+Stefan
+
+
+>>> +- interrupt-controller : Identifies the node as an interrupt controller
+>>> +- #interrupt-cells : Two cells, interrupt number and flags (IRQ type)
 >>
->> In a lot of cases, the best name for a clock is no name so you
->> just use an anonymous clock like
+>> What numbers and flags are valid?
 >>
->>         clk = clk_get(dev, NULL);
+> 
+> The first cell is the hardware interrupt ID according to the MSCM
+> interrupt router. The flags gets passed to the GIC interrupt controller
+> only, hence those are the one which are supported by the GIC controller.
+> 
+> 
+> Will add that information, thx.
+> 
+> --
+> Stefan
+> 
+>> Mark.
 >>
->> but this still requires a clock lookup table.
-> 
-> To illustrate why the current approach is wrong, think of a driver
-> that handles a device that can be used on two different SoCs.
-> 
-> The name used by the clock provider is SoC specific, so the driver
-> would need to know which SoC it's being used on in order to pass
-> the right clock signal name. clkdev is meant to solve this by providing
-> a lookup between the device/clock-input pair and the actual clock.
-> 
-> Apparently jz4740 does not share any devices with another SoC at
-> the moment, so this has not been a problem, but if jz4780 has
-> a slightly different clock tree, it's already broken.
-> 
-> 	Arnd
-> 
-
-There is on-going work to fix jz4740, add jz4780 and shake the entire clock tree as well.
-
-Patch 14 onwards in this series
-http://patchwork.linux-mips.org/bundle/paulburton/ci20-v3.20/
-
-Instead of lumping things out in huge changesets, I intended to push out the minor patches that are disjoint.
-
-That was the purpose of sending these two patches.
-
-Current binding requires the clock-name to be "rtc". Hence the name at the moment.
-
-Regards,
-ZubairLK
+>>> +- reg : the register range of the MSCM module
+>>> +
+>>> +Example:
+>>> +	mscm: mscm@40001000 {
+>>> +		compatible = "fsl,vf610-mscm", "syscon";
+>>> +		interrupt-controller;
+>>> +		#interrupt-cells = <2>;
+>>> +		interrupt-parent = <&intc>;
+>>> +		reg = <0x40001000 0x1000>;
+>>> +	}
+>>> --
+>>> 2.2.1
+>>>
+>>>
