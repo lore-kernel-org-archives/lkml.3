@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761346AbbA1ES2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 23:18:28 -0500
-Received: from mail.kernel.org ([198.145.29.136]:38373 "EHLO mail.kernel.org"
+	id S1762124AbbA1FLF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 00:11:05 -0500
+Received: from mail.kernel.org ([198.145.29.136]:38387 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755667AbbA1ESP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 23:18:15 -0500
+	id S1756902AbbA1ESR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 23:18:17 -0500
 From: lizf@kernel.org
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Mike Christie <michaelc@cs.wisc.edu>,
-        Christoph Hellwig <hch@lst.de>,
-        James Bottomley <JBottomley@Parallels.com>,
+Cc: linux-kernel@vger.kernel.org, Hans de Goede <hdegoede@redhat.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         Zefan Li <lizefan@huawei.com>
-Subject: [PATCH 3.4 50/91] libiscsi: fix potential buffer overrun in __iscsi_conn_send_pdu
-Date: Wed, 28 Jan 2015 12:07:47 +0800
-Message-Id: <1422418236-12852-100-git-send-email-lizf@kernel.org>
+Subject: [PATCH 3.4 051/177] Input: i8042 - add noloop quirk for Asus X750LN
+Date: Wed, 28 Jan 2015 12:07:48 +0800
+Message-Id: <1422418236-12852-101-git-send-email-lizf@kernel.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422418050-12581-1-git-send-email-lizf@kernel.org>
 References: <1422418050-12581-1-git-send-email-lizf@kernel.org>
@@ -22,59 +21,44 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mike Christie <michaelc@cs.wisc.edu>
+From: Hans de Goede <hdegoede@redhat.com>
 
-3.4.105-rc1 review patch.  If anyone has any objections, please let me know.
+3.4.106-rc1 review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
 
-commit db9bfd64b14a3a8f1868d2164518fdeab1b26ad1 upstream.
+commit 9ff84a17302aeb8913ff244ecc0d8f9d219fecb5 upstream.
 
-This patches fixes a potential buffer overrun in __iscsi_conn_send_pdu.
-This function is used by iscsi drivers and userspace to send iscsi PDUs/
-commands. For login commands, we have a set buffer size. For all other
-commands we do not support data buffers.
+Without this the aux port does not get detected, and consequently the
+touchpad will not work.
 
-This was reported by Dan Carpenter here:
-http://www.spinics.net/lists/linux-scsi/msg66838.html
+https://bugzilla.redhat.com/show_bug.cgi?id=1110011
 
-Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: Mike Christie <michaelc@cs.wisc.edu>
-Reviewed-by: Sagi Grimberg <sagig@mellanox.com>
-Signed-off-by: Christoph Hellwig <hch@lst.de>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Signed-off-by: Zefan Li <lizefan@huawei.com>
 ---
- drivers/scsi/libiscsi.c | 10 ++++++++++
- 1 file changed, 10 insertions(+)
+ drivers/input/serio/i8042-x86ia64io.h | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
-diff --git a/drivers/scsi/libiscsi.c b/drivers/scsi/libiscsi.c
-index 82c3fd4..1243d2f 100644
---- a/drivers/scsi/libiscsi.c
-+++ b/drivers/scsi/libiscsi.c
-@@ -718,11 +718,21 @@ __iscsi_conn_send_pdu(struct iscsi_conn *conn, struct iscsi_hdr *hdr,
- 			return NULL;
- 		}
- 
-+		if (data_size > ISCSI_DEF_MAX_RECV_SEG_LEN) {
-+			iscsi_conn_printk(KERN_ERR, conn, "Invalid buffer len of %u for login task. Max len is %u\n", data_size, ISCSI_DEF_MAX_RECV_SEG_LEN);
-+			return NULL;
-+		}
-+
- 		task = conn->login_task;
- 	} else {
- 		if (session->state != ISCSI_STATE_LOGGED_IN)
- 			return NULL;
- 
-+		if (data_size != 0) {
-+			iscsi_conn_printk(KERN_ERR, conn, "Can not send data buffer of len %u for op 0x%x\n", data_size, opcode);
-+			return NULL;
-+		}
-+
- 		BUG_ON(conn->c_stage == ISCSI_CONN_INITIAL_STAGE);
- 		BUG_ON(conn->c_stage == ISCSI_CONN_STOPPED);
- 
+diff --git a/drivers/input/serio/i8042-x86ia64io.h b/drivers/input/serio/i8042-x86ia64io.h
+index 1291673..40ff494 100644
+--- a/drivers/input/serio/i8042-x86ia64io.h
++++ b/drivers/input/serio/i8042-x86ia64io.h
+@@ -101,6 +101,12 @@ static const struct dmi_system_id __initconst i8042_dmi_noloop_table[] = {
+ 	},
+ 	{
+ 		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "ASUSTeK COMPUTER INC."),
++			DMI_MATCH(DMI_PRODUCT_NAME, "X750LN"),
++		},
++	},
++	{
++		.matches = {
+ 			DMI_MATCH(DMI_SYS_VENDOR, "Compaq"),
+ 			DMI_MATCH(DMI_PRODUCT_NAME , "ProLiant"),
+ 			DMI_MATCH(DMI_PRODUCT_VERSION, "8500"),
 -- 
 1.9.1
 
