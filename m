@@ -1,116 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761517AbbA2DZB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 22:25:01 -0500
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:47610 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761520AbbA2DYz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 22:24:55 -0500
-Message-ID: <54C8C017.4050202@linaro.org>
-Date: Wed, 28 Jan 2015 10:55:19 +0000
-From: Daniel Thompson <daniel.thompson@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
-MIME-Version: 1.0
-To: Kiran Raparthy <kiran.kumar@linaro.org>, linux-kernel@vger.kernel.org
-CC: kgdb-bugreport@lists.sourceforge.net, Colin Cross <ccross@android.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Android Kernel Team <kernel-team@android.com>,
-        Sumit Semwal <sumit.semwal@linaro.org>
-Subject: Re: [Kgdb-bugreport] [RFC v5 - RESEND] debug: prevent entering debug
- mode on panic/exception.
-References: <1422441574-24005-1-git-send-email-kiran.kumar@linaro.org>
-In-Reply-To: <1422441574-24005-1-git-send-email-kiran.kumar@linaro.org>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+	id S1756027AbbA1WH4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 17:07:56 -0500
+Received: from mga03.intel.com ([134.134.136.65]:49878 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754527AbbA1UU6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jan 2015 15:20:58 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.09,480,1418112000"; 
+   d="scan'208";a="677268624"
+From: Jiang Liu <jiang.liu@linux.intel.com>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>,
+        Borislav Petkov <bp@alien8.de>, Lv Zheng <lv.zheng@intel.com>
+Cc: Jiang Liu <jiang.liu@linux.intel.com>, Tony Luck <tony.luck@intel.com>,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org, linux-acpi@vger.kernel.org
+Subject: [Patch v2 00/22] Improve ACPI resource parsing interfaces and enable IOAPIC hotplug
+Date: Wed, 28 Jan 2015 18:57:18 +0800
+Message-Id: <1422442660-455-1-git-send-email-jiang.liu@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 28/01/15 10:39, Kiran Raparthy wrote:
-> From: Colin Cross <ccross@android.com>
-> 
-> debug: prevent entering debug mode on panic/exception.
-> 
-> On non-developer devices, kgdb prevents the device from rebooting
-> after a panic.
-> 
-> Incase of panics and exceptions, to allow the device to reboot, prevent entering
-> debug mode to avoid getting stuck waiting for the user to interact with debugger.
-> 
-> To avoid entering the debugger on panic/exception without any extra configuration,
-> panic_timeout is being used which can be set via /proc/sys/kernel/panic at run time
-> and CONFIG_PANIC_TIMEOUT sets the default value.
-> 
-> Setting panic_timeout indicates that the user requested machine to perform
-> unattended reboot after panic. We dont want to get stuck waiting for the user
-> input incase of panic.
+During enabling ACPI based IOAPIC hotplug, Thomas noticed some issues
+in ACPI resource parsing interfaces. So this is an effort to improve them.
 
-Some kind of changelog between the versions would have been nice. I
-*think* the difference between v4 and v5 was just the addition paragraph
-above but I had to put in extra work to check that and I'm still not
-100% sure that's the only change.
+Patch 1 refines ACPICA resource descriptors, which has already been
+merged into "git://git.kernel.org/pub/scm/linux/kernel/git/rafael/linux-pm.git bleeding-edge"
 
-Also you could start billing this as a PATCH rather than an RFC.
+Patch 2-12 improve ACPI resource parsing interfaces and also fixes some
+bugs.
 
+Patch 13-19 try to share the common data structure resource_list_entry
+between PCI and ACPI. It may also be shared with PNP too.
 
-Daniel.
+Patch 20-22 enable ACPI based IOAPIC hotplug.
 
+The patchset is based on v3.19-rc6+ and passed Fengguang's 0day test
+suite. You may get it from:
+https://github.com/jiangliu/linux.git acpires_v2
 
-> Cc: Jason Wessel <jason.wessel@windriver.com>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: kgdb-bugreport@lists.sourceforge.net
-> Cc: linux-kernel@vger.kernel.org
-> Cc: Android Kernel Team <kernel-team@android.com>
-> Cc: John Stultz <john.stultz@linaro.org>
-> Cc: Sumit Semwal <sumit.semwal@linaro.org>
-> Signed-off-by: Colin Cross <ccross@android.com>
-> [Kiran: Added context to commit message.
-> panic_timeout is used instead of break_on_panic and
-> break_on_exception to honor CONFIG_PANIC_TIMEOUT
-> Modified the commit as per community feedback]
-> Signed-off-by: Kiran Raparthy <kiran.kumar@linaro.org>
-> Reviewed-by: Daniel Thompson <daniel.thompson@linaro.org>
-> ---
->  kernel/debug/debug_core.c | 17 +++++++++++++++++
->  1 file changed, 17 insertions(+)
-> 
-> diff --git a/kernel/debug/debug_core.c b/kernel/debug/debug_core.c
-> index 1adf62b..0012a1f 100644
-> --- a/kernel/debug/debug_core.c
-> +++ b/kernel/debug/debug_core.c
-> @@ -689,6 +689,14 @@ kgdb_handle_exception(int evector, int signo, int ecode, struct pt_regs *regs)
->  
->  	if (arch_kgdb_ops.enable_nmi)
->  		arch_kgdb_ops.enable_nmi(0);
-> +	/*
-> +	 * Avoid entering the debugger if we were triggered due to an oops
-> +	 * but panic_timeout indicates the system should automatically
-> +	 * reboot on panic. We don't want to get stuck waiting for input
-> +	 * on such systems, especially if its "just" an oops.
-> +	 */
-> +	if (signo != SIGTRAP && panic_timeout)
-> +		return 1;
->  
->  	memset(ks, 0, sizeof(struct kgdb_state));
->  	ks->cpu			= raw_smp_processor_id();
-> @@ -821,6 +829,15 @@ static int kgdb_panic_event(struct notifier_block *self,
->  			    unsigned long val,
->  			    void *data)
->  {
-> +	/*
-> +	 * Avoid entering the debugger if we were triggered due to a panic
-> +	 * We don't want to get stuck waiting for input from user in such case.
-> +	 * panic_timeout indicates the system should automatically
-> +	 * reboot on panic.
-> +	 */
-> +	if (panic_timeout)
-> +		return NOTIFY_DONE;
-> +
->  	if (dbg_kdb_mode)
->  		kdb_printf("PANIC: %s\n", (char *)data);
->  	kgdb_breakpoint();
-> 
+V1->V2:
+1) Refine the way to share common code between address space and extended
+   address space.
+2) Relax some checks to avoid regressions according to Rafael's suggestions.
+3) Introduce struct resource_win to avoiding add extra parameter "offset"
+   to several interfaces.
+4) Add patches to enable ACPI based IOAPIC hotplug, which has been reviwed
+   several rounds.
+5) Rebase to v3.19-rc6+
+
+Thanks,
+Gerry
+
+Jiang Liu (13):
+  ACPI: Fix a bug in parsing ACPI Memroy24 resource
+  ACPI: Normalize return value of resource parser functions
+  ACPI: Set flag IORESOURCE_UNSET for unassigned resources
+  ACPI: Enforce stricter checks for address space descriptors
+  ACPI: Return translation offset when parsing ACPI address space
+    resources
+  ACPI: Translate resource into master side address for bridge window
+    resources
+  ACPI: Add field offset to struct resource_list_entry
+  ACPI: Introduce helper function acpi_dev_filter_resource_type()
+  resources: Move struct resource_list_entry from ACPI into resource
+    core
+  PCI: Use common resource list management code instead of private
+    implementation
+  x86/PCI/ACPI: Use common ACPI resource interfaces to simplify
+    implementation
+  x86/PCI: Refine the way to release PCI IRQ resources
+  x86/irq, ACPI: Implement ACPI driver to support IOAPIC hotplug
+
+Lv Zheng (1):
+  ACPICA: Resources: Provide common part for struct
+    acpi_resource_address structures.
+
+Thomas Gleixner (7):
+  ACPI: Remove redundant check in function
+    acpi_dev_resource_address_space()
+  ACPI: Implement proper length checks for mem resources
+  ACPI: Use the length check for io resources as well
+  ACPI: Let the parser return false for disabled resources
+  ACPI: Unify the parsing of address_space and ext_address_space
+  ACPI: Move the window flag logic to the combined parser
+  ACPI: Add prefetch decoding to the address space parser
+
+Yinghai Lu (1):
+  ACPI: Add interfaces to parse IOAPIC ID for IOAPIC hotplug
+
+ arch/arm/kernel/bios32.c            |    5 +-
+ arch/ia64/kernel/acpi-ext.c         |    6 +-
+ arch/ia64/pci/pci.c                 |   14 +-
+ arch/x86/include/asm/pci_x86.h      |    2 -
+ arch/x86/pci/acpi.c                 |  296 ++++++++++-------------------
+ arch/x86/pci/bus_numa.c             |    4 +-
+ arch/x86/pci/common.c               |   30 ++-
+ arch/x86/pci/intel_mid_pci.c        |    4 +-
+ arch/x86/pci/irq.c                  |   15 +-
+ arch/x86/pci/mmconfig-shared.c      |    6 +-
+ drivers/acpi/Kconfig                |    6 +
+ drivers/acpi/Makefile               |    1 +
+ drivers/acpi/acpi_lpss.c            |    6 +-
+ drivers/acpi/acpi_memhotplug.c      |    8 +-
+ drivers/acpi/acpi_platform.c        |    2 +-
+ drivers/acpi/acpica/rsaddr.c        |    9 +-
+ drivers/acpi/acpica/rsdumpinfo.c    |   59 +++---
+ drivers/acpi/acpica/rsxface.c       |   10 +-
+ drivers/acpi/internal.h             |    7 +
+ drivers/acpi/ioapic.c               |  225 ++++++++++++++++++++++
+ drivers/acpi/pci_irq.c              |    9 +-
+ drivers/acpi/pci_root.c             |    9 +-
+ drivers/acpi/processor_core.c       |  123 +++++++++++-
+ drivers/acpi/resource.c             |  349 +++++++++++++++++++++--------------
+ drivers/char/hpet.c                 |    4 +-
+ drivers/dma/acpi-dma.c              |    8 +-
+ drivers/hv/vmbus_drv.c              |    4 +-
+ drivers/pci/bus.c                   |   18 +-
+ drivers/pci/host-bridge.c           |    8 +-
+ drivers/pci/host/pci-host-generic.c |    4 +-
+ drivers/pci/host/pci-xgene.c        |    4 +-
+ drivers/pci/host/pcie-xilinx.c      |    4 +-
+ drivers/pci/probe.c                 |   10 +-
+ drivers/pnp/pnpacpi/rsparser.c      |   45 ++---
+ drivers/xen/xen-acpi-memhotplug.c   |    8 +-
+ include/acpi/acrestyp.h             |   40 ++--
+ include/linux/acpi.h                |   22 ++-
+ include/linux/pci.h                 |    9 +-
+ include/linux/resource_ext.h        |   77 ++++++++
+ kernel/resource.c                   |   25 +++
+ 40 files changed, 964 insertions(+), 531 deletions(-)
+ create mode 100644 drivers/acpi/ioapic.c
+ create mode 100644 include/linux/resource_ext.h
+
+-- 
+1.7.10.4
 
