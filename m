@@ -1,63 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933098AbbA1EO6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 23:14:58 -0500
-Received: from mail.kernel.org ([198.145.29.136]:37207 "EHLO mail.kernel.org"
+	id S933391AbbA1EPF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 23:15:05 -0500
+Received: from mail.kernel.org ([198.145.29.136]:37221 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932639AbbA1EOz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 23:14:55 -0500
+	id S933344AbbA1EO5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 23:14:57 -0500
 From: lizf@kernel.org
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org,
-        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
-        Johan Hovold <johan@kernel.org>, Zefan Li <lizefan@huawei.com>
-Subject: [PATCH 3.4 18/91] USB: sierra: add 1199:68AA device ID
-Date: Wed, 28 Jan 2015 12:06:43 +0800
-Message-Id: <1422418236-12852-36-git-send-email-lizf@kernel.org>
+Cc: linux-kernel@vger.kernel.org, "K. Y. Srinivasan" <kys@microsoft.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Zefan Li <lizefan@huawei.com>
+Subject: [PATCH 3.4 019/177] Drivers: hv: vmbus: Fix a bug in vmbus_open()
+Date: Wed, 28 Jan 2015 12:06:44 +0800
+Message-Id: <1422418236-12852-37-git-send-email-lizf@kernel.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422418050-12581-1-git-send-email-lizf@kernel.org>
 References: <1422418050-12581-1-git-send-email-lizf@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Bjørn Mork <bjorn@mork.no>
+From: "K. Y. Srinivasan" <kys@microsoft.com>
 
-3.4.105-rc1 review patch.  If anyone has any objections, please let me know.
+3.4.106-rc1 review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
 
-commit 5b3da69285c143b7ea76b3b9f73099ff1093ab73 upstream.
+commit 45d727cee9e200f5b351528b9fb063b69cf702c8 upstream.
 
-This VID:PID is used for some Direct IP devices behaving
-identical to the already supported 0F3D:68AA devices.
+Fix a bug in vmbus_open() and properly propagate the error. I would
+like to thank Dexuan Cui <decui@microsoft.com> for identifying the
+issue.
 
-Reported-by: Lars Melin <larsm17@gmail.com>
-Signed-off-by: Bjørn Mork <bjorn@mork.no>
-Signed-off-by: Johan Hovold <johan@kernel.org>
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Tested-by: Sitsofe Wheeler <sitsofe@yahoo.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Zefan Li <lizefan@huawei.com>
 ---
- drivers/usb/serial/sierra.c | 3 +++
- 1 file changed, 3 insertions(+)
+ drivers/hv/channel.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/usb/serial/sierra.c b/drivers/usb/serial/sierra.c
-index 64df565..e3ddec0 100644
---- a/drivers/usb/serial/sierra.c
-+++ b/drivers/usb/serial/sierra.c
-@@ -300,6 +300,9 @@ static const struct usb_device_id id_table[] = {
- 	{ USB_DEVICE_AND_INTERFACE_INFO(0x1199, 0x68A3, 0xFF, 0xFF, 0xFF),
- 	  .driver_info = (kernel_ulong_t)&direct_ip_interface_blacklist
- 	},
-+	{ USB_DEVICE_AND_INTERFACE_INFO(0x1199, 0x68AA, 0xFF, 0xFF, 0xFF),
-+	  .driver_info = (kernel_ulong_t)&direct_ip_interface_blacklist
-+	},
- 	/* AT&T Direct IP LTE modems */
- 	{ USB_DEVICE_AND_INTERFACE_INFO(0x0F3D, 0x68AA, 0xFF, 0xFF, 0xFF),
- 	  .driver_info = (kernel_ulong_t)&direct_ip_interface_blacklist
+diff --git a/drivers/hv/channel.c b/drivers/hv/channel.c
+index 1211d38..7bbbb95 100644
+--- a/drivers/hv/channel.c
++++ b/drivers/hv/channel.c
+@@ -207,8 +207,10 @@ int vmbus_open(struct vmbus_channel *newchannel, u32 send_ringbuffer_size,
+ 	ret = vmbus_post_msg(open_msg,
+ 			       sizeof(struct vmbus_channel_open_channel));
+ 
+-	if (ret != 0)
++	if (ret != 0) {
++		err = ret;
+ 		goto error1;
++	}
+ 
+ 	t = wait_for_completion_timeout(&open_info->waitevent, 5*HZ);
+ 	if (t == 0) {
 -- 
 1.9.1
 
