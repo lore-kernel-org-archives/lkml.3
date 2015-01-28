@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755493AbbA2JAQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 04:00:16 -0500
+	id S1755381AbbA2JAO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 04:00:14 -0500
 Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:44737 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754970AbbA2JAG (ORCPT
+	by vger.kernel.org with ESMTP id S1754553AbbA2JAI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 04:00:06 -0500
+	Thu, 29 Jan 2015 04:00:08 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Fabio Estevam <fabio.estevam@freescale.com>,
-        Shawn Guo <shawn.guo@linaro.org>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 152/176] ARM: dts: imx25: Fix PWM "per" clocks
-Date: Wed, 28 Jan 2015 15:29:42 +0100
-Message-Id: <b9b27df6e95bfe205a5fca8956d18e590686c424.1422455352.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Andrew Lunn <andrew@lunn.ch>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 153/176] bus: mvebu-mbus: fix support of MBus window 13
+Date: Wed, 28 Jan 2015 15:29:43 +0100
+Message-Id: <5ade5ab30a84496e8a860c3ea192d3e247418a5a.1422455352.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <ce4a451f616a1e7ab58cfeceea5e49c8b1c68c81.1422455352.git.jslaby@suse.cz>
 References: <ce4a451f616a1e7ab58cfeceea5e49c8b1c68c81.1422455352.git.jslaby@suse.cz>
@@ -23,72 +23,61 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Fabio Estevam <fabio.estevam@freescale.com>
+From: Andrew Lunn <andrew@lunn.ch>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 7ecd0bde5bfea524a843ad8fa8cb66ccbce68779 upstream.
+commit 38bdf45f4aa5cb6186d50a29e6cbbd9d486a1519 upstream.
 
-Currently PWM functionality is broken on mx25 due to the wrong assignment of the
-PWM "per" clock.
+On Armada XP, 375 and 38x the MBus window 13 has the remap capability,
+like windows 0 to 7. However, the mvebu-mbus driver isn't currently
+taking into account this special case, which means that when window 13
+is actually used, the remap registers are left to 0, making the device
+using this MBus window unavailable.
 
-According to Documentation/devicetree/bindings/clock/imx25-clock.txt:
-	pwm_ipg_per		52
+As a minimal fix for stable, don't use window 13. A full fix will
+follow later.
 
-,so update the pwm "per" to use 'pwm_ipg_per' instead of 'per10' clock.
-
-With this change PWM can work fine on mx25.
-
-Reported-by: Carlos Soto <csotoalonso@gmail.com>
-Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
-Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
+Fixes: fddddb52a6c ("bus: introduce an Marvell EBU MBus driver")
+Reviewed-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Signed-off-by: Andrew Lunn <andrew@lunn.ch>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- arch/arm/boot/dts/imx25.dtsi | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ drivers/bus/mvebu-mbus.c | 13 +++++++++++++
+ 1 file changed, 13 insertions(+)
 
-diff --git a/arch/arm/boot/dts/imx25.dtsi b/arch/arm/boot/dts/imx25.dtsi
-index 6a26e79f0ef4..cf3300a3071d 100644
---- a/arch/arm/boot/dts/imx25.dtsi
-+++ b/arch/arm/boot/dts/imx25.dtsi
-@@ -352,7 +352,7 @@
- 				compatible = "fsl,imx25-pwm", "fsl,imx27-pwm";
- 				#pwm-cells = <2>;
- 				reg = <0x53fa0000 0x4000>;
--				clocks = <&clks 106>, <&clks 36>;
-+				clocks = <&clks 106>, <&clks 52>;
- 				clock-names = "ipg", "per";
- 				interrupts = <36>;
- 			};
-@@ -371,7 +371,7 @@
- 				compatible = "fsl,imx25-pwm", "fsl,imx27-pwm";
- 				#pwm-cells = <2>;
- 				reg = <0x53fa8000 0x4000>;
--				clocks = <&clks 107>, <&clks 36>;
-+				clocks = <&clks 107>, <&clks 52>;
- 				clock-names = "ipg", "per";
- 				interrupts = <41>;
- 			};
-@@ -412,7 +412,7 @@
- 			pwm4: pwm@53fc8000 {
- 				compatible = "fsl,imx25-pwm", "fsl,imx27-pwm";
- 				reg = <0x53fc8000 0x4000>;
--				clocks = <&clks 108>, <&clks 36>;
-+				clocks = <&clks 108>, <&clks 52>;
- 				clock-names = "ipg", "per";
- 				interrupts = <42>;
- 			};
-@@ -458,7 +458,7 @@
- 				compatible = "fsl,imx25-pwm", "fsl,imx27-pwm";
- 				#pwm-cells = <2>;
- 				reg = <0x53fe0000 0x4000>;
--				clocks = <&clks 105>, <&clks 36>;
-+				clocks = <&clks 105>, <&clks 52>;
- 				clock-names = "ipg", "per";
- 				interrupts = <26>;
- 			};
+diff --git a/drivers/bus/mvebu-mbus.c b/drivers/bus/mvebu-mbus.c
+index b4bd72b6fdc8..b50c5e32ca35 100644
+--- a/drivers/bus/mvebu-mbus.c
++++ b/drivers/bus/mvebu-mbus.c
+@@ -181,12 +181,25 @@ static void mvebu_mbus_disable_window(struct mvebu_mbus_state *mbus,
+ }
+ 
+ /* Checks whether the given window number is available */
++
++/* On Armada XP, 375 and 38x the MBus window 13 has the remap
++ * capability, like windows 0 to 7. However, the mvebu-mbus driver
++ * isn't currently taking into account this special case, which means
++ * that when window 13 is actually used, the remap registers are left
++ * to 0, making the device using this MBus window unavailable. The
++ * quick fix for stable is to not use window 13. A follow up patch
++ * will correctly handle this window.
++*/
+ static int mvebu_mbus_window_is_free(struct mvebu_mbus_state *mbus,
+ 				     const int win)
+ {
+ 	void __iomem *addr = mbus->mbuswins_base +
+ 		mbus->soc->win_cfg_offset(win);
+ 	u32 ctrl = readl(addr + WIN_CTRL_OFF);
++
++	if (win == 13)
++		return false;
++
+ 	return !(ctrl & WIN_CTRL_ENABLE);
+ }
+ 
 -- 
 2.2.2
 
