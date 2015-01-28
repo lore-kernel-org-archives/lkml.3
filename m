@@ -1,62 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934108AbbA1CMr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 21:12:47 -0500
-Received: from smtprelay0205.hostedemail.com ([216.40.44.205]:41538 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S933350AbbA1CMp (ORCPT
+	id S934174AbbA1COG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 21:14:06 -0500
+Received: from e34.co.us.ibm.com ([32.97.110.152]:33056 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933353AbbA1COC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 21:12:45 -0500
-X-Session-Marker: 6E657665747340676F6F646D69732E6F7267
-X-Spam-Summary: 50,0,0,,d41d8cd98f00b204,rostedt@goodmis.org,:::::::::::,RULES_HIT:41:69:355:379:541:599:800:960:967:973:988:989:1260:1277:1311:1313:1314:1345:1359:1437:1515:1516:1518:1534:1540:1593:1594:1711:1730:1747:1777:1792:2393:2525:2553:2560:2563:2682:2685:2693:2859:2911:2933:2937:2939:2942:2945:2947:2951:2954:3022:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3872:3934:3936:3938:3941:3944:3947:3950:3953:3956:3959:4250:4321:4425:5007:6120:6261:6671:6672:7576:7875:7901:8599:8987:9025:9388:10004:10400:10848:10967:11232:11658:11914:12043:12438:12517:12519:12555:12740:13007:13008:13025:13069:13255:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: teeth98_1784a0781a813
-X-Filterd-Recvd-Size: 2028
-Date: Tue, 27 Jan 2015 21:12:40 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: John Paul Adrian Glaubitz <glaubitz@physik.fu-berlin.de>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        Matt Fleming <matt@console-pimps.org>,
-        Michael Karcher <kernel@mkarcher.dialup.fu-berlin.de>
-Subject: Re: [PATCH 3.10 06/32] scripts/recordmcount.pl: There is no -m32
- gcc option on Super-H anymore
-Message-ID: <20150127211240.29083dff@gandalf.local.home>
-In-Reply-To: <54C83C21.5080707@physik.fu-berlin.de>
-References: <20150128012627.081285723@linuxfoundation.org>
-	<20150128012627.996535068@linuxfoundation.org>
-	<54C83C21.5080707@physik.fu-berlin.de>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
+	Tue, 27 Jan 2015 21:14:02 -0500
+Subject: [PATCH V2] cpuidle/powernv: Read target_residency value of idle
+ states from DT if available
+From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+To: mpe@ellerman.id.au
+Cc: rafael.j.wysocki@intel.com, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, svaidy@linux.vnet.ibm.com,
+        linux-pm@vger.kernel.org
+Date: Wed, 28 Jan 2015 07:43:06 +0530
+Message-ID: <20150128021044.11166.81418.stgit@preeti.in.ibm.com>
+User-Agent: StGit/0.17-dirty
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 15012802-0017-0000-0000-00000844B7F1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 28 Jan 2015 02:32:17 +0100
-John Paul Adrian Glaubitz <glaubitz@physik.fu-berlin.de> wrote:
+The device tree now exposes the residency values for different idle states. Read
+these values instead of calculating residency from the latency values. The values
+exposed in the DT are validated for optimal power efficiency. However to maintain
+compatibility with the older firmware code which does not expose residency
+values, use default values as a fallback mechanism. While at it, handle some
+cleanups.
 
-> On 01/28/2015 02:26 AM, Greg Kroah-Hartman wrote:
-> > 3.10-stable review patch.  If anyone has any objections, please let me know.
-> > 
-> > ------------------
-> > 
-> > From: Michael Karcher <kernel@mkarcher.dialup.fu-berlin.de>
-> > 
-> > commit 1caf6aaaa47471831d77c75f094d4e00ad1ec808 upstream.
-> > 
-> > Compiling SH with gcc-4.8 fails due to the -m32 option not being
-> > supported.
-> 
-> JFTR, I didn't test with earlier kernels than 3.18 yet but I assume
-> earlier versions will just compile fine as well.
-> 
-> Here's the log of a successful build of 3.18 with the patch applied:
-> 
-> >
-> http://buildd.debian-ports.org/status/fetch.php?pkg=linux&arch=sh4&ver=3.18.3-1~exp1&stamp=1422284071
+Signed-off-by: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+---
 
-I doubt it would have an issue with earlier kernels. Earlier compilers
-are another story.
+Changes from V1: https://lkml.org/lkml/2015/1/19/221
+1. Used a better API for reading the DT property values.
+2. Code cleanups
 
--- Steve
+ drivers/cpuidle/cpuidle-powernv.c |   57 ++++++++++++++++++++-----------------
+ 1 file changed, 31 insertions(+), 26 deletions(-)
+
+diff --git a/drivers/cpuidle/cpuidle-powernv.c b/drivers/cpuidle/cpuidle-powernv.c
+index 223d505..29fdbe7 100644
+--- a/drivers/cpuidle/cpuidle-powernv.c
++++ b/drivers/cpuidle/cpuidle-powernv.c
+@@ -13,6 +13,7 @@
+ #include <linux/notifier.h>
+ #include <linux/clockchips.h>
+ #include <linux/of.h>
++#include <linux/slab.h>
+ 
+ #include <asm/machdep.h>
+ #include <asm/firmware.h>
+@@ -161,9 +162,9 @@ static int powernv_add_idle_states(void)
+ 	int nr_idle_states = 1; /* Snooze */
+ 	int dt_idle_states;
+ 	const __be32 *idle_state_flags;
+-        const __be32 *idle_state_latency;
+-        u32 len_flags, flags, latency_ns;
+-	int i;
++	u32 len_flags, flags;
++	u32 *latency_ns, *residency_ns;
++	int i, rc;
+ 
+ 	/* Currently we have snooze statically defined */
+ 
+@@ -175,53 +176,57 @@ static int powernv_add_idle_states(void)
+ 
+ 	idle_state_flags = of_get_property(power_mgt, "ibm,cpu-idle-state-flags", &len_flags);
+ 	if (!idle_state_flags) {
+-		pr_warn("DT-PowerMgmt: missing ibm,cpu-idle-state-flags\n");
++		pr_warn("cpuidle-powernv : missing ibm,cpu-idle-state-flags in DT\n");
+ 		return nr_idle_states;
+ 	}
+ 
+-	idle_state_latency = of_get_property(power_mgt,
+-			"ibm,cpu-idle-state-latencies-ns", NULL);
+-	if (!idle_state_latency) {
+-		pr_warn("DT-PowerMgmt: missing ibm,cpu-idle-state-latencies-ns\n");
++	dt_idle_states = len_flags / sizeof(u32);
++
++	latency_ns = kzalloc(sizeof(*latency_ns) * dt_idle_states, GFP_KERNEL);
++	rc = of_property_read_u32_array(power_mgt,
++			"ibm,cpu-idle-state-latencies-ns", latency_ns, dt_idle_states);
++	if (rc) {
++		pr_warn("cpuidle-powernv: missing ibm,cpu-idle-state-latencies-ns in DT\n");
+ 		return nr_idle_states;
+ 	}
+ 
+-	dt_idle_states = len_flags / sizeof(u32);
++	residency_ns = kzalloc(sizeof(*residency_ns) * dt_idle_states, GFP_KERNEL);
++	rc = of_property_read_u32_array(power_mgt,
++			"ibm,cpu-idle-state-residency-ns", residency_ns, dt_idle_states);
+ 
+ 	for (i = 0; i < dt_idle_states; i++) {
+ 
+ 		flags = be32_to_cpu(idle_state_flags[i]);
+-
+-		/* Cpuidle accepts exit_latency in us and we estimate
+-		 * target residency to be 10x exit_latency
++		/*
++		 * Cpuidle accepts exit_latency and target_residency in us.
++		 * Use default target_residency values if f/w does not expose it.
+ 		 */
+-		latency_ns = be32_to_cpu(idle_state_latency[i]);
+ 		if (flags & OPAL_PM_NAP_ENABLED) {
+ 			/* Add NAP state */
+ 			strcpy(powernv_states[nr_idle_states].name, "Nap");
+ 			strcpy(powernv_states[nr_idle_states].desc, "Nap");
+ 			powernv_states[nr_idle_states].flags = 0;
+-			powernv_states[nr_idle_states].exit_latency =
+-					((unsigned int)latency_ns) / 1000;
+-			powernv_states[nr_idle_states].target_residency =
+-					((unsigned int)latency_ns / 100);
++			powernv_states[nr_idle_states].target_residency = 100;
+ 			powernv_states[nr_idle_states].enter = &nap_loop;
+-			nr_idle_states++;
+-		}
+-
+-		if (flags & OPAL_PM_SLEEP_ENABLED ||
++		} else if (flags & OPAL_PM_SLEEP_ENABLED ||
+ 			flags & OPAL_PM_SLEEP_ENABLED_ER1) {
+ 			/* Add FASTSLEEP state */
+ 			strcpy(powernv_states[nr_idle_states].name, "FastSleep");
+ 			strcpy(powernv_states[nr_idle_states].desc, "FastSleep");
+ 			powernv_states[nr_idle_states].flags = CPUIDLE_FLAG_TIMER_STOP;
+-			powernv_states[nr_idle_states].exit_latency =
+-					((unsigned int)latency_ns) / 1000;
+-			powernv_states[nr_idle_states].target_residency =
+-					((unsigned int)latency_ns / 100);
++			powernv_states[nr_idle_states].target_residency = 300000;
+ 			powernv_states[nr_idle_states].enter = &fastsleep_loop;
+-			nr_idle_states++;
+ 		}
++
++		powernv_states[nr_idle_states].exit_latency =
++				((unsigned int)latency_ns[i]) / 1000;
++
++		if (!rc) {
++			powernv_states[nr_idle_states].target_residency =
++				((unsigned int)residency_ns[i]) / 1000;
++		}
++
++		nr_idle_states++;
+ 	}
+ 
+ 	return nr_idle_states;
+
