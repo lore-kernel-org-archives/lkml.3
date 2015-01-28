@@ -1,75 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932401AbbA2CQ3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 21:16:29 -0500
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:41067 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753777AbbA2CQ0 (ORCPT
+	id S1753476AbbA1UyG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 15:54:06 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:32996 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753319AbbA1UyB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 21:16:26 -0500
-From: Karl Beldan <karl.beldan@gmail.com>
-X-Google-Original-From: Karl Beldan <karl.beldan@rivierawaves.com>
-Cc: Karl Beldan <karl.beldan@gmail.com>,
-        Karl Beldan <karl.beldan@rivierawaves.com>,
-        Al Viro <viro@ZenIV.linux.org.uk>,
-        Eric Dumazet <eric.dumazet@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
-        Mike Frysinger <vapier@gentoo.org>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Subject: [PATCH v2] lib/checksum.c: fix carry in csum_tcpudp_nofold
-Date: Wed, 28 Jan 2015 10:58:11 +0100
-Message-Id: <1422439091-31413-1-git-send-email-karl.beldan@rivierawaves.com>
-X-Mailer: git-send-email 2.0.1
-To: unlisted-recipients:; (no To-header on input)
+	Wed, 28 Jan 2015 15:54:01 -0500
+Date: Wed, 28 Jan 2015 12:00:22 +0200
+From: Heba Aamer <heba93aamer@gmail.com>
+To: devel@driverdev.osuosl.org
+Cc: Larry.Finger@lwfinger.net, florian.c.schilhabel@googlemail.com,
+        gregkh@linuxfoundation.org, tapaswenipathak@gmail.com,
+        thomas@grouk.net, sudipm.mukherjee@gmail.com,
+        rickard_strandqvist@spectrumdigital.se, linux-kernel@vger.kernel.org
+Subject: [PATCH] staging: rtl8712: remove useless printing line
+Message-ID: <20150128100022.GA29018@mohammed-Inspiron-3537>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The carry from the 64->32bits folding was dropped, e.g with:
-saddr=0xFFFFFFFF daddr=0xFF0000FF len=0xFFFF proto=0 sum=1,
-csum_tcpudp_nofold returned 0 instead of 1.
+This patch removes an unneeded call to printk.
 
-Signed-off-by: Karl Beldan <karl.beldan@rivierawaves.com>
-Cc: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Arnd Bergmann <arnd@arndb.de>
-Cc: Mike Frysinger <vapier@gentoo.org>
-Cc: netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Cc: stable@vger.kernel.org
+Signed-off-by: Heba Aamer <heba93aamer@gmail.com>
 ---
- lib/checksum.c | 12 ++++++++++--
- 1 file changed, 10 insertions(+), 2 deletions(-)
+ drivers/staging/rtl8712/usb_intf.c |    1 -
+ 1 file changed, 1 deletion(-)
 
-diff --git a/lib/checksum.c b/lib/checksum.c
-index 129775e..fcf3894 100644
---- a/lib/checksum.c
-+++ b/lib/checksum.c
-@@ -47,6 +47,15 @@ static inline unsigned short from32to16(unsigned int x)
- 	return x;
- }
+diff --git a/drivers/staging/rtl8712/usb_intf.c b/drivers/staging/rtl8712/usb_intf.c
+index 7d0d171..f1fd7e8 100644
+--- a/drivers/staging/rtl8712/usb_intf.c
++++ b/drivers/staging/rtl8712/usb_intf.c
+@@ -366,7 +366,6 @@ static int r871xu_drv_init(struct usb_interface *pusb_intf,
+ 	struct net_device *pnetdev;
+ 	struct usb_device *udev;
  
-+static inline u32 from64to32(u64 x)
-+{
-+	/* add up 32-bit and 32-bit for 32+c bit */
-+	x = (x & 0xffffffff) + (x >> 32);
-+	/* add up carry.. */
-+	x = (x & 0xffffffff) + (x >> 32);
-+	return (u32)x;
-+}
-+
- static unsigned int do_csum(const unsigned char *buff, int len)
- {
- 	int odd;
-@@ -195,8 +204,7 @@ __wsum csum_tcpudp_nofold(__be32 saddr, __be32 daddr,
- #else
- 	s += (proto + len) << 8;
- #endif
--	s += (s >> 32);
--	return (__force __wsum)s;
-+	return (__force __wsum)from64to32(s);
- }
- EXPORT_SYMBOL(csum_tcpudp_nofold);
- #endif
+-	printk(KERN_INFO "r8712u: Staging version\n");
+ 	/* In this probe function, O.S. will provide the usb interface pointer
+ 	 * to driver. We have to increase the reference count of the usb device
+ 	 * structure by using the usb_get_dev function.
 -- 
-2.0.1
+1.7.9.5
 
