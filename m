@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964940AbbA2Cft (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 21:35:49 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:46939 "EHLO
+	id S964890AbbA2Cfi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 21:35:38 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:46932 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964894AbbA2Cfo (ORCPT
+	with ESMTP id S1759097AbbA2Cfc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 21:35:44 -0500
+	Wed, 28 Jan 2015 21:35:32 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jens Axboe <axboe@fb.com>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13.y-ckt 046/139] blk-mq: use 'nr_cpu_ids' as highest CPU ID count for hwq <-> cpu map
-Date: Wed, 28 Jan 2015 14:19:49 -0800
-Message-Id: <1422483682-15393-47-git-send-email-kamal@canonical.com>
+Cc: Peng Tao <tao.peng@primarydata.com>,
+        Trond Myklebust <trond.myklebust@primarydata.com>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13.y-ckt 047/139] nfs41: fix nfs4_proc_layoutget error handling
+Date: Wed, 28 Jan 2015 14:19:50 -0800
+Message-Id: <1422483682-15393-48-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422483682-15393-1-git-send-email-kamal@canonical.com>
 References: <1422483682-15393-1-git-send-email-kamal@canonical.com>
@@ -26,33 +28,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jens Axboe <axboe@fb.com>
+From: Peng Tao <tao.peng@primarydata.com>
 
-commit a33c1ba2913802b6fb23e974bb2f6a4e73c8b7ce upstream.
+commit 4bd5a980de87d2b5af417485bde97b8eb3d6cf6a upstream.
 
-We currently use num_possible_cpus(), but that breaks on sparc64 where
-the CPU ID space is discontig. Use nr_cpu_ids as the highest CPU ID
-instead, so we don't end up reading from invalid memory.
+nfs4_layoutget_release() drops layout hdr refcnt. Grab the refcnt
+early so that it is safe to call .release in case nfs4_alloc_pages
+fails.
 
-Signed-off-by: Jens Axboe <axboe@fb.com>
+Signed-off-by: Peng Tao <tao.peng@primarydata.com>
+Fixes: a47970ff78147 ("NFSv4.1: Hold reference to layout hdr in layoutget")
+Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- block/blk-mq-cpumap.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/nfs/nfs4proc.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/block/blk-mq-cpumap.c b/block/blk-mq-cpumap.c
-index f872127..78d3835 100644
---- a/block/blk-mq-cpumap.c
-+++ b/block/blk-mq-cpumap.c
-@@ -95,7 +95,7 @@ unsigned int *blk_mq_make_queue_map(struct blk_mq_reg *reg)
- 	unsigned int *map;
+diff --git a/fs/nfs/nfs4proc.c b/fs/nfs/nfs4proc.c
+index cc27e1f..a9902fb 100644
+--- a/fs/nfs/nfs4proc.c
++++ b/fs/nfs/nfs4proc.c
+@@ -7581,6 +7581,9 @@ nfs4_proc_layoutget(struct nfs4_layoutget *lgp, gfp_t gfp_flags)
  
- 	/* If cpus are offline, map them to first hctx */
--	map = kzalloc_node(sizeof(*map) * num_possible_cpus(), GFP_KERNEL,
-+	map = kzalloc_node(sizeof(*map) * nr_cpu_ids, GFP_KERNEL,
- 				reg->numa_node);
- 	if (!map)
- 		return NULL;
+ 	dprintk("--> %s\n", __func__);
+ 
++	/* nfs4_layoutget_release calls pnfs_put_layout_hdr */
++	pnfs_get_layout_hdr(NFS_I(inode)->layout);
++
+ 	lgp->args.layout.pages = nfs4_alloc_pages(max_pages, gfp_flags);
+ 	if (!lgp->args.layout.pages) {
+ 		nfs4_layoutget_release(lgp);
+@@ -7593,9 +7596,6 @@ nfs4_proc_layoutget(struct nfs4_layoutget *lgp, gfp_t gfp_flags)
+ 	lgp->res.seq_res.sr_slot = NULL;
+ 	nfs4_init_sequence(&lgp->args.seq_args, &lgp->res.seq_res, 0);
+ 
+-	/* nfs4_layoutget_release calls pnfs_put_layout_hdr */
+-	pnfs_get_layout_hdr(NFS_I(inode)->layout);
+-
+ 	task = rpc_run_task(&task_setup_data);
+ 	if (IS_ERR(task))
+ 		return ERR_CAST(task);
 -- 
 1.9.1
 
