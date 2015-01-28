@@ -1,233 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756737AbbA1UXQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 15:23:16 -0500
-Received: from mail-qg0-f51.google.com ([209.85.192.51]:36494 "EHLO
-	mail-qg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756663AbbA1UXL (ORCPT
+	id S964953AbbA1UuB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 15:50:01 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:40980 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934465AbbA1Uty (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 15:23:11 -0500
-Date: Wed, 28 Jan 2015 10:07:01 -0500
-From: Tejun Heo <tj@kernel.org>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        Eric Sandeen <sandeen@sandeen.net>, Dave Chinner <david@fromorbit.com>
-Subject: Re: [PATCH 3.18 11/61] workqueue: fix subtle pool management issue
- which can stall whole worker_pool
-Message-ID: <20150128150701.GA3199@htj.dyndns.org>
-References: <20150128012636.936333725@linuxfoundation.org>
- <20150128012638.187292688@linuxfoundation.org>
- <54C840BA.7020207@cn.fujitsu.com>
- <20150128022456.GF12314@htj.dyndns.org>
- <54C85454.6070303@cn.fujitsu.com>
+	Wed, 28 Jan 2015 15:49:54 -0500
+Date: Wed, 28 Jan 2015 07:07:10 -0800
+From: tip-bot for Namhyung Kim <tipbot@zytor.com>
+Message-ID: <tip-ec3d07cb630da5da3ccfdf2b2f5472cadedb9470@git.kernel.org>
+Cc: a.p.zijlstra@chello.nl, jolsa@kernel.org, mingo@kernel.org,
+        linux-kernel@vger.kernel.org, acme@redhat.com, tglx@linutronix.de,
+        jolsa@redhat.com, namhyung@kernel.org, hpa@zytor.com
+Reply-To: mingo@kernel.org, acme@redhat.com, linux-kernel@vger.kernel.org,
+        jolsa@redhat.com, tglx@linutronix.de, namhyung@kernel.org,
+        hpa@zytor.com, a.p.zijlstra@chello.nl, jolsa@kernel.org
+In-Reply-To: <1419656793-32756-3-git-send-email-namhyung@kernel.org>
+References: <1419656793-32756-3-git-send-email-namhyung@kernel.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf diff: Print diff result more precisely
+Git-Commit-ID: ec3d07cb630da5da3ccfdf2b2f5472cadedb9470
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <54C85454.6070303@cn.fujitsu.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 28, 2015 at 11:15:32AM +0800, Lai Jiangshan wrote:
-> Was the bug introduced at the first time when maybe_create_worker() was
-> introduced?  Although manage_workers()/maybe_create_worker() was changed a bit,
-> the stable-tree team can simply make manage_workers() return true to fix
-> this bug for the very old kernel versions.
+Commit-ID:  ec3d07cb630da5da3ccfdf2b2f5472cadedb9470
+Gitweb:     http://git.kernel.org/tip/ec3d07cb630da5da3ccfdf2b2f5472cadedb9470
+Author:     Namhyung Kim <namhyung@kernel.org>
+AuthorDate: Sat, 27 Dec 2014 14:06:31 +0900
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Wed, 21 Jan 2015 13:24:34 -0300
 
-Yes, this bug has been there from the beginning of cmwq.  I'm
-attaching a patch which is for before the removal of
-maybe_destory_worker().
+perf diff: Print diff result more precisely
 
-Thanks.
+Current perf diff result is somewhat confusing since it sometimes hide
+small result and sometimes there's no result.  So do not hide small
+result (less than 0.01%) and print "N/A" if baseline is not
+recorded (for ratio and wdiff only).  Blank means the baseline is
+available but its pairs are not.
 
-Subject: [PATCH] workqueue: fix subtle pool management issue which can stall whole worker_pool
+Before:
 
-A worker_pool's forward progress is guaranteed by the fact that the
-last idle worker assumes the manager role to create more workers and
-summon the rescuers if creating workers doesn't succeed in timely
-manner before proceeding to execute work items.
+  # Baseline    Delta  Shared Object      Symbol
+  # ........  .......  .................  .........................
+  #
+       ...
+       0.01%   -0.01%  [kernel.kallsyms]  [k] native_write_msr_safe
+       0.01%           [kernel.kallsyms]  [k] scheduler_tick
+       0.01%           [kernel.kallsyms]  [k] native_read_msr_safe
+       0.00%           [kernel.kallsyms]  [k] __rcu_read_unlock
+                       [kernel.kallsyms]  [k] _raw_spin_lock
+               +0.01%  [kernel.kallsyms]  [k] apic_timer_interrupt
+                       [kernel.kallsyms]  [k] read_tsc
 
-This manager role is implemented in manage_workers(), which indicates
-whether the worker may proceed to work item execution with its return
-value.  This is necessary because multiple workers may contend for the
-manager role, and, if there already is a manager, others should
-proceed to work item execution.
+After:
 
-Unfortunately, the function also indicates that the worker may proceed
-to work item execution if need_to_create_worker() is false at the head
-of the function.  need_to_create_worker() tests the following
-conditions.
+  # Baseline    Delta  Shared Object      Symbol
+  # ........  .......  .................  .........................
+  #
+       ...
+       0.01%   -0.01%  [kernel.kallsyms]  [k] native_write_msr_safe
+       0.01%           [kernel.kallsyms]  [k] scheduler_tick
+       0.01%           [kernel.kallsyms]  [k] native_read_msr_safe
+       0.00%           [kernel.kallsyms]  [k] __rcu_read_unlock
+               +0.01%  [kernel.kallsyms]  [k] _raw_spin_lock
+               +0.01%  [kernel.kallsyms]  [k] apic_timer_interrupt
+               +0.01%  [kernel.kallsyms]  [k] read_tsc
 
-	pending work items && !nr_running && !nr_idle
-
-The first and third conditions are protected by pool->lock and thus
-won't change while holding pool->lock; however, nr_running can change
-asynchronously as other workers block and resume and while it's likely
-to be zero, as someone woke this worker up in the first place, some
-other workers could have become runnable inbetween making it non-zero.
-
-If this happens, manage_worker() could return false even with zero
-nr_idle making the worker, the last idle one, proceed to execute work
-items.  If then all workers of the pool end up blocking on a resource
-which can only be released by a work item which is pending on that
-pool, the whole pool can deadlock as there's no one to create more
-workers or summon the rescuers.
-
-This patch fixes the problem by removing the early exit condition from
-maybe_create_worker() and making manage_workers() return false iff
-there's already another manager, which ensures that the last worker
-doesn't start executing work items.
-
-We can leave the early exit condition alone and just ignore the return
-value but the only reason it was put there is because the
-manage_workers() used to perform both creations and destructions of
-workers and thus the function may be invoked while the pool is trying
-to reduce the number of workers.  Now that manage_workers() is called
-only when more workers are needed, the only case this early exit
-condition is triggered is rare race conditions rendering it pointless.
-
-Tested with simulated workload and modified workqueue code which
-trigger the pool deadlock reliably without this patch.
-
-tj: Updated to v3.10 where manage_workers() is responsible not only
-    for creating more workers but also destroying surplus ones.
-    maybe_create_worker() needs to keep its early exit condition to
-    avoid creating a new worker when manage_workers() is called to
-    destroy surplus ones.  Other than that, the adaptabion is
-    straight-forward.  Both maybe_{create|destroy}_worker() functions
-    are converted to return void and manage_workers() returns %false
-    iff it lost manager arbitration.
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Reported-by: Eric Sandeen <sandeen@sandeen.net>
-Link: http://lkml.kernel.org/g/54B019F4.8030009@sandeen.net
-Cc: Dave Chinner <david@fromorbit.com>
-Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: stable@vger.kernel.org
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Acked-by: Jiri Olsa <jolsa@kernel.org>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1419656793-32756-3-git-send-email-namhyung@kernel.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- kernel/workqueue.c |   39 +++++++++++++--------------------------
- 1 file changed, 13 insertions(+), 26 deletions(-)
+ tools/perf/builtin-diff.c | 18 +++++++++++-------
+ 1 file changed, 11 insertions(+), 7 deletions(-)
 
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index 14a7163..e117fa3 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -1921,17 +1921,13 @@ static void pool_mayday_timeout(unsigned long __pool)
-  * spin_lock_irq(pool->lock) which may be released and regrabbed
-  * multiple times.  Does GFP_KERNEL allocations.  Called only from
-  * manager.
-- *
-- * RETURNS:
-- * %false if no action was taken and pool->lock stayed locked, %true
-- * otherwise.
-  */
--static bool maybe_create_worker(struct worker_pool *pool)
-+static void maybe_create_worker(struct worker_pool *pool)
- __releases(&pool->lock)
- __acquires(&pool->lock)
- {
- 	if (!need_to_create_worker(pool))
--		return false;
-+		return;
- restart:
- 	spin_unlock_irq(&pool->lock);
+diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
+index 72c718e..3f86737 100644
+--- a/tools/perf/builtin-diff.c
++++ b/tools/perf/builtin-diff.c
+@@ -788,7 +788,7 @@ static int __hpp__color_compare(struct perf_hpp_fmt *fmt,
+ 	char pfmt[20] = " ";
  
-@@ -1948,7 +1944,7 @@ restart:
- 			start_worker(worker);
- 			if (WARN_ON_ONCE(need_to_create_worker(pool)))
- 				goto restart;
--			return true;
-+			return;
- 		}
+ 	if (!pair)
+-		goto dummy_print;
++		goto no_print;
  
- 		if (!need_to_create_worker(pool))
-@@ -1965,7 +1961,7 @@ restart:
- 	spin_lock_irq(&pool->lock);
- 	if (need_to_create_worker(pool))
- 		goto restart;
--	return true;
-+	return;
- }
+ 	switch (comparison_method) {
+ 	case COMPUTE_DELTA:
+@@ -797,8 +797,6 @@ static int __hpp__color_compare(struct perf_hpp_fmt *fmt,
+ 		else
+ 			diff = compute_delta(he, pair);
  
- /**
-@@ -1978,15 +1974,9 @@ restart:
-  * LOCKING:
-  * spin_lock_irq(pool->lock) which may be released and regrabbed
-  * multiple times.  Called only from manager.
-- *
-- * RETURNS:
-- * %false if no action was taken and pool->lock stayed locked, %true
-- * otherwise.
-  */
--static bool maybe_destroy_workers(struct worker_pool *pool)
-+static void maybe_destroy_workers(struct worker_pool *pool)
- {
--	bool ret = false;
--
- 	while (too_many_workers(pool)) {
- 		struct worker *worker;
- 		unsigned long expires;
-@@ -2000,10 +1990,7 @@ static bool maybe_destroy_workers(struct worker_pool *pool)
- 		}
- 
- 		destroy_worker(worker);
--		ret = true;
+-		if (fabs(diff) < 0.01)
+-			goto dummy_print;
+ 		scnprintf(pfmt, 20, "%%%+d.2f%%%%", dfmt->header_width - 1);
+ 		return percent_color_snprintf(hpp->buf, hpp->size,
+ 					pfmt, diff);
+@@ -830,6 +828,9 @@ static int __hpp__color_compare(struct perf_hpp_fmt *fmt,
  	}
--
--	return ret;
+ dummy_print:
+ 	return scnprintf(hpp->buf, hpp->size, "%*s",
++			dfmt->header_width, "N/A");
++no_print:
++	return scnprintf(hpp->buf, hpp->size, "%*s",
+ 			dfmt->header_width, pfmt);
  }
  
- /**
-@@ -2023,13 +2010,14 @@ static bool maybe_destroy_workers(struct worker_pool *pool)
-  * multiple times.  Does GFP_KERNEL allocations.
-  *
-  * RETURNS:
-- * spin_lock_irq(pool->lock) which may be released and regrabbed
-- * multiple times.  Does GFP_KERNEL allocations.
-+ * %false if the pool doesn't need management and the caller can safely
-+ * start processing works, %true if management function was performed and
-+ * the conditions that the caller verified before calling the function may
-+ * no longer be true.
-  */
- static bool manage_workers(struct worker *worker)
- {
- 	struct worker_pool *pool = worker->pool;
--	bool ret = false;
+@@ -879,14 +880,15 @@ hpp__entry_pair(struct hist_entry *he, struct hist_entry *pair,
+ 		else
+ 			diff = compute_delta(he, pair);
  
- 	/*
- 	 * Managership is governed by two mutexes - manager_arb and
-@@ -2053,7 +2041,7 @@ static bool manage_workers(struct worker *worker)
- 	 * manager_mutex.
- 	 */
- 	if (!mutex_trylock(&pool->manager_arb))
--		return ret;
-+		return false;
+-		if (fabs(diff) >= 0.01)
+-			scnprintf(buf, size, "%+4.2F%%", diff);
++		scnprintf(buf, size, "%+4.2F%%", diff);
+ 		break;
  
- 	/*
- 	 * With manager arbitration won, manager_mutex would be free in
-@@ -2063,7 +2051,6 @@ static bool manage_workers(struct worker *worker)
- 		spin_unlock_irq(&pool->lock);
- 		mutex_lock(&pool->manager_mutex);
- 		spin_lock_irq(&pool->lock);
--		ret = true;
- 	}
+ 	case PERF_HPP_DIFF__RATIO:
+ 		/* No point for ratio number if we are dummy.. */
+-		if (he->dummy)
++		if (he->dummy) {
++			scnprintf(buf, size, "N/A");
+ 			break;
++		}
  
- 	pool->flags &= ~POOL_MANAGE_WORKERS;
-@@ -2072,12 +2059,12 @@ static bool manage_workers(struct worker *worker)
- 	 * Destroy and then create so that may_start_working() is true
- 	 * on return.
- 	 */
--	ret |= maybe_destroy_workers(pool);
--	ret |= maybe_create_worker(pool);
-+	maybe_destroy_workers(pool);
-+	maybe_create_worker(pool);
+ 		if (pair->diff.computed)
+ 			ratio = pair->diff.period_ratio;
+@@ -899,8 +901,10 @@ hpp__entry_pair(struct hist_entry *he, struct hist_entry *pair,
  
- 	mutex_unlock(&pool->manager_mutex);
- 	mutex_unlock(&pool->manager_arb);
--	return ret;
-+	return true;
- }
+ 	case PERF_HPP_DIFF__WEIGHTED_DIFF:
+ 		/* No point for wdiff number if we are dummy.. */
+-		if (he->dummy)
++		if (he->dummy) {
++			scnprintf(buf, size, "N/A");
+ 			break;
++		}
  
- /**
+ 		if (pair->diff.computed)
+ 			wdiff = pair->diff.wdiff;
