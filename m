@@ -1,69 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760846AbbA2CtQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 21:49:16 -0500
-Received: from mail-ie0-f177.google.com ([209.85.223.177]:46794 "EHLO
-	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754377AbbA2CtL (ORCPT
+	id S933947AbbA1Ulj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 15:41:39 -0500
+Received: from pandora.arm.linux.org.uk ([78.32.30.218]:60818 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761301AbbA1Ulh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 21:49:11 -0500
-Message-ID: <54C91C5A.400@android.com>
-Date: Wed, 28 Jan 2015 09:28:58 -0800
-From: Mark Salyzyn <salyzyn@android.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
+	Wed, 28 Jan 2015 15:41:37 -0500
+Date: Wed, 28 Jan 2015 17:29:27 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Will Deacon <will.deacon@arm.com>
+Cc: Rob Herring <robherring2@gmail.com>, Nicolas Pitre <nico@fluxnic.net>,
+        Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
+        Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>,
+        Tony Lindgren <tony@atomide.com>, Sebastian Reichel <sre@debian.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Pavel Machek <pavel@ucw.cz>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] ARM: /proc/atags: Export also for DT
+Message-ID: <20150128172927.GU26493@n2100.arm.linux.org.uk>
+References: <1403110464-29646-1-git-send-email-pali.rohar@gmail.com>
+ <20150127174818.GM26493@n2100.arm.linux.org.uk>
+ <20150128005032.GK28663@atomide.com>
+ <201501281458.22088@pali>
+ <alpine.LFD.2.11.1501280925400.1322@knanqh.ubzr>
+ <CAL_Jsq+rESm8q44ABRbh9hqMsfcMNx0kcXJ5ONbn1=ue-RvHFg@mail.gmail.com>
+ <20150128161316.GS26493@n2100.arm.linux.org.uk>
+ <20150128161913.GU1569@arm.com>
 MIME-Version: 1.0
-To: =?UTF-8?B?xYF1a2FzeiBTdGVsbWFjaA==?= <stlman@poczta.fm>
-CC: linux-kernel@vger.kernel.org, Anton Vorontsov <anton@enomsg.org>,
-        Colin Cross <ccross@android.com>, Kees Cook <keescook@chromium.org>,
-        Tony Luck <tony.luck@intel.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        =?UTF-8?B?IkJhcnTFgm9taWVqIMW7b8WCbmllcmtpZXdpY3ogc3RsbWFuQHBvY3p0YS5mbSI=?= 
-	<b.zolnierkie@samsung.com>
-Subject: Re: [PATCH v4 4/5] pstore: add pmsg
-References: <1421194580-20230-1-git-send-email-salyzyn@android.com> <871tmfz06r.fsf%stlman@poczta.fm>
-In-Reply-To: <871tmfz06r.fsf%stlman@poczta.fm>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150128161913.GU1569@arm.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/13/2015 04:16 PM, Łukasz Stelmach wrote:
->> A secured user-space accessible pstore object. Writes
->> to /dev/pmsg0 are appended to the buffer, on reboot
->> the persistent contents are available in
->> /sys/fs/pstore/pmsg-ramoops-[ID].
->>
->> One possible use is syslogd, or other daemon, can
->> write messages, then on reboot provides a means to
->> triage user-space activities leading up to a panic
->> as a companion to the pstore dmesg or console logs.
->>
->> Signed-off-by: Mark Salyzyn <salyzyn@android.com>
->> ---
-> I am not an expert but this smells like duplicating /dev/kmsg. If
-> I remember correctly since about Linux 3.5 /dev/kmsg is writable for the
-> user-space and every single process (modulo MAC/DAC) can log there. The
-> messages from user-space are preserved accross reboots as a part of the
-> kmsg/printk buffer anyway.
->
-> What is the advantege of pmsg0 over /dev/kmsg?
+On Wed, Jan 28, 2015 at 04:19:13PM +0000, Will Deacon wrote:
+> On Wed, Jan 28, 2015 at 04:13:17PM +0000, Russell King - ARM Linux wrote:
+> > On Wed, Jan 28, 2015 at 09:57:18AM -0600, Rob Herring wrote:
+> > > I'm fine with that, but we just need to have a standard kernel
+> > > userspace interface in addition to something like
+> > > /proc/device-tree/bootreason. Perhaps this can be the default
+> > > implementation for the watchdog dev. Someday when we decide DT is crap
+> > > and have a new boot interface, we'll have people relying on
+> > > /proc/device-tree. I hope to be retired when that happens...
+> > 
+> > Anyone who thinks that DT can be replaced in the same way that we made
+> > the mistake with ATAGs would really need their head examined.
+> > 
+> > As you point out, removing DT removes the /proc/device-tree/ sub-tree.
+> > Whether we like it or not, that is a userspace API, one which we have
+> > users of already.  That pretty much means that we can't remove DT for
+> > existing platforms or any platform we have now converted to DT.
+> 
+> <ok, I'll go there!>
+> 
+> ... and for platforms that can also be booted via ACPI? If we have to
+> convert the ACPI tables into a device-tree purely for /proc/device-tree,
+> then we may as well boot with the thing too :)
+> 
+> Seriously though, I don't see how we can maintain this directory for
+> ACPI, regardless of whether or not it's ABI.
 
-- Precious little user-space content goes to kmsg (otherwise you can ask 
-why is there a syslogd?), there is a reason for this, user space is 
-notorious for containing Personal Identifiable Information whereas 
-kernel information does not.
-- pmsg0 can take a lot of content (with a ramoops backend) and will not 
-disrupt/DOS the kernel logs.
-- State, Binary or packetized content can go to /dev/pmsg0 and not 
-interfere with the text content in kmsg
-- /dev/pmsg0 write is atomic
-- /dev/pmsg0 is write only, there is no access to the live content 
-_unless_ there is a reboot.
-- Personal identification which abounds in user space could be placed 
-into /dev/pmsg0, and there is no way except a reboot in order to extract 
-the content, and then /sys/fs/pstore/pmsg-ramoops-0 can be deleted, or 
-heavily MAC and DAC controlled to enforce protection (doing so to kmsg 
-would be unlivable)
+And if it needs stating more clearly, you have just shown why adding
+a boot reason to devicetree is the wrong thing to do.
 
-Sincerely -- Mark Salyzyn
+Let's say that we do decide to convert the boot reason atag to a device
+tree property.  As soon as we do that, it appears in the /proc/device-tree
+sub-tree, whether we like it or not, because that sub-tree exports
+*everything* mentioned in the DT blob.
+
+So, as soon as we put anything into the DT blob, it immediately becomes
+part of the kernel's userspace API, whether we like it or not.  That
+means it becomes available for userspace to start (ab)using - again,
+whether or not we provide a saner firmware independent interface.
+
+The more we mess around converting crap from one firmware interface to
+another, the more problems we're creating for ourselves.  We really
+need to re-think our approach to this, and stop this religous "DT is
+everything, we must convert everything to DT."
+
+-- 
+FTTC broadband for 0.8mile line: currently at 10.5Mbps down 400kbps up
+according to speedtest.net.
