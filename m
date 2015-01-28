@@ -1,20 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932573AbbA1B2W (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 20:28:22 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41108 "EHLO
+	id S1760249AbbA1B2m (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 20:28:42 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41026 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759691AbbA1B2P (ORCPT
+	with ESMTP id S1760002AbbA1B2a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 20:28:15 -0500
+	Tue, 27 Jan 2015 20:28:30 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Oliver Hartkopp <socketcan@hartkopp.net>,
-        Marc Kleine-Budde <mkl@pengutronix.de>
-Subject: [PATCH 3.18 02/61] can: m_can: tag current CAN FD controllers as non-ISO
-Date: Tue, 27 Jan 2015 17:26:14 -0800
-Message-Id: <20150128012637.226573765@linuxfoundation.org>
+        Timur Tabi <timur@codeaurora.org>,
+        Pramod Gurav <pramod.gurav@smartplayin.com>,
+        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
+        "Ivan T. Ivanov" <iivanov@mm-sol.com>,
+        Andy Gross <agross@codeaurora.org>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH 3.18 03/61] pinctrl: qcom: Dont iterate past end of function array
+Date: Tue, 27 Jan 2015 17:26:15 -0800
+Message-Id: <20150128012637.297311475@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <20150128012636.936333725@linuxfoundation.org>
 References: <20150128012636.936333725@linuxfoundation.org>
@@ -29,60 +34,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oliver Hartkopp <socketcan@hartkopp.net>
+From: Stephen Boyd <sboyd@codeaurora.org>
 
-commit 6cfda7fbebe8a4fd33ea5722fa0212f98f643c35 upstream.
+commit bcd53f858d87f52843cc87764b283999126a50d6 upstream.
 
-During the CAN FD standardization process within the ISO it turned out that
-the failure detection capability has to be improved.
+Timur reports that this code crashes if nfunctions is 0. Fix the
+loop iteration to only consider valid elements of the functions
+array.
 
-The CAN in Automation organization (CiA) defined the already implemented CAN
-FD controllers as 'non-ISO' and the upcoming improved CAN FD controllers as
-'ISO' compliant. See at http://www.can-cia.com/index.php?id=1937
-
-Finally there will be three types of CAN FD controllers in the future:
-
-1. ISO compliant (fixed)
-2. non-ISO compliant (fixed, like the M_CAN IP v3.0.1 in m_can.c)
-3. ISO/non-ISO CAN FD controllers (switchable, like the PEAK USB FD)
-
-So the current M_CAN driver for the M_CAN IP v3.0.1 has to expose its non-ISO
-implementation by setting the CAN_CTRLMODE_FD_NON_ISO ctrlmode at startup.
-As this bit cannot be switched at configuration time CAN_CTRLMODE_FD_NON_ISO
-must not be set in ctrlmode_supported of the current M_CAN driver.
-
-Signed-off-by: Oliver Hartkopp <socketcan@hartkopp.net>
-Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
+Reported-by: Timur Tabi <timur@codeaurora.org>
+Cc: Pramod Gurav <pramod.gurav@smartplayin.com>
+Cc: Bjorn Andersson <bjorn.andersson@sonymobile.com>
+Cc: Ivan T. Ivanov <iivanov@mm-sol.com>
+Cc: Andy Gross <agross@codeaurora.org>
+Fixes: 327455817a92 "pinctrl: qcom: Add support for reset for apq8064"
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/can/m_can/m_can.c    |    5 +++++
- include/uapi/linux/can/netlink.h |    1 +
- 2 files changed, 6 insertions(+)
+ drivers/pinctrl/qcom/pinctrl-msm.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/net/can/m_can/m_can.c
-+++ b/drivers/net/can/m_can/m_can.c
-@@ -955,6 +955,11 @@ static struct net_device *alloc_m_can_de
- 	priv->can.data_bittiming_const = &m_can_data_bittiming_const;
- 	priv->can.do_set_mode = m_can_set_mode;
- 	priv->can.do_get_berr_counter = m_can_get_berr_counter;
-+
-+	/* CAN_CTRLMODE_FD_NON_ISO is fixed with M_CAN IP v3.0.1 */
-+	priv->can.ctrlmode = CAN_CTRLMODE_FD_NON_ISO;
-+
-+	/* CAN_CTRLMODE_FD_NON_ISO can not be changed with M_CAN IP v3.0.1 */
- 	priv->can.ctrlmode_supported = CAN_CTRLMODE_LOOPBACK |
- 					CAN_CTRLMODE_LISTENONLY |
- 					CAN_CTRLMODE_BERR_REPORTING |
---- a/include/uapi/linux/can/netlink.h
-+++ b/include/uapi/linux/can/netlink.h
-@@ -98,6 +98,7 @@ struct can_ctrlmode {
- #define CAN_CTRLMODE_BERR_REPORTING	0x10	/* Bus-error reporting */
- #define CAN_CTRLMODE_FD			0x20	/* CAN FD mode */
- #define CAN_CTRLMODE_PRESUME_ACK	0x40	/* Ignore missing CAN ACKs */
-+#define CAN_CTRLMODE_FD_NON_ISO		0x80	/* CAN FD in non-ISO mode */
+--- a/drivers/pinctrl/qcom/pinctrl-msm.c
++++ b/drivers/pinctrl/qcom/pinctrl-msm.c
+@@ -865,10 +865,10 @@ static int msm_ps_hold_restart(struct no
  
- /*
-  * CAN device statistics
+ static void msm_pinctrl_setup_pm_reset(struct msm_pinctrl *pctrl)
+ {
+-	int i = 0;
++	int i;
+ 	const struct msm_function *func = pctrl->soc->functions;
+ 
+-	for (; i <= pctrl->soc->nfunctions; i++)
++	for (i = 0; i < pctrl->soc->nfunctions; i++)
+ 		if (!strcmp(func[i].name, "ps_hold")) {
+ 			pctrl->restart_nb.notifier_call = msm_ps_hold_restart;
+ 			pctrl->restart_nb.priority = 128;
 
 
