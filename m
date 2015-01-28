@@ -1,157 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753037AbbA1ULy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 15:11:54 -0500
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:49302 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751606AbbA1ULb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 15:11:31 -0500
+	id S1762043AbbA1WWj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 17:22:39 -0500
+Received: from p3plex2out04.prod.phx3.secureserver.net ([184.168.131.18]:56293
+	"EHLO p3plex2out04.prod.phx3.secureserver.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752857AbbA1ULu convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jan 2015 15:11:50 -0500
+From: Hartley Sweeten <HartleyS@visionengravers.com>
+To: Ian Abbott <abbotti@mev.co.uk>,
+        "driverdev-devel@linuxdriverproject.org" 
+	<driverdev-devel@linuxdriverproject.org>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 0/6] staging: comedi: reformat comedi_fops and range
+ comments
+Thread-Topic: [PATCH 0/6] staging: comedi: reformat comedi_fops and range
+ comments
+Thread-Index: AQHQOyocb18Nv5gULk+0PgKxKgyfl5zV9h8w
+Date: Wed, 28 Jan 2015 20:11:43 +0000
+Message-ID: <DC148C5AA1CEBA4E87973D432B1C2D88260F706B@P3PWEX4MB008.ex4.secureserver.net>
+References: <1422470510-9309-1-git-send-email-abbotti@mev.co.uk>
+In-Reply-To: <1422470510-9309-1-git-send-email-abbotti@mev.co.uk>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [184.183.19.121]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <CAKv+Gu88G2QqAupD9j4_-t2=0VJGNbWkUViLBM2nUuyuN-PHWA@mail.gmail.com>
-References: <1422422306-27473-1-git-send-email-behanw@converseincode.com>
-	<CAKv+Gu_NCgMmX_LQqi7vtjtP4ofrW+kx8FPgRd4-LWwK=73-xg@mail.gmail.com>
-	<54C8EE04.6060809@linaro.org>
-	<CAKv+Gu8CrMqwqBOF8rYa3RP1=gfCthwP=1k9kQ73v6+Sxwah4A@mail.gmail.com>
-	<54C91791.9030508@linaro.org>
-	<CAKv+Gu8P8eC+bmerCpbSX=USODqE=U7WnLeiCfhHJ8SSVAzPDw@mail.gmail.com>
-	<CAKv+Gu9fc_F1iC5NAwaG_ed3RRhYnxEBLbuLgW0Oa_qJ96j-gA@mail.gmail.com>
-	<54C9383D.10901@linaro.org>
-	<CAKv+Gu88G2QqAupD9j4_-t2=0VJGNbWkUViLBM2nUuyuN-PHWA@mail.gmail.com>
-Date: Wed, 28 Jan 2015 20:11:30 +0000
-Message-ID: <CAKv+Gu8B7G3tNahkguDBjCOQih4_ywRtwaJz2D2b+vY1249-DA@mail.gmail.com>
-Subject: Re: [PATCH] bcm: address clang inline asm incompatibility
-From: Ard Biesheuvel <ard.biesheuvel@linaro.org>
-To: Alex Elder <elder@linaro.org>
-Cc: Behan Webster <behanw@converseincode.com>, bcm@fixthebug.org,
-        Florian Fainelli <f.fainelli@gmail.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Matt Porter <mporter@linaro.org>,
-        bcm-kernel-feedback-list@broadcom.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 28 January 2015 at 19:38, Ard Biesheuvel <ard.biesheuvel@linaro.org> wrote:
-> On 28 January 2015 at 19:27, Alex Elder <elder@linaro.org> wrote:
->> On 01/28/2015 01:17 PM, Ard Biesheuvel wrote:
->>> On 28 January 2015 at 17:20, Ard Biesheuvel <ard.biesheuvel@linaro.org> wrote:
->>>> On 28 January 2015 at 17:08, Alex Elder <elder@linaro.org> wrote:
->>>>> On 01/28/2015 10:17 AM, Ard Biesheuvel wrote:
->>>>>> On 28 January 2015 at 14:11, Alex Elder <elder@linaro.org> wrote:
->>>>>>> On 01/28/2015 05:15 AM, Ard Biesheuvel wrote:
->>>>>>>> On 28 January 2015 at 05:18, Behan Webster <behanw@converseincode.com> wrote:
->>>>>>>>> From: Alex Elder <elder@linaro.org>
->>>>>>>>>
->>>>>>>>> My GCC-based build environment likes to call register r12 by the
->>>>>>>>> name "ip" in inline asm.  Behan Webster informed me that his Clang-
->>>>>>>>> based build environment likes "r12" instead.
->>>>>>>>>
->>>>>>>>> Try to make them both happy.
->>>>>>>>>
->>>>>>>>> Signed-off-by: Alex Elder <elder@linaro.org>
->>>>>>>>> Signed-off-by: Behan Webster <behanw@converseincode.com>
->>>>>>>>> ---
->>>>>>>>>  arch/arm/mach-bcm/bcm_kona_smc.c | 9 +++++++--
->>>>>>>>>  1 file changed, 7 insertions(+), 2 deletions(-)
->>>>>>>>>
->>>>>>>>> diff --git a/arch/arm/mach-bcm/bcm_kona_smc.c b/arch/arm/mach-bcm/bcm_kona_smc.c
->>>>>>>>> index a55a7ec..3937bd5 100644
->>>>>>>>> --- a/arch/arm/mach-bcm/bcm_kona_smc.c
->>>>>>>>> +++ b/arch/arm/mach-bcm/bcm_kona_smc.c
->>>>>>>>> @@ -106,9 +106,14 @@ int __init bcm_kona_smc_init(void)
->>>>>>>>>   * request result appropriately.  This result value is found in r0
->>>>>>>>>   * when the "smc" request completes.
->>>>>>>>>   */
->>>>>>>>> +#ifdef __clang__
->>>>>>>>> +#define R12    "r12"
->>>>>>>>> +#else  /* !__clang__ */
->>>>>>>>> +#define R12    "ip"    /* gcc calls r12 "ip" */
->>>>>>>>> +#endif /* !__clang__ */
->>>>>>>>
->>>>>>>> Why not just use r12 for both?
->>>>>>>
->>>>>>> Yes, that would have been an obvious fix.  But the
->>>>>>> assembler (in the GCC environment) doesn't accept that.
->>>>>>>
->>>>>>
->>>>>> Mine has no problems with it at all
->>>>>>
->>>>>> $ echo 'mov r12, #0' | arm-linux-gnueabihf-gcc -c -x assembler-with-cpp -
->>>>>>
->>>>>> and grepping for r12 under arch/arm suggests the same
->>>>>
->>>>> The use of "r12" is fine.  But it's not just the assembler,
->>>>> I believe it also involves gcc.
->>>>>
->>>>> The problem is with the use of the __asmeq(x, y) macro.
->>>>>
->>>>
->>>> Ah right. Apologies for assuming that you had missed something obvious here.
->>>> But __asmeq is not the toolchain, it is a local construct #define'd in
->>>> compiler.h
->>>>
->>>>> If I assign the "ip" variable with "r12":
->>>>>         register u32 ip asm("r12");     /* Also called ip */
->>>>>
->>>>> Then that's fine.  However, this line then causes an error:
->>>>>                 __asmeq("%0", "r12")
->>>>>
->>>>> Apparently gcc uses register "ip" when it sees asm("r12").  So
->>>>> attempting to verify the desired register got used with __asmeq()
->>>>> causes a string mismatch--"ip" is not equal to "r12".
->>>>>
->>>>> So I could use:
->>>>>
->>>>>         register u32 ip asm("r12");     /* Also called ip */
->>>>>                 ...
->>>>>                 __asmeq("%0", "ip")
->>>>>
->>>>> And that will build.  But it's a little non-intuitive, and
->>>>> I suspect that clang might (rightfully) have a failure in
->>>>> this __asmeq() call.
->>>>>
->>>>
->>>> In that case, I would strongly suggest fixing the __asmeq () macro
->>>> instead, and teach it that ("r12","ip") and ("ip","r12") are fine too.
->>>>
->>>> The thing is, inline asm is a dodgy area to begin with in terms of
->>>> clang-to-gcc compatibility. On arm64, we have been seeing issues where
->>>> the width of the register -which is fixed on gcc- is selected based on
->>>> the size of that variable, i.e., an int32 gets a w# register and int64
->>>> gets a x# register. Imagine debugging that, e.g., a str %0, [xx] that
->>>> writes 8 bytes on GCC suddenly only writing 4 bytes when built with
->>>> clang.
->>>>
->>>> If we also start using the preprocessor to conditionalise what is
->>>> emitted by inline asm, the waters get even murkier and it becomes even
->>>> harder to claim parity between the two.
->>>>
->>>
->>> Something like this perhaps?
->>
->> So __asmeq() yields true if the register names (strings) are
->> equal, or if one is "ip" and the other is "r12" (in either order).
->>
->> I can't comment on whether it's right in all build environments but
->> this looks OK to me, to handle this special case.
->>
->> I would much rather you generate that patch.  Is that OK?
->>
+On Wednesday, January 28, 2015 11:42 AM, Ian Abbott wrote:
+> 1) staging: comedi: comedi_fops.c: reformat copyright header
+> 2) staging: comedi: comedi_fops.c: document exported functions
+> 3) staging: comedi: comedi_fops.c: reformat ioctl handler comments
+> 4) staging: comedi: range.c: reformat ioctl handler comment
+> 5) staging: comedi: range.c: reformat copyright comment
+> 6) staging: comedi: comedi_fops.c: reformat remaining block comments
 >
-> Sure, I can cook up a patch if you guys can confirm that it fixes your
-> use case. (I tested GCC myself but I don't have clang installed)
->
+>  drivers/staging/comedi/comedi_fops.c | 437 +++++++++++++++++++----------------
+>  drivers/staging/comedi/range.c       |  56 ++---
+>  2 files changed, 272 insertions(+), 221 deletions(-)
 
-Actually, if clang is guaranteed to emit the correct register name
-inside the inline asm for register asm variables used in input or
-output constraints, I think it makes sense to #define __asmeq as a nop
-if __clang__ is defined. (Note that __asmeq only exists to work around
-a specific GCC bug)
+Reviewed-by: H Hartley Sweeten <hsweeten@visionengravers.com>
 
--- 
-Ard.
