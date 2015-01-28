@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761672AbbA1Een (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 23:34:43 -0500
-Received: from mail.kernel.org ([198.145.29.136]:41103 "EHLO mail.kernel.org"
+	id S965227AbbA1EZd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 23:25:33 -0500
+Received: from mail.kernel.org ([198.145.29.136]:41113 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965202AbbA1EZ1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 23:25:27 -0500
+	id S934571AbbA1EZa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 23:25:30 -0500
 From: lizf@kernel.org
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Herbert Xu <herbert@gondor.apana.org.au>,
-        "David S. Miller" <davem@davemloft.net>, Zefan Li <lizefan@huawei.com>
-Subject: [PATCH 3.4 151/177] macvtap: Fix csum_start when VLAN tags are present
-Date: Wed, 28 Jan 2015 12:10:09 +0800
-Message-Id: <1422418236-12852-242-git-send-email-lizf@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Nadav Amit <namit@cs.technion.ac.il>,
+        Paolo Bonzini <pbonzini@redhat.com>, Zefan Li <lizefan@huawei.com>
+Subject: [PATCH 3.4 152/177] KVM: x86: Fix uninitialized op->type for some immediate values
+Date: Wed, 28 Jan 2015 12:10:10 +0800
+Message-Id: <1422418236-12852-243-git-send-email-lizf@kernel.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422418050-12581-1-git-send-email-lizf@kernel.org>
 References: <1422418050-12581-1-git-send-email-lizf@kernel.org>
@@ -20,47 +20,80 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Herbert Xu <herbert@gondor.apana.org.au>
+From: Nadav Amit <namit@cs.technion.ac.il>
 
 3.4.106-rc1 review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
 
-commit 3ce9b20f1971690b8b3b620e735ec99431573b39 upstream.
+commit d29b9d7ed76c0b961603ca692b8a562556a20212 upstream.
 
-When VLAN is in use in macvtap_put_user, we end up setting
-csum_start to the wrong place.  The result is that the whoever
-ends up doing the checksum setting will corrupt the packet instead
-of writing the checksum to the expected location, usually this
-means writing the checksum with an offset of -4.
+The emulator could reuse an op->type from a previous instruction for some
+immediate values.  If it mistakenly considers the operands as memory
+operands, it will performs a memory read and overwrite op->val.
 
-This patch fixes this by adjusting csum_start when VLAN tags are
-detected.
+Consider for instance the ROR instruction - src2 (the number of times)
+would be read from memory instead of being used as immediate.
 
-Fixes: f09e2249c4f5 ("macvtap: restore vlan header on user read")
-Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
+Mark every immediate operand as such to avoid this problem.
 
-Cheers,
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Fixes: c44b4c6ab80eef3a9c52c7b3f0c632942e6489aa
+Signed-off-by: Nadav Amit <namit@cs.technion.ac.il>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 Signed-off-by: Zefan Li <lizefan@huawei.com>
 ---
- drivers/net/macvtap.c | 2 ++
- 1 file changed, 2 insertions(+)
+ arch/x86/kvm/emulate.c | 8 ++++++++
+ 1 file changed, 8 insertions(+)
 
-diff --git a/drivers/net/macvtap.c b/drivers/net/macvtap.c
-index f5b9de4..f0e3764 100644
---- a/drivers/net/macvtap.c
-+++ b/drivers/net/macvtap.c
-@@ -634,6 +634,8 @@ static int macvtap_skb_to_vnet_hdr(const struct sk_buff *skb,
- 	if (skb->ip_summed == CHECKSUM_PARTIAL) {
- 		vnet_hdr->flags = VIRTIO_NET_HDR_F_NEEDS_CSUM;
- 		vnet_hdr->csum_start = skb_checksum_start_offset(skb);
-+		if (vlan_tx_tag_present(skb))
-+			vnet_hdr->csum_start += VLAN_HLEN;
- 		vnet_hdr->csum_offset = skb->csum_offset;
- 	} else if (skb->ip_summed == CHECKSUM_UNNECESSARY) {
- 		vnet_hdr->flags = VIRTIO_NET_HDR_F_DATA_VALID;
+diff --git a/arch/x86/kvm/emulate.c b/arch/x86/kvm/emulate.c
+index e125c3e..0a12507 100644
+--- a/arch/x86/kvm/emulate.c
++++ b/arch/x86/kvm/emulate.c
+@@ -3833,6 +3833,7 @@ static int decode_operand(struct x86_emulate_ctxt *ctxt, struct operand *op,
+ 		fetch_register_operand(op);
+ 		break;
+ 	case OpCL:
++		op->type = OP_IMM;
+ 		op->bytes = 1;
+ 		op->val = ctxt->regs[VCPU_REGS_RCX] & 0xff;
+ 		break;
+@@ -3840,6 +3841,7 @@ static int decode_operand(struct x86_emulate_ctxt *ctxt, struct operand *op,
+ 		rc = decode_imm(ctxt, op, 1, true);
+ 		break;
+ 	case OpOne:
++		op->type = OP_IMM;
+ 		op->bytes = 1;
+ 		op->val = 1;
+ 		break;
+@@ -3879,21 +3881,27 @@ static int decode_operand(struct x86_emulate_ctxt *ctxt, struct operand *op,
+ 		ctxt->memop.bytes = ctxt->op_bytes + 2;
+ 		goto mem_common;
+ 	case OpES:
++		op->type = OP_IMM;
+ 		op->val = VCPU_SREG_ES;
+ 		break;
+ 	case OpCS:
++		op->type = OP_IMM;
+ 		op->val = VCPU_SREG_CS;
+ 		break;
+ 	case OpSS:
++		op->type = OP_IMM;
+ 		op->val = VCPU_SREG_SS;
+ 		break;
+ 	case OpDS:
++		op->type = OP_IMM;
+ 		op->val = VCPU_SREG_DS;
+ 		break;
+ 	case OpFS:
++		op->type = OP_IMM;
+ 		op->val = VCPU_SREG_FS;
+ 		break;
+ 	case OpGS:
++		op->type = OP_IMM;
+ 		op->val = VCPU_SREG_GS;
+ 		break;
+ 	case OpImplicit:
 -- 
 1.9.1
 
