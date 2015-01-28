@@ -1,160 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757068AbbA2COP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 21:14:15 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:46841 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756952AbbA2CON (ORCPT
+	id S1759193AbbA1VTC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 16:19:02 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:40980 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762166AbbA1Uu0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 21:14:13 -0500
-Date: Wed, 28 Jan 2015 14:30:08 +0000
-From: Luis Henriques <luis.henriques@canonical.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        Johan Hovold <johan@kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: [PATCH 3.14 02/77] gpio: sysfs: fix gpio device-attribute leak
-Message-ID: <20150128143008.GC4685@charon>
-References: <20150128012745.971137091@linuxfoundation.org>
- <20150128012746.043195070@linuxfoundation.org>
+	Wed, 28 Jan 2015 15:50:26 -0500
+Date: Wed, 28 Jan 2015 06:33:34 -0800
+From: tip-bot for Mike Galbraith <tipbot@zytor.com>
+Message-ID: <tip-bb2bc55a694d45cdeda91b6f28ab2adec28125ef@git.kernel.org>
+Cc: tglx@linutronix.de, umgwanakikbuti@gmail.com, lizefan@huawei.com,
+        peterz@infradead.org, mingo@kernel.org, linux-kernel@vger.kernel.org,
+        hpa@zytor.com, torvalds@linux-foundation.org
+Reply-To: umgwanakikbuti@gmail.com, tglx@linutronix.de, mingo@kernel.org,
+        peterz@infradead.org, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, hpa@zytor.com, lizefan@huawei.com
+In-Reply-To: <1422417235.5716.5.camel@marge.simpson.net>
+References: <1422417235.5716.5.camel@marge.simpson.net>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:sched/urgent] sched: Fix crash if cpuset_cpumask_can_shrink(
+ ) is passed an empty cpumask
+Git-Commit-ID: bb2bc55a694d45cdeda91b6f28ab2adec28125ef
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <20150128012746.043195070@linuxfoundation.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 27, 2015 at 05:26:40PM -0800, Greg Kroah-Hartman wrote:
-> 3.14-stable review patch.  If anyone has any objections, please let me know.
-> 
-> ------------------
-> 
-> From: Johan Hovold <johan@kernel.org>
-> 
-> commit 0915e6feb38de8d3601819992a5bd050201a56fa upstream.
-> 
-> The gpio device attributes were never destroyed when the gpio was
-> unexported (or on export failures).
-> 
-> Use device_create_with_groups() to create the default device attributes
-> of the gpio class device. Note that this also fixes the
-> attribute-creation race with userspace for these attributes.
-> 
-> Remove contingent attributes in export error path and on unexport.
-> 
-> Fixes: d8f388d8dc8d ("gpio: sysfs interface")
-> Signed-off-by: Johan Hovold <johan@kernel.org>
-> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
-> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> 
-> 
-> ---
->  drivers/gpio/gpiolib.c |   27 +++++++++++++--------------
->  1 file changed, 13 insertions(+), 14 deletions(-)
-> 
-> --- a/drivers/gpio/gpiolib.c
-> +++ b/drivers/gpio/gpiolib.c
-> @@ -408,7 +408,7 @@ static ssize_t gpio_value_store(struct d
->  	return status;
->  }
->  
-> -static const DEVICE_ATTR(value, 0644,
-> +static DEVICE_ATTR(value, 0644,
->  		gpio_value_show, gpio_value_store);
->  
->  static irqreturn_t gpio_sysfs_irq(int irq, void *priv)
-> @@ -633,18 +633,16 @@ static ssize_t gpio_active_low_store(str
->  	return status ? : size;
->  }
->  
-> -static const DEVICE_ATTR(active_low, 0644,
-> +static DEVICE_ATTR(active_low, 0644,
->  		gpio_active_low_show, gpio_active_low_store);
->  
-> -static const struct attribute *gpio_attrs[] = {
-> +static struct attribute *gpio_attrs[] = {
->  	&dev_attr_value.attr,
->  	&dev_attr_active_low.attr,
->  	NULL,
->  };
->  
-> -static const struct attribute_group gpio_attr_group = {
-> -	.attrs = (struct attribute **) gpio_attrs,
-> -};
-> +ATTRIBUTE_GROUPS(gpio);
->  
->  /*
->   * /sys/class/gpio/gpiochipN/
-> @@ -841,18 +839,15 @@ int gpiod_export(struct gpio_desc *desc,
->  	if (desc->chip->names && desc->chip->names[offset])
->  		ioname = desc->chip->names[offset];
->  
-> -	dev = device_create(&gpio_class, desc->chip->dev, MKDEV(0, 0),
-> -			    desc, ioname ? ioname : "gpio%u",
-> -			    desc_to_gpio(desc));
-> +	dev = device_create_with_groups(&gpio_class, desc->chip->dev,
-> +					MKDEV(0, 0), desc, gpio_groups,
-> +					ioname ? ioname : "gpio%u",
-> +					desc_to_gpio(desc));
->  	if (IS_ERR(dev)) {
->  		status = PTR_ERR(dev);
->  		goto fail_unlock;
->  	}
->  
-> -	status = sysfs_create_group(&dev->kobj, &gpio_attr_group);
-> -	if (status)
-> -		goto fail_unregister_device;
-> -
->  	if (direction_may_change) {
->  		status = device_create_file(dev, &dev_attr_direction);
->  		if (status)
-> @@ -863,13 +858,15 @@ int gpiod_export(struct gpio_desc *desc,
->  				       !test_bit(FLAG_IS_OUT, &desc->flags))) {
->  		status = device_create_file(dev, &dev_attr_edge);
->  		if (status)
-> -			goto fail_unregister_device;
-> +			goto fail_remove_attr_direction;
->  	}
->  
->  	set_bit(FLAG_EXPORT, &desc->flags);
->  	mutex_unlock(&sysfs_lock);
->  	return 0;
->  
-> +fail_remove_attr_direction:
-> +	device_remove_file(dev, &dev_attr_direction);
->  fail_unregister_device:
->  	device_unregister(dev);
->  fail_unlock:
-> @@ -994,6 +991,8 @@ void gpiod_unexport(struct gpio_desc *de
->  
->  		dev = class_find_device(&gpio_class, NULL, desc, match_export);
->  		if (dev) {
-> +			device_remove_file(dev, &dev_attr_edge);
-> +			device_remove_file(dev, &dev_attr_direction);
->  			gpio_setup_irq(desc, dev, 0);
->  			clear_bit(FLAG_EXPORT, &desc->flags);
->  		} else
-> 
+Commit-ID:  bb2bc55a694d45cdeda91b6f28ab2adec28125ef
+Gitweb:     http://git.kernel.org/tip/bb2bc55a694d45cdeda91b6f28ab2adec28125ef
+Author:     Mike Galbraith <umgwanakikbuti@gmail.com>
+AuthorDate: Wed, 28 Jan 2015 04:53:55 +0100
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Wed, 28 Jan 2015 15:28:15 +0100
 
-I believe there's a mistake in this backport: the changes to the
-gpiod_unexport() function are being applied to the wrong code block;
-they should be in:
+sched: Fix crash if cpuset_cpumask_can_shrink() is passed an empty cpumask
 
-	if (dev) {
-		device_unregister(dev);
-		put_device(dev);
-	}
+While creating an exclusive cpuset, we passed cpuset_cpumask_can_shrink()
+an empty cpumask (cur), and dl_bw_of(cpumask_any(cur)) made boom with it:
 
-The backport to the 3.10 kernel have the same problem.
+ CPU: 0 PID: 6942 Comm: shield.sh Not tainted 3.19.0-master #19
+ Hardware name: MEDIONPC MS-7502/MS-7502, BIOS 6.00 PG 12/26/2007
+ task: ffff880224552450 ti: ffff8800caab8000 task.ti: ffff8800caab8000
+ RIP: 0010:[<ffffffff81073846>]  [<ffffffff81073846>] cpuset_cpumask_can_shrink+0x56/0xb0
+ [...]
+ Call Trace:
+  [<ffffffff810cb82a>] validate_change+0x18a/0x200
+  [<ffffffff810cc877>] cpuset_write_resmask+0x3b7/0x720
+  [<ffffffff810c4d58>] cgroup_file_write+0x38/0x100
+  [<ffffffff811d953a>] kernfs_fop_write+0x12a/0x180
+  [<ffffffff8116e1a3>] vfs_write+0xb3/0x1d0
+  [<ffffffff8116ed06>] SyS_write+0x46/0xb0
+  [<ffffffff8159ced6>] system_call_fastpath+0x16/0x1b
 
-Cheers,
---
-Luís
+Signed-off-by: Mike Galbraith <umgwanakikbuti@gmail.com>
+Acked-by: Zefan Li <lizefan@huawei.com>
+Fixes: f82f80426f7a ("sched/deadline: Ensure that updates to exclusive cpusets don't break AC")
+Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Link: http://lkml.kernel.org/r/1422417235.5716.5.camel@marge.simpson.net
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ kernel/sched/core.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe stable" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index c0accc0..5c86687 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -4642,6 +4642,9 @@ int cpuset_cpumask_can_shrink(const struct cpumask *cur,
+ 	struct dl_bw *cur_dl_b;
+ 	unsigned long flags;
+ 
++	if (!cpumask_weight(cur))
++		return ret;
++
+ 	rcu_read_lock_sched();
+ 	cur_dl_b = dl_bw_of(cpumask_any(cur));
+ 	trial_cpus = cpumask_weight(trial);
