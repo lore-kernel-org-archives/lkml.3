@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933184AbbA1BhZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 20:37:25 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41108 "EHLO
+	id S933573AbbA1Bk7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 20:40:59 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41730 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760020AbbA1B2b (ORCPT
+	with ESMTP id S933387AbbA1Bik (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 20:28:31 -0500
+	Tue, 27 Jan 2015 20:38:40 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David Spinadel <david.spinadel@intel.com>,
-        Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Subject: [PATCH 3.18 57/61] iwlwifi: mvm: add a flag to enable match found notification
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        Tejun Heo <tj@kernel.org>
+Subject: [PATCH 3.14 31/77] sata_dwc_460ex: fix resource leak on error path
 Date: Tue, 27 Jan 2015 17:27:09 -0800
-Message-Id: <20150128012643.129674096@linuxfoundation.org>
+Message-Id: <20150128012746.903947880@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150128012636.936333725@linuxfoundation.org>
-References: <20150128012636.936333725@linuxfoundation.org>
+In-Reply-To: <20150128012745.971137091@linuxfoundation.org>
+References: <20150128012745.971137091@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -25,54 +25,115 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.18-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: David Spinadel <david.spinadel@intel.com>
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
 
-commit 7e2a38831db4cf082aa8b4997f3cbfe8cb03b669 upstream.
+commit 4aaa71873ddb9faf4b0c4826579e2f6d18ff9ab4 upstream.
 
-Add a flag that enables match found notification to align with
-FW API change.
+DMA mapped IO should be unmapped on the error path in probe() and
+unconditionally on remove().
 
-Signed-off-by: David Spinadel <david.spinadel@intel.com>
-Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Fixes: 62936009f35a ([libata] Add 460EX on-chip SATA driver, sata_dwc_460ex)
+Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-
 ---
- drivers/net/wireless/iwlwifi/mvm/fw-api-scan.h |    2 ++
- drivers/net/wireless/iwlwifi/mvm/scan.c        |    1 +
- 2 files changed, 3 insertions(+)
+ drivers/ata/sata_dwc_460ex.c |   26 ++++++++++++--------------
+ 1 file changed, 12 insertions(+), 14 deletions(-)
 
---- a/drivers/net/wireless/iwlwifi/mvm/fw-api-scan.h
-+++ b/drivers/net/wireless/iwlwifi/mvm/fw-api-scan.h
-@@ -672,6 +672,7 @@ struct iwl_scan_channel_opt {
-  * @IWL_MVM_LMAC_SCAN_FLAG_FRAGMENTED: all passive scans will be fragmented
-  * @IWL_MVM_LMAC_SCAN_FLAGS_RRM_ENABLED: insert WFA vendor-specific TPC report
-  *	and DS parameter set IEs into probe requests.
-+ * @IWL_MVM_LMAC_SCAN_FLAG_MATCH: Send match found notification on matches
-  */
- enum iwl_mvm_lmac_scan_flags {
- 	IWL_MVM_LMAC_SCAN_FLAG_PASS_ALL		= BIT(0),
-@@ -681,6 +682,7 @@ enum iwl_mvm_lmac_scan_flags {
- 	IWL_MVM_LMAC_SCAN_FLAG_MULTIPLE_SSIDS	= BIT(4),
- 	IWL_MVM_LMAC_SCAN_FLAG_FRAGMENTED	= BIT(5),
- 	IWL_MVM_LMAC_SCAN_FLAGS_RRM_ENABLED	= BIT(6),
-+	IWL_MVM_LMAC_SCAN_FLAG_MATCH		= BIT(9),
- };
+--- a/drivers/ata/sata_dwc_460ex.c
++++ b/drivers/ata/sata_dwc_460ex.c
+@@ -799,7 +799,7 @@ static int dma_dwc_init(struct sata_dwc_
+ 	if (err) {
+ 		dev_err(host_pvt.dwc_dev, "%s: dma_request_interrupts returns"
+ 			" %d\n", __func__, err);
+-		goto error_out;
++		return err;
+ 	}
  
- enum iwl_scan_priority {
---- a/drivers/net/wireless/iwlwifi/mvm/scan.c
-+++ b/drivers/net/wireless/iwlwifi/mvm/scan.c
-@@ -1334,6 +1334,7 @@ int iwl_mvm_unified_sched_scan_lmac(stru
- 		IWL_DEBUG_SCAN(mvm,
- 			       "Sending scheduled scan with filtering, n_match_sets %d\n",
- 			       req->n_match_sets);
-+		flags |= IWL_MVM_LMAC_SCAN_FLAG_MATCH;
- 	} else {
- 		IWL_DEBUG_SCAN(mvm,
- 			       "Sending Scheduled scan without filtering\n");
+ 	/* Enabe DMA */
+@@ -810,11 +810,6 @@ static int dma_dwc_init(struct sata_dwc_
+ 		sata_dma_regs);
+ 
+ 	return 0;
+-
+-error_out:
+-	dma_dwc_exit(hsdev);
+-
+-	return err;
+ }
+ 
+ static int sata_dwc_scr_read(struct ata_link *link, unsigned int scr, u32 *val)
+@@ -1664,7 +1659,7 @@ static int sata_dwc_probe(struct platfor
+ 	char *ver = (char *)&versionr;
+ 	u8 *base = NULL;
+ 	int err = 0;
+-	int irq, rc;
++	int irq;
+ 	struct ata_host *host;
+ 	struct ata_port_info pi = sata_dwc_port_info[0];
+ 	const struct ata_port_info *ppi[] = { &pi, NULL };
+@@ -1727,7 +1722,7 @@ static int sata_dwc_probe(struct platfor
+ 	if (irq == NO_IRQ) {
+ 		dev_err(&ofdev->dev, "no SATA DMA irq\n");
+ 		err = -ENODEV;
+-		goto error_out;
++		goto error_iomap;
+ 	}
+ 
+ 	/* Get physical SATA DMA register base address */
+@@ -1736,14 +1731,16 @@ static int sata_dwc_probe(struct platfor
+ 		dev_err(&ofdev->dev, "ioremap failed for AHBDMA register"
+ 			" address\n");
+ 		err = -ENODEV;
+-		goto error_out;
++		goto error_iomap;
+ 	}
+ 
+ 	/* Save dev for later use in dev_xxx() routines */
+ 	host_pvt.dwc_dev = &ofdev->dev;
+ 
+ 	/* Initialize AHB DMAC */
+-	dma_dwc_init(hsdev, irq);
++	err = dma_dwc_init(hsdev, irq);
++	if (err)
++		goto error_dma_iomap;
+ 
+ 	/* Enable SATA Interrupts */
+ 	sata_dwc_enable_interrupts(hsdev);
+@@ -1761,9 +1758,8 @@ static int sata_dwc_probe(struct platfor
+ 	 * device discovery process, invoking our port_start() handler &
+ 	 * error_handler() to execute a dummy Softreset EH session
+ 	 */
+-	rc = ata_host_activate(host, irq, sata_dwc_isr, 0, &sata_dwc_sht);
+-
+-	if (rc != 0)
++	err = ata_host_activate(host, irq, sata_dwc_isr, 0, &sata_dwc_sht);
++	if (err)
+ 		dev_err(&ofdev->dev, "failed to activate host");
+ 
+ 	dev_set_drvdata(&ofdev->dev, host);
+@@ -1772,7 +1768,8 @@ static int sata_dwc_probe(struct platfor
+ error_out:
+ 	/* Free SATA DMA resources */
+ 	dma_dwc_exit(hsdev);
+-
++error_dma_iomap:
++	iounmap((void __iomem *)host_pvt.sata_dma_regs);
+ error_iomap:
+ 	iounmap(base);
+ error_kmalloc:
+@@ -1793,6 +1790,7 @@ static int sata_dwc_remove(struct platfo
+ 	/* Free SATA DMA resources */
+ 	dma_dwc_exit(hsdev);
+ 
++	iounmap((void __iomem *)host_pvt.sata_dma_regs);
+ 	iounmap(hsdev->reg_base);
+ 	kfree(hsdev);
+ 	kfree(host);
 
 
