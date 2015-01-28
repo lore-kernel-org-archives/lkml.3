@@ -1,117 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965244AbbA1EZg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 23:25:36 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:2220 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934568AbbA1EZa (ORCPT
+	id S965486AbbA1E2N (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 23:28:13 -0500
+Received: from ozlabs.org ([103.22.144.67]:46144 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965383AbbA1E2L convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 23:25:30 -0500
-Message-ID: <54C86494.6020509@huawei.com>
-Date: Wed, 28 Jan 2015 12:24:52 +0800
-From: Zefan Li <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Mike Galbraith <umgwanakikbuti@gmail.com>
-CC: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: [patch] cpuset: fix crash when adding CPUs to an empty set
-References: <1421820981.16275.1.camel@marge.simpson.net>  <54C84C74.9080102@huawei.com> <1422417235.5716.5.camel@marge.simpson.net>
-In-Reply-To: <1422417235.5716.5.camel@marge.simpson.net>
-X-Enigmail-Version: 1.6
+	Tue, 27 Jan 2015 23:28:11 -0500
+Message-ID: <1422419289.9646.20.camel@neuling.org>
+Subject: Re: [V6,1/9] elf: Add new powerpc specifc core note sections
+From: Michael Neuling <mikey@neuling.org>
+To: Ulrich Weigand <Ulrich.Weigand@de.ibm.com>
+Cc: akpm@linux-foundation.org, avagin@openvz.org, davej@redhat.com,
+        davem@davemloft.net, dhowells@redhat.com,
+        Edjunior Barbosa Machado <emachado@linux.vnet.ibm.com>,
+        james.hogan@imgtec.com,
+        Anshuman Khandual <khandual@linux.vnet.ibm.com>, kirjanov@gmail.com,
+        linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org,
+        Michael Ellerman <mpe@ellerman.id.au>, oleg@redhat.com,
+        palves@redhat.com, Paul.Clothier@imgtec.com, peterz@infradead.org,
+        sam.bobroff@au1.ibm.com, shuahkh@osg.samsung.com,
+        sukadev@linux.vnet.ibm.com, tglx@linutronix.de
+Date: Wed, 28 Jan 2015 15:28:09 +1100
+In-Reply-To: <1421963049.30744.23.camel@neuling.org>
+References: <20141203052204.9DA8F1400DD@ozlabs.org>
+	 <547EB253.5050307@linux.vnet.ibm.com> <548578A8.5020901@linux.vnet.ibm.com>
+	 <54947C64.4030206@linux.vnet.ibm.com> <54A50094.5070902@linux.vnet.ibm.com>
+	 <1421883597.30744.3.camel@neuling.org>
+	 <OFC6CFC348.C619B89D-ONC1257DD5.0056279B-C1257DD5.00577002@de.ibm.com>
+	 <1421963049.30744.23.camel@neuling.org>
 Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.18.230]
-X-CFilter-Loop: Reflected
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.12.7-0ubuntu1 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cc: Ingo
-Cc: Juri
+On Fri, 2015-01-23 at 08:44 +1100, Michael Neuling wrote:
+> > > > Inside transaction both running and check pointed values can be
+> > > > probed independently.
+> > >
+> > > Yep, that's the idea, although setting the running values won't change
+> > > anything since the the translation is already doomed and will abort once
+> > > the cpu starts executing it.
+> > 
+> > So this looks to me like the overall effect on debugging transactional
+> > code should be the same on Power and z, even if some internal details
+> > are different (on z, the exception will automatically abort the
+> > transaction; on p, the exception itself will not abort, but *restarting*
+> > user space execution will).
+> 
+> Yep
+> 
+> > From a GDB perspective, it would therefore be preferable if the ptrace
+> > interface were to behave in a similar fashion on p as on z: that is,
+> > if an exception interrupting a transaction results in a ptrace intercept,
+> > at this point:
+> 
+> Agreed.
+> 
+> > - the "normal" ptrace register set commands should access the
+> >   *checkpointed* registers (allowing both read and write access)
+> 
+> OK, this is a change from what we've been proposing with Anshuman's
+> patch set but I'm happy to change it to make it consistent with other
+> architectures.  It's relatively arbitrary which goes where, so I'm happy
+> to change.
+> 
+> >   -- GDB will use this to display current position (already reflecting
+> >   the fact that the transaction will abort), and use it when changing
+> >   register values e.g. to effect an inferior function call
+> 
+> "Current position" depends on your perspective.  Is it the last executed
+> instruction or the next executed instruction?  If it's the last executed
+> instruction, then it's the running values.  If it's the next, then it's
+> the check pointed.  
+> 
+> Anyway, I'm happy to make it the check pointed values for the sake of
+> ptrace/gdb.
 
-On 2015/1/28 11:53, Mike Galbraith wrote:
-> On Wed, 2015-01-28 at 10:41 +0800, Zefan Li wrote:
-> 
->>> ---
->>>  kernel/cpuset.c |    2 +-
->>>  1 file changed, 1 insertion(+), 1 deletion(-)
->>>
->>> --- a/kernel/cpuset.c
->>> +++ b/kernel/cpuset.c
->>> @@ -511,7 +511,7 @@ static int validate_change(struct cpuset
->>>  	 * tasks.
->>>  	 */
->>>  	ret = -EBUSY;
->>> -	if (is_cpu_exclusive(cur) &&
->>> +	if (is_cpu_exclusive(cur) && !cpumask_empty(cur->cpus_allowed) &&
->>>  	    !cpuset_cpumask_can_shrink(cur->cpus_allowed,
->>>  				       trial->cpus_allowed))
->>>  		goto out;
->>>
->>
->> We should instead fix cpuset_cpumask_can_shrink() to check if the return value of
->> cpumask_any() >= nr_cpu_ids.
-> 
-> I like 0 lines better, but ok.
-> 
-> sched: Fix crash if cpuset_cpumask_can_shrink() is passed an empty cpumask
-> 
-> While creating an exclusive cpuset, we passed cpuset_cpumask_can_shrink()
-> an empty cpumask (cur), and dl_bw_of(cpumask_any(cur)) made boom with it.
-> 
-> [  514.513841] CPU: 0 PID: 6942 Comm: shield.sh Not tainted 3.19.0-master #19
-> [  514.513841] Hardware name: MEDIONPC MS-7502/MS-7502, BIOS 6.00 PG 12/26/2007
-> [  514.513841] task: ffff880224552450 ti: ffff8800caab8000 task.ti: ffff8800caab8000
-> [  514.513841] RIP: 0010:[<ffffffff81073846>]  [<ffffffff81073846>] cpuset_cpumask_can_shrink+0x56/0xb0
-> [  514.513841] RSP: 0018:ffff8800caabbda8  EFLAGS: 00010202
-> [  514.513841] RAX: 0000ffff00000000 RBX: ffff880037ae2ab8 RCX: 0000000000000000
-> [  514.513841] RDX: 0000000000012900 RSI: 0000000000000000 RDI: 000000000000000c
-> [  514.513841] RBP: ffff8800caabbdc8 R08: ffff880037ae2ab8 R09: 0000000000000034
-> [  514.513841] R10: 00000077e6fd3d1a R11: ffff88022e9b301c R12: ffff880223c98ab8
-> [  514.513841] R13: ffff880037ae2a00 R14: 0000000000000004 R15: ffff8802254b3c60
-> [  514.513841] FS:  00007fdbab533700(0000) GS:ffff88022fc00000(0000) knlGS:0000000000000000
-> [  514.513841] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-> [  514.513841] CR2: 00007ffff8ab8000 CR3: 00000000bef11000 CR4: 00000000000007f0
-> [  514.513841] Stack:
-> [  514.513841]  ffff880223c98ab8 ffffffff81a46c20 ffff880223c98a00 ffff880037ae2a00
-> [  514.513841]  ffff8800caabbdf8 ffffffff810cb82a ffff8800caabbdf8 ffff880037ae2a00
-> [  514.513841]  ffff8800ca9e5240 0000000000000000 ffff8800caabbe48 ffffffff810cc877
-> [  514.513841] Call Trace:
-> [  514.513841]  [<ffffffff810cb82a>] validate_change+0x18a/0x200
-> [  514.513841]  [<ffffffff810cc877>] cpuset_write_resmask+0x3b7/0x720
-> [  514.513841]  [<ffffffff810c4d58>] cgroup_file_write+0x38/0x100
-> [  514.513841]  [<ffffffff811d953a>] kernfs_fop_write+0x12a/0x180
-> [  514.513841]  [<ffffffff8116e1a3>] vfs_write+0xb3/0x1d0
-> [  514.513841]  [<ffffffff8116ed06>] SyS_write+0x46/0xb0
-> [  514.513841]  [<ffffffff8159ced6>] system_call_fastpath+0x16/0x1b
-> 
-> Signed-off-by: Mike Galbraith <umgwanakikbuti@gmail.com>
-> 
+Uli,
 
-Acked-by: Zefan Li <lizefan@huawei.com>
+Sorry, I'm rethinking this as we didn't consider user suspended
+transactions.
 
-This fixes f82f80426f7afcf55953924e71555984a4bd6ce6 
-("sched/deadline: Ensure that updates to exclusive cpusets don't break AC").
+It makes sense for normal transactions but for user suspended
+transactions the running values are the ones you want to modify since
+that is where you'll end up restarting from.  The hardware will only
+abort/rollback once a tresume is encountered.
+      * 
+So we could do what you're talking about for normal transactions and
+then switch them for suspended transactions.  But this just seems to be
+making the kernel interface overly complicated.  
 
-> ---
->  kernel/sched/core.c |    3 +++
->  1 file changed, 3 insertions(+)
-> 
-> --- a/kernel/sched/core.c
-> +++ b/kernel/sched/core.c
-> @@ -4739,6 +4739,9 @@ int cpuset_cpumask_can_shrink(const stru
->  	struct dl_bw *cur_dl_b;
->  	unsigned long flags;
->  
-> +	if (!cpumask_weight(cur))
-> +		return ret;
-> +
->  	rcu_read_lock_sched();
->  	cur_dl_b = dl_bw_of(cpumask_any(cur));
->  	trial_cpus = cpumask_weight(trial);
-> 
-> 
-> .
-> 
+So I'm keen on just keeping it the way Anshuman has now and GDB has to
+understand the program flow better to know which ones it wants to
+modify.  The kernel always provides the "normal" set as running and the
+new set as check pointed.  GDB then has to check the MSR to work out
+what it wants to modify.
 
+> > - a new ptrace register set should allow access (read-only) to the
+> >   *running* register values
+> 
+> This is because changing them won't ever result in a side effect?  
+
+For the same reason as above, we need to be able to modify the running
+values when it's a user suspended transaction.  So I don't agree with
+this any more in the case of user suspended transaction.  We need to be
+able to modify both sets of registers.
+
+Mikey
