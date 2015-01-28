@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934153AbbA1CNd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 21:13:33 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41186 "EHLO
+	id S1760737AbbA1CYx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 21:24:53 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41020 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759549AbbA1B2U (ORCPT
+	with ESMTP id S1754896AbbA1B2G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 20:28:20 -0500
+	Tue, 27 Jan 2015 20:28:06 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andreas Hartmann <andihartmann@freenet.de>,
-        Alex Williamson <alex.williamson@redhat.com>,
-        Bjorn Helgaas <bhelgaas@google.com>
-Subject: [PATCH 3.18 23/61] PCI: Mark Atheros AR93xx to avoid bus reset
+        Jason Lee Cragg <jcragg@gmail.com>, Takashi Iwai <tiwai@suse.de>
+Subject: [PATCH 3.10 05/32] ALSA: usb-audio: Add mic volume fix quirk for Logitech Webcam C210
 Date: Tue, 27 Jan 2015 17:26:35 -0800
-Message-Id: <20150128012639.579709491@linuxfoundation.org>
+Message-Id: <20150128012627.869942493@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150128012636.936333725@linuxfoundation.org>
-References: <20150128012636.936333725@linuxfoundation.org>
+In-Reply-To: <20150128012627.081285723@linuxfoundation.org>
+References: <20150128012627.081285723@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -26,59 +24,31 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.18-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Alex Williamson <alex.williamson@redhat.com>
+From: Jason Lee Cragg <jcragg@gmail.com>
 
-commit c3e59ee4e76686b0c84ca8faa1011d10cd4ca1b8 upstream.
+commit 6455931186bff407493135e74c5f32efd30860e2 upstream.
 
-Reports against the TL-WDN4800 card indicate that PCI bus reset of this
-Atheros device cause system lock-ups and resets.  I've also been able to
-confirm this behavior on multiple systems.  The device never returns from
-reset and attempts to access config space of the device after reset result
-in hangs.  Blacklist bus reset for the device to avoid this issue.
-
-[bhelgaas: This regression appeared in v3.14.  Andreas bisected it to
-425c1b223dac ("PCI: Add Virtual Channel to save/restore support"), but we
-don't understand the mechanism by which that commit affects the reset
-path.]
-
-[bhelgaas: changelog, references]
-Link: http://lkml.kernel.org/r/20140923210318.498dacbd@dualc.maya.org
-Reported-by: Andreas Hartmann <andihartmann@freenet.de>
-Tested-by: Andreas Hartmann <andihartmann@freenet.de>
-Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+Signed-off-by: Jason Lee Cragg <jcragg@gmail.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/pci/quirks.c |   14 ++++++++++++++
- 1 file changed, 14 insertions(+)
+ sound/usb/mixer.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/pci/quirks.c
-+++ b/drivers/pci/quirks.c
-@@ -3008,6 +3008,20 @@ DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_R
- DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_MELLANOX, PCI_ANY_ID,
- 			 quirk_broken_intx_masking);
- 
-+static void quirk_no_bus_reset(struct pci_dev *dev)
-+{
-+	dev->dev_flags |= PCI_DEV_FLAGS_NO_BUS_RESET;
-+}
-+
-+/*
-+ * Atheros AR93xx chips do not behave after a bus reset.  The device will
-+ * throw a Link Down error on AER-capable systems and regardless of AER,
-+ * config space of the device is never accessible again and typically
-+ * causes the system to hang or reset when access is attempted.
-+ * http://www.spinics.net/lists/linux-pci/msg34797.html
-+ */
-+DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_ATHEROS, 0x0030, quirk_no_bus_reset);
-+
- #ifdef CONFIG_ACPI
- /*
-  * Apple: Shutdown Cactus Ridge Thunderbolt controller.
+--- a/sound/usb/mixer.c
++++ b/sound/usb/mixer.c
+@@ -886,6 +886,7 @@ static void volume_control_quirks(struct
+ 	case USB_ID(0x046d, 0x0807): /* Logitech Webcam C500 */
+ 	case USB_ID(0x046d, 0x0808):
+ 	case USB_ID(0x046d, 0x0809):
++	case USB_ID(0x046d, 0x0819): /* Logitech Webcam C210 */
+ 	case USB_ID(0x046d, 0x081b): /* HD Webcam c310 */
+ 	case USB_ID(0x046d, 0x081d): /* HD Webcam c510 */
+ 	case USB_ID(0x046d, 0x0825): /* HD Webcam c270 */
 
 
