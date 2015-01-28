@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933337AbbA1Bid (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 20:38:33 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41449 "EHLO
+	id S933770AbbA1CJA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 21:09:00 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41026 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759067AbbA1BiW (ORCPT
+	with ESMTP id S1759914AbbA1B2Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 20:38:22 -0500
+	Tue, 27 Jan 2015 20:28:24 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [PATCH 3.14 09/77] drm/radeon: add si dpm quirk list
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: [PATCH 3.18 35/61] fix deadlock in cifs_ioctl_clone()
 Date: Tue, 27 Jan 2015 17:26:47 -0800
-Message-Id: <20150128012746.248872077@linuxfoundation.org>
+Message-Id: <20150128012640.776281829@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150128012745.971137091@linuxfoundation.org>
-References: <20150128012745.971137091@linuxfoundation.org>
+In-Reply-To: <20150128012636.936333725@linuxfoundation.org>
+References: <20150128012636.936333725@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -24,89 +24,72 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.18-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Al Viro <viro@zeniv.linux.org.uk>
 
-commit 5615f890bc6babdc2998dec62f3552326d06eb7b upstream.
+commit 378ff1a53b5724f3ac97b0aba3c9ecac072f6fcd upstream.
 
-This adds a quirks list to fix stability problems with
-certain SI boards.
+It really needs to check that src is non-directory *and* use
+{un,}lock_two_nodirectories().  As it is, it's trivial to cause
+double-lock (ioctl(fd, CIFS_IOC_COPYCHUNK_FILE, fd)) and if the
+last argument is an fd of directory, we are asking for trouble
+by violating the locking order - all directories go before all
+non-directories.  If the last argument is an fd of parent
+directory, it has 50% odds of locking child before parent,
+which will cause AB-BA deadlock if we race with unlink().
 
-bug:
-https://bugs.freedesktop.org/show_bug.cgi?id=76490
-
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/si_dpm.c |   39 +++++++++++++++++++++++++++++++++++++++
- 1 file changed, 39 insertions(+)
+ fs/cifs/ioctl.c |   21 +++++----------------
+ 1 file changed, 5 insertions(+), 16 deletions(-)
 
---- a/drivers/gpu/drm/radeon/si_dpm.c
-+++ b/drivers/gpu/drm/radeon/si_dpm.c
-@@ -2900,6 +2900,22 @@ static int si_init_smc_spll_table(struct
- 	return ret;
- }
- 
-+struct si_dpm_quirk {
-+	u32 chip_vendor;
-+	u32 chip_device;
-+	u32 subsys_vendor;
-+	u32 subsys_device;
-+	u32 max_sclk;
-+	u32 max_mclk;
-+};
-+
-+/* cards with dpm stability problems */
-+static struct si_dpm_quirk si_dpm_quirk_list[] = {
-+	/* PITCAIRN - https://bugs.freedesktop.org/show_bug.cgi?id=76490 */
-+	{ PCI_VENDOR_ID_ATI, 0x6810, 0x1462, 0x3036, 0, 120000 },
-+	{ 0, 0, 0, 0 },
-+};
-+
- static void si_apply_state_adjust_rules(struct radeon_device *rdev,
- 					struct radeon_ps *rps)
- {
-@@ -2910,7 +2926,22 @@ static void si_apply_state_adjust_rules(
- 	u32 mclk, sclk;
- 	u16 vddc, vddci;
- 	u32 max_sclk_vddc, max_mclk_vddci, max_mclk_vddc;
-+	u32 max_sclk = 0, max_mclk = 0;
- 	int i;
-+	struct si_dpm_quirk *p = si_dpm_quirk_list;
-+
-+	/* Apply dpm quirks */
-+	while (p && p->chip_device != 0) {
-+		if (rdev->pdev->vendor == p->chip_vendor &&
-+		    rdev->pdev->device == p->chip_device &&
-+		    rdev->pdev->subsystem_vendor == p->subsys_vendor &&
-+		    rdev->pdev->subsystem_device == p->subsys_device) {
-+			max_sclk = p->max_sclk;
-+			max_mclk = p->max_mclk;
-+			break;
-+		}
-+		++p;
-+	}
- 
- 	if ((rdev->pm.dpm.new_active_crtc_count > 1) ||
- 	    ni_dpm_vblank_too_short(rdev))
-@@ -2964,6 +2995,14 @@ static void si_apply_state_adjust_rules(
- 			if (ps->performance_levels[i].mclk > max_mclk_vddc)
- 				ps->performance_levels[i].mclk = max_mclk_vddc;
- 		}
-+		if (max_mclk) {
-+			if (ps->performance_levels[i].mclk > max_mclk)
-+				ps->performance_levels[i].mclk = max_mclk;
-+		}
-+		if (max_sclk) {
-+			if (ps->performance_levels[i].sclk > max_sclk)
-+				ps->performance_levels[i].sclk = max_sclk;
-+		}
+--- a/fs/cifs/ioctl.c
++++ b/fs/cifs/ioctl.c
+@@ -86,21 +86,16 @@ static long cifs_ioctl_clone(unsigned in
  	}
  
- 	/* XXX validate the min clocks required for display */
+ 	src_inode = file_inode(src_file.file);
++	rc = -EINVAL;
++	if (S_ISDIR(src_inode->i_mode))
++		goto out_fput;
+ 
+ 	/*
+ 	 * Note: cifs case is easier than btrfs since server responsible for
+ 	 * checks for proper open modes and file type and if it wants
+ 	 * server could even support copy of range where source = target
+ 	 */
+-
+-	/* so we do not deadlock racing two ioctls on same files */
+-	if (target_inode < src_inode) {
+-		mutex_lock_nested(&target_inode->i_mutex, I_MUTEX_PARENT);
+-		mutex_lock_nested(&src_inode->i_mutex, I_MUTEX_CHILD);
+-	} else {
+-		mutex_lock_nested(&src_inode->i_mutex, I_MUTEX_PARENT);
+-		mutex_lock_nested(&target_inode->i_mutex, I_MUTEX_CHILD);
+-	}
++	lock_two_nondirectories(target_inode, src_inode);
+ 
+ 	/* determine range to clone */
+ 	rc = -EINVAL;
+@@ -124,13 +119,7 @@ static long cifs_ioctl_clone(unsigned in
+ out_unlock:
+ 	/* although unlocking in the reverse order from locking is not
+ 	   strictly necessary here it is a little cleaner to be consistent */
+-	if (target_inode < src_inode) {
+-		mutex_unlock(&src_inode->i_mutex);
+-		mutex_unlock(&target_inode->i_mutex);
+-	} else {
+-		mutex_unlock(&target_inode->i_mutex);
+-		mutex_unlock(&src_inode->i_mutex);
+-	}
++	unlock_two_nondirectories(src_inode, target_inode);
+ out_fput:
+ 	fdput(src_file);
+ out_drop_write:
 
 
