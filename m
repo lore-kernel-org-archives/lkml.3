@@ -1,72 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753322AbbA1Uxs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 15:53:48 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:54168 "EHLO mx1.redhat.com"
+	id S1754351AbbA1Uzw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 15:55:52 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:45227 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753124AbbA1Uxm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 15:53:42 -0500
+	id S1754051AbbA1Uzp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jan 2015 15:55:45 -0500
 From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
 To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Cc: Hans de Goede <hdegoede@redhat.com>,
         Peter Hutterer <peter.hutterer@who-t.net>, linux-input@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 1/4] Input - synaptics: fix middle button on Lenovo 2015 products
-Date: Wed, 28 Jan 2015 15:10:04 -0500
-Message-Id: <1422475807-15033-2-git-send-email-benjamin.tissoires@redhat.com>
+Subject: [PATCH 2/4] Input - synaptics: do not release extra buttons once they are pressed
+Date: Wed, 28 Jan 2015 15:10:05 -0500
+Message-Id: <1422475807-15033-3-git-send-email-benjamin.tissoires@redhat.com>
 In-Reply-To: <1422475807-15033-1-git-send-email-benjamin.tissoires@redhat.com>
 References: <1422475807-15033-1-git-send-email-benjamin.tissoires@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On the X1 Carbon 3rd gen (with a 2015 broadwell cpu), the physical middle
-button of the trackstick (attached to the touchpad serio device, of course)
-seems to get lost.
+The current code releases the extra buttons right after they are pressed.
+As soon as a new serio report comes in, the hw state is reset to 0
+and so the buttons are released.
 
-Actually, the touchpads reports 3 extra buttons, which falls in the switch
-below to the '2' case. Let's handle the case of odd numbers also, so that
-the middle button finds its way back.
+Check for the report type before acting on the current extra buttons
+state.
 
 Cc: stable@vger.kernel.org
 Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
 ---
- drivers/input/mouse/synaptics.c | 6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ drivers/input/mouse/synaptics.c | 10 +++++++---
+ drivers/input/mouse/synaptics.h |  3 +++
+ 2 files changed, 10 insertions(+), 3 deletions(-)
 
 diff --git a/drivers/input/mouse/synaptics.c b/drivers/input/mouse/synaptics.c
-index f89de89..0d12664 100644
+index 0d12664..d58863b 100644
 --- a/drivers/input/mouse/synaptics.c
 +++ b/drivers/input/mouse/synaptics.c
-@@ -689,7 +689,7 @@ static int synaptics_parse_hw_state(const unsigned char buf[],
+@@ -688,7 +688,7 @@ static int synaptics_parse_hw_state(const unsigned char buf[],
+ 		}
  
  		if (SYN_CAP_MULTI_BUTTON_NO(priv->ext_cap) &&
- 		    ((buf[0] ^ buf[3]) & 0x02)) {
--			switch (SYN_CAP_MULTI_BUTTON_NO(priv->ext_cap) & ~0x01) {
-+			switch (SYN_CAP_MULTI_BUTTON_NO(priv->ext_cap)) {
+-		    ((buf[0] ^ buf[3]) & 0x02)) {
++		    SYN_REPORT_EXT_BUTTONS(buf)) {
+ 			switch (SYN_CAP_MULTI_BUTTON_NO(priv->ext_cap)) {
  			default:
  				/*
- 				 * if nExtBtn is greater than 8 it should be
-@@ -698,15 +698,19 @@ static int synaptics_parse_hw_state(const unsigned char buf[],
- 				break;
- 			case 8:
- 				hw->ext_buttons |= ((buf[5] & 0x08)) ? 0x80 : 0;
-+			case 7:
- 				hw->ext_buttons |= ((buf[4] & 0x08)) ? 0x40 : 0;
- 			case 6:
- 				hw->ext_buttons |= ((buf[5] & 0x04)) ? 0x20 : 0;
-+			case 5:
- 				hw->ext_buttons |= ((buf[4] & 0x04)) ? 0x10 : 0;
- 			case 4:
- 				hw->ext_buttons |= ((buf[5] & 0x02)) ? 0x08 : 0;
-+			case 3:
- 				hw->ext_buttons |= ((buf[4] & 0x02)) ? 0x04 : 0;
- 			case 2:
- 				hw->ext_buttons |= ((buf[5] & 0x01)) ? 0x02 : 0;
-+			case 1:
- 				hw->ext_buttons |= ((buf[4] & 0x01)) ? 0x01 : 0;
- 			}
- 		}
+@@ -792,8 +792,12 @@ static void synaptics_report_buttons(struct psmouse *psmouse,
+ 		input_report_key(dev, BTN_BACK, hw->down);
+ 	}
+ 
+-	for (i = 0; i < SYN_CAP_MULTI_BUTTON_NO(priv->ext_cap); i++)
+-		input_report_key(dev, BTN_0 + i, hw->ext_buttons & (1 << i));
++	if (SYN_CAP_MULTI_BUTTON_NO(priv->ext_cap) &&
++	    SYN_REPORT_EXT_BUTTONS(psmouse->packet)) {
++		for (i = 0; i < SYN_CAP_MULTI_BUTTON_NO(priv->ext_cap); i++)
++			input_report_key(dev, BTN_0 + i,
++					 hw->ext_buttons & (1 << i));
++	}
+ }
+ 
+ static void synaptics_report_mt_data(struct psmouse *psmouse,
+diff --git a/drivers/input/mouse/synaptics.h b/drivers/input/mouse/synaptics.h
+index 6faf9bb..0b2b711 100644
+--- a/drivers/input/mouse/synaptics.h
++++ b/drivers/input/mouse/synaptics.h
+@@ -115,6 +115,9 @@
+ #define SYN_NEWABS_RELAXED		2
+ #define SYN_OLDABS			3
+ 
++/* synaptics extended button packet */
++#define SYN_REPORT_EXT_BUTTONS(buf)	(((buf)[0] ^ (buf)[3]) & 0x02)
++
+ /* amount to fuzz position data when touchpad reports reduced filtering */
+ #define SYN_REDUCED_FILTER_FUZZ		8
+ 
 -- 
 2.1.0
 
