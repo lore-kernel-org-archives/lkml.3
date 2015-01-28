@@ -1,68 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933828AbbA2Dyr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 22:54:47 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45680 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751292AbbA2BMV (ORCPT
+	id S933568AbbA2CMf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 21:12:35 -0500
+Received: from mout.kundenserver.de ([212.227.17.24]:53658 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933537AbbA2CMd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 20:12:21 -0500
-Date: Wed, 28 Jan 2015 13:34:21 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/2] Add device_create_files() and device_remove_files()
- helpers
-Message-ID: <20150128213421.GA20488@kroah.com>
-References: <1422477974-8369-1-git-send-email-tiwai@suse.de>
- <20150128210547.GA18649@kroah.com>
- <s5hmw52fvgb.wl-tiwai@suse.de>
+	Wed, 28 Jan 2015 21:12:33 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: linaro-kernel@lists.linaro.org
+Cc: Timur Tabi <timur@codeaurora.org>,
+        AKASHI Takahiro <takahiro.akashi@linaro.org>, rgb@redhat.com,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        lkml <linux-kernel@vger.kernel.org>, eparis@redhat.com,
+        Al Viro <viro@zeniv.linux.org.uk>, linux-audit@redhat.com,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v10 1/3] arm64: Add __NR_* definitions for compat syscalls
+Date: Wed, 28 Jan 2015 22:35:01 +0100
+Message-ID: <12610204.3KbMJUth1j@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <CAOZdJXUhpmi0SM5izDYQnx8SHjWjqOFVduV0+boPw6+YCKP5+g@mail.gmail.com>
+References: <1404458911-8214-1-git-send-email-takahiro.akashi@linaro.org> <1404458911-8214-2-git-send-email-takahiro.akashi@linaro.org> <CAOZdJXUhpmi0SM5izDYQnx8SHjWjqOFVduV0+boPw6+YCKP5+g@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <s5hmw52fvgb.wl-tiwai@suse.de>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V03:K0:3YIGh/+CVKefHS/feNyHiQ0MvnBLg0hnqB+7H6AFiJFtfgXZibE
+ DID089RvCPhJ3183jyFnqXwbbop7uKlXycuBNb8qaj+ytqgcyWFo2ju2XVrtYW+BFv22RmU
+ X0OZdTmOhvZtcdDF3EwDRviZzA4HppZS/Bm+LDZFi0+Pkl/oilka8GOylGeHEoNUwttkNuM
+ VH8cWh+xCGJbUFdDrDVGg==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 28, 2015 at 10:26:28PM +0100, Takashi Iwai wrote:
-> At Wed, 28 Jan 2015 13:05:47 -0800,
-> Greg Kroah-Hartman wrote:
-> > 
-> > On Wed, Jan 28, 2015 at 09:46:12PM +0100, Takashi Iwai wrote:
-> > > Hi,
-> > > 
-> > > this is a simple patch to add device_create_files() and
-> > > device_remove_files() to replace multiple device_create_file() or
-> > > _remove() calls with a single shot with the device_attr list.
-> > > 
-> > > It's basically just a clean up, but also helps to simplify the error
-> > > handling a lot in many existing codes since the function itself does
-> > > rollback at error.
-> > > 
-> > > The series contains a patch to apply these to drivers/base/node.c.
-> > > I have lots of patches (up to 30) to use these in the whole tree, but
-> > > maybe it'd be easier too apply once after this stuff is merged at
-> > > first.  It's just a cleanup so no urgent task, after all.
-> > 
-> > I'd like to some day be able to drop device_create_file entirely, as it
-> > is almost always used in a racy way (but not always, so we can't get rid
-> > of it today.)
-> > 
-> > A driver should be using an attribute group and be created/registered
-> > with it if they want any files associated with it, so giving people the
-> > ability to add large numbers of files all at once seems like the wrong
-> > thing to do :)
+On Wednesday 28 January 2015 15:31:49 Timur Tabi wrote:
+> On Fri, Jul 4, 2014 at 2:28 AM, AKASHI Takahiro
+> <takahiro.akashi@linaro.org> wrote:
+> > +#define __ARM_NR_COMPAT_BASE           0x0f0000
+> > +#define __ARM_NR_compat_cacheflush     (__ARM_NR_COMPAT_BASE+2)
+> > +#define __ARM_NR_compat_set_tls                (__ARM_NR_COMPAT_BASE+5)
 > 
-> Well, through the glance over many codes using device_create_file(),
-> I think the problem of the attribute group is that there is little
-> help for generating the entries dynamically.  For example, if you have
-> two groups you want to enable conditionally, what would be the best
-> way to implement?
+> I know this patch is six months old, but I was wondering if anyone
+> knows of any plans to make these syscalls available to 64-bit apps?
+> We have a 32-bit app that uses __ARM_NR_compat_cacheflush, and we'd
+> like to port that app to 64-bit.  I'm just not sure how to start doing
+> that, since there don't appear to be any 64-bit ARM-specific syscalls.
+> 
 
-Use the is_visable() function callback, that's what it is there for.
+You can add architecture specific syscalls by using the 16 numbers following
+__NR_arch_specific_syscall. Whether it makes sense to have a cacheflush
+syscall on arm64, I have no idea.
 
-thanks,
+I believe that we should not need a set_tls syscall though.
 
-greg k-h
+	Arnd
