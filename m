@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755235AbbA2JAM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 04:00:12 -0500
+	id S1762721AbbA2KhY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 05:37:24 -0500
 Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:44737 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755038AbbA2JAJ (ORCPT
+	by vger.kernel.org with ESMTP id S1755584AbbA2JAU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 04:00:09 -0500
+	Thu, 29 Jan 2015 04:00:20 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, Sasha Levin <sasha.levin@oracle.com>,
         Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
         John Stultz <john.stultz@linaro.org>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 150/176] time: settimeofday: Validate the values of tv from user
-Date: Wed, 28 Jan 2015 15:29:40 +0100
-Message-Id: <cc81198cf96e55b1344ef451d223a47a35f3c0ea.1422455352.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 151/176] time: adjtimex: Validate the ADJ_FREQUENCY values
+Date: Wed, 28 Jan 2015 15:29:41 +0100
+Message-Id: <64678c15381f8efa6beeb565ada1021e45f50c7a.1422455352.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <ce4a451f616a1e7ab58cfeceea5e49c8b1c68c81.1422455352.git.jslaby@suse.cz>
 References: <ce4a451f616a1e7ab58cfeceea5e49c8b1c68c81.1422455352.git.jslaby@suse.cz>
@@ -30,63 +30,40 @@ From: Sasha Levin <sasha.levin@oracle.com>
 
 ===============
 
-commit 6ada1fc0e1c4775de0e043e1bd3ae9d065491aa5 upstream.
+commit 5e5aeb4367b450a28f447f6d5ab57d8f2ab16a5f upstream.
 
-An unvalidated user input is multiplied by a constant, which can result in
-an undefined behaviour for large values. While this is validated later,
-we should avoid triggering undefined behaviour.
+Verify that the frequency value from userspace is valid and makes sense.
+
+Unverified values can cause overflows later on.
 
 Cc: Thomas Gleixner <tglx@linutronix.de>
 Cc: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
-[jstultz: include trivial milisecond->microsecond correction noticed
-by Andy]
+[jstultz: Fix up bug for negative values and drop redunent cap check]
 Signed-off-by: John Stultz <john.stultz@linaro.org>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- include/linux/time.h | 13 +++++++++++++
- kernel/time.c        |  4 ++++
- 2 files changed, 17 insertions(+)
+ kernel/time/ntp.c | 7 +++++++
+ 1 file changed, 7 insertions(+)
 
-diff --git a/include/linux/time.h b/include/linux/time.h
-index d5d229b2e5af..7d532a32ff3a 100644
---- a/include/linux/time.h
-+++ b/include/linux/time.h
-@@ -173,6 +173,19 @@ extern void getboottime(struct timespec *ts);
- extern void monotonic_to_bootbased(struct timespec *ts);
- extern void get_monotonic_boottime(struct timespec *ts);
+diff --git a/kernel/time/ntp.c b/kernel/time/ntp.c
+index af8d1d4f3d55..28db9bedc857 100644
+--- a/kernel/time/ntp.c
++++ b/kernel/time/ntp.c
+@@ -631,6 +631,13 @@ int ntp_validate_timex(struct timex *txc)
+ 	if ((txc->modes & ADJ_SETOFFSET) && (!capable(CAP_SYS_TIME)))
+ 		return -EPERM;
  
-+static inline bool timeval_valid(const struct timeval *tv)
-+{
-+	/* Dates before 1970 are bogus */
-+	if (tv->tv_sec < 0)
-+		return false;
-+
-+	/* Can't have more microseconds then a second */
-+	if (tv->tv_usec < 0 || tv->tv_usec >= USEC_PER_SEC)
-+		return false;
-+
-+	return true;
-+}
-+
- extern struct timespec timespec_trunc(struct timespec t, unsigned gran);
- extern int timekeeping_valid_for_hres(void);
- extern u64 timekeeping_max_deferment(void);
-diff --git a/kernel/time.c b/kernel/time.c
-index 3c49ab45f822..3eb322e518a3 100644
---- a/kernel/time.c
-+++ b/kernel/time.c
-@@ -195,6 +195,10 @@ SYSCALL_DEFINE2(settimeofday, struct timeval __user *, tv,
- 	if (tv) {
- 		if (copy_from_user(&user_tv, tv, sizeof(*tv)))
- 			return -EFAULT;
-+
-+		if (!timeval_valid(&user_tv))
++	if (txc->modes & ADJ_FREQUENCY) {
++		if (LONG_MIN / PPM_SCALE > txc->freq)
 +			return -EINVAL;
++		if (LONG_MAX / PPM_SCALE < txc->freq)
++			return -EINVAL;
++	}
 +
- 		new_ts.tv_sec = user_tv.tv_sec;
- 		new_ts.tv_nsec = user_tv.tv_usec * NSEC_PER_USEC;
- 	}
+ 	return 0;
+ }
+ 
 -- 
 2.2.2
 
