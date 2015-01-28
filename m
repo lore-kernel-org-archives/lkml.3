@@ -1,22 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965124AbbA2ChB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 21:37:01 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:46979 "EHLO
+	id S965073AbbA2Cgv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 21:36:51 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:46975 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965091AbbA2Cg4 (ORCPT
+	with ESMTP id S965031AbbA2Cgr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 21:36:56 -0500
+	Wed, 28 Jan 2015 21:36:47 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Junxiao Bi <junxiao.bi@oracle.com>, Joel Becker <jlbec@evilplan.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Fengguang Wu <fengguang.wu@intel.com>,
+        Frederic Weisbecker <frederic@kernel.org>,
+        Pan Jacob jun <jacob.jun.pan@intel.com>, LKP <lkp@01.org>,
+        Peter Zijlstra <peterz@infradead.org>, Zhang Rui <rui.zhang@intel.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13.y-ckt 138/139] ocfs2: fix journal commit deadlock
-Date: Wed, 28 Jan 2015 14:21:21 -0800
-Message-Id: <1422483682-15393-139-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13.y-ckt 139/139] tick/powerclamp: Remove tick_nohz_idle abuse
+Date: Wed, 28 Jan 2015 14:21:22 -0800
+Message-Id: <1422483682-15393-140-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422483682-15393-1-git-send-email-kamal@canonical.com>
 References: <1422483682-15393-1-git-send-email-kamal@canonical.com>
@@ -29,86 +34,90 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Junxiao Bi <junxiao.bi@oracle.com>
+From: Thomas Gleixner <tglx@linutronix.de>
 
-commit 136f49b9171074872f2a14ad0ab10486d1ba13ca upstream.
+commit a5fd9733a30d18d7ac23f17080e7e07bb3205b69 upstream.
 
-For buffer write, page lock will be got in write_begin and released in
-write_end, in ocfs2_write_end_nolock(), before it unlock the page in
-ocfs2_free_write_ctxt(), it calls ocfs2_run_deallocs(), this will ask
-for the read lock of journal->j_trans_barrier.  Holding page lock and
-ask for journal->j_trans_barrier breaks the locking order.
+commit 4dbd27711cd9 "tick: export nohz tick idle symbols for module
+use" was merged via the thermal tree without an explicit ack from the
+relevant maintainers.
 
-This will cause a deadlock with journal commit threads, ocfs2cmt will
-get write lock of journal->j_trans_barrier first, then it wakes up
-kjournald2 to do the commit work, at last it waits until done.  To
-commit journal, kjournald2 needs flushing data first, it needs get the
-cache page lock.
+The exports are abused by the intel powerclamp driver which implements
+a fake idle state from a sched FIFO task. This causes all kinds of
+wreckage in the NOHZ core code which rightfully assumes that
+tick_nohz_idle_enter/exit() are only called from the idle task itself.
 
-Since some ocfs2 cluster locks are holding by write process, this
-deadlock may hung the whole cluster.
+Recent changes in the NOHZ core lead to a failure of the powerclamp
+driver and now people try to hack completely broken and backwards
+workarounds into the NOHZ core code. This is completely unacceptable
+and just papers over the real problem. There are way more subtle
+issues lurking around the corner.
 
-unlock pages before ocfs2_run_deallocs() can fix the locking order, also
-put unlock before ocfs2_commit_trans() to make page lock is unlocked
-before j_trans_barrier to preserve unlocking order.
+The real solution is to fix the powerclamp driver by rewriting it with
+a sane concept, but that's beyond the scope of this.
 
-Signed-off-by: Junxiao Bi <junxiao.bi@oracle.com>
-Reviewed-by: Wengang Wang <wen.gang.wang@oracle.com>
-Reviewed-by: Mark Fasheh <mfasheh@suse.de>
-Cc: Joel Becker <jlbec@evilplan.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+So the only solution for now is to remove the calls into the core NOHZ
+code from the powerclamp trainwreck along with the exports.
+
+Fixes: d6d71ee4a14a "PM: Introduce Intel PowerClamp Driver"
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+Cc: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Fengguang Wu <fengguang.wu@intel.com>
+Cc: Frederic Weisbecker <frederic@kernel.org>
+Cc: Pan Jacob jun <jacob.jun.pan@intel.com>
+Cc: LKP <lkp@01.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Zhang Rui <rui.zhang@intel.com>
+Link: http://lkml.kernel.org/r/alpine.DEB.2.11.1412181110110.17382@nanos
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- fs/ocfs2/aops.c | 16 ++++++++++++++--
- 1 file changed, 14 insertions(+), 2 deletions(-)
+ drivers/thermal/intel_powerclamp.c | 2 --
+ kernel/time/tick-sched.c           | 2 --
+ 2 files changed, 4 deletions(-)
 
-diff --git a/fs/ocfs2/aops.c b/fs/ocfs2/aops.c
-index aeb44e8..bb6ee06 100644
---- a/fs/ocfs2/aops.c
-+++ b/fs/ocfs2/aops.c
-@@ -899,7 +899,7 @@ void ocfs2_unlock_and_free_pages(struct page **pages, int num_pages)
+diff --git a/drivers/thermal/intel_powerclamp.c b/drivers/thermal/intel_powerclamp.c
+index 8f181b3..cde9cff 100644
+--- a/drivers/thermal/intel_powerclamp.c
++++ b/drivers/thermal/intel_powerclamp.c
+@@ -426,7 +426,6 @@ static int clamp_thread(void *arg)
+ 		 * allowed. thus jiffies are updated properly.
+ 		 */
+ 		preempt_disable();
+-		tick_nohz_idle_enter();
+ 		/* mwait until target jiffies is reached */
+ 		while (time_before(jiffies, target_jiffies)) {
+ 			unsigned long ecx = 1;
+@@ -444,7 +443,6 @@ static int clamp_thread(void *arg)
+ 			start_critical_timings();
+ 			atomic_inc(&idle_wakeup_counter);
+ 		}
+-		tick_nohz_idle_exit();
+ 		preempt_enable_no_resched();
  	}
- }
+ 	del_timer_sync(&wakeup_timer);
+diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+index 29b063b..67673ca 100644
+--- a/kernel/time/tick-sched.c
++++ b/kernel/time/tick-sched.c
+@@ -806,7 +806,6 @@ void tick_nohz_idle_enter(void)
  
--static void ocfs2_free_write_ctxt(struct ocfs2_write_ctxt *wc)
-+static void ocfs2_unlock_pages(struct ocfs2_write_ctxt *wc)
+ 	local_irq_enable();
+ }
+-EXPORT_SYMBOL_GPL(tick_nohz_idle_enter);
+ 
+ /**
+  * tick_nohz_irq_exit - update next tick event from interrupt exit
+@@ -934,7 +933,6 @@ void tick_nohz_idle_exit(void)
+ 
+ 	local_irq_enable();
+ }
+-EXPORT_SYMBOL_GPL(tick_nohz_idle_exit);
+ 
+ static int tick_nohz_reprogram(struct tick_sched *ts, ktime_t now)
  {
- 	int i;
- 
-@@ -920,7 +920,11 @@ static void ocfs2_free_write_ctxt(struct ocfs2_write_ctxt *wc)
- 		page_cache_release(wc->w_target_page);
- 	}
- 	ocfs2_unlock_and_free_pages(wc->w_pages, wc->w_num_pages);
-+}
- 
-+static void ocfs2_free_write_ctxt(struct ocfs2_write_ctxt *wc)
-+{
-+	ocfs2_unlock_pages(wc);
- 	brelse(wc->w_di_bh);
- 	kfree(wc);
- }
-@@ -2045,11 +2049,19 @@ out_write_size:
- 	di->i_mtime_nsec = di->i_ctime_nsec = cpu_to_le32(inode->i_mtime.tv_nsec);
- 	ocfs2_journal_dirty(handle, wc->w_di_bh);
- 
-+	/* unlock pages before dealloc since it needs acquiring j_trans_barrier
-+	 * lock, or it will cause a deadlock since journal commit threads holds
-+	 * this lock and will ask for the page lock when flushing the data.
-+	 * put it here to preserve the unlock order.
-+	 */
-+	ocfs2_unlock_pages(wc);
-+
- 	ocfs2_commit_trans(osb, handle);
- 
- 	ocfs2_run_deallocs(osb, &wc->w_dealloc);
- 
--	ocfs2_free_write_ctxt(wc);
-+	brelse(wc->w_di_bh);
-+	kfree(wc);
- 
- 	return copied;
- }
 -- 
 1.9.1
 
