@@ -1,80 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757667AbbA2BqC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 20:46:02 -0500
-Received: from outbound-smtp03.blacknight.com ([81.17.249.16]:51956 "EHLO
-	outbound-smtp03.blacknight.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755379AbbA2Bp7 (ORCPT
+	id S932465AbbA2BrQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 20:47:16 -0500
+Received: from smtp65.iad3a.emailsrvr.com ([173.203.187.65]:57495 "EHLO
+	smtp65.iad3a.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757812AbbA2BrH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 20:45:59 -0500
-From: "Bryan O'Donoghue" <pure.logic@nexus-software.ie>
-To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
-        dvhart@infradead.org, andy.shevchenko@gmail.com,
-        boon.leong.ong@intel.com, linux-kernel@vger.kernel.org
-Cc: "Bryan O'Donoghue" <pure.logic@nexus-software.ie>
-Subject: [PATCH 2/2] x86, quark: Add Intel Quark platform support
-Date: Wed, 28 Jan 2015 18:36:26 +0000
-Message-Id: <1422470186-7860-3-git-send-email-pure.logic@nexus-software.ie>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1422470186-7860-1-git-send-email-pure.logic@nexus-software.ie>
-References: <1422470186-7860-1-git-send-email-pure.logic@nexus-software.ie>
+	Wed, 28 Jan 2015 20:47:07 -0500
+X-Sender-Id: abbotti@mev.co.uk
+From: Ian Abbott <abbotti@mev.co.uk>
+To: <driverdev-devel@linuxdriverproject.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Ian Abbott <abbotti@mev.co.uk>,
+        H Hartley Sweeten <hartleys@visionengravers.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH 0/6] staging: comedi: reformat comedi_fops and range comments
+Date: Wed, 28 Jan 2015 18:41:44 +0000
+Message-Id: <1422470510-9309-1-git-send-email-abbotti@mev.co.uk>
+X-Mailer: git-send-email 2.1.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add Intel Quark platform support. Quark needs to pull down all unlocked IMRs
-to ensure agreement with the EFI memory map post boot.
+1) staging: comedi: comedi_fops.c: reformat copyright header
+2) staging: comedi: comedi_fops.c: document exported functions
+3) staging: comedi: comedi_fops.c: reformat ioctl handler comments
+4) staging: comedi: range.c: reformat ioctl handler comment
+5) staging: comedi: range.c: reformat copyright comment
+6) staging: comedi: comedi_fops.c: reformat remaining block comments
 
-This patch adds an entry in Kconfig for Quark as a platform and makes IMR
-support mandatory if selected.
-
-Signed-off-by: Bryan O'Donoghue <pure.logic@nexus-software.ie>
-Suggested-by: Thomas Gleixner <tglx@linutronix.de>
-Suggested-by: Andy Shevchenko <andy.shevchenko@gmail.com>
----
- arch/x86/Kconfig           | 16 ++++++++++++++++
- arch/x86/platform/Makefile |  1 +
- 2 files changed, 17 insertions(+)
-
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index 0dc9d01..36d50cd 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -485,6 +485,22 @@ config X86_INTEL_MID
- 	  Intel MID platforms are based on an Intel processor and chipset which
- 	  consume less power than most of the x86 derivatives.
- 
-+config X86_INTEL_QUARK
-+	bool "Intel Quark platform support"
-+	depends on X86_32
-+	depends on X86_EXTENDED_PLATFORM
-+	depends on X86_PLATFORM_DEVICES
-+	depends on X86_TSC
-+	depends on PCI
-+	depends on PCI_GOANY
-+	depends on X86_IO_APIC
-+	select IOSF_MBI
-+	select INTEL_IMR
-+	---help---
-+	  Select to include support for Quark X1000 SoC.
-+	  Say Y here if you have a Quark based system such as the Arduino
-+	  compatible Intel Galileo.
-+
- config X86_INTEL_LPSS
- 	bool "Intel Low Power Subsystem Support"
- 	depends on ACPI
-diff --git a/arch/x86/platform/Makefile b/arch/x86/platform/Makefile
-index 85afde1..a62e0be 100644
---- a/arch/x86/platform/Makefile
-+++ b/arch/x86/platform/Makefile
-@@ -5,6 +5,7 @@ obj-y	+= geode/
- obj-y	+= goldfish/
- obj-y	+= iris/
- obj-y	+= intel-mid/
-+obj-y	+= intel-quark/
- obj-y	+= olpc/
- obj-y	+= scx200/
- obj-y	+= sfi/
--- 
-1.9.1
-
+ drivers/staging/comedi/comedi_fops.c | 437 +++++++++++++++++++----------------
+ drivers/staging/comedi/range.c       |  56 ++---
+ 2 files changed, 272 insertions(+), 221 deletions(-)
