@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759497AbbA2JEp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 04:04:45 -0500
-Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:44821 "EHLO
+	id S1758530AbbA2JCt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 04:02:49 -0500
+Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:44781 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932160AbbA2JE3 (ORCPT
+	by vger.kernel.org with ESMTP id S1754198AbbA2JCp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 04:04:29 -0500
+	Thu, 29 Jan 2015 04:02:45 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, Johan Hovold <johan@kernel.org>,
         Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 112/176] USB: console: fix uninitialised ldisc semaphore
-Date: Wed, 28 Jan 2015 15:29:02 +0100
-Message-Id: <005a854c60e8ae822423bad284d874866932b3a4.1422455352.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 113/176] USB: console: fix potential use after free
+Date: Wed, 28 Jan 2015 15:29:03 +0100
+Message-Id: <eff21557db1aa3a80dcfb3d760c5132f29b4dfa8.1422455352.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <ce4a451f616a1e7ab58cfeceea5e49c8b1c68c81.1422455352.git.jslaby@suse.cz>
 References: <ce4a451f616a1e7ab58cfeceea5e49c8b1c68c81.1422455352.git.jslaby@suse.cz>
@@ -29,66 +29,75 @@ From: Johan Hovold <johan@kernel.org>
 
 ===============
 
-commit d269d4434c72ed0da3a9b1230c30da82c4918c63 upstream.
+commit 32a4bf2e81ec378e5925d4e069e0677a6c86a6ad upstream.
 
-The USB console currently allocates a temporary fake tty which is used
-to pass terminal settings to the underlying serial driver.
+Use tty kref to release the fake tty in usb_console_setup to avoid use
+after free if the underlying serial driver has acquired a reference.
 
-The tty struct is not fully initialised, something which can lead to a
-lockdep warning (or worse) if a serial driver tries to acquire a
-line-discipline reference:
+Note that using the tty destructor release_one_tty requires some more
+state to be initialised.
 
-	usbserial: USB Serial support registered for pl2303
-	pl2303 1-2.1:1.0: pl2303 converter detected
-	usb 1-2.1: pl2303 converter now attached to ttyUSB0
-	INFO: trying to register non-static key.
-	the code is fine but needs lockdep annotation.
-	turning off the locking correctness validator.
-	CPU: 0 PID: 68 Comm: udevd Tainted: G        W      3.18.0-rc5 #10
-	[<c0016f04>] (unwind_backtrace) from [<c0013978>] (show_stack+0x20/0x24)
-	[<c0013978>] (show_stack) from [<c0449794>] (dump_stack+0x24/0x28)
-	[<c0449794>] (dump_stack) from [<c006f730>] (__lock_acquire+0x1e50/0x2004)
-	[<c006f730>] (__lock_acquire) from [<c0070128>] (lock_acquire+0xe4/0x18c)
-	[<c0070128>] (lock_acquire) from [<c027c6f8>] (ldsem_down_read_trylock+0x78/0x90)
-	[<c027c6f8>] (ldsem_down_read_trylock) from [<c027a1cc>] (tty_ldisc_ref+0x24/0x58)
-	[<c027a1cc>] (tty_ldisc_ref) from [<c0340760>] (usb_serial_handle_dcd_change+0x48/0xe8)
-	[<c0340760>] (usb_serial_handle_dcd_change) from [<bf000484>] (pl2303_read_int_callback+0x210/0x220 [pl2303])
-	[<bf000484>] (pl2303_read_int_callback [pl2303]) from [<c031624c>] (__usb_hcd_giveback_urb+0x80/0x140)
-	[<c031624c>] (__usb_hcd_giveback_urb) from [<c0316fc0>] (usb_giveback_urb_bh+0x98/0xd4)
-	[<c0316fc0>] (usb_giveback_urb_bh) from [<c0042e44>] (tasklet_hi_action+0x9c/0x108)
-	[<c0042e44>] (tasklet_hi_action) from [<c0042380>] (__do_softirq+0x148/0x42c)
-	[<c0042380>] (__do_softirq) from [<c00429cc>] (irq_exit+0xd8/0x114)
-	[<c00429cc>] (irq_exit) from [<c007ae58>] (__handle_domain_irq+0x84/0xdc)
-	[<c007ae58>] (__handle_domain_irq) from [<c000879c>] (omap_intc_handle_irq+0xd8/0xe0)
-	[<c000879c>] (omap_intc_handle_irq) from [<c0014544>] (__irq_svc+0x44/0x7c)
-	Exception stack(0xdf4e7f08 to 0xdf4e7f50)
-	7f00:                   debc0b80 df4e7f5c 00000000 00000000 debc0b80 be8da96c
-	7f20: 00000000 00000128 c000fc84 df4e6000 00000000 df4e7f94 00000004 df4e7f50
-	7f40: c038ebc0 c038d74c 600f0013 ffffffff
-	[<c0014544>] (__irq_svc) from [<c038d74c>] (___sys_sendmsg.part.29+0x0/0x2e0)
-	[<c038d74c>] (___sys_sendmsg.part.29) from [<c038ec08>] (SyS_sendmsg+0x18/0x1c)
-	[<c038ec08>] (SyS_sendmsg) from [<c000fa00>] (ret_fast_syscall+0x0/0x48)
-	console [ttyUSB0] enabled
-
-Fixes: 36697529b5bb ("tty: Replace ldisc locking with ldisc_sem")
+Fixes: 4a90f09b20f4 ("tty: usb-serial krefs")
 Signed-off-by: Johan Hovold <johan@kernel.org>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/usb/serial/console.c | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/usb/serial/console.c | 15 ++++++++++-----
+ 1 file changed, 10 insertions(+), 5 deletions(-)
 
 diff --git a/drivers/usb/serial/console.c b/drivers/usb/serial/console.c
-index c69bb50d4663..3cf2de433eb8 100644
+index 3cf2de433eb8..e4ce48cf7a64 100644
 --- a/drivers/usb/serial/console.c
 +++ b/drivers/usb/serial/console.c
-@@ -142,6 +142,7 @@ static int usb_console_setup(struct console *co, char *options)
- 			tty_port_tty_set(&port->port, tty);
+@@ -47,6 +47,8 @@ static struct console usbcons;
+  * ------------------------------------------------------------
+  */
+ 
++static const struct tty_operations usb_console_fake_tty_ops = {
++};
+ 
+ /*
+  * The parsing of the command line works exactly like the
+@@ -139,15 +141,18 @@ static int usb_console_setup(struct console *co, char *options)
+ 				goto reset_open_count;
+ 			}
+ 			kref_init(&tty->kref);
+-			tty_port_tty_set(&port->port, tty);
  			tty->driver = usb_serial_tty_driver;
  			tty->index = co->index;
-+			init_ldsem(&tty->ldisc_sem);
+ 			init_ldsem(&tty->ldisc_sem);
++			INIT_LIST_HEAD(&tty->tty_files);
++			kref_get(&tty->driver->kref);
++			tty->ops = &usb_console_fake_tty_ops;
  			if (tty_init_termios(tty)) {
  				retval = -ENOMEM;
  				dev_err(&port->dev, "no more memory\n");
+-				goto free_tty;
++				goto put_tty;
+ 			}
++			tty_port_tty_set(&port->port, tty);
+ 		}
+ 
+ 		/* only call the device specific open if this
+@@ -165,7 +170,7 @@ static int usb_console_setup(struct console *co, char *options)
+ 			serial->type->set_termios(tty, port, &dummy);
+ 
+ 			tty_port_tty_set(&port->port, NULL);
+-			kfree(tty);
++			tty_kref_put(tty);
+ 		}
+ 		set_bit(ASYNCB_INITIALIZED, &port->port.flags);
+ 	}
+@@ -181,8 +186,8 @@ static int usb_console_setup(struct console *co, char *options)
+ 
+  fail:
+ 	tty_port_tty_set(&port->port, NULL);
+- free_tty:
+-	kfree(tty);
++ put_tty:
++	tty_kref_put(tty);
+  reset_open_count:
+ 	port->port.count = 0;
+ 	usb_autopm_put_interface(serial->interface);
 -- 
 2.2.2
 
