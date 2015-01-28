@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755438AbbA2BaR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 20:30:17 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:40576 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754055AbbA2BaI (ORCPT
+	id S1755514AbbA2BcL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 20:32:11 -0500
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:59343 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755333AbbA2BcJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 20:30:08 -0500
+	Wed, 28 Jan 2015 20:32:09 -0500
 From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Mauro Carvalho Chehab <mchehab@osg.samsung.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Ganesan Ramalingam <ganesanr@broadcom.com>
 Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
-        "Lad, Prabhakar" <prabhakar.csengg@gmail.com>,
-        linux-media@vger.kernel.org, devel@driverdev.osuosl.org,
+        "David S. Miller" <davem@davemloft.net>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Toby Smith <toby@tismith.id.au>, Chaitanya Hazarey <c@24.io>,
+        Mostyn Bramley-Moore <mbmcode@gmail.com>, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH] staging: media: vino: vino: Removed variables that is never used
-Date: Wed, 28 Jan 2015 23:47:45 +0100
-Message-Id: <1422485265-11231-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+Subject: [PATCH] staging: netlogic: xlr_net: Removed variables that is never used
+Date: Wed, 28 Jan 2015 23:48:23 +0100
+Message-Id: <1422485303-11349-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
 X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,29 +31,24 @@ This was found using a static code analysis program called cppcheck
 
 Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 ---
- drivers/staging/media/vino/vino.c |    2 --
- 1 file changed, 2 deletions(-)
+ drivers/staging/netlogic/xlr_net.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/drivers/staging/media/vino/vino.c b/drivers/staging/media/vino/vino.c
-index 2c85357..f43c1ea 100644
---- a/drivers/staging/media/vino/vino.c
-+++ b/drivers/staging/media/vino/vino.c
-@@ -2375,7 +2375,6 @@ static irqreturn_t vino_interrupt(int irq, void *dev_id)
- 		next_4_desc = vino->a.next_4_desc;
- 	unsigned int line_count_2,
- 		page_index_2,
--		field_counter_2,
- 		start_desc_tbl_2,
- 		next_4_desc_2;
- #endif
-@@ -2421,7 +2420,6 @@ static irqreturn_t vino_interrupt(int irq, void *dev_id)
- #ifdef VINO_DEBUG_INT
- 			line_count_2 = vino->a.line_count;
- 			page_index_2 = vino->a.page_index;
--			field_counter_2 = vino->a.field_counter;
- 			start_desc_tbl_2 = vino->a.start_desc_tbl;
- 			next_4_desc_2 = vino->a.next_4_desc;
+diff --git a/drivers/staging/netlogic/xlr_net.c b/drivers/staging/netlogic/xlr_net.c
+index 5ecb3e6..0d9308a 100644
+--- a/drivers/staging/netlogic/xlr_net.c
++++ b/drivers/staging/netlogic/xlr_net.c
+@@ -814,9 +814,8 @@ static void xlr_gmac_link_adjust(struct net_device *ndev)
+ {
+ 	struct xlr_net_priv *priv = netdev_priv(ndev);
+ 	struct phy_device *phydev = priv->mii_bus->phy_map[priv->phy_addr];
+-	u32 intreg;
  
+-	intreg = xlr_nae_rdreg(priv->base_addr, R_INTREG);
++	xlr_nae_rdreg(priv->base_addr, R_INTREG);
+ 	if (phydev->link) {
+ 		if (phydev->speed != priv->phy_speed) {
+ 			xlr_set_gmac_speed(priv);
 -- 
 1.7.10.4
 
