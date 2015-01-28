@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932150AbbA1UQ5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 15:16:57 -0500
-Received: from mga14.intel.com ([192.55.52.115]:42883 "EHLO mga14.intel.com"
+	id S1760644AbbA2CCi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 21:02:38 -0500
+Received: from mga11.intel.com ([192.55.52.93]:11350 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755350AbbA1UQv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 15:16:51 -0500
+	id S1752825AbbA2CBE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jan 2015 21:01:04 -0500
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="446377021"
+X-IronPort-AV: E=Sophos;i="5.09,481,1418112000"; 
+   d="scan'208";a="677333235"
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
         Guenter Roeck <linux@roeck-us.net>,
         "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: [PATCH 2/4] mm: split up mm_struct to separate header file
-Date: Wed, 28 Jan 2015 15:17:42 +0200
-Message-Id: <1422451064-109023-3-git-send-email-kirill.shutemov@linux.intel.com>
+Subject: [PATCH 3/4] mm: define __PAGETABLE_{PMD,PUD}_FOLDED to zero or one
+Date: Wed, 28 Jan 2015 15:17:43 +0200
+Message-Id: <1422451064-109023-4-git-send-email-kirill.shutemov@linux.intel.com>
 X-Mailer: git-send-email 2.1.4
 In-Reply-To: <1422451064-109023-1-git-send-email-kirill.shutemov@linux.intel.com>
 References: <1422451064-109023-1-git-send-email-kirill.shutemov@linux.intel.com>
@@ -24,647 +24,431 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We want to use __PAGETABLE_PMD_FOLDED in mm_struct to drop nr_pmds if
-pmd is folded. __PAGETABLE_PMD_FOLDED is defined in <asm/pgtable.h>, but
-<asm/pgtable.h> itself wants <linux/mm_types.h> for struct page
-definition.
+Currently, we define __PAGETABLE_PMD_FOLDED and __PAGETABLE_PUD_FOLDED
+to empty value if the page table level is folded. The patch changes it
+to define the macros to one if the page level is folded and zero
+otherwise.
 
-This patch move mm_struct definition into separate header file in order
-to fix circular header dependencies.
+This would help to detect situation when include <asm/pgtable.h> is
+missed or we have circular like <asm/pgtable.h> -> <linux/mm_struct.h>
+-> <asm/pgtable.h>.
+
+We still use #ifdef inside <asm/pgtables.h> since we only define macros
+to zero at the end of header in <asm-generic/pgtable.h>.
 
 Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
 ---
- arch/arm64/kernel/efi.c            |   1 +
- arch/c6x/kernel/dma.c              |   1 -
- arch/s390/include/asm/pgtable.h    |   1 +
- arch/x86/include/asm/mmu_context.h |   1 +
- arch/x86/include/asm/pgtable.h     |  15 +--
- drivers/iommu/amd_iommu_v2.c       |   1 +
- drivers/staging/android/ion/ion.c  |   1 -
- include/linux/mm.h                 |   1 +
- include/linux/mm_struct.h          | 214 ++++++++++++++++++++++++++++++++++++
- include/linux/mm_types.h           | 218 ++-----------------------------------
- include/linux/mmu_notifier.h       |   1 +
- include/linux/sched.h              |   1 +
- mm/init-mm.c                       |   1 +
- mm/kmemcheck.c                     |   1 -
- 14 files changed, 232 insertions(+), 226 deletions(-)
- create mode 100644 include/linux/mm_struct.h
+ arch/arm/include/asm/pgtable-2level.h | 2 +-
+ arch/arm64/include/asm/kvm_mmu.h      | 4 ++--
+ arch/arm64/mm/hugetlbpage.c           | 6 +++---
+ arch/microblaze/include/asm/pgtable.h | 2 +-
+ arch/mips/include/asm/pgalloc.h       | 4 ++--
+ arch/mips/kernel/asm-offsets.c        | 4 ++--
+ arch/mips/mm/init.c                   | 2 +-
+ arch/mips/mm/pgtable-64.c             | 6 +++---
+ arch/mips/mm/tlbex.c                  | 8 ++++----
+ arch/powerpc/mm/pgtable_64.c          | 2 +-
+ arch/sh/mm/init.c                     | 2 +-
+ arch/tile/mm/hugetlbpage.c            | 4 ++--
+ arch/tile/mm/pgtable.c                | 4 ++--
+ arch/x86/include/asm/xen/page.h       | 2 +-
+ include/asm-generic/4level-fixup.h    | 2 +-
+ include/asm-generic/pgtable-nopmd.h   | 2 +-
+ include/asm-generic/pgtable-nopud.h   | 2 +-
+ include/asm-generic/pgtable.h         | 8 ++++++++
+ include/linux/mm.h                    | 4 ++--
+ kernel/fork.c                         | 2 +-
+ mm/memory.c                           | 4 ++--
+ 21 files changed, 42 insertions(+), 34 deletions(-)
 
-diff --git a/arch/arm64/kernel/efi.c b/arch/arm64/kernel/efi.c
-index b42c7b480e1e..fbf0a6d6f691 100644
---- a/arch/arm64/kernel/efi.c
-+++ b/arch/arm64/kernel/efi.c
-@@ -17,6 +17,7 @@
- #include <linux/export.h>
- #include <linux/memblock.h>
- #include <linux/mm_types.h>
-+#include <linux/mm_struct.h>
- #include <linux/bootmem.h>
- #include <linux/of.h>
- #include <linux/of_fdt.h>
-diff --git a/arch/c6x/kernel/dma.c b/arch/c6x/kernel/dma.c
-index ab7b12de144d..5a489f1eabbd 100644
---- a/arch/c6x/kernel/dma.c
-+++ b/arch/c6x/kernel/dma.c
-@@ -9,7 +9,6 @@
- #include <linux/module.h>
- #include <linux/dma-mapping.h>
- #include <linux/mm.h>
--#include <linux/mm_types.h>
- #include <linux/scatterlist.h>
+diff --git a/arch/arm/include/asm/pgtable-2level.h b/arch/arm/include/asm/pgtable-2level.h
+index bfd662e49a25..7d77adce17ae 100644
+--- a/arch/arm/include/asm/pgtable-2level.h
++++ b/arch/arm/include/asm/pgtable-2level.h
+@@ -10,7 +10,7 @@
+ #ifndef _ASM_PGTABLE_2LEVEL_H
+ #define _ASM_PGTABLE_2LEVEL_H
  
- #include <asm/cacheflush.h>
-diff --git a/arch/s390/include/asm/pgtable.h b/arch/s390/include/asm/pgtable.h
-index fbb5ee3ae57c..578eb098b1be 100644
---- a/arch/s390/include/asm/pgtable.h
-+++ b/arch/s390/include/asm/pgtable.h
-@@ -29,6 +29,7 @@
- #ifndef __ASSEMBLY__
- #include <linux/sched.h>
- #include <linux/mm_types.h>
-+#include <linux/mm_struct.h>
- #include <linux/page-flags.h>
- #include <linux/radix-tree.h>
- #include <asm/bug.h>
-diff --git a/arch/x86/include/asm/mmu_context.h b/arch/x86/include/asm/mmu_context.h
-index 4b75d591eb5e..78a87a30ec50 100644
---- a/arch/x86/include/asm/mmu_context.h
-+++ b/arch/x86/include/asm/mmu_context.h
-@@ -4,6 +4,7 @@
- #include <asm/desc.h>
- #include <linux/atomic.h>
- #include <linux/mm_types.h>
-+#include <linux/mm_struct.h>
+-#define __PAGETABLE_PMD_FOLDED
++#define __PAGETABLE_PMD_FOLDED 1
  
- #include <trace/events/tlb.h>
+ /*
+  * Hardware-wise, we have a two level page table structure, where the first
+diff --git a/arch/arm64/include/asm/kvm_mmu.h b/arch/arm64/include/asm/kvm_mmu.h
+index 66577581ce68..a14a14323cb6 100644
+--- a/arch/arm64/include/asm/kvm_mmu.h
++++ b/arch/arm64/include/asm/kvm_mmu.h
+@@ -240,14 +240,14 @@ static inline bool kvm_page_empty(void *ptr)
  
-diff --git a/arch/x86/include/asm/pgtable.h b/arch/x86/include/asm/pgtable.h
-index 9d0ade00923e..594d09d07bb4 100644
---- a/arch/x86/include/asm/pgtable.h
-+++ b/arch/x86/include/asm/pgtable.h
-@@ -445,18 +445,9 @@ static inline int pte_present(pte_t a)
- 	return pte_flags(a) & (_PAGE_PRESENT | _PAGE_PROTNONE);
+ #define kvm_pte_table_empty(kvm, ptep) kvm_page_empty(ptep)
+ 
+-#ifdef __PAGETABLE_PMD_FOLDED
++#if __PAGETABLE_PMD_FOLDED
+ #define kvm_pmd_table_empty(kvm, pmdp) (0)
+ #else
+ #define kvm_pmd_table_empty(kvm, pmdp) \
+ 	(kvm_page_empty(pmdp) && (!(kvm) || KVM_PREALLOC_LEVEL < 2))
+ #endif
+ 
+-#ifdef __PAGETABLE_PUD_FOLDED
++#if __PAGETABLE_PUD_FOLDED
+ #define kvm_pud_table_empty(kvm, pudp) (0)
+ #else
+ #define kvm_pud_table_empty(kvm, pudp) \
+diff --git a/arch/arm64/mm/hugetlbpage.c b/arch/arm64/mm/hugetlbpage.c
+index 2de9d2e59d96..f37dadacc4cd 100644
+--- a/arch/arm64/mm/hugetlbpage.c
++++ b/arch/arm64/mm/hugetlbpage.c
+@@ -45,10 +45,10 @@ int pmd_huge(pmd_t pmd)
+ 
+ int pud_huge(pud_t pud)
+ {
+-#ifndef __PAGETABLE_PMD_FOLDED
+-	return !(pud_val(pud) & PUD_TABLE_BIT);
+-#else
++#if __PAGETABLE_PMD_FOLDED
+ 	return 0;
++#else
++	return !(pud_val(pud) & PUD_TABLE_BIT);
+ #endif
  }
  
--#define pte_accessible pte_accessible
--static inline bool pte_accessible(struct mm_struct *mm, pte_t a)
--{
--	if (pte_flags(a) & _PAGE_PRESENT)
--		return true;
--
--	if ((pte_flags(a) & _PAGE_PROTNONE) &&
--			mm_tlb_flush_pending(mm))
--		return true;
--
--	return false;
--}
-+#define pte_accessible(mm, pte) \
-+	(pte_flags(pte) & _PAGE_PRESENT) || \
-+	((pte_flags(pte) & _PAGE_PROTNONE) && mm_tlb_flush_pending(mm))
+diff --git a/arch/microblaze/include/asm/pgtable.h b/arch/microblaze/include/asm/pgtable.h
+index e53b8532353c..2789da060229 100644
+--- a/arch/microblaze/include/asm/pgtable.h
++++ b/arch/microblaze/include/asm/pgtable.h
+@@ -61,7 +61,7 @@ extern int mem_init_done;
  
- static inline int pte_hidden(pte_t pte)
+ #include <asm-generic/4level-fixup.h>
+ 
+-#define __PAGETABLE_PMD_FOLDED
++#define __PAGETABLE_PMD_FOLDED 1
+ 
+ #ifdef __KERNEL__
+ #ifndef __ASSEMBLY__
+diff --git a/arch/mips/include/asm/pgalloc.h b/arch/mips/include/asm/pgalloc.h
+index b336037e8768..5b0164ba93d9 100644
+--- a/arch/mips/include/asm/pgalloc.h
++++ b/arch/mips/include/asm/pgalloc.h
+@@ -31,7 +31,7 @@ static inline void pmd_populate(struct mm_struct *mm, pmd_t *pmd,
+  */
+ extern void pmd_init(unsigned long page, unsigned long pagetable);
+ 
+-#ifndef __PAGETABLE_PMD_FOLDED
++#if !__PAGETABLE_PMD_FOLDED
+ 
+ static inline void pud_populate(struct mm_struct *mm, pud_t *pud, pmd_t *pmd)
  {
-diff --git a/drivers/iommu/amd_iommu_v2.c b/drivers/iommu/amd_iommu_v2.c
-index 90f70d0e1141..d49cd95eaf7b 100644
---- a/drivers/iommu/amd_iommu_v2.c
-+++ b/drivers/iommu/amd_iommu_v2.c
-@@ -19,6 +19,7 @@
- #include <linux/mmu_notifier.h>
- #include <linux/amd-iommu.h>
- #include <linux/mm_types.h>
-+#include <linux/mm_struct.h>
- #include <linux/profile.h>
- #include <linux/module.h>
- #include <linux/sched.h>
-diff --git a/drivers/staging/android/ion/ion.c b/drivers/staging/android/ion/ion.c
-index b8f1c491553e..1cb3c88f6423 100644
---- a/drivers/staging/android/ion/ion.c
-+++ b/drivers/staging/android/ion/ion.c
-@@ -27,7 +27,6 @@
- #include <linux/miscdevice.h>
- #include <linux/export.h>
- #include <linux/mm.h>
--#include <linux/mm_types.h>
- #include <linux/rbtree.h>
- #include <linux/slab.h>
- #include <linux/seq_file.h>
+@@ -107,7 +107,7 @@ do {							\
+ 	tlb_remove_page((tlb), pte);			\
+ } while (0)
+ 
+-#ifndef __PAGETABLE_PMD_FOLDED
++#if !__PAGETABLE_PMD_FOLDED
+ 
+ static inline pmd_t *pmd_alloc_one(struct mm_struct *mm, unsigned long address)
+ {
+diff --git a/arch/mips/kernel/asm-offsets.c b/arch/mips/kernel/asm-offsets.c
+index 3b2dfdb4865f..1b2c5f8653aa 100644
+--- a/arch/mips/kernel/asm-offsets.c
++++ b/arch/mips/kernel/asm-offsets.c
+@@ -252,13 +252,13 @@ void output_mm_defines(void)
+ 	DEFINE(_PTE_T_SIZE, sizeof(pte_t));
+ 	BLANK();
+ 	DEFINE(_PGD_T_LOG2, PGD_T_LOG2);
+-#ifndef __PAGETABLE_PMD_FOLDED
++#if !__PAGETABLE_PMD_FOLDED
+ 	DEFINE(_PMD_T_LOG2, PMD_T_LOG2);
+ #endif
+ 	DEFINE(_PTE_T_LOG2, PTE_T_LOG2);
+ 	BLANK();
+ 	DEFINE(_PGD_ORDER, PGD_ORDER);
+-#ifndef __PAGETABLE_PMD_FOLDED
++#if !__PAGETABLE_PMD_FOLDED
+ 	DEFINE(_PMD_ORDER, PMD_ORDER);
+ #endif
+ 	DEFINE(_PTE_ORDER, PTE_ORDER);
+diff --git a/arch/mips/mm/init.c b/arch/mips/mm/init.c
+index 448cde372af0..838838b05d1c 100644
+--- a/arch/mips/mm/init.c
++++ b/arch/mips/mm/init.c
+@@ -440,7 +440,7 @@ unsigned long pgd_current[NR_CPUS];
+  * it in the linker script.
+  */
+ pgd_t swapper_pg_dir[_PTRS_PER_PGD] __section(.bss..swapper_pg_dir);
+-#ifndef __PAGETABLE_PMD_FOLDED
++#if !__PAGETABLE_PMD_FOLDED
+ pmd_t invalid_pmd_table[PTRS_PER_PMD] __page_aligned_bss;
+ #endif
+ pte_t invalid_pte_table[PTRS_PER_PTE] __page_aligned_bss;
+diff --git a/arch/mips/mm/pgtable-64.c b/arch/mips/mm/pgtable-64.c
+index e8adc0069d66..379b8390f059 100644
+--- a/arch/mips/mm/pgtable-64.c
++++ b/arch/mips/mm/pgtable-64.c
+@@ -18,7 +18,7 @@ void pgd_init(unsigned long page)
+ 	unsigned long *p, *end;
+ 	unsigned long entry;
+ 
+-#ifdef __PAGETABLE_PMD_FOLDED
++#if __PAGETABLE_PMD_FOLDED
+ 	entry = (unsigned long)invalid_pte_table;
+ #else
+ 	entry = (unsigned long)invalid_pmd_table;
+@@ -40,7 +40,7 @@ void pgd_init(unsigned long page)
+ 	} while (p != end);
+ }
+ 
+-#ifndef __PAGETABLE_PMD_FOLDED
++#if !__PAGETABLE_PMD_FOLDED
+ void pmd_init(unsigned long addr, unsigned long pagetable)
+ {
+ 	unsigned long *p, *end;
+@@ -99,7 +99,7 @@ void __init pagetable_init(void)
+ 
+ 	/* Initialize the entire pgd.  */
+ 	pgd_init((unsigned long)swapper_pg_dir);
+-#ifndef __PAGETABLE_PMD_FOLDED
++#if !__PAGETABLE_PMD_FOLDED
+ 	pmd_init((unsigned long)invalid_pmd_table, (unsigned long)invalid_pte_table);
+ #endif
+ 	pgd_base = swapper_pg_dir;
+diff --git a/arch/mips/mm/tlbex.c b/arch/mips/mm/tlbex.c
+index 3978a3d81366..afbadec7d595 100644
+--- a/arch/mips/mm/tlbex.c
++++ b/arch/mips/mm/tlbex.c
+@@ -840,7 +840,7 @@ build_get_pmde64(u32 **p, struct uasm_label **l, struct uasm_reloc **r,
+ 
+ 	uasm_i_andi(p, tmp, tmp, (PTRS_PER_PGD - 1)<<3);
+ 	uasm_i_daddu(p, ptr, ptr, tmp); /* add in pgd offset */
+-#ifndef __PAGETABLE_PMD_FOLDED
++#if !__PAGETABLE_PMD_FOLDED
+ 	uasm_i_dmfc0(p, tmp, C0_BADVADDR); /* get faulting address */
+ 	uasm_i_ld(p, ptr, 0, ptr); /* get pmd pointer */
+ 	uasm_i_dsrl_safe(p, tmp, tmp, PMD_SHIFT-3); /* get pmd offset in bytes */
+@@ -1128,7 +1128,7 @@ build_fast_tlb_refill_handler (u32 **p, struct uasm_label **l,
+ 		uasm_i_drotr(p, ptr, ptr, 11);
+ 	}
+ 
+-#ifdef __PAGETABLE_PMD_FOLDED
++#if __PAGETABLE_PMD_FOLDED
+ #define LOC_PTEP scratch
+ #else
+ #define LOC_PTEP ptr
+@@ -1150,7 +1150,7 @@ build_fast_tlb_refill_handler (u32 **p, struct uasm_label **l,
+ 		/* get pgd offset in bytes */
+ 		uasm_i_dsrl_safe(p, scratch, tmp, PGDIR_SHIFT - 3);
+ 
+-#ifdef __PAGETABLE_PMD_FOLDED
++#if __PAGETABLE_PMD_FOLDED
+ 	GET_CONTEXT(p, tmp); /* get context reg */
+ #endif
+ 	uasm_i_andi(p, scratch, scratch, (PTRS_PER_PGD - 1) << 3);
+@@ -1162,7 +1162,7 @@ build_fast_tlb_refill_handler (u32 **p, struct uasm_label **l,
+ 		uasm_i_ld(p, LOC_PTEP, 0, ptr); /* get pmd pointer */
+ 	}
+ 
+-#ifndef __PAGETABLE_PMD_FOLDED
++#if !__PAGETABLE_PMD_FOLDED
+ 	/* get pmd offset in bytes */
+ 	uasm_i_dsrl_safe(p, scratch, tmp, PMD_SHIFT - 3);
+ 	uasm_i_andi(p, scratch, scratch, (PTRS_PER_PMD - 1) << 3);
+diff --git a/arch/powerpc/mm/pgtable_64.c b/arch/powerpc/mm/pgtable_64.c
+index 6957cc1ca0a7..727832cad640 100644
+--- a/arch/powerpc/mm/pgtable_64.c
++++ b/arch/powerpc/mm/pgtable_64.c
+@@ -345,7 +345,7 @@ EXPORT_SYMBOL(iounmap);
+ EXPORT_SYMBOL(__iounmap);
+ EXPORT_SYMBOL(__iounmap_at);
+ 
+-#ifndef __PAGETABLE_PUD_FOLDED
++#if !__PAGETABLE_PUD_FOLDED
+ /* 4 level page table */
+ struct page *pgd_page(pgd_t pgd)
+ {
+diff --git a/arch/sh/mm/init.c b/arch/sh/mm/init.c
+index 2790b6a64157..1e611d71301c 100644
+--- a/arch/sh/mm/init.c
++++ b/arch/sh/mm/init.c
+@@ -175,7 +175,7 @@ void __init page_table_range_init(unsigned long start, unsigned long end,
+ 		pud = (pud_t *)pgd;
+ 		for ( ; (j < PTRS_PER_PUD) && (vaddr != end); pud++, j++) {
+ 			pmd = one_md_table_init(pud);
+-#ifndef __PAGETABLE_PMD_FOLDED
++#if !__PAGETABLE_PMD_FOLDED
+ 			pmd += k;
+ #endif
+ 			for (; (k < PTRS_PER_PMD) && (vaddr != end); pmd++, k++) {
+diff --git a/arch/tile/mm/hugetlbpage.c b/arch/tile/mm/hugetlbpage.c
+index 8416240c322c..97c4ccecd0ed 100644
+--- a/arch/tile/mm/hugetlbpage.c
++++ b/arch/tile/mm/hugetlbpage.c
+@@ -115,14 +115,14 @@ pte_t *huge_pte_offset(struct mm_struct *mm, unsigned long addr)
+ 
+ 	/* We don't have four levels. */
+ 	pud = pud_offset(pgd, addr);
+-#ifndef __PAGETABLE_PUD_FOLDED
++#if !__PAGETABLE_PUD_FOLDED
+ # error support fourth page table level
+ #endif
+ 	if (!pud_present(*pud))
+ 		return NULL;
+ 
+ 	/* Check for an L0 huge PTE, if we have three levels. */
+-#ifndef __PAGETABLE_PMD_FOLDED
++#if !__PAGETABLE_PMD_FOLDED
+ 	if (pud_huge(*pud))
+ 		return (pte_t *)pud;
+ 
+diff --git a/arch/tile/mm/pgtable.c b/arch/tile/mm/pgtable.c
+index 7bf2491a9c1f..e37081d62ca9 100644
+--- a/arch/tile/mm/pgtable.c
++++ b/arch/tile/mm/pgtable.c
+@@ -101,7 +101,7 @@ void shatter_huge_page(unsigned long addr)
+ 	pud_t *pud;
+ 	pmd_t *pmd;
+ 	unsigned long flags = 0;  /* happy compiler */
+-#ifdef __PAGETABLE_PMD_FOLDED
++#if __PAGETABLE_PMD_FOLDED
+ 	struct list_head *pos;
+ #endif
+ 
+@@ -127,7 +127,7 @@ void shatter_huge_page(unsigned long addr)
+ 	/* Shatter the huge page into the preallocated L2 page table. */
+ 	pmd_populate_kernel(&init_mm, pmd, get_prealloc_pte(pmd_pfn(*pmd)));
+ 
+-#ifdef __PAGETABLE_PMD_FOLDED
++#if __PAGETABLE_PMD_FOLDED
+ 	/* Walk every pgd on the system and update the pmd there. */
+ 	spin_lock(&pgd_lock);
+ 	list_for_each(pos, &pgd_list) {
+diff --git a/arch/x86/include/asm/xen/page.h b/arch/x86/include/asm/xen/page.h
+index 5eea09915a15..49fc452d4899 100644
+--- a/arch/x86/include/asm/xen/page.h
++++ b/arch/x86/include/asm/xen/page.h
+@@ -253,7 +253,7 @@ static inline pte_t __pte_ma(pteval_t x)
+ }
+ 
+ #define pmd_val_ma(v) ((v).pmd)
+-#ifdef __PAGETABLE_PUD_FOLDED
++#if __PAGETABLE_PUD_FOLDED
+ #define pud_val_ma(v) ((v).pgd.pgd)
+ #else
+ #define pud_val_ma(v) ((v).pud)
+diff --git a/include/asm-generic/4level-fixup.h b/include/asm-generic/4level-fixup.h
+index 5bdab6bffd23..c6a349d459e5 100644
+--- a/include/asm-generic/4level-fixup.h
++++ b/include/asm-generic/4level-fixup.h
+@@ -2,7 +2,7 @@
+ #define _4LEVEL_FIXUP_H
+ 
+ #define __ARCH_HAS_4LEVEL_HACK
+-#define __PAGETABLE_PUD_FOLDED
++#define __PAGETABLE_PUD_FOLDED 1
+ 
+ #define PUD_SHIFT			PGDIR_SHIFT
+ #define PUD_SIZE			PGDIR_SIZE
+diff --git a/include/asm-generic/pgtable-nopmd.h b/include/asm-generic/pgtable-nopmd.h
+index 725612b793ce..6373f61824a0 100644
+--- a/include/asm-generic/pgtable-nopmd.h
++++ b/include/asm-generic/pgtable-nopmd.h
+@@ -7,7 +7,7 @@
+ 
+ struct mm_struct;
+ 
+-#define __PAGETABLE_PMD_FOLDED
++#define __PAGETABLE_PMD_FOLDED 1
+ 
+ /*
+  * Having the pmd type consist of a pud gets the size right, and allows
+diff --git a/include/asm-generic/pgtable-nopud.h b/include/asm-generic/pgtable-nopud.h
+index 810431d8351b..8bc0a92c0764 100644
+--- a/include/asm-generic/pgtable-nopud.h
++++ b/include/asm-generic/pgtable-nopud.h
+@@ -3,7 +3,7 @@
+ 
+ #ifndef __ASSEMBLY__
+ 
+-#define __PAGETABLE_PUD_FOLDED
++#define __PAGETABLE_PUD_FOLDED 1
+ 
+ /*
+  * Having the pud type consist of a pgd gets the size right, and allows
+diff --git a/include/asm-generic/pgtable.h b/include/asm-generic/pgtable.h
+index 4d46085c1b90..22bffcb2e96b 100644
+--- a/include/asm-generic/pgtable.h
++++ b/include/asm-generic/pgtable.h
+@@ -17,6 +17,14 @@
+ #define USER_PGTABLES_CEILING	0UL
+ #endif
+ 
++#ifndef __PAGETABLE_PUD_FOLDED
++#define __PAGETABLE_PUD_FOLDED 0
++#endif
++
++#ifndef __PAGETABLE_PMD_FOLDED
++#define __PAGETABLE_PMD_FOLDED 0
++#endif
++
+ #ifndef __HAVE_ARCH_PTEP_SET_ACCESS_FLAGS
+ extern int ptep_set_access_flags(struct vm_area_struct *vma,
+ 				 unsigned long address, pte_t *ptep,
 diff --git a/include/linux/mm.h b/include/linux/mm.h
-index b976d9ffbcd6..543e9723d441 100644
+index 543e9723d441..98bde6d48640 100644
 --- a/include/linux/mm.h
 +++ b/include/linux/mm.h
-@@ -14,6 +14,7 @@
- #include <linux/atomic.h>
- #include <linux/debug_locks.h>
- #include <linux/mm_types.h>
-+#include <linux/mm_struct.h>
- #include <linux/range.h>
- #include <linux/pfn.h>
- #include <linux/bit_spinlock.h>
-diff --git a/include/linux/mm_struct.h b/include/linux/mm_struct.h
-new file mode 100644
-index 000000000000..0a233c232a39
---- /dev/null
-+++ b/include/linux/mm_struct.h
-@@ -0,0 +1,214 @@
-+#ifndef _LINUX_MM_STRUCT_H
-+#define _LINUX_MM_STRUCT_H
-+
-+#include <linux/auxvec.h>
-+#include <linux/rbtree.h>
-+#include <linux/rwsem.h>
-+#include <linux/types.h>
-+#include <linux/uprobes.h>
-+
-+#include <asm/mmu.h>
-+
-+struct kioctx_table;
-+struct vm_area_struct;
-+
-+#ifndef AT_VECTOR_SIZE_ARCH
-+#define AT_VECTOR_SIZE_ARCH 0
-+#endif
-+#define AT_VECTOR_SIZE (2*(AT_VECTOR_SIZE_ARCH + AT_VECTOR_SIZE_BASE + 1))
-+
-+enum {
-+	MM_FILEPAGES,
-+	MM_ANONPAGES,
-+	MM_SWAPENTS,
-+	NR_MM_COUNTERS
-+};
-+
-+#if NR_CPUS >= CONFIG_SPLIT_PTLOCK_CPUS && defined(CONFIG_MMU)
-+#define SPLIT_RSS_COUNTING
-+/* per-thread cached information, */
-+struct task_rss_stat {
-+	int events;	/* for synchronization threshold */
-+	int count[NR_MM_COUNTERS];
-+};
-+#endif /* USE_SPLIT_PTE_PTLOCKS */
-+
-+struct mm_rss_stat {
-+	atomic_long_t count[NR_MM_COUNTERS];
-+};
-+
-+struct mm_struct {
-+	struct vm_area_struct *mmap;		/* list of VMAs */
-+	struct rb_root mm_rb;
-+	u32 vmacache_seqnum;                   /* per-thread vmacache */
-+#ifdef CONFIG_MMU
-+	unsigned long (*get_unmapped_area) (struct file *filp,
-+				unsigned long addr, unsigned long len,
-+				unsigned long pgoff, unsigned long flags);
-+#endif
-+	unsigned long mmap_base;		/* base of mmap area */
-+	unsigned long mmap_legacy_base;         /* base of mmap area in bottom-up allocations */
-+	unsigned long task_size;		/* size of task vm space */
-+	unsigned long highest_vm_end;		/* highest vma end address */
-+	pgd_t * pgd;
-+	atomic_t mm_users;			/* How many users with user space? */
-+	atomic_t mm_count;			/* How many references to "struct mm_struct" (users count as 1) */
-+	atomic_long_t nr_ptes;			/* PTE page table pages */
-+	atomic_long_t nr_pmds;			/* PMD page table pages */
-+	int map_count;				/* number of VMAs */
-+
-+	spinlock_t page_table_lock;		/* Protects page tables and some counters */
-+	struct rw_semaphore mmap_sem;
-+
-+	struct list_head mmlist;		/* List of maybe swapped mm's.	These are globally strung
-+						 * together off init_mm.mmlist, and are protected
-+						 * by mmlist_lock
-+						 */
-+
-+
-+	unsigned long hiwater_rss;	/* High-watermark of RSS usage */
-+	unsigned long hiwater_vm;	/* High-water virtual memory usage */
-+
-+	unsigned long total_vm;		/* Total pages mapped */
-+	unsigned long locked_vm;	/* Pages that have PG_mlocked set */
-+	unsigned long pinned_vm;	/* Refcount permanently increased */
-+	unsigned long shared_vm;	/* Shared pages (files) */
-+	unsigned long exec_vm;		/* VM_EXEC & ~VM_WRITE */
-+	unsigned long stack_vm;		/* VM_GROWSUP/DOWN */
-+	unsigned long def_flags;
-+	unsigned long start_code, end_code, start_data, end_data;
-+	unsigned long start_brk, brk, start_stack;
-+	unsigned long arg_start, arg_end, env_start, env_end;
-+
-+	unsigned long saved_auxv[AT_VECTOR_SIZE]; /* for /proc/PID/auxv */
-+
-+	/*
-+	 * Special counters, in some configurations protected by the
-+	 * page_table_lock, in other configurations by being atomic.
-+	 */
-+	struct mm_rss_stat rss_stat;
-+
-+	struct linux_binfmt *binfmt;
-+
-+	cpumask_var_t cpu_vm_mask_var;
-+
-+	/* Architecture-specific MM context */
-+	mm_context_t context;
-+
-+	unsigned long flags; /* Must use atomic bitops to access the bits */
-+
-+	struct core_state *core_state; /* coredumping support */
-+#ifdef CONFIG_AIO
-+	spinlock_t			ioctx_lock;
-+	struct kioctx_table __rcu	*ioctx_table;
-+#endif
-+#ifdef CONFIG_MEMCG
-+	/*
-+	 * "owner" points to a task that is regarded as the canonical
-+	 * user/owner of this mm. All of the following must be true in
-+	 * order for it to be changed:
-+	 *
-+	 * current == mm->owner
-+	 * current->mm != mm
-+	 * new_owner->mm == mm
-+	 * new_owner->alloc_lock is held
-+	 */
-+	struct task_struct __rcu *owner;
-+#endif
-+
-+	/* store ref to file /proc/<pid>/exe symlink points to */
-+	struct file *exe_file;
-+#ifdef CONFIG_MMU_NOTIFIER
-+	struct mmu_notifier_mm *mmu_notifier_mm;
-+#endif
-+#if defined(CONFIG_TRANSPARENT_HUGEPAGE) && !USE_SPLIT_PMD_PTLOCKS
-+	pgtable_t pmd_huge_pte; /* protected by page_table_lock */
-+#endif
-+#ifdef CONFIG_CPUMASK_OFFSTACK
-+	struct cpumask cpumask_allocation;
-+#endif
-+#ifdef CONFIG_NUMA_BALANCING
-+	/*
-+	 * numa_next_scan is the next time that the PTEs will be marked
-+	 * pte_numa. NUMA hinting faults will gather statistics and migrate
-+	 * pages to new nodes if necessary.
-+	 */
-+	unsigned long numa_next_scan;
-+
-+	/* Restart point for scanning and setting pte_numa */
-+	unsigned long numa_scan_offset;
-+
-+	/* numa_scan_seq prevents two threads setting pte_numa */
-+	int numa_scan_seq;
-+#endif
-+#if defined(CONFIG_NUMA_BALANCING) || defined(CONFIG_COMPACTION)
-+	/*
-+	 * An operation with batched TLB flushing is going on. Anything that
-+	 * can move process memory needs to flush the TLB when moving a
-+	 * PROT_NONE or PROT_NUMA mapped page.
-+	 */
-+	bool tlb_flush_pending;
-+#endif
-+	struct uprobes_state uprobes_state;
-+#ifdef CONFIG_X86_INTEL_MPX
-+	/* address of the bounds directory */
-+	void __user *bd_addr;
-+#endif
-+};
-+
-+static inline void mm_init_cpumask(struct mm_struct *mm)
-+{
-+#ifdef CONFIG_CPUMASK_OFFSTACK
-+	mm->cpu_vm_mask_var = &mm->cpumask_allocation;
-+#endif
-+	cpumask_clear(mm->cpu_vm_mask_var);
-+}
-+
-+/* Future-safe accessor for struct mm_struct's cpu_vm_mask. */
-+static inline cpumask_t *mm_cpumask(struct mm_struct *mm)
-+{
-+	return mm->cpu_vm_mask_var;
-+}
-+
-+#if defined(CONFIG_NUMA_BALANCING) || defined(CONFIG_COMPACTION)
-+/*
-+ * Memory barriers to keep this state in sync are graciously provided by
-+ * the page table locks, outside of which no page table modifications happen.
-+ * The barriers below prevent the compiler from re-ordering the instructions
-+ * around the memory barriers that are already present in the code.
-+ */
-+static inline bool mm_tlb_flush_pending(struct mm_struct *mm)
-+{
-+	barrier();
-+	return mm->tlb_flush_pending;
-+}
-+static inline void set_tlb_flush_pending(struct mm_struct *mm)
-+{
-+	mm->tlb_flush_pending = true;
-+
-+	/*
-+	 * Guarantee that the tlb_flush_pending store does not leak into the
-+	 * critical section updating the page tables
-+	 */
-+	smp_mb__before_spinlock();
-+}
-+/* Clearing is done after a TLB flush, which also provides a barrier. */
-+static inline void clear_tlb_flush_pending(struct mm_struct *mm)
-+{
-+	barrier();
-+	mm->tlb_flush_pending = false;
-+}
-+#else
-+static inline bool mm_tlb_flush_pending(struct mm_struct *mm)
-+{
-+	return false;
-+}
-+static inline void set_tlb_flush_pending(struct mm_struct *mm)
-+{
-+}
-+static inline void clear_tlb_flush_pending(struct mm_struct *mm)
-+{
-+}
-+#endif
-+
-+#endif
-diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
-index 5dfdd5ed5254..80797b1c1e26 100644
---- a/include/linux/mm_types.h
-+++ b/include/linux/mm_types.h
-@@ -1,24 +1,16 @@
- #ifndef _LINUX_MM_TYPES_H
- #define _LINUX_MM_TYPES_H
+@@ -1435,7 +1435,7 @@ static inline pte_t *get_locked_pte(struct mm_struct *mm, unsigned long addr,
+ 	return ptep;
+ }
  
--#include <linux/auxvec.h>
--#include <linux/types.h>
--#include <linux/threads.h>
--#include <linux/list.h>
--#include <linux/spinlock.h>
--#include <linux/rbtree.h>
--#include <linux/rwsem.h>
- #include <linux/completion.h>
- #include <linux/cpumask.h>
--#include <linux/uprobes.h>
-+#include <linux/list.h>
- #include <linux/page-flags-layout.h>
--#include <asm/page.h>
--#include <asm/mmu.h>
-+#include <linux/rbtree.h>
-+#include <linux/spinlock.h>
-+#include <linux/threads.h>
-+#include <linux/types.h>
+-#ifdef __PAGETABLE_PUD_FOLDED
++#if __PAGETABLE_PUD_FOLDED
+ static inline int __pud_alloc(struct mm_struct *mm, pgd_t *pgd,
+ 						unsigned long address)
+ {
+@@ -1445,7 +1445,7 @@ static inline int __pud_alloc(struct mm_struct *mm, pgd_t *pgd,
+ int __pud_alloc(struct mm_struct *mm, pgd_t *pgd, unsigned long address);
+ #endif
  
--#ifndef AT_VECTOR_SIZE_ARCH
--#define AT_VECTOR_SIZE_ARCH 0
--#endif
--#define AT_VECTOR_SIZE (2*(AT_VECTOR_SIZE_ARCH + AT_VECTOR_SIZE_BASE + 1))
-+#include <asm/page.h>
+-#ifdef __PAGETABLE_PMD_FOLDED
++#if __PAGETABLE_PMD_FOLDED
+ static inline int __pmd_alloc(struct mm_struct *mm, pud_t *pud,
+ 						unsigned long address)
+ {
+diff --git a/kernel/fork.c b/kernel/fork.c
+index 76d6f292274c..da94fa59b96a 100644
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -555,7 +555,7 @@ static struct mm_struct *mm_init(struct mm_struct *mm, struct task_struct *p)
+ 	INIT_LIST_HEAD(&mm->mmlist);
+ 	mm->core_state = NULL;
+ 	atomic_long_set(&mm->nr_ptes, 0);
+-#ifndef __PAGETABLE_PMD_FOLDED
++#if !__PAGETABLE_PMD_FOLDED
+ 	atomic_long_set(&mm->nr_pmds, 0);
+ #endif
+ 	mm->map_count = 0;
+diff --git a/mm/memory.c b/mm/memory.c
+index ed697e9a5e5b..27eb05ddadb9 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -3311,7 +3311,7 @@ int handle_mm_fault(struct mm_struct *mm, struct vm_area_struct *vma,
+ }
+ EXPORT_SYMBOL_GPL(handle_mm_fault);
  
- struct address_space;
- struct mem_cgroup;
-@@ -326,203 +318,7 @@ struct core_state {
- 	struct completion startup;
- };
+-#ifndef __PAGETABLE_PUD_FOLDED
++#if !__PAGETABLE_PUD_FOLDED
+ /*
+  * Allocate page upper directory.
+  * We've already handled the fast-path in-line.
+@@ -3334,7 +3334,7 @@ int __pud_alloc(struct mm_struct *mm, pgd_t *pgd, unsigned long address)
+ }
+ #endif /* __PAGETABLE_PUD_FOLDED */
  
--enum {
--	MM_FILEPAGES,
--	MM_ANONPAGES,
--	MM_SWAPENTS,
--	NR_MM_COUNTERS
--};
--
--#if USE_SPLIT_PTE_PTLOCKS && defined(CONFIG_MMU)
--#define SPLIT_RSS_COUNTING
--/* per-thread cached information, */
--struct task_rss_stat {
--	int events;	/* for synchronization threshold */
--	int count[NR_MM_COUNTERS];
--};
--#endif /* USE_SPLIT_PTE_PTLOCKS */
--
--struct mm_rss_stat {
--	atomic_long_t count[NR_MM_COUNTERS];
--};
--
--struct kioctx_table;
--struct mm_struct {
--	struct vm_area_struct *mmap;		/* list of VMAs */
--	struct rb_root mm_rb;
--	u32 vmacache_seqnum;                   /* per-thread vmacache */
--#ifdef CONFIG_MMU
--	unsigned long (*get_unmapped_area) (struct file *filp,
--				unsigned long addr, unsigned long len,
--				unsigned long pgoff, unsigned long flags);
--#endif
--	unsigned long mmap_base;		/* base of mmap area */
--	unsigned long mmap_legacy_base;         /* base of mmap area in bottom-up allocations */
--	unsigned long task_size;		/* size of task vm space */
--	unsigned long highest_vm_end;		/* highest vma end address */
--	pgd_t * pgd;
--	atomic_t mm_users;			/* How many users with user space? */
--	atomic_t mm_count;			/* How many references to "struct mm_struct" (users count as 1) */
--	atomic_long_t nr_ptes;			/* PTE page table pages */
--	atomic_long_t nr_pmds;			/* PMD page table pages */
--	int map_count;				/* number of VMAs */
--
--	spinlock_t page_table_lock;		/* Protects page tables and some counters */
--	struct rw_semaphore mmap_sem;
--
--	struct list_head mmlist;		/* List of maybe swapped mm's.	These are globally strung
--						 * together off init_mm.mmlist, and are protected
--						 * by mmlist_lock
--						 */
--
--
--	unsigned long hiwater_rss;	/* High-watermark of RSS usage */
--	unsigned long hiwater_vm;	/* High-water virtual memory usage */
--
--	unsigned long total_vm;		/* Total pages mapped */
--	unsigned long locked_vm;	/* Pages that have PG_mlocked set */
--	unsigned long pinned_vm;	/* Refcount permanently increased */
--	unsigned long shared_vm;	/* Shared pages (files) */
--	unsigned long exec_vm;		/* VM_EXEC & ~VM_WRITE */
--	unsigned long stack_vm;		/* VM_GROWSUP/DOWN */
--	unsigned long def_flags;
--	unsigned long start_code, end_code, start_data, end_data;
--	unsigned long start_brk, brk, start_stack;
--	unsigned long arg_start, arg_end, env_start, env_end;
--
--	unsigned long saved_auxv[AT_VECTOR_SIZE]; /* for /proc/PID/auxv */
--
--	/*
--	 * Special counters, in some configurations protected by the
--	 * page_table_lock, in other configurations by being atomic.
--	 */
--	struct mm_rss_stat rss_stat;
--
--	struct linux_binfmt *binfmt;
--
--	cpumask_var_t cpu_vm_mask_var;
--
--	/* Architecture-specific MM context */
--	mm_context_t context;
--
--	unsigned long flags; /* Must use atomic bitops to access the bits */
--
--	struct core_state *core_state; /* coredumping support */
--#ifdef CONFIG_AIO
--	spinlock_t			ioctx_lock;
--	struct kioctx_table __rcu	*ioctx_table;
--#endif
--#ifdef CONFIG_MEMCG
--	/*
--	 * "owner" points to a task that is regarded as the canonical
--	 * user/owner of this mm. All of the following must be true in
--	 * order for it to be changed:
--	 *
--	 * current == mm->owner
--	 * current->mm != mm
--	 * new_owner->mm == mm
--	 * new_owner->alloc_lock is held
--	 */
--	struct task_struct __rcu *owner;
--#endif
--
--	/* store ref to file /proc/<pid>/exe symlink points to */
--	struct file *exe_file;
--#ifdef CONFIG_MMU_NOTIFIER
--	struct mmu_notifier_mm *mmu_notifier_mm;
--#endif
--#if defined(CONFIG_TRANSPARENT_HUGEPAGE) && !USE_SPLIT_PMD_PTLOCKS
--	pgtable_t pmd_huge_pte; /* protected by page_table_lock */
--#endif
--#ifdef CONFIG_CPUMASK_OFFSTACK
--	struct cpumask cpumask_allocation;
--#endif
--#ifdef CONFIG_NUMA_BALANCING
--	/*
--	 * numa_next_scan is the next time that the PTEs will be marked
--	 * pte_numa. NUMA hinting faults will gather statistics and migrate
--	 * pages to new nodes if necessary.
--	 */
--	unsigned long numa_next_scan;
--
--	/* Restart point for scanning and setting pte_numa */
--	unsigned long numa_scan_offset;
--
--	/* numa_scan_seq prevents two threads setting pte_numa */
--	int numa_scan_seq;
--#endif
--#if defined(CONFIG_NUMA_BALANCING) || defined(CONFIG_COMPACTION)
--	/*
--	 * An operation with batched TLB flushing is going on. Anything that
--	 * can move process memory needs to flush the TLB when moving a
--	 * PROT_NONE or PROT_NUMA mapped page.
--	 */
--	bool tlb_flush_pending;
--#endif
--	struct uprobes_state uprobes_state;
--#ifdef CONFIG_X86_INTEL_MPX
--	/* address of the bounds directory */
--	void __user *bd_addr;
--#endif
--};
--
--static inline void mm_init_cpumask(struct mm_struct *mm)
--{
--#ifdef CONFIG_CPUMASK_OFFSTACK
--	mm->cpu_vm_mask_var = &mm->cpumask_allocation;
--#endif
--	cpumask_clear(mm->cpu_vm_mask_var);
--}
--
--/* Future-safe accessor for struct mm_struct's cpu_vm_mask. */
--static inline cpumask_t *mm_cpumask(struct mm_struct *mm)
--{
--	return mm->cpu_vm_mask_var;
--}
--
--#if defined(CONFIG_NUMA_BALANCING) || defined(CONFIG_COMPACTION)
--/*
-- * Memory barriers to keep this state in sync are graciously provided by
-- * the page table locks, outside of which no page table modifications happen.
-- * The barriers below prevent the compiler from re-ordering the instructions
-- * around the memory barriers that are already present in the code.
-- */
--static inline bool mm_tlb_flush_pending(struct mm_struct *mm)
--{
--	barrier();
--	return mm->tlb_flush_pending;
--}
--static inline void set_tlb_flush_pending(struct mm_struct *mm)
--{
--	mm->tlb_flush_pending = true;
--
--	/*
--	 * Guarantee that the tlb_flush_pending store does not leak into the
--	 * critical section updating the page tables
--	 */
--	smp_mb__before_spinlock();
--}
--/* Clearing is done after a TLB flush, which also provides a barrier. */
--static inline void clear_tlb_flush_pending(struct mm_struct *mm)
--{
--	barrier();
--	mm->tlb_flush_pending = false;
--}
--#else
--static inline bool mm_tlb_flush_pending(struct mm_struct *mm)
--{
--	return false;
--}
--static inline void set_tlb_flush_pending(struct mm_struct *mm)
--{
--}
--static inline void clear_tlb_flush_pending(struct mm_struct *mm)
--{
--}
--#endif
--
--struct vm_special_mapping
--{
-+struct vm_special_mapping {
- 	const char *name;
- 	struct page **pages;
- };
-diff --git a/include/linux/mmu_notifier.h b/include/linux/mmu_notifier.h
-index 95243d28a0ee..779e32567e6d 100644
---- a/include/linux/mmu_notifier.h
-+++ b/include/linux/mmu_notifier.h
-@@ -4,6 +4,7 @@
- #include <linux/list.h>
- #include <linux/spinlock.h>
- #include <linux/mm_types.h>
-+#include <linux/mm_struct.h>
- #include <linux/srcu.h>
- 
- struct mmu_notifier;
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 22ee0d5d7f8c..99001775ffa0 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -25,6 +25,7 @@ struct sched_param {
- #include <linux/errno.h>
- #include <linux/nodemask.h>
- #include <linux/mm_types.h>
-+#include <linux/mm_struct.h>
- #include <linux/preempt_mask.h>
- 
- #include <asm/page.h>
-diff --git a/mm/init-mm.c b/mm/init-mm.c
-index a56a851908d2..310ae8c7d9c6 100644
---- a/mm/init-mm.c
-+++ b/mm/init-mm.c
-@@ -1,4 +1,5 @@
- #include <linux/mm_types.h>
-+#include <linux/mm_struct.h>
- #include <linux/rbtree.h>
- #include <linux/rwsem.h>
- #include <linux/spinlock.h>
-diff --git a/mm/kmemcheck.c b/mm/kmemcheck.c
-index cab58bb592d8..c40d065013d2 100644
---- a/mm/kmemcheck.c
-+++ b/mm/kmemcheck.c
-@@ -1,5 +1,4 @@
- #include <linux/gfp.h>
--#include <linux/mm_types.h>
- #include <linux/mm.h>
- #include <linux/slab.h>
- #include "slab.h"
+-#ifndef __PAGETABLE_PMD_FOLDED
++#if !__PAGETABLE_PMD_FOLDED
+ /*
+  * Allocate page middle directory.
+  * We've already handled the fast-path in-line.
 -- 
 2.1.4
 
