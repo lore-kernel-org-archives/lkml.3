@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934227AbbA1EWF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 23:22:05 -0500
-Received: from mail.kernel.org ([198.145.29.136]:39763 "EHLO mail.kernel.org"
+	id S965236AbbA1Ewd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 23:52:33 -0500
+Received: from mail.kernel.org ([198.145.29.136]:39774 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964887AbbA1EWA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 23:22:00 -0500
+	id S934213AbbA1EWD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 23:22:03 -0500
 From: lizf@kernel.org
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org,
-        Quentin Casasnovas <quentin.casasnovas@oracle.com>,
-        Vegard Nossum <vegard.nossum@oracle.com>,
-        Jamie Iles <jamie.iles@oracle.com>,
-        Paolo Bonzini <pbonzini@redhat.com>, Zefan Li <lizefan@huawei.com>
-Subject: [PATCH 3.4 087/177] kvm: fix excessive pages un-pinning in kvm_iommu_map error path.
-Date: Wed, 28 Jan 2015 12:09:00 +0800
-Message-Id: <1422418236-12852-173-git-send-email-lizf@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Ben Hutchings <ben@decadent.org.uk>,
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        Chaoming Li <chaoming_li@realsil.com.cn>,
+        Satoshi IWAMOTO <satoshi.iwamoto@nifty.ne.jp>,
+        Zefan Li <lizefan@huawei.com>
+Subject: [PATCH 3.4 87/91] rtl8192ce: Fix null dereference in watchdog
+Date: Wed, 28 Jan 2015 12:09:01 +0800
+Message-Id: <1422418236-12852-174-git-send-email-lizf@kernel.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422418050-12581-1-git-send-email-lizf@kernel.org>
 References: <1422418050-12581-1-git-send-email-lizf@kernel.org>
@@ -23,86 +23,78 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Quentin Casasnovas <quentin.casasnovas@oracle.com>
+From: Ben Hutchings <ben@decadent.org.uk>
 
-3.4.106-rc1 review patch.  If anyone has any objections, please let me know.
+3.4.105-rc1 review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
 
-commit 3d32e4dbe71374a6780eaf51d719d76f9a9bf22f upstream.
+Dmitry Semyonov reported that after upgrading from 3.2.54 to
+3.2.57 the rtl8192ce driver will crash when its interface is brought
+up.  The oops message shows:
 
-The third parameter of kvm_unpin_pages() when called from
-kvm_iommu_map_pages() is wrong, it should be the number of pages to un-pin
-and not the page size.
+[ 1833.611397] BUG: unable to handle kernel NULL pointer dereference at 0000000000000010
+[ 1833.611455] IP: [<ffffffffa0410c6a>] rtl92ce_update_hal_rate_tbl+0x29/0x4db [rtl8192ce]
+...
+[ 1833.613326] Call Trace:
+[ 1833.613346]  [<ffffffffa02ad9c6>] ? rtl92c_dm_watchdog+0xd0b/0xec9 [rtl8192c_common]
+[ 1833.613391]  [<ffffffff8105b5cf>] ? process_one_work+0x161/0x269
+[ 1833.613425]  [<ffffffff8105c598>] ? worker_thread+0xc2/0x145
+[ 1833.613458]  [<ffffffff8105c4d6>] ? manage_workers.isra.25+0x15b/0x15b
+[ 1833.613496]  [<ffffffff8105f6d9>] ? kthread+0x76/0x7e
+[ 1833.613527]  [<ffffffff81356b74>] ? kernel_thread_helper+0x4/0x10
+[ 1833.613563]  [<ffffffff8105f663>] ? kthread_worker_fn+0x139/0x139
+[ 1833.613598]  [<ffffffff81356b70>] ? gs_change+0x13/0x13
 
-This error was facilitated with an inconsistent API: kvm_pin_pages() takes
-a size, but kvn_unpin_pages() takes a number of pages, so fix the problem
-by matching the two.
+Disassembly of rtl92ce_update_hal_rate_tbl() shows that the 'sta'
+parameter was null.  None of the changes to the rtlwifi family between
+3.2.54 and 3.2.57 seem to directly cause this, and reverting commit
+f78bccd79ba3 ('rtlwifi: rtl8192ce: Fix too long disable of IRQs')
+doesn't fix it.
 
-This was introduced by commit 350b8bd ("kvm: iommu: fix the third parameter
-of kvm_iommu_put_pages (CVE-2014-3601)"), which fixes the lack of
-un-pinning for pages intended to be un-pinned (i.e. memory leak) but
-unfortunately potentially aggravated the number of pages we un-pin that
-should have stayed pinned. As far as I understand though, the same
-practical mitigations apply.
+rtl92c_dm_watchdog() calls rtl92ce_update_hal_rate_tbl() via
+rtl92c_dm_refresh_rate_adaptive_mask(), which does not appear in the
+call trace as it was inlined.  That function has been completely
+removed upstream which may explain why this crash wasn't seen there.
 
-This issue was found during review of Red Hat 6.6 patches to prepare
-Ksplice rebootless updates.
+I'm not sure that it is sensible to completely remove
+rtl92c_dm_refresh_rate_adaptive_mask() without making other
+compensating changes elsewhere, so try to work around this for 3.2 by
+checking for a null pointer in rtl92c_dm_refresh_rate_adaptive_mask()
+and then skipping the call to rtl92ce_update_hal_rate_tbl().
 
-Thanks to Vegard for his time on a late Friday evening to help me in
-understanding this code.
-
-Fixes: 350b8bd ("kvm: iommu: fix the third parameter of... (CVE-2014-3601)")
-Signed-off-by: Quentin Casasnovas <quentin.casasnovas@oracle.com>
-Signed-off-by: Vegard Nossum <vegard.nossum@oracle.com>
-Signed-off-by: Jamie Iles <jamie.iles@oracle.com>
-Reviewed-by: Sasha Levin <sasha.levin@oracle.com>
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
-[lizf: Backported to 3.4: adjust context]
+References: https://bugs.debian.org/745137
+References: https://bugs.debian.org/745462
+Reported-by: Dmitry Semyonov <linulin@gmail.com>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Cc: Larry Finger <Larry.Finger@lwfinger.net>
+Cc: Chaoming Li <chaoming_li@realsil.com.cn>
+Cc: Satoshi IWAMOTO <satoshi.iwamoto@nifty.ne.jp>
 Signed-off-by: Zefan Li <lizefan@huawei.com>
 ---
- virt/kvm/iommu.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ drivers/net/wireless/rtlwifi/rtl8192c/dm_common.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/virt/kvm/iommu.c b/virt/kvm/iommu.c
-index defc9ba..3225903 100644
---- a/virt/kvm/iommu.c
-+++ b/virt/kvm/iommu.c
-@@ -43,13 +43,13 @@ static void kvm_iommu_put_pages(struct kvm *kvm,
- 				gfn_t base_gfn, unsigned long npages);
+diff --git a/drivers/net/wireless/rtlwifi/rtl8192c/dm_common.c b/drivers/net/wireless/rtlwifi/rtl8192c/dm_common.c
+index 1208b75..513baa0 100644
+--- a/drivers/net/wireless/rtlwifi/rtl8192c/dm_common.c
++++ b/drivers/net/wireless/rtlwifi/rtl8192c/dm_common.c
+@@ -1210,11 +1210,14 @@ static void rtl92c_dm_refresh_rate_adaptive_mask(struct ieee80211_hw *hw)
+ 			if (rtlhal->interface == INTF_PCI) {
+ 				rcu_read_lock();
+ 				sta = ieee80211_find_sta(mac->vif, mac->bssid);
++				if (!sta)
++					goto out_unlock;
+ 			}
+ 			rtlpriv->cfg->ops->update_rate_tbl(hw, sta,
+ 					p_ra->ratr_state);
  
- static pfn_t kvm_pin_pages(struct kvm *kvm, struct kvm_memory_slot *slot,
--			   gfn_t gfn, unsigned long size)
-+			   gfn_t gfn, unsigned long npages)
- {
- 	gfn_t end_gfn;
- 	pfn_t pfn;
- 
- 	pfn     = gfn_to_pfn_memslot(kvm, slot, gfn);
--	end_gfn = gfn + (size >> PAGE_SHIFT);
-+	end_gfn = gfn + npages;
- 	gfn    += 1;
- 
- 	if (is_error_pfn(pfn))
-@@ -117,7 +117,7 @@ int kvm_iommu_map_pages(struct kvm *kvm, struct kvm_memory_slot *slot)
- 		 * Pin all pages we are about to map in memory. This is
- 		 * important because we unmap and unpin in 4kb steps later.
- 		 */
--		pfn = kvm_pin_pages(kvm, slot, gfn, page_size);
-+		pfn = kvm_pin_pages(kvm, slot, gfn, page_size >> PAGE_SHIFT);
- 		if (is_error_pfn(pfn)) {
- 			gfn += 1;
- 			continue;
-@@ -129,7 +129,7 @@ int kvm_iommu_map_pages(struct kvm *kvm, struct kvm_memory_slot *slot)
- 		if (r) {
- 			printk(KERN_ERR "kvm_iommu_map_address:"
- 			       "iommu failed to map pfn=%llx\n", pfn);
--			kvm_unpin_pages(kvm, pfn, page_size);
-+			kvm_unpin_pages(kvm, pfn, page_size >> PAGE_SHIFT);
- 			goto unmap_pages;
+ 			p_ra->pre_ratr_state = p_ra->ratr_state;
++		out_unlock:
+ 			if (rtlhal->interface == INTF_PCI)
+ 				rcu_read_unlock();
  		}
- 
 -- 
 1.9.1
 
