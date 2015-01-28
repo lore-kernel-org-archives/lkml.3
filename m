@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760767AbbA1Ecu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 23:32:50 -0500
-Received: from mail.kernel.org ([198.145.29.136]:41194 "EHLO mail.kernel.org"
+	id S965277AbbA1EZw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 23:25:52 -0500
+Received: from mail.kernel.org ([198.145.29.136]:41234 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934589AbbA1EZp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 23:25:45 -0500
+	id S934587AbbA1EZs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 23:25:48 -0500
 From: lizf@kernel.org
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Jan Kara <jack@suse.cz>,
+Cc: linux-kernel@vger.kernel.org,
         Trond Myklebust <trond.myklebust@primarydata.com>,
         Zefan Li <lizefan@huawei.com>
-Subject: [PATCH 3.4 158/177] nfs: Fix use of uninitialized variable in nfs_getattr()
-Date: Wed, 28 Jan 2015 12:10:16 +0800
-Message-Id: <1422418236-12852-249-git-send-email-lizf@kernel.org>
+Subject: [PATCH 3.4 159/177] NFSv4: Ensure that we remove NFSv4.0 delegations when state has expired
+Date: Wed, 28 Jan 2015 12:10:17 +0800
+Message-Id: <1422418236-12852-250-git-send-email-lizf@kernel.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422418050-12581-1-git-send-email-lizf@kernel.org>
 References: <1422418050-12581-1-git-send-email-lizf@kernel.org>
@@ -21,39 +21,68 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jan Kara <jack@suse.cz>
+From: Trond Myklebust <trond.myklebust@primarydata.com>
 
 3.4.106-rc1 review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
 
-commit 16caf5b6101d03335b386e77e9e14136f989be87 upstream.
+commit 4dfd4f7af0afd201706ad186352ca423b0f17d4b upstream.
 
-Variable 'err' needn't be initialized when nfs_getattr() uses it to
-check whether it should call generic_fillattr() or not. That can result
-in spurious error returns. Initialize 'err' properly.
+NFSv4.0 does not have TEST_STATEID/FREE_STATEID functionality, so
+unlike NFSv4.1, the recovery procedure when stateids have expired or
+have been revoked requires us to just forget the delegation.
 
-Signed-off-by: Jan Kara <jack@suse.cz>
+http://lkml.kernel.org/r/CAN-5tyHwG=Cn2Q9KsHWadewjpTTy_K26ee+UnSvHvG4192p-Xw@mail.gmail.com
 Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
 Signed-off-by: Zefan Li <lizefan@huawei.com>
 ---
- fs/nfs/inode.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/nfs/nfs4proc.c | 24 +++++++++++++++++++++++-
+ 1 file changed, 23 insertions(+), 1 deletion(-)
 
-diff --git a/fs/nfs/inode.c b/fs/nfs/inode.c
-index 9bb4e5c..a6d5905 100644
---- a/fs/nfs/inode.c
-+++ b/fs/nfs/inode.c
-@@ -512,7 +512,7 @@ int nfs_getattr(struct vfsmount *mnt, struct dentry *dentry, struct kstat *stat)
- {
- 	struct inode *inode = dentry->d_inode;
- 	int need_atime = NFS_I(inode)->cache_validity & NFS_INO_INVALID_ATIME;
--	int err;
-+	int err = 0;
+diff --git a/fs/nfs/nfs4proc.c b/fs/nfs/nfs4proc.c
+index 37ab4e1..3d344ab 100644
+--- a/fs/nfs/nfs4proc.c
++++ b/fs/nfs/nfs4proc.c
+@@ -1740,6 +1740,28 @@ static int nfs4_open_expired(struct nfs4_state_owner *sp, struct nfs4_state *sta
+ 	return ret;
+ }
  
- 	/* Flush out writes to the server in order to update c/mtime.  */
- 	if (S_ISREG(inode->i_mode)) {
++static void nfs_finish_clear_delegation_stateid(struct nfs4_state *state)
++{
++	nfs_remove_bad_delegation(state->inode);
++	write_seqlock(&state->seqlock);
++	nfs4_stateid_copy(&state->stateid, &state->open_stateid);
++	write_sequnlock(&state->seqlock);
++	clear_bit(NFS_DELEGATED_STATE, &state->flags);
++}
++
++static void nfs40_clear_delegation_stateid(struct nfs4_state *state)
++{
++	if (rcu_access_pointer(NFS_I(state->inode)->delegation) != NULL)
++		nfs_finish_clear_delegation_stateid(state);
++}
++
++static int nfs40_open_expired(struct nfs4_state_owner *sp, struct nfs4_state *state)
++{
++	/* NFSv4.0 doesn't allow for delegation recovery on open expire */
++	nfs40_clear_delegation_stateid(state);
++	return nfs4_open_expired(sp, state);
++}
++
+ #if defined(CONFIG_NFS_V4_1)
+ static int nfs41_check_expired_stateid(struct nfs4_state *state, nfs4_stateid *stateid, unsigned int flags)
+ {
+@@ -6547,7 +6569,7 @@ static const struct nfs4_state_recovery_ops nfs41_reboot_recovery_ops = {
+ static const struct nfs4_state_recovery_ops nfs40_nograce_recovery_ops = {
+ 	.owner_flag_bit = NFS_OWNER_RECLAIM_NOGRACE,
+ 	.state_flag_bit	= NFS_STATE_RECLAIM_NOGRACE,
+-	.recover_open	= nfs4_open_expired,
++	.recover_open	= nfs40_open_expired,
+ 	.recover_lock	= nfs4_lock_expired,
+ 	.establish_clid = nfs4_init_clientid,
+ 	.get_clid_cred	= nfs4_get_setclientid_cred,
 -- 
 1.9.1
 
