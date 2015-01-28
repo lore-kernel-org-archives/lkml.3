@@ -1,63 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757215AbbA1UYg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 15:24:36 -0500
-Received: from mx0a-0016f401.pphosted.com ([67.231.148.174]:14463 "EHLO
-	mx0a-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757168AbbA1UY1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 15:24:27 -0500
-From: Jisheng Zhang <jszhang@marvell.com>
-To: <chris@printf.net>, <ulf.hansson@linaro.org>,
-        <sebastian.hesselbarth@gmail.com>
-CC: <thomas.petazzoni@free-electrons.com>, <linux-mmc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Jisheng Zhang <jszhang@marvell.com>,
-        <stable@vger.kernel.org>
-Subject: [PATCH] mmc: sdhci-pxav3: fix setting of pdata->clk_delay_cycles
-Date: Wed, 28 Jan 2015 14:57:59 +0800
-Message-ID: <1422428279-525-1-git-send-email-jszhang@marvell.com>
-X-Mailer: git-send-email 2.1.4
+	id S1754140AbbA2Gen (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 01:34:43 -0500
+Received: from sauhun.de ([89.238.76.85]:37899 "EHLO pokefinder.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752340AbbA2Gem (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Jan 2015 01:34:42 -0500
+Date: Wed, 28 Jan 2015 07:59:29 +0100
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Jim Davis <jim.epost@gmail.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        linux-next <linux-next@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        david.e.box@linux.intel.com, linux-i2c@vger.kernel.org
+Subject: Re: randconfig build error with next-20150127, in
+ drivers/i2c/busses/i2c-designware-baytrail.c
+Message-ID: <20150128065929.GA1086@katana>
+References: <CA+r1ZhisCd7+LJ0gm-NLPJ+UE-FEuEWFQqDqcy7KPp2tD_bveA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.33,0.0.0000
- definitions=2015-01-27_04:2015-01-27,2015-01-26,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
- phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
- scancount=1 engine=7.0.1-1402240000 definitions=main-1501280076
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="uAKRQypu60I7Lcqm"
+Content-Disposition: inline
+In-Reply-To: <CA+r1ZhisCd7+LJ0gm-NLPJ+UE-FEuEWFQqDqcy7KPp2tD_bveA@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Current code checks "clk_delay_cycles > 0" to know whether the optional
-"mrvl,clk_delay_cycles" is set or not. But of_property_read_u32() doesn't
-touch clk_delay_cycles if the property is not set. And type of
-clk_delay_cycles is u32, so we may always set pdata->clk_delay_cycles as a
-random value.
 
-This patch fix this problem by check the return value of of_property_read_u32()
-to know whether the optional clk-delay-cycles is set or not.
+--uAKRQypu60I7Lcqm
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Signed-off-by: Jisheng Zhang <jszhang@marvell.com>
-Cc: <stable@vger.kernel.org> # v3.6+
----
- drivers/mmc/host/sdhci-pxav3.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+On Tue, Jan 27, 2015 at 04:41:44PM -0700, Jim Davis wrote:
+> Building with the attached random configuration file,
 
-diff --git a/drivers/mmc/host/sdhci-pxav3.c b/drivers/mmc/host/sdhci-pxav3.c
-index c5db5d2..f1c6362 100644
---- a/drivers/mmc/host/sdhci-pxav3.c
-+++ b/drivers/mmc/host/sdhci-pxav3.c
-@@ -268,8 +268,8 @@ static struct sdhci_pxa_platdata *pxav3_get_mmc_pdata(struct device *dev)
- 	if (!pdata)
- 		return NULL;
- 
--	of_property_read_u32(np, "mrvl,clk-delay-cycles", &clk_delay_cycles);
--	if (clk_delay_cycles > 0)
-+	if (!of_property_read_u32(np, "mrvl,clk-delay-cycles",
-+				  &clk_delay_cycles))
- 		pdata->clk_delay_cycles = clk_delay_cycles;
- 
- 	return pdata;
--- 
-2.1.4
+A proper Kconfig dependency fix has already been added and is in
+linux-next as of today.
 
+
+--uAKRQypu60I7Lcqm
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUyIjRAAoJEBQN5MwUoCm2QlYP/0zO854F6omGBspWgmMoMN4d
+6lZmyiBqOxwhLlSIrcDJqbWVvxVaGXcMhJL2OppeH0y7AZQrXHFtTWWLPqPDS4qG
+JdRHhQj7DaoA28rZ1/09TRcdK9UHGPJvA93Qy0gxOaAnpHRnaKR6HZXIRtvkY1PS
+0gDSixw1Ib5dwgtJFNzSRcc00RdmpuXefvtFTCJ/0ogvtovDXBSKQQ5jlEyq2GZj
+KQDXVmZiKvOseSKvPnNmjBmCGxaId1QchrAnpWTnUq3K/5mmBa+mF0gQLyFQBrKX
+64Y724mgW+4grWyzlbuM7y64ZWh8HOUQLeppcV6/x/ukqpscZcdFvI0CWhDhurA0
+D8SAjsMNCiBn4ui2Her72NsFg+Iwi10lVj+ceseXBZ5aBs9gZNuHG4jbaOdtU2WQ
+0OI7iV/+ikHy5cjiAb0yQKRrSfgfZCns9SOKwMHWDaFKzj+xBdNWUGZh+rvFt+Au
+ns2kvAgNZubbzxhpWW/AA7zAauCpjrvDgo/8K8Ext3N9/VG9Zaet/jpg9CNM7N82
+bvjqWlpV3BIe8dO9YB8pT4oYJxRYggxA7cyOas5/VmNwFmW3vI3L0au/oUAhXwQc
+s28cGzjPQ61hHPOBqYQ4ipz1afQ9SFhZiYJjxHvakiwEKTnBmbkPHnurdmumPSJT
+U94XVQ+DUoLiwvADP8WM
+=lF3S
+-----END PGP SIGNATURE-----
+
+--uAKRQypu60I7Lcqm--
