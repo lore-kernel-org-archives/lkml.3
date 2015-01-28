@@ -1,113 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965486AbbA1E2N (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 23:28:13 -0500
-Received: from ozlabs.org ([103.22.144.67]:46144 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965383AbbA1E2L convert rfc822-to-8bit (ORCPT
+	id S965553AbbA1Eb0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 23:31:26 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:2907 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S965061AbbA1EbY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 23:28:11 -0500
-Message-ID: <1422419289.9646.20.camel@neuling.org>
-Subject: Re: [V6,1/9] elf: Add new powerpc specifc core note sections
-From: Michael Neuling <mikey@neuling.org>
-To: Ulrich Weigand <Ulrich.Weigand@de.ibm.com>
-Cc: akpm@linux-foundation.org, avagin@openvz.org, davej@redhat.com,
-        davem@davemloft.net, dhowells@redhat.com,
-        Edjunior Barbosa Machado <emachado@linux.vnet.ibm.com>,
-        james.hogan@imgtec.com,
-        Anshuman Khandual <khandual@linux.vnet.ibm.com>, kirjanov@gmail.com,
-        linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org,
-        Michael Ellerman <mpe@ellerman.id.au>, oleg@redhat.com,
-        palves@redhat.com, Paul.Clothier@imgtec.com, peterz@infradead.org,
-        sam.bobroff@au1.ibm.com, shuahkh@osg.samsung.com,
-        sukadev@linux.vnet.ibm.com, tglx@linutronix.de
-Date: Wed, 28 Jan 2015 15:28:09 +1100
-In-Reply-To: <1421963049.30744.23.camel@neuling.org>
-References: <20141203052204.9DA8F1400DD@ozlabs.org>
-	 <547EB253.5050307@linux.vnet.ibm.com> <548578A8.5020901@linux.vnet.ibm.com>
-	 <54947C64.4030206@linux.vnet.ibm.com> <54A50094.5070902@linux.vnet.ibm.com>
-	 <1421883597.30744.3.camel@neuling.org>
-	 <OFC6CFC348.C619B89D-ONC1257DD5.0056279B-C1257DD5.00577002@de.ibm.com>
-	 <1421963049.30744.23.camel@neuling.org>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.12.7-0ubuntu1 
-Mime-Version: 1.0
+	Tue, 27 Jan 2015 23:31:24 -0500
+Message-Id: <20150128043036.429390502@goodmis.org>
+User-Agent: quilt/0.61-1
+Date: Tue, 27 Jan 2015 23:30:36 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>
+Subject: [RFC][PATCH 0/3] kprobes/ftrace/x86: Function graph trace jprobes
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2015-01-23 at 08:44 +1100, Michael Neuling wrote:
-> > > > Inside transaction both running and check pointed values can be
-> > > > probed independently.
-> > >
-> > > Yep, that's the idea, although setting the running values won't change
-> > > anything since the the translation is already doomed and will abort once
-> > > the cpu starts executing it.
-> > 
-> > So this looks to me like the overall effect on debugging transactional
-> > code should be the same on Power and z, even if some internal details
-> > are different (on z, the exception will automatically abort the
-> > transaction; on p, the exception itself will not abort, but *restarting*
-> > user space execution will).
-> 
-> Yep
-> 
-> > From a GDB perspective, it would therefore be preferable if the ptrace
-> > interface were to behave in a similar fashion on p as on z: that is,
-> > if an exception interrupting a transaction results in a ptrace intercept,
-> > at this point:
-> 
-> Agreed.
-> 
-> > - the "normal" ptrace register set commands should access the
-> >   *checkpointed* registers (allowing both read and write access)
-> 
-> OK, this is a change from what we've been proposing with Anshuman's
-> patch set but I'm happy to change it to make it consistent with other
-> architectures.  It's relatively arbitrary which goes where, so I'm happy
-> to change.
-> 
-> >   -- GDB will use this to display current position (already reflecting
-> >   the fact that the transaction will abort), and use it when changing
-> >   register values e.g. to effect an inferior function call
-> 
-> "Current position" depends on your perspective.  Is it the last executed
-> instruction or the next executed instruction?  If it's the last executed
-> instruction, then it's the running values.  If it's the next, then it's
-> the check pointed.  
-> 
-> Anyway, I'm happy to make it the check pointed values for the sake of
-> ptrace/gdb.
 
-Uli,
+I had these patches sitting in my repo for a while, thinking I already
+posted them. I never did, so here I go  (a little late :-/)
 
-Sorry, I'm rethinking this as we didn't consider user suspended
-transactions.
+Basically, what I had before was fixes for jprobes and function graph
+tracing that were stepping on each other. When enabling both jprobes
+and graph tracer, it could crash the system. The fix was just to ignore
+function graph tracing while handling a jprobe. This was fine for stable
+and fixing a bug that would usually crash, but it still messes with
+function graph trace. It is still required if fentry is not used, but
+when fentry is (which is now the majority of cases - gcc > 4.6 and x86_64),
+we can trace jprobes with a little trickery.
 
-It makes sense for normal transactions but for user suspended
-transactions the running values are the ones you want to modify since
-that is where you'll end up restarting from.  The hardware will only
-abort/rollback once a tresume is encountered.
-      * 
-So we could do what you're talking about for normal transactions and
-then switch them for suspended transactions.  But this just seems to be
-making the kernel interface overly complicated.  
+The way this solves the issue is that on the return from the jprobe,
+we can detect if function graph tracing happened because the stack
+frame would have changed. When this is detected
+ (saved_sp == return_to_handler), the ip is changed once again to
+go preform a "fixup". The real ip is saved in r10 (callee clobber)
+and will be put back by the fixup trampoline.
 
-So I'm keen on just keeping it the way Anshuman has now and GDB has to
-understand the program flow better to know which ones it wants to
-modify.  The kernel always provides the "normal" set as running and the
-new set as check pointed.  GDB then has to check the MSR to work out
-what it wants to modify.
+The second patch will move ip to r10 always, and will call either
+the fixup (if it was modified) or will jump to ftrace_trace_addr.
+The ftrace_trace_addr will call the function graph code, if the
+ip address is set to be traced. Otherwise the function graph code
+ignores it (which is why it's called by all jprobe returns).
 
-> > - a new ptrace register set should allow access (read-only) to the
-> >   *running* register values
-> 
-> This is because changing them won't ever result in a side effect?  
+The final patch fixes the name of a variable that Masami suggesed.
 
-For the same reason as above, we need to be able to modify the running
-values when it's a user suspended transaction.  So I don't agree with
-this any more in the case of user suspended transaction.  We need to be
-able to modify both sets of registers.
+Steven Rostedt (Red Hat) (3):
+      ftrace/jprobes/x86: Allow jprobes to be graph traced if using fentry
+      ftrace/jprobes/x86: Have function being probed be graph traced
+      ftrace: Rename variable from old_hash_ops to old_ops_hash
 
-Mikey
+----
+ arch/x86/include/asm/ftrace.h    |  4 +++
+ arch/x86/include/asm/kprobes.h   |  9 +++++
+ arch/x86/kernel/kprobes/core.c   | 72 +++++++++++++++++++++++++++++++++++++++-
+ arch/x86/kernel/kprobes/ftrace.c | 14 ++++++++
+ arch/x86/kernel/mcount_64.S      | 36 +++++++++++++++++++-
+ kernel/trace/ftrace.c            | 24 +++++++-------
+ 6 files changed, 145 insertions(+), 14 deletions(-)
