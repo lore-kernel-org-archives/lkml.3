@@ -1,93 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757836AbbA1UbU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 15:31:20 -0500
-Received: from mga02.intel.com ([134.134.136.20]:39307 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759657AbbA1UbE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 15:31:04 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.09,479,1418112000"; 
-   d="scan'208";a="668841108"
-From: "Zhang, Yang Z" <yang.z.zhang@intel.com>
-To: Wincy Van <fanwenyi0529@gmail.com>, Paolo Bonzini <pbonzini@redhat.com>,
-        "gleb@kernel.org" <gleb@kernel.org>
-CC: "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+	id S1759278AbbA2Fhn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 00:37:43 -0500
+Received: from 2.mo6.mail-out.ovh.net ([46.105.76.65]:40113 "EHLO
+	2.mo6.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754278AbbA2Fhm convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Jan 2015 00:37:42 -0500
+X-Greylist: delayed 32128 seconds by postgrey-1.27 at vger.kernel.org; Thu, 29 Jan 2015 00:37:42 EST
+Content-Type: text/plain; charset=utf-8
+Mime-Version: 1.0 (Mac OS X Mail 8.1 \(1993\))
+Subject: Re: [PATCH] ARM: /proc/atags: Export also for DT
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+In-Reply-To: <20150128071950.GB29927@amd>
+Date: Wed, 28 Jan 2015 16:06:17 +0800
+Cc: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Nicolas Pitre <nico@fluxnic.net>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>,
+        Tony Lindgren <tony@atomide.com>, Sebastian Reichel <sre@debian.org>,
+        Will Deacon <will.deacon@arm.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Wanpeng Li <wanpeng.li@linux.intel.com>,
-        Jan Kiszka <jan.kiszka@web.de>
-Subject: RE: [PATCH v3 1/6] KVM: nVMX: Use hardware MSR bitmap
-Thread-Topic: [PATCH v3 1/6] KVM: nVMX: Use hardware MSR bitmap
-Thread-Index: AQHQN79lT9Shw/DNlk+phY4fCFwl65zVMZZg
-Date: Wed, 28 Jan 2015 08:05:23 +0000
-Message-ID: <A9667DDFB95DB7438FA9D7D576C3D87E0AC2C563@SHSMSX104.ccr.corp.intel.com>
-References: <CACzj_yUu5omqFL7u8NE6vyqXGy_-dAeukRspJha+EiGXVBzmYg@mail.gmail.com>
-In-Reply-To: <CACzj_yUu5omqFL7u8NE6vyqXGy_-dAeukRspJha+EiGXVBzmYg@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
+        =?utf-8?Q?Pali_Roh=C3=A1r?= <pali.rohar@gmail.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <F2E2E152-2054-4284-9DAC-67FEC30DF399@jcrosoft.com>
+References: <20150127132127.GA869@amd> <CAL_JsqKM+2PtX_EpWXyOQHVXwf=jqVj8SroUGPO1Y2=Zj8_kMg@mail.gmail.com> <201501271532.25540@pali> <20150127174818.GM26493@n2100.arm.linux.org.uk> <alpine.LFD.2.11.1501271446330.1322@knanqh.ubzr> <20150127210943.GN26493@n2100.arm.linux.org.uk> <alpine.LFD.2.11.1501271614280.1322@knanqh.ubzr> <20150127223331.GP26493@n2100.arm.linux.org.uk> <alpine.LFD.2.11.1501272027390.1322@knanqh.ubzr> <1FECE32B-0D63-4696-BED7-74FE5845C260@jcrosoft.com> <20150128071950.GB29927@amd>
+To: Pavel Machek <pavel@ucw.cz>
+X-Mailer: Apple Mail (2.1993)
+X-Ovh-Tracer-Id: 10988220141245868883
+X-Ovh-Remote: 80.15.34.121 (lmontsouris-656-1-34-121.w80-15.abo.wanadoo.fr)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -51
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejkedrvdejucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmdenogfuuhhsphgvtghtffhomhgrihhnucdlgeelmd
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -51
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejkedrvdejucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmdenogfuuhhsphgvtghtffhomhgrihhnucdlgeelmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id t0SKVPU5006086
 
-Wincy Van wrote on 2015-01-24:
-> When L2 is using x2apic, we can use virtualize x2apic mode to gain higher
-> performance, especially in apicv case.
+
+> On Jan 28, 2015, at 3:19 PM, Pavel Machek <pavel@ucw.cz> wrote:
 > 
-> This patch also introduces nested_vmx_check_apicv_controls for the nested
-> apicv patches.
+> Hi!
 > 
-> Signed-off-by: Wincy Van <fanwenyi0529@gmail.com>
-> ---
+>>> In other words, what prevents someone from creating, say, a custom 
+>>> minimal Barebox version that sits on top of the existing N900 
+>>> bootloader?  Wouldn't that provide a much better user experience?
+>> 
+>> I do agree with Nicolas
+>> 
+>> If I can get my hand on a phone Iâ€™ll put barebox on it
+> 
+> Grab it in the nearest "second hand cellphones" shop, and have fun! It
+> should be less than $70.
 
-...snip...
+will see if I can found one in Shanghai at the second hand market
 
->  static void vmx_disable_intercept_for_msr(u32 msr, bool longmode_only)  {
->         if (!longmode_only)
-> @@ -8344,7 +8394,68 @@ static int
-> nested_vmx_check_msr_bitmap_controls(struct kvm_vcpu *vcpu,  static
-> inline bool nested_vmx_merge_msr_bitmap(struct kvm_vcpu *vcpu,
->                                                struct vmcs12
-> *vmcs12)  {
-> -       return false;
-> +       struct page *page;
-> +       unsigned long *msr_bitmap;
-> +
-> +       if (!nested_cpu_has_virt_x2apic_mode(vmcs12))
-> +               return false;
-> +
-> +       page = nested_get_page(vcpu, vmcs12->msr_bitmap);
-> +       if (!page) {
-> +               WARN_ON(1);
-> +               return false;
-> +       }
-> +       msr_bitmap = (unsigned long *)kmap(page);
-> +       if (!msr_bitmap) {
-> +               nested_release_page_clean(page);
-> +               WARN_ON(1);
-> +               return false;
-> +       }
-> +
-> +       memset(vmx_msr_bitmap_nested, 0xff, PAGE_SIZE);
-> +
-> +       if (nested_cpu_has_virt_x2apic_mode(vmcs12))
-> +               /* TPR is allowed */
-> +               nested_vmx_disable_intercept_for_msr(msr_bitmap,
-> +                               vmx_msr_bitmap_nested,
-> +                               APIC_BASE_MSR + (APIC_TASKPRI >>
-> 4),
-> +                               MSR_TYPE_R | MSR_TYPE_W);
+Does it exist a qemu emulation?
 
-I didn't understand what this function does? Per my understanding, you only need to set the (vmx_msr_bitmap_nested = vmcs01->msr_bitmap | vmcs12->msr_bitmap) and inject the nested vmexit to L1 if the bit in vmcs12->msr_bitmap is setting. Am I missing some patches?
+Best Regards,
+J.
+> 									Pavel
+> -- 
+> (english) http://www.livejournal.com/~pavelmachek
+> (cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
 
-Best regards,
-Yang
-
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
