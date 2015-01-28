@@ -1,89 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933785AbbA2CY5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 21:24:57 -0500
-Received: from mail-lb0-f169.google.com ([209.85.217.169]:52362 "EHLO
-	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754105AbbA2CYy (ORCPT
+	id S1753483AbbA2BOo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 20:14:44 -0500
+Received: from mout.kundenserver.de ([212.227.126.131]:51090 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751979AbbA2BOm convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 21:24:54 -0500
+	Wed, 28 Jan 2015 20:14:42 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Murali Karicheri <m-karicheri2@ti.com>
+Cc: David Miller <davem@davemloft.net>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: [PATCH net-next v8 0/4] net: Add Keystone NetCP ethernet driver support
+Date: Wed, 28 Jan 2015 22:03:09 +0100
+Message-ID: <20343006.1NmdQEM9nn@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <54C94A0D.9050505@ti.com>
+References: <1421367007-19744-1-git-send-email-m-karicheri2@ti.com> <54C92878.3030207@ti.com> <54C94A0D.9050505@ti.com>
 MIME-Version: 1.0
-In-Reply-To: <20150128174817.GQ19109@linux.vnet.ibm.com>
-References: <cover.1416604491.git.luto@amacapital.net> <7665538633a500255d7da9ca5985547f6a2aa191.1416604491.git.luto@amacapital.net>
- <54C17139.1040706@oracle.com> <CALCETrWEUXHOaG-WzDkteoMP=6=tAvyNLfrbg=Xf8ybvMumAow@mail.gmail.com>
- <20150123180455.GA3192@pd.tnic> <CALCETrXA+OKGfxV9M=1AxvBSBPAt_+VmjDH0A+Rq4Ss+tKmTBw@mail.gmail.com>
- <54C2B396.9090106@oracle.com> <CALCETrXtA-xbec2oGBXW6KUFMY8v=MN2gS5trn1J221OSDDuJA@mail.gmail.com>
- <CALCETrVN0DyQw+7ArX1zrKJRqSso2py6xH2k7QCS_b6J9a=8Gg@mail.gmail.com> <20150128174817.GQ19109@linux.vnet.ibm.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Wed, 28 Jan 2015 13:02:33 -0800
-Message-ID: <CALCETrUsas-TGs9sKDV5e7usUXsL+35tZNXRN6dhbXQFTWfq+w@mail.gmail.com>
-Subject: Re: [PATCH v4 2/5] x86, traps: Track entry into and exit from IST context
-To: Paul McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Sasha Levin <sasha.levin@oracle.com>, Borislav Petkov <bp@alien8.de>,
-        X86 ML <x86@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
-        Tony Luck <tony.luck@intel.com>, Andi Kleen <andi@firstfloor.org>,
-        Josh Triplett <josh@joshtriplett.org>,
-        =?UTF-8?B?RnLDqWTDqXJpYyBXZWlzYmVja2Vy?= <fweisbec@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
+X-Provags-ID: V03:K0:o3BBv4W+lbJoIFeWcHZp+CZKd5sYRK7+qQLlfY2bSs9/319dPwk
+ mgkXno7RMqkBP2M4u8kM8pOPlaOLowrvyIxBJlsWbAc+QTqX29XnsAI9+WE6AXKzBXcsQVr
+ Um96rnSp+510CAfQRYSFBxbNFeRRObZt6VWLldvN9Zo1Alg2LZcGBWsgzZNOFaJJTiodVms
+ 7bbtBbBWeQv0lEYdONi/Q==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 28, 2015 at 9:48 AM, Paul E. McKenney
-<paulmck@linux.vnet.ibm.com> wrote:
-> On Wed, Jan 28, 2015 at 08:33:06AM -0800, Andy Lutomirski wrote:
->> On Fri, Jan 23, 2015 at 5:25 PM, Andy Lutomirski <luto@amacapital.net> wrote:
->> > On Fri, Jan 23, 2015 at 12:48 PM, Sasha Levin <sasha.levin@oracle.com> wrote:
->> >> On 01/23/2015 01:34 PM, Andy Lutomirski wrote:
->> >>> On Fri, Jan 23, 2015 at 10:04 AM, Borislav Petkov <bp@alien8.de> wrote:
->> >>>> On Fri, Jan 23, 2015 at 09:58:01AM -0800, Andy Lutomirski wrote:
->> >>>>>> [  543.999079] Call Trace:
->> >>>>>> [  543.999079] dump_stack (lib/dump_stack.c:52)
->> >>>>>> [  543.999079] lockdep_rcu_suspicious (kernel/locking/lockdep.c:4259)
->> >>>>>> [  543.999079] atomic_notifier_call_chain (include/linux/rcupdate.h:892 kernel/notifier.c:182 kernel/notifier.c:193)
->> >>>>>> [  543.999079] ? atomic_notifier_call_chain (kernel/notifier.c:192)
->> >>>>>> [  543.999079] notify_die (kernel/notifier.c:538)
->> >>>>>> [  543.999079] ? atomic_notifier_call_chain (kernel/notifier.c:538)
->> >>>>>> [  543.999079] ? debug_smp_processor_id (lib/smp_processor_id.c:57)
->> >>>>>> [  543.999079] do_debug (arch/x86/kernel/traps.c:652)
->> >>>>>> [  543.999079] ? trace_hardirqs_on (kernel/locking/lockdep.c:2609)
->> >>>>>> [  543.999079] ? do_int3 (arch/x86/kernel/traps.c:610)
->> >>>>>> [  543.999079] ? trace_hardirqs_on_caller (kernel/locking/lockdep.c:2554 kernel/locking/lockdep.c:2601)
->> >>>>>> [  543.999079] debug (arch/x86/kernel/entry_64.S:1310)
->> >>>>>
->> >>>>> I don't know how to read this stack trace.  Are we in do_int3,
->> >>>>> do_debug, or both?  I didn't change do_debug at all.
->> >>>>
->> >>>> It looks like we're in do_debug. do_int3 is only on the stack but not
->> >>>> part of the current frame if I can trust the '?' ...
->> >>>>
->> >>>
->> >>> It's possible that an int3 happened and I did something wrong on
->> >>> return that caused a subsequent do_debug to screw up, but I don't see
->> >>> how my patch would have caused that.
->> >>>
->> >>> Were there any earlier log messages?
->> >>
->> >> Nope, nothing odd before or after.
->> >
->> > Trinity just survived for a decent amount of time for me with my
->> > patches, other than a bunch of apparently expected OOM kills.  I have
->> > no idea how to tell trinity how much memory to use.
->>
->> A longer trinity run on a larger VM survived (still with some OOM
->> kills, but no taint) with these patches.  I suspect that it's a
->> regression somewhere else in the RCU changes.  I have
->> CONFIG_PROVE_RCU=y, so I should have seen the failure if it was there,
->> I think.
+On Wednesday 28 January 2015 15:43:57 Murali Karicheri wrote:
+> > this. Hope I am on the right track.
+> 
+> Reproduced this. Following errors seen when building the modules.
+> 
+>    LD [M]  drivers/net/ethernet/ti/keystone_netcp.o
+> drivers/net/ethernet/ti/netcp_ethss.o: In function `init_module':
+> netcp_ethss.c:(.init.text+0x0): multiple definition of `init_module'
+> drivers/net/ethernet/ti/netcp_core.o:netcp_core.c:(.init.text+0x0): 
+> first defined here
+> drivers/net/ethernet/ti/netcp_ethss.o: In function `cleanup_module':
+> netcp_ethss.c:(.exit.text+0x0): multiple definition of `cleanup_module'
+> drivers/net/ethernet/ti/netcp_core.o:netcp_core.c:(.exit.text+0x0): 
+> first defined here
+> make[4]: *** [drivers/net/ethernet/ti/keystone_netcp.o] Error 1
 >
-> If by "RCU changes" you mean my changes to the RCU infrastructure, I am
-> going to need more of a hint than I see in this thread thus far.  ;-)
->
+> BTW, I had to disable cpsw_ale.c to get to build keystone NetCP. I am 
+> assuming someone from TI is addressing this.
+> 
+> drivers/net/ethernet/ti/cpsw_ale.c: In function ‘cpsw_ale_start’:
+> drivers/net/ethernet/ti/cpsw_ale.c:759:2: error: ‘KBUILD_MODNAME’ 
+> undeclared (first use in this function)
+> drivers/net/ethernet/ti/cpsw_ale.c:759:2: note: each undeclared 
+> identifier is reported only once for each function it appears in
 
-I can't help much, since I can't reproduce the problem.  Presumably if
-it's a bug in -tip, someone else will trigger it, too.
+I think both problems are nontrivial to fix. The first one is obviously
+that there are multiple init_module functions in one module. You have
+to either split the driver into multiple loadable modules with at most
+one init_module/cleanup_module pair each, or call one of the functions
+from the other one in the right order.
 
---Andy
+The second problem is where I got stuck myself: cpsw_ale.c (also cpts.c)
+is getting linked into both modules, which is not allowed: It is
+impossible for the kernel to compile these if one driver is a module
+and the other one is not, and any use of KBUILD_MODNAME fails because
+it is unclear what the modname is if the file is compiled once to
+be linked into two drivers.
+
+	Arnd
