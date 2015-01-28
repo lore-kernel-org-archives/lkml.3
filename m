@@ -1,62 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1764598AbbA2Dpj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 22:45:39 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:38397 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754926AbbA2BZg (ORCPT
+	id S1755289AbbA1UQX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 15:16:23 -0500
+Received: from mail-lb0-f175.google.com ([209.85.217.175]:37301 "EHLO
+	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753143AbbA1UQV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 20:25:36 -0500
-Date: Wed, 28 Jan 2015 19:52:25 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Bjorn Andersson <bjorn.andersson@sonymobile.com>
-Cc: Liam Girdwood <lgirdwood@gmail.com>, agross@codeaurora.org,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com
-Message-ID: <20150128195225.GO21293@sirena.org.uk>
-References: <1422413199-17273-1-git-send-email-bjorn.andersson@sonymobile.com>
- <1422413199-17273-2-git-send-email-bjorn.andersson@sonymobile.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
-	protocol="application/pgp-signature"; boundary="hLSAHGZhjGZPYsTW"
-Content-Disposition: inline
-In-Reply-To: <1422413199-17273-2-git-send-email-bjorn.andersson@sonymobile.com>
-X-Cookie: My LESLIE GORE record is BROKEN ...
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 1/9] regulator: core: Consolidate drms update handling
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+	Wed, 28 Jan 2015 15:16:21 -0500
+From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+To: Mark Brown <broonie@kernel.org>, Michal Simek <michal.simek@xilinx.com>,
+        =?UTF-8?q?S=C3=B6ren=20Brinkmann?= <soren.brinkmann@xilinx.com>,
+        linux-spi@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Cc: Ricardo Ribalda <ricardo.ribalda@gmail.com>
+Subject: [PATCH] spi/xilinx: Check number of slaves range
+Date: Wed, 28 Jan 2015 20:53:39 +0100
+Message-Id: <1422474819-22689-1-git-send-email-ricardo.ribalda@gmail.com>
+X-Mailer: git-send-email 2.1.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Ricardo Ribalda <ricardo.ribalda@gmail.com>
 
---hLSAHGZhjGZPYsTW
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+The core only supports up to 32 slaves, and the chipselect function
+expects the same.
 
-On Tue, Jan 27, 2015 at 06:46:31PM -0800, Bjorn Andersson wrote:
-> Refactor drms_uA_update() slightly to allow regulator_set_optimum_mode()
-> to utilize the same logic instead of duplicating it.
+Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+---
 
-Applied, thanks.
+v2: Change suggested by Mark Brown
+-Namespace the constant
 
---hLSAHGZhjGZPYsTW
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+ drivers/spi/spi-xilinx.c | 7 +++++++
+ 1 file changed, 7 insertions(+)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+diff --git a/drivers/spi/spi-xilinx.c b/drivers/spi/spi-xilinx.c
+index 416b227..354dbb4 100644
+--- a/drivers/spi/spi-xilinx.c
++++ b/drivers/spi/spi-xilinx.c
+@@ -22,6 +22,8 @@
+ #include <linux/spi/xilinx_spi.h>
+ #include <linux/io.h>
+ 
++#define XILINX_SPI_MAX_CS	32
++
+ #define XILINX_SPI_NAME "xilinx_spi"
+ 
+ /* Register definitions as per "OPB Serial Peripheral Interface (SPI) (v1.00e)
+@@ -354,6 +356,11 @@ static int xilinx_spi_probe(struct platform_device *pdev)
+ 		return -EINVAL;
+ 	}
+ 
++	if (num_cs > XILINX_SPI_MAX_CS) {
++		dev_err(&pdev->dev, "Invalid number of spi slaves\n");
++		return -EINVAL;
++	}
++
+ 	master = spi_alloc_master(&pdev->dev, sizeof(struct xilinx_spi));
+ 	if (!master)
+ 		return -ENODEV;
+-- 
+2.1.4
 
-iQEcBAEBCAAGBQJUyT34AAoJECTWi3JdVIfQLK0H/A/kaSHACGlJqtTPrFyykDQR
-Ye7nDYpZ5N2rf9w6J6eDrOn/edWAvePj2nxoMMTFImJ1tLHWydScr8XhJXGCvDMP
-vxcMkt1IobTh/yxMQT3I+Use6lVrDhASTi6U4SPl84470Y6h8AULFmUR/XorquON
-t31tsIyTqk05cbq2qqQJz+bi9WjaRWol860ZmVJxpTxxsqBVv6K9rymColCUDPjV
-DQ92f5Kp7ex8Yk2ieitDkQ60poUNPdlG2OELzGDNyVMmiWleAbSRq7aphT3GXNVz
-kS830uqMNjw+P/i5qiZW09qsO0u/wzq4rbVZu0N31wRVu/8u1AuT8JVd8rsRWL4=
-=dsB/
------END PGP SIGNATURE-----
-
---hLSAHGZhjGZPYsTW--
