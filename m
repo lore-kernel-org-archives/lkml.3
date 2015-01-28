@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760762AbbA1Bxl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 20:53:41 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41450 "EHLO
+	id S1760743AbbA1BxC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 20:53:02 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41534 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760241AbbA1Bia (ORCPT
+	with ESMTP id S933313AbbA1Bib (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 20:38:30 -0500
+	Tue, 27 Jan 2015 20:38:31 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
@@ -19,9 +19,9 @@ Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Oleg Nesterov <oleg@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.14 52/77] mm: page_alloc: only check the alloc flags and gfp_mask for dirty once
-Date: Tue, 27 Jan 2015 17:27:30 -0800
-Message-Id: <20150128012747.531696049@linuxfoundation.org>
+Subject: [PATCH 3.14 53/77] mm: page_alloc: take the ALLOC_NO_WATERMARK check out of the fast path
+Date: Tue, 27 Jan 2015 17:27:31 -0800
+Message-Id: <20150128012747.560855114@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <20150128012745.971137091@linuxfoundation.org>
 References: <20150128012745.971137091@linuxfoundation.org>
@@ -38,9 +38,16 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Mel Gorman <mgorman@suse.de>
 
-commit a6e21b14f22041382e832d30deda6f26f37b1097 upstream.
+commit 5dab29113ca56335c78be3f98bf5ddf2ef8eb6a6 upstream.
 
-Currently it's calculated once per zone in the zonelist.
+ALLOC_NO_WATERMARK is set in a few cases.  Always by kswapd, always for
+__GFP_MEMALLOC, sometimes for swap-over-nfs, tasks etc.  Each of these
+cases are relatively rare events but the ALLOC_NO_WATERMARK check is an
+unlikely branch in the fast path.  This patch moves the check out of the
+fast path and after it has been determined that the watermarks have not
+been met.  This helps the common fast path at the cost of making the slow
+path slower and hitting kswapd with a performance cost.  It's a reasonable
+tradeoff.
 
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 Acked-by: Johannes Weiner <hannes@cmpxchg.org>
@@ -60,29 +67,32 @@ Signed-off-by: Mel Gorman <mgorman@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/page_alloc.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ mm/page_alloc.c |    8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
 
 --- a/mm/page_alloc.c
 +++ b/mm/page_alloc.c
-@@ -1940,6 +1940,8 @@ get_page_from_freelist(gfp_t gfp_mask, n
- 	nodemask_t *allowednodes = NULL;/* zonelist_cache approximation */
- 	int zlc_active = 0;		/* set if using zonelist_cache */
- 	int did_zlc_setup = 0;		/* just call zlc_setup() one time */
-+	bool consider_zone_dirty = (alloc_flags & ALLOC_WMARK_LOW) &&
-+				(gfp_mask & __GFP_WRITE);
+@@ -1959,9 +1959,6 @@ zonelist_scan:
+ 			(alloc_flags & ALLOC_CPUSET) &&
+ 			!cpuset_zone_allowed_softwall(zone, gfp_mask))
+ 				continue;
+-		BUILD_BUG_ON(ALLOC_NO_WATERMARKS < NR_WMARK);
+-		if (unlikely(alloc_flags & ALLOC_NO_WATERMARKS))
+-			goto try_this_zone;
+ 		/*
+ 		 * Distribute pages in proportion to the individual
+ 		 * zone size to ensure fair page aging.  The zone a
+@@ -2008,6 +2005,11 @@ zonelist_scan:
+ 				       classzone_idx, alloc_flags)) {
+ 			int ret;
  
- zonelist_scan:
- 	/*
-@@ -1998,8 +2000,7 @@ zonelist_scan:
- 		 * will require awareness of zones in the
- 		 * dirty-throttling and the flusher threads.
- 		 */
--		if ((alloc_flags & ALLOC_WMARK_LOW) &&
--		    (gfp_mask & __GFP_WRITE) && !zone_dirty_ok(zone))
-+		if (consider_zone_dirty && !zone_dirty_ok(zone))
- 			continue;
- 
- 		mark = zone->watermark[alloc_flags & ALLOC_WMARK_MASK];
++			/* Checked here to keep the fast path fast */
++			BUILD_BUG_ON(ALLOC_NO_WATERMARKS < NR_WMARK);
++			if (alloc_flags & ALLOC_NO_WATERMARKS)
++				goto try_this_zone;
++
+ 			if (IS_ENABLED(CONFIG_NUMA) &&
+ 					!did_zlc_setup && nr_online_nodes > 1) {
+ 				/*
 
 
