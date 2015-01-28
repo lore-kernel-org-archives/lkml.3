@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761229AbbA1ERs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 23:17:48 -0500
-Received: from mail.kernel.org ([198.145.29.136]:38185 "EHLO mail.kernel.org"
+	id S1761204AbbA1ERq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 23:17:46 -0500
+Received: from mail.kernel.org ([198.145.29.136]:38204 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761161AbbA1ERk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 23:17:40 -0500
+	id S1761174AbbA1ERn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 23:17:43 -0500
 From: lizf@kernel.org
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Hans de Goede <hdegoede@redhat.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Zefan Li <lizefan@huawei.com>
-Subject: [PATCH 3.4 45/91] Input: i8042 - add Fujitsu U574 to no_timeout dmi table
-Date: Wed, 28 Jan 2015 12:07:36 +0800
-Message-Id: <1422418236-12852-89-git-send-email-lizf@kernel.org>
+Cc: linux-kernel@vger.kernel.org,
+        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
+        Al Viro <viro@zeniv.linux.org.uk>, Zefan Li <lizefan@huawei.com>
+Subject: [PATCH 3.4 045/177] fs: Fix theoretical division by 0 in super_cache_scan().
+Date: Wed, 28 Jan 2015 12:07:37 +0800
+Message-Id: <1422418236-12852-90-git-send-email-lizf@kernel.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422418050-12581-1-git-send-email-lizf@kernel.org>
 References: <1422418050-12581-1-git-send-email-lizf@kernel.org>
@@ -21,44 +21,45 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hans de Goede <hdegoede@redhat.com>
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
 
-3.4.105-rc1 review patch.  If anyone has any objections, please let me know.
+3.4.106-rc1 review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
 
-commit cc18a69c92d0972bc2fc5a047ee3be1e8398171b upstream.
+commit 475d0db742e3755c6b267f48577ff7cbb7dfda0d upstream.
 
-https://bugzilla.kernel.org/show_bug.cgi?id=69731
+total_objects could be 0 and is used as a denom.
 
-Reported-by: Jason Robinson <mail@jasonrobinson.me>
-Signed-off-by: Hans de Goede <hdegoede@redhat.com>
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+While total_objects is a "long", total_objects == 0 unlikely happens for
+3.12 and later kernels because 32-bit architectures would not be able to
+hold (1 << 32) objects. However, total_objects == 0 may happen for kernels
+between 3.1 and 3.11 because total_objects in prune_super() was an "int"
+and (e.g.) x86_64 architecture might be able to hold (1 << 32) objects.
+
+Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Reviewed-by: Christoph Hellwig <hch@lst.de>
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+[lizf: Backported to 3.4: adjust context]
 Signed-off-by: Zefan Li <lizefan@huawei.com>
 ---
- drivers/input/serio/i8042-x86ia64io.h | 8 ++++++++
- 1 file changed, 8 insertions(+)
+ fs/super.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/drivers/input/serio/i8042-x86ia64io.h b/drivers/input/serio/i8042-x86ia64io.h
-index 0ec9abb..dc37b32 100644
---- a/drivers/input/serio/i8042-x86ia64io.h
-+++ b/drivers/input/serio/i8042-x86ia64io.h
-@@ -601,6 +601,14 @@ static const struct dmi_system_id __initconst i8042_dmi_notimeout_table[] = {
- 			DMI_MATCH(DMI_PRODUCT_NAME, "HP Pavilion dv4 Notebook PC"),
- 		},
- 	},
-+	{
-+		/* Fujitsu U574 laptop */
-+		/* https://bugzilla.kernel.org/show_bug.cgi?id=69731 */
-+		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "FUJITSU"),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "LIFEBOOK U574"),
-+		},
-+	},
- 	{ }
- };
+diff --git a/fs/super.c b/fs/super.c
+index 3c520a5..d0154e5 100644
+--- a/fs/super.c
++++ b/fs/super.c
+@@ -69,6 +69,8 @@ static int prune_super(struct shrinker *shrink, struct shrink_control *sc)
  
+ 	total_objects = sb->s_nr_dentry_unused +
+ 			sb->s_nr_inodes_unused + fs_objects + 1;
++	if (!total_objects)
++		total_objects = 1;
+ 
+ 	if (sc->nr_to_scan) {
+ 		int	dentries;
 -- 
 1.9.1
 
