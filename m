@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965645AbbA1E5p (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 23:57:45 -0500
-Received: from mail.kernel.org ([198.145.29.136]:39423 "EHLO mail.kernel.org"
+	id S934157AbbA1EVM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 23:21:12 -0500
+Received: from mail.kernel.org ([198.145.29.136]:39437 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964815AbbA1EVD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 23:21:03 -0500
+	id S933192AbbA1EVG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 23:21:06 -0500
 From: lizf@kernel.org
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, "Theodore Ts'o" <tytso@mit.edu>,
-        Zefan Li <lizefan@huawei.com>
-Subject: [PATCH 3.4 77/91] ext4: avoid trying to kfree an ERR_PTR pointer
-Date: Wed, 28 Jan 2015 12:08:41 +0800
-Message-Id: <1422418236-12852-154-git-send-email-lizf@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Andy Honig <ahonig@google.com>,
+        Paolo Bonzini <pbonzini@redhat.com>, Zefan Li <lizefan@huawei.com>
+Subject: [PATCH 3.4 078/177] KVM: x86: Prevent host from panicking on shared MSR writes.
+Date: Wed, 28 Jan 2015 12:08:42 +0800
+Message-Id: <1422418236-12852-155-git-send-email-lizf@kernel.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422418050-12581-1-git-send-email-lizf@kernel.org>
 References: <1422418050-12581-1-git-send-email-lizf@kernel.org>
@@ -20,61 +20,98 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Theodore Ts'o <tytso@mit.edu>
+From: Andy Honig <ahonig@google.com>
 
-3.4.105-rc1 review patch.  If anyone has any objections, please let me know.
+3.4.106-rc1 review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
 
-commit a9cfcd63e8d206ce4235c355d857c4fbdf0f4587 upstream.
+commit 8b3c3104c3f4f706e99365c3e0d2aa61b95f969f upstream.
 
-Thanks to Dan Carpenter for extending smatch to find bugs like this.
-(This was found using a development version of smatch.)
+The previous patch blocked invalid writes directly when the MSR
+is written.  As a precaution, prevent future similar mistakes by
+gracefulling handle GPs caused by writes to shared MSRs.
 
-Fixes: 36de928641ee48b2078d3fe9514242aaa2f92013
-Reported-by: Dan Carpenter <dan.carpenter@oracle.com
-Signed-off-by: Theodore Ts'o <tytso@mit.edu>
+Signed-off-by: Andrew Honig <ahonig@google.com>
+[Remove parts obsoleted by Nadav's patch. - Paolo]
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 [lizf: Backported to 3.4:
-- s/new.bh/new_bh/
-- drop the change to ext4_cross_rename()]
+ - adjust context
+ - s/wrmsrl_safe/checking_wrmsrl/]
 Signed-off-by: Zefan Li <lizefan@huawei.com>
 ---
- fs/ext4/namei.c  | 1 +
- fs/ext4/resize.c | 2 ++
- 2 files changed, 3 insertions(+)
+ arch/x86/include/asm/kvm_host.h |  2 +-
+ arch/x86/kvm/vmx.c              |  7 +++++--
+ arch/x86/kvm/x86.c              | 11 ++++++++---
+ 3 files changed, 14 insertions(+), 6 deletions(-)
 
-diff --git a/fs/ext4/namei.c b/fs/ext4/namei.c
-index a2efbda..665e55c 100644
---- a/fs/ext4/namei.c
-+++ b/fs/ext4/namei.c
-@@ -2452,6 +2452,7 @@ static int ext4_rename(struct inode *old_dir, struct dentry *old_dentry,
- 	new_bh = ext4_find_entry(new_dir, &new_dentry->d_name, &new_de);
- 	if (IS_ERR(new_bh)) {
- 		retval = PTR_ERR(new_bh);
-+		new_bh = NULL;
- 		goto end_rename;
+diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+index c1e0ef0..4f78757 100644
+--- a/arch/x86/include/asm/kvm_host.h
++++ b/arch/x86/include/asm/kvm_host.h
+@@ -954,7 +954,7 @@ int kvm_arch_interrupt_allowed(struct kvm_vcpu *vcpu);
+ int kvm_cpu_get_interrupt(struct kvm_vcpu *v);
+ 
+ void kvm_define_shared_msr(unsigned index, u32 msr);
+-void kvm_set_shared_msr(unsigned index, u64 val, u64 mask);
++int kvm_set_shared_msr(unsigned index, u64 val, u64 mask);
+ 
+ bool kvm_is_linear_rip(struct kvm_vcpu *vcpu, unsigned long linear_rip);
+ 
+diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+index 7806435..338f478 100644
+--- a/arch/x86/kvm/vmx.c
++++ b/arch/x86/kvm/vmx.c
+@@ -2210,12 +2210,15 @@ static int vmx_set_msr(struct kvm_vcpu *vcpu, u32 msr_index, u64 data)
+ 			break;
+ 		msr = find_msr_entry(vmx, msr_index);
+ 		if (msr) {
++			u64 old_msr_data = msr->data;
+ 			msr->data = data;
+ 			if (msr - vmx->guest_msrs < vmx->save_nmsrs) {
+ 				preempt_disable();
+-				kvm_set_shared_msr(msr->index, msr->data,
+-						   msr->mask);
++				ret = kvm_set_shared_msr(msr->index, msr->data,
++							 msr->mask);
+ 				preempt_enable();
++				if (ret)
++					msr->data = old_msr_data;
+ 			}
+ 			break;
+ 		}
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index 51cc661..318a245 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -220,19 +220,24 @@ static void kvm_shared_msr_cpu_online(void)
+ 		shared_msr_update(i, shared_msrs_global.msrs[i]);
+ }
+ 
+-void kvm_set_shared_msr(unsigned slot, u64 value, u64 mask)
++int kvm_set_shared_msr(unsigned slot, u64 value, u64 mask)
+ {
+ 	struct kvm_shared_msrs *smsr = &__get_cpu_var(shared_msrs);
++	int err;
+ 
+ 	if (((value ^ smsr->values[slot].curr) & mask) == 0)
+-		return;
++		return 0;
+ 	smsr->values[slot].curr = value;
+-	wrmsrl(shared_msrs_global.msrs[slot], value);
++	err = checking_wrmsrl(shared_msrs_global.msrs[slot], value);
++	if (err)
++		return 1;
++
+ 	if (!smsr->registered) {
+ 		smsr->urn.on_user_return = kvm_on_user_return;
+ 		user_return_notifier_register(&smsr->urn);
+ 		smsr->registered = true;
  	}
- 	if (new_bh) {
-diff --git a/fs/ext4/resize.c b/fs/ext4/resize.c
-index 50992c3..a43e43c 100644
---- a/fs/ext4/resize.c
-+++ b/fs/ext4/resize.c
-@@ -528,6 +528,7 @@ handle_bb:
- 		bh = bclean(handle, sb, block);
- 		if (IS_ERR(bh)) {
- 			err = PTR_ERR(bh);
-+			bh = NULL;
- 			goto out;
- 		}
- 		if (ext4_bg_has_super(sb, group)) {
-@@ -556,6 +557,7 @@ handle_ib:
- 		bh = bclean(handle, sb, block);
- 		if (IS_ERR(bh)) {
- 			err = PTR_ERR(bh);
-+			bh = NULL;
- 			goto out;
- 		}
++	return 0;
+ }
+ EXPORT_SYMBOL_GPL(kvm_set_shared_msr);
  
 -- 
 1.9.1
