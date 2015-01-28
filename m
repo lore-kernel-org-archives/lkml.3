@@ -1,130 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760893AbbA1G0V (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 01:26:21 -0500
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:36697 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751464AbbA1G0U (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 01:26:20 -0500
-Date: Wed, 28 Jan 2015 15:26:10 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Vlastimil Babka <vbabka@suse.cz>
-Cc: John Moser <john.r.moser@gmail.com>, linux-kernel@vger.kernel.org,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Christoph Lameter <cl@linux-foundation.org>
-Subject: Re: OOM at low page cache?
-Message-ID: <20150128062609.GA4706@blaptop>
-References: <54C2C89C.8080002@gmail.com>
- <54C77086.7090505@suse.cz>
+	id S1761441AbbA1G2Y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 01:28:24 -0500
+Received: from bes.se.axis.com ([195.60.68.10]:35818 "EHLO bes.se.axis.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754764AbbA1G2W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jan 2015 01:28:22 -0500
+Message-ID: <54C88176.8070107@axis.com>
+Date: Wed, 28 Jan 2015 07:28:06 +0100
+From: Robert Rosengren <robert.rosengren@axis.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54C77086.7090505@suse.cz>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Guenter Roeck <linux@roeck-us.net>, Jean Delvare <jdelvare@suse.de>
+CC: "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        Johan Adolfsson <johana@axis.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [lm-sensors] [PATCH] hwmon: (ads7828) Make sample interval configurable
+References: <1421409922-28299-1-git-send-email-robert.rosengren@axis.com>	<54B92596.2040206@roeck-us.net>	<20150116183020.GA6262@roeck-us.net>	<54C74567.9020201@axis.com>	<54C79B87.8040607@roeck-us.net>	<4BEA3FF3CAA35E408EA55C7BE2E61D05943B6DD753@xmail3.se.axis.com>	<20150127200553.GA5689@roeck-us.net> <20150127233455.0c62457e@endymion.delvare> <54C86035.9080605@roeck-us.net> <54C87F3C.2020105@axis.com>
+In-Reply-To: <54C87F3C.2020105@axis.com>
+Content-Type: text/plain; charset="windows-1252"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+My previous mail got blocked by mailing lists for some reasons, so 
+trying once more. I apologize if spamming.
 
-On Tue, Jan 27, 2015 at 12:03:34PM +0100, Vlastimil Babka wrote:
-> CC linux-mm in case somebody has a good answer but missed this in lkml traffic
-> 
-> On 01/23/2015 11:18 PM, John Moser wrote:
-> > Why is there no tunable to OOM at low page cache?
+On 01/28/2015 07:18 AM, Robert Rosengren wrote:
+> On 01/28/2015 05:06 AM, Guenter Roeck wrote:
+>> On 01/27/2015 02:34 PM, Jean Delvare wrote:
+>>> >On Tue, 27 Jan 2015 12:05:53 -0800, Guenter Roeck wrote:
+>>>> >>On Tue, Jan 27, 2015 at 08:54:34PM +0100, Robert Rosengren wrote:
+>>>>> >>>Guenter and Jean,
+>>>>> >>>
+>>>>> >>>To sum up, my problems was related my kernel and hardware configuration, and it now works. Many thanks for your input!
+>>>>> >>>
+>>>>> >>>However, the values retrieved from hwmon sysfs is not the same as before the regmap patch. Guenter, the byte swap for the regval retrieved by regmap_read. In what order is the bits returned from that function, because it seems as if I disabled that code I get values as I expect (i.e. before the regmap patch).
+>>>>> >>>
+>>>> >>Trying to understand. Are you saying everything works as expected
+>>>> >>if you keep byte_swap set to false ?
+> Yes it works as expected, i.e. I can get values from sysfs. The 
+> problems I experienced was actually due to moving from an old 
+> ads7828-implementation where specific i2c addresses where scanned from 
+> the driver, and I first missed to set the correct i2c address for the 
+> new driver in the board info.
+>
+>>>> >>
+>>>> >>That might well be, though it might mean that regmap has a bug
+>>>> >>in how it treats i2c word read operations. I'll have to look into it
+>>>> >>some more.
+>>> >
+>>> >Remember that SMBus specifies that the LSB comes first (and i2c-core
+>>> >implement things that way) while real I2C devices typically send the MSB
+>>> >first. This has always caused confusion. This is why a lot of drivers
+>>> >need byte-swapping.
+>>> >
+>> regmap specifies "normal" i2c accesses as MSB first. When SMBus accesses
+>> are used, it specifies LSB first. I guess that means that regmap assumes
+>> the more common case of MSB first, meaning the driver would not need a byte
+>> swap since the chip reports data with MSB first.
+>>
+>> I just hope I interpret it correctly this time.
+>>
+>> There is also a configuration flag "val_format_endian" which can be set to
+>> REGMAP_ENDIAN_BIG or REGMAP_ENDIAN_LITTLE. Maybe that can be used as well
+>> if needed. Either case I'll wait for the samples before I send an updated
+>> version of the patch.
+>>
+>> Guenter
+>>
+> I tested the driver on 3.15 version of the kernel. Having looked in 
+> the git log of regmap.c and regmap-i2c.c, there has been some 
+> endianess-related patches going into the kernel in newer versions. 
+> Maybe that is the reason for me seeing this problem? I will try to 
+> look into that further.
+>
+> I my test I only disabled following two lines of code
+> +	if (data->byte_swap)
+> +		regval = swab16(regval);
+>
+> BR, Robert
+>
 
-AFAIR, there were several trial although there wasn't acceptable
-at that time. One thing I can remember is min_filelist_kbytes.
-FYI, http://lwn.net/Articles/412313/
-
-> > 
-> > I have no swap configured.  I have 16GB RAM.  If Chrome or Gimp or some
-> > other stupid program goes off the deep end and eats up my RAM, I hit
-> > some 15.5GB or 15.75GB usage and stay there for about 40 minutes.  Every
-> > time the program tries to do something to eat more RAM, it cranks disk
-> > hard; the disk starts thrashing, the mouse pointer stops moving, and
-> > nothing goes on.  It's like swapping like crazy, except you're reading
-> > library files instead of paged anonymous RAM.
-> > 
-> > If only I could tell the system to OOM kill at 512MB or 1GB or 95%
-> > non-evictable RAM, it would recover on its own.  As-is, I need to wait
-> > or trigger the OOM killer by sysrq.
-> > 
-> > Am I just the only person in the world who's ever had that problem?  Or
-> > is it a matter of questions fast popping up when you try to do this
-> > *and* enable paging to disk?  (In my experience, that's a matter of too
-> > much swap space:  if you have 16GB RAM and your computer dies at 15.25GB
-> > usage, your swap space should be no larger than 750MB plus inactive
-> > working RAM; obviously, your computer can't handle paging 750MB back and
-> > forth.  If you make it 8GB wide and you start swap thrashing at 2GB
-> > usage, you have too much swap available).
-> > 
-> > I guess you could try to detect excessive swap and page cache thrashing,
-> > but that's complex; if anyone really wanted to do that, it would be done
-> > by now.  A low-barrier OOM is much simpler.
-
-I'm far away from reclaim code for a long time but when I read again,
-I found something strange.
-
-With having swap in get_scan_count, we keep a mount of file LRU + free
-as above than high wmark to prevent file LRU thrashing but we don't
-with no swap. Why?
-
-Anyway, I believe we should fix it and we now have workingset.c so
-there might be more ways to be smart than old(although I am concern
-about that shadow shrinker blows out lots of information to be useful
-to detect in heavy memory pressure like page thrashing)
-
-Below could be band-aid until we find a elegant solution?
-
->From c51787f7d75340b54bab2b5e3c587f4a483da51a Mon Sep 17 00:00:00 2001
-From: Minchan Kim <minchan@kernel.org>
-Date: Wed, 28 Jan 2015 14:01:57 +0900
-Subject: [PATCH] mm: prevent page thrashing
-
-No-Signed-off-by: Minchan Kim <minchan@kernel.org>
----
- mm/vmscan.c | 19 +++++++++++++++++++
- 1 file changed, 19 insertions(+)
-
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 671e47edb584..b258df552e3a 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -2143,6 +2143,25 @@ out:
- 							denominator);
- 				break;
- 			case SCAN_FILE:
-+				if (file && global_reclaim(sc)) {
-+					unsigned long zonefile;
-+					unsigned long zonefree;
-+
-+					zonefree = zone_page_state(zone,
-+								NR_FREE_PAGES);
-+					zonefile = zone_page_state(zone,
-+							NR_ACTIVE_FILE) +
-+							zone_page_state(zone,
-+							NR_INACTIVE_FILE);
-+
-+					/* OOM is better than code thrashing */
-+					if (zonefile + zonefree <=
-+						high_wmark_pages(zone)) {
-+						size = 0;
-+						scan = 0;
-+					}
-+					break;
-+				}
- 			case SCAN_ANON:
- 				/* Scan one type exclusively */
- 				if ((scan_balance == SCAN_FILE) != file) {
--- 
-1.9.1
-
-
--- 
-Kind regards,
-Minchan Kim
