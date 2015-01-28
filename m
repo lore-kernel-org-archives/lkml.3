@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760290AbbA2JSL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 04:18:11 -0500
-Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:44911 "EHLO
+	id S932480AbbA2JHn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 04:07:43 -0500
+Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:44906 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932477AbbA2JHq (ORCPT
+	by vger.kernel.org with ESMTP id S1760560AbbA2JHf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 04:07:46 -0500
+	Thu, 29 Jan 2015 04:07:35 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Christoph Hellwig <hch@lst.de>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 087/176] scsi: blacklist RSOC for Microsoft iSCSI target devices
-Date: Wed, 28 Jan 2015 15:28:37 +0100
-Message-Id: <fd4e00fa8f869c3f71d5b704f0dc6532c923ebe5.1422455352.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Jesper Dangaard Brouer <brouer@redhat.com>,
+        Simon Horman <horms@verge.net.au>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 088/176] ipvs: correct usage/allocation of seqadj ext in ipvs
+Date: Wed, 28 Jan 2015 15:28:38 +0100
+Message-Id: <0dc051e586000710b98014be998ac2e1a7fde76b.1422455352.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <ce4a451f616a1e7ab58cfeceea5e49c8b1c68c81.1422455352.git.jslaby@suse.cz>
 References: <ce4a451f616a1e7ab58cfeceea5e49c8b1c68c81.1422455352.git.jslaby@suse.cz>
@@ -24,38 +23,57 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Martin K. Petersen" <martin.petersen@oracle.com>
+From: Jesper Dangaard Brouer <brouer@redhat.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 198a956a11b15b564ac06d1411881e215b587408 upstream.
+[ upstream commit b25adce1606427fd88da08f5203714cada7f6a98 ]
 
-The Microsoft iSCSI target does not support REPORT SUPPORTED OPERATION
-CODES. Blacklist these devices so we don't attempt to send the command.
+The IPVS FTP helper ip_vs_ftp could trigger an OOPS in nf_ct_seqadj_set,
+after commit 41d73ec053d2 (netfilter: nf_conntrack: make sequence number
+adjustments usuable without NAT).
 
-Signed-off-by: Martin K. Petersen <martin.petersen@oracle.com>
-Tested-by: Mike Christie <michaelc@cs.wisc.edu>
-Reported-by: jazz@deti74.ru
-Signed-off-by: Christoph Hellwig <hch@lst.de>
+This is because, the seqadj ext is now allocated dynamically, and the
+IPVS code didn't handle this situation.  Fix this in the IPVS nfct
+code by invoking the alloc function nfct_seqadj_ext_add().
+
+Cc: <stable@vger.kernel.org> # 3.12.x
+Fixes: 41d73ec053d2 (netfilter: nf_conntrack: make sequence number adjustments usuable without NAT)
+Suggested-by: Julian Anastasov <ja@ssi.bg>
+Signed-off-by: Jesper Dangaard Brouer <brouer@redhat.com>
+Acked-by: Julian Anastasov <ja@ssi.bg>
+Signed-off-by: Simon Horman <horms@verge.net.au>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/scsi/scsi_devinfo.c | 1 +
- 1 file changed, 1 insertion(+)
+ net/netfilter/ipvs/ip_vs_nfct.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
-diff --git a/drivers/scsi/scsi_devinfo.c b/drivers/scsi/scsi_devinfo.c
-index c1d04d4d3c6c..262ab837a704 100644
---- a/drivers/scsi/scsi_devinfo.c
-+++ b/drivers/scsi/scsi_devinfo.c
-@@ -211,6 +211,7 @@ static struct {
- 	{"Medion", "Flash XL  MMC/SD", "2.6D", BLIST_FORCELUN},
- 	{"MegaRAID", "LD", NULL, BLIST_FORCELUN},
- 	{"MICROP", "4110", NULL, BLIST_NOTQ},
-+	{"MSFT", "Virtual HD", NULL, BLIST_NO_RSOC},
- 	{"MYLEX", "DACARMRB", "*", BLIST_REPORTLUN2},
- 	{"nCipher", "Fastness Crypto", NULL, BLIST_FORCELUN},
- 	{"NAKAMICH", "MJ-4.8S", NULL, BLIST_FORCELUN | BLIST_SINGLELUN},
+diff --git a/net/netfilter/ipvs/ip_vs_nfct.c b/net/netfilter/ipvs/ip_vs_nfct.c
+index c8beafd401aa..5a355a46d1dc 100644
+--- a/net/netfilter/ipvs/ip_vs_nfct.c
++++ b/net/netfilter/ipvs/ip_vs_nfct.c
+@@ -63,6 +63,7 @@
+ #include <net/ip_vs.h>
+ #include <net/netfilter/nf_conntrack_core.h>
+ #include <net/netfilter/nf_conntrack_expect.h>
++#include <net/netfilter/nf_conntrack_seqadj.h>
+ #include <net/netfilter/nf_conntrack_helper.h>
+ #include <net/netfilter/nf_conntrack_zones.h>
+ 
+@@ -97,6 +98,11 @@ ip_vs_update_conntrack(struct sk_buff *skb, struct ip_vs_conn *cp, int outin)
+ 	if (CTINFO2DIR(ctinfo) != IP_CT_DIR_ORIGINAL)
+ 		return;
+ 
++	/* Applications may adjust TCP seqs */
++	if (cp->app && nf_ct_protonum(ct) == IPPROTO_TCP &&
++	    !nfct_seqadj(ct) && !nfct_seqadj_ext_add(ct))
++		return;
++
+ 	/*
+ 	 * The connection is not yet in the hashtable, so we update it.
+ 	 * CIP->VIP will remain the same, so leave the tuple in
 -- 
 2.2.2
 
