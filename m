@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933441AbbA1Faj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 00:30:39 -0500
-Received: from szxga03-in.huawei.com ([119.145.14.66]:50928 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760645AbbA1F34 (ORCPT
+	id S1763031AbbA1FaG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 00:30:06 -0500
+Received: from szxga02-in.huawei.com ([119.145.14.65]:33152 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1763013AbbA1FaC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 00:29:56 -0500
+	Wed, 28 Jan 2015 00:30:02 -0500
 From: HuKeping <hukeping@huawei.com>
 To: <gregkh@linuxfoundation.org>
 CC: <linux-kernel@vger.kernel.org>, <matt.fleming@intel.com>,
@@ -14,9 +14,9 @@ CC: <linux-kernel@vger.kernel.org>, <matt.fleming@intel.com>,
         <keescook@chromium.org>, <tony.luck@intel.com>,
         <stable@vger.kernel.org>, <sdu.liu@huawei.com>, <wangnan0@huawei.com>,
         <peifeiyue@huawei.com>
-Subject: [PATCH v2 1/2] pstore/ram: avoid atomic accesses for ioremapped regions
-Date: Wed, 28 Jan 2015 13:23:40 +0800
-Message-ID: <1422422621-5003-2-git-send-email-hukeping@huawei.com>
+Subject: [PATCH 2/2] efi-pstore: Make efi-pstore return a unique id
+Date: Wed, 28 Jan 2015 13:23:41 +0800
+Message-ID: <1422422621-5003-3-git-send-email-hukeping@huawei.com>
 X-Mailer: git-send-email 1.8.5.5
 In-Reply-To: <1422422621-5003-1-git-send-email-hukeping@huawei.com>
 References: <1422422621-5003-1-git-send-email-hukeping@huawei.com>
@@ -24,120 +24,84 @@ MIME-Version: 1.0
 Content-Type: text/plain
 X-Originating-IP: [10.107.197.247]
 X-CFilter-Loop: Reflected
-X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
-	refid=str=0001.0A020202.54C873CB.014F,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
-	ip=0.0.0.0,
-	so=2013-05-26 15:14:31,
-	dmn=2013-03-21 17:37:32
-X-Mirapoint-Loop-Id: f629556874642c7be1cac581194c4b6c
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rob Herring <rob.herring@calxeda.com>
+From: Madper Xie <cxie@redhat.com>
 
-For persistent RAM outside of main memory, the memory may have limitations
-on supported accesses. For internal RAM on highbank platform exclusive
-accesses are not supported and will hang the system. So atomic_cmpxchg
-cannot be used. This commit uses spinlock protection for buffer size and
-start updates on ioremapped regions instead.
+Commit fdeadb43fdf1e7d5698c027b555c389174548e5a upstream.
 
-Signed-off-by: Rob Herring <rob.herring@calxeda.com>
-Acked-by: Anton Vorontsov <anton@enomsg.org>
-Signed-off-by: Tony Luck <tony.luck@intel.com>
+Pstore fs expects that backends provide a unique id which could avoid
+pstore making entries as duplication or denominating entries the same
+name. So I combine the timestamp, part and count into id.
+
+Signed-off-by: Madper Xie <cxie@redhat.com>
+Cc: Seiji Aguchi <seiji.aguchi@hds.com>
+Cc: stable@vger.kernel.org
+Signed-off-by: Matt Fleming <matt.fleming@intel.com>
 [hkp: Backported to 3.10: adjust context]
-Signed-off-by: HuKeping <hukeping@huawei.com>
+Signed-off-by: Hu Keping <hukeping@huawei.com>
 
 ---
- fs/pstore/ram_core.c | 54 ++++++++++++++++++++++++++++++++++++++++++++++++++--
- 1 file changed, 52 insertions(+), 2 deletions(-)
+ drivers/firmware/efi/efi-pstore.c | 18 +++++++++++++-----
+ 1 file changed, 13 insertions(+), 5 deletions(-)
 
-diff --git a/fs/pstore/ram_core.c b/fs/pstore/ram_core.c
-index 6ff9755..bda61a7 100644
---- a/fs/pstore/ram_core.c
-+++ b/fs/pstore/ram_core.c
-@@ -46,7 +46,7 @@ static inline size_t buffer_start(struct persistent_ram_zone *prz)
- }
+diff --git a/drivers/firmware/efi/efi-pstore.c b/drivers/firmware/efi/efi-pstore.c
+index 66c0c76..c5163e3 100644
+--- a/drivers/firmware/efi/efi-pstore.c
++++ b/drivers/firmware/efi/efi-pstore.c
+@@ -38,6 +38,12 @@ struct pstore_read_data {
+ 	char **buf;
+ };
  
- /* increase and wrap the start pointer, returning the old value */
--static inline size_t buffer_start_add(struct persistent_ram_zone *prz, size_t a)
-+static size_t buffer_start_add_atomic(struct persistent_ram_zone *prz, size_t a)
- {
- 	int old;
- 	int new;
-@@ -62,7 +62,7 @@ static inline size_t buffer_start_add(struct persistent_ram_zone *prz, size_t a)
- }
- 
- /* increase the size counter until it hits the max size */
--static inline void buffer_size_add(struct persistent_ram_zone *prz, size_t a)
-+static void buffer_size_add_atomic(struct persistent_ram_zone *prz, size_t a)
- {
- 	size_t old;
- 	size_t new;
-@@ -78,6 +78,53 @@ static inline void buffer_size_add(struct persistent_ram_zone *prz, size_t a)
- 	} while (atomic_cmpxchg(&prz->buffer->size, old, new) != old);
- }
- 
-+static DEFINE_RAW_SPINLOCK(buffer_lock);
-+
-+/* increase and wrap the start pointer, returning the old value */
-+static size_t buffer_start_add_locked(struct persistent_ram_zone *prz, size_t a)
++static inline u64 generic_id(unsigned long timestamp,
++			     unsigned int part, int count)
 +{
-+	int old;
-+	int new;
-+	unsigned long flags;
-+
-+	raw_spin_lock_irqsave(&buffer_lock, flags);
-+
-+	old = atomic_read(&prz->buffer->start);
-+	new = old + a;
-+	while (unlikely(new > prz->buffer_size))
-+		new -= prz->buffer_size;
-+	atomic_set(&prz->buffer->start, new);
-+
-+	raw_spin_unlock_irqrestore(&buffer_lock, flags);
-+
-+	return old;
++	return (timestamp * 100 + part) * 1000 + count;
 +}
 +
-+/* increase the size counter until it hits the max size */
-+static void buffer_size_add_locked(struct persistent_ram_zone *prz, size_t a)
-+{
-+	size_t old;
-+	size_t new;
-+	unsigned long flags;
-+
-+	raw_spin_lock_irqsave(&buffer_lock, flags);
-+
-+	old = atomic_read(&prz->buffer->size);
-+	if (old == prz->buffer_size)
-+		goto exit;
-+
-+	new = old + a;
-+	if (new > prz->buffer_size)
-+		new = prz->buffer_size;
-+	atomic_set(&prz->buffer->size, new);
-+
-+exit:
-+	raw_spin_unlock_irqrestore(&buffer_lock, flags);
-+}
-+
-+static size_t (*buffer_start_add)(struct persistent_ram_zone *, size_t) = buffer_start_add_atomic;
-+static void (*buffer_size_add)(struct persistent_ram_zone *, size_t) = buffer_size_add_atomic;
-+
- static void notrace persistent_ram_encode_rs8(struct persistent_ram_zone *prz,
- 	uint8_t *data, size_t len, uint8_t *ecc)
+ static int efi_pstore_read_func(struct efivar_entry *entry, void *data)
  {
-@@ -379,6 +426,9 @@ static void *persistent_ram_iomap(phys_addr_t start, size_t size,
- 		return NULL;
- 	}
+ 	efi_guid_t vendor = LINUX_EFI_CRASH_GUID;
+@@ -56,7 +62,7 @@ static int efi_pstore_read_func(struct efivar_entry *entry, void *data)
  
-+	buffer_start_add = buffer_start_add_locked;
-+	buffer_size_add = buffer_size_add_locked;
-+
- 	if (memtype)
- 		va = ioremap(start, size);
- 	else
+ 	if (sscanf(name, "dump-type%u-%u-%d-%lu",
+ 		   cb_data->type, &part, &cnt, &time) == 4) {
+-		*cb_data->id = part;
++		*cb_data->id = generic_id(time, part, cnt);
+ 		*cb_data->count = cnt;
+ 		cb_data->timespec->tv_sec = time;
+ 		cb_data->timespec->tv_nsec = 0;
+@@ -67,7 +73,7 @@ static int efi_pstore_read_func(struct efivar_entry *entry, void *data)
+ 		 * which doesn't support holding
+ 		 * multiple logs, remains.
+ 		 */
+-		*cb_data->id = part;
++		*cb_data->id = generic_id(time, part, 0);
+ 		*cb_data->count = 0;
+ 		cb_data->timespec->tv_sec = time;
+ 		cb_data->timespec->tv_nsec = 0;
+@@ -185,14 +191,16 @@ static int efi_pstore_erase(enum pstore_type_id type, u64 id, int count,
+ 	char name[DUMP_NAME_LEN];
+ 	efi_char16_t efi_name[DUMP_NAME_LEN];
+ 	int found, i;
++	unsigned int part;
+ 
+-	sprintf(name, "dump-type%u-%u-%d-%lu", type, (unsigned int)id, count,
+-		time.tv_sec);
++	do_div(id, 1000);
++	part = do_div(id, 100);
++	sprintf(name, "dump-type%u-%u-%d-%lu", type, part, count, time.tv_sec);
+ 
+ 	for (i = 0; i < DUMP_NAME_LEN; i++)
+ 		efi_name[i] = name[i];
+ 
+-	edata.id = id;
++	edata.id = part;
+ 	edata.type = type;
+ 	edata.count = count;
+ 	edata.time = time;
 -- 
 1.8.5.5
 
