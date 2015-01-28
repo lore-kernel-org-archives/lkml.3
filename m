@@ -1,20 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933760AbbA1EQL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 23:16:11 -0500
-Received: from mail.kernel.org ([198.145.29.136]:37635 "EHLO mail.kernel.org"
+	id S933787AbbA1EQQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 23:16:16 -0500
+Received: from mail.kernel.org ([198.145.29.136]:37645 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760859AbbA1EQI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 23:16:08 -0500
+	id S933758AbbA1EQL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 23:16:11 -0500
 From: lizf@kernel.org
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Willy Tarreau <w@1wt.eu>,
-        "Don A. Bailey" <donb@securitymouse.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: linux-kernel@vger.kernel.org, Ilya Dryomov <ilya.dryomov@inktank.com>,
         Zefan Li <lizefan@huawei.com>
-Subject: [PATCH 3.4 030/177] lzo: check for length overrun in variable length encoding.
-Date: Wed, 28 Jan 2015 12:07:07 +0800
-Message-Id: <1422418236-12852-60-git-send-email-lizf@kernel.org>
+Subject: [PATCH 3.4 31/91] libceph: do not hard code max auth ticket len
+Date: Wed, 28 Jan 2015 12:07:08 +0800
+Message-Id: <1422418236-12852-61-git-send-email-lizf@kernel.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422418050-12581-1-git-send-email-lizf@kernel.org>
 References: <1422418050-12581-1-git-send-email-lizf@kernel.org>
@@ -22,132 +20,205 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Willy Tarreau <w@1wt.eu>
+From: Ilya Dryomov <ilya.dryomov@inktank.com>
 
-3.4.106-rc1 review patch.  If anyone has any objections, please let me know.
+3.4.105-rc1 review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
 
-commit 72cf90124e87d975d0b2114d930808c58b4c05e4 upstream.
+commit c27a3e4d667fdcad3db7b104f75659478e0c68d8 upstream.
 
-This fix ensures that we never meet an integer overflow while adding
-255 while parsing a variable length encoding. It works differently from
-commit 206a81c ("lzo: properly check for overruns") because instead of
-ensuring that we don't overrun the input, which is tricky to guarantee
-due to many assumptions in the code, it simply checks that the cumulated
-number of 255 read cannot overflow by bounding this number.
+We hard code cephx auth ticket buffer size to 256 bytes.  This isn't
+enough for any moderate setups and, in case tickets themselves are not
+encrypted, leads to buffer overflows (ceph_x_decrypt() errors out, but
+ceph_decode_copy() doesn't - it's just a memcpy() wrapper).  Since the
+buffer is allocated dynamically anyway, allocated it a bit later, at
+the point where we know how much is going to be needed.
 
-The MAX_255_COUNT is the maximum number of times we can add 255 to a base
-count without overflowing an integer. The multiply will overflow when
-multiplying 255 by more than MAXINT/255. The sum will overflow earlier
-depending on the base count. Since the base count is taken from a u8
-and a few bits, it is safe to assume that it will always be lower than
-or equal to 2*255, thus we can always prevent any overflow by accepting
-two less 255 steps.
+Fixes: http://tracker.ceph.com/issues/8979
 
-This patch also reduces the CPU overhead and actually increases performance
-by 1.1% compared to the initial code, while the previous fix costs 3.1%
-(measured on x86_64).
-
-The fix needs to be backported to all currently supported stable kernels.
-
-Reported-by: Willem Pinckaers <willem@lekkertech.net>
-Cc: "Don A. Bailey" <donb@securitymouse.com>
-Signed-off-by: Willy Tarreau <w@1wt.eu>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Ilya Dryomov <ilya.dryomov@inktank.com>
+Reviewed-by: Sage Weil <sage@redhat.com>
 Signed-off-by: Zefan Li <lizefan@huawei.com>
 ---
- lib/lzo/lzo1x_decompress_safe.c | 43 +++++++++++++++++++++++++++++++++++------
- 1 file changed, 37 insertions(+), 6 deletions(-)
+ net/ceph/auth_x.c | 64 +++++++++++++++++++++++++------------------------------
+ 1 file changed, 29 insertions(+), 35 deletions(-)
 
-diff --git a/lib/lzo/lzo1x_decompress_safe.c b/lib/lzo/lzo1x_decompress_safe.c
-index 569985d..a1c387f 100644
---- a/lib/lzo/lzo1x_decompress_safe.c
-+++ b/lib/lzo/lzo1x_decompress_safe.c
-@@ -25,6 +25,16 @@
- #define NEED_OP(x)      if (!HAVE_OP(x)) goto output_overrun
- #define TEST_LB(m_pos)  if ((m_pos) < out) goto lookbehind_overrun
+diff --git a/net/ceph/auth_x.c b/net/ceph/auth_x.c
+index 0eb146d..de6662b 100644
+--- a/net/ceph/auth_x.c
++++ b/net/ceph/auth_x.c
+@@ -13,8 +13,6 @@
+ #include "auth_x.h"
+ #include "auth_x_protocol.h"
  
-+/* This MAX_255_COUNT is the maximum number of times we can add 255 to a base
-+ * count without overflowing an integer. The multiply will overflow when
-+ * multiplying 255 by more than MAXINT/255. The sum will overflow earlier
-+ * depending on the base count. Since the base count is taken from a u8
-+ * and a few bits, it is safe to assume that it will always be lower than
-+ * or equal to 2*255, thus we can always prevent any overflow by accepting
-+ * two less 255 steps. See Documentation/lzo.txt for more information.
-+ */
-+#define MAX_255_COUNT      ((((size_t)~0) / 255) - 2)
-+
- int lzo1x_decompress_safe(const unsigned char *in, size_t in_len,
- 			  unsigned char *out, size_t *out_len)
+-#define TEMP_TICKET_BUF_LEN	256
+-
+ static void ceph_x_validate_tickets(struct ceph_auth_client *ac, int *pneed);
+ 
+ static int ceph_x_is_authenticated(struct ceph_auth_client *ac)
+@@ -64,7 +62,7 @@ static int ceph_x_encrypt(struct ceph_crypto_key *secret,
+ }
+ 
+ static int ceph_x_decrypt(struct ceph_crypto_key *secret,
+-			  void **p, void *end, void *obuf, size_t olen)
++			  void **p, void *end, void **obuf, size_t olen)
  {
-@@ -55,12 +65,19 @@ int lzo1x_decompress_safe(const unsigned char *in, size_t in_len,
- 		if (t < 16) {
- 			if (likely(state == 0)) {
- 				if (unlikely(t == 0)) {
-+					size_t offset;
-+					const unsigned char *ip_last = ip;
+ 	struct ceph_x_encrypt_header head;
+ 	size_t head_len = sizeof(head);
+@@ -75,8 +73,14 @@ static int ceph_x_decrypt(struct ceph_crypto_key *secret,
+ 		return -EINVAL;
+ 
+ 	dout("ceph_x_decrypt len %d\n", len);
+-	ret = ceph_decrypt2(secret, &head, &head_len, obuf, &olen,
+-			    *p, len);
++	if (*obuf == NULL) {
++		*obuf = kmalloc(len, GFP_NOFS);
++		if (!*obuf)
++			return -ENOMEM;
++		olen = len;
++	}
 +
- 					while (unlikely(*ip == 0)) {
--						t += 255;
- 						ip++;
- 						NEED_IP(1);
- 					}
--					t += 15 + *ip++;
-+					offset = ip - ip_last;
-+					if (unlikely(offset > MAX_255_COUNT))
-+						return LZO_E_ERROR;
-+
-+					offset = (offset << 8) - offset;
-+					t += offset + 15 + *ip++;
- 				}
- 				t += 3;
- copy_literal_run:
-@@ -116,12 +133,19 @@ copy_literal_run:
- 		} else if (t >= 32) {
- 			t = (t & 31) + (3 - 1);
- 			if (unlikely(t == 2)) {
-+				size_t offset;
-+				const unsigned char *ip_last = ip;
-+
- 				while (unlikely(*ip == 0)) {
--					t += 255;
- 					ip++;
- 					NEED_IP(1);
- 				}
--				t += 31 + *ip++;
-+				offset = ip - ip_last;
-+				if (unlikely(offset > MAX_255_COUNT))
-+					return LZO_E_ERROR;
-+
-+				offset = (offset << 8) - offset;
-+				t += offset + 31 + *ip++;
- 				NEED_IP(2);
- 			}
- 			m_pos = op - 1;
-@@ -134,12 +158,19 @@ copy_literal_run:
- 			m_pos -= (t & 8) << 11;
- 			t = (t & 7) + (3 - 1);
- 			if (unlikely(t == 2)) {
-+				size_t offset;
-+				const unsigned char *ip_last = ip;
-+
- 				while (unlikely(*ip == 0)) {
--					t += 255;
- 					ip++;
- 					NEED_IP(1);
- 				}
--				t += 7 + *ip++;
-+				offset = ip - ip_last;
-+				if (unlikely(offset > MAX_255_COUNT))
-+					return LZO_E_ERROR;
-+
-+				offset = (offset << 8) - offset;
-+				t += offset + 7 + *ip++;
- 				NEED_IP(2);
- 			}
- 			next = get_unaligned_le16(ip);
++	ret = ceph_decrypt2(secret, &head, &head_len, *obuf, &olen, *p, len);
+ 	if (ret)
+ 		return ret;
+ 	if (head.struct_v != 1 || le64_to_cpu(head.magic) != CEPHX_ENC_MAGIC)
+@@ -131,18 +135,19 @@ static void remove_ticket_handler(struct ceph_auth_client *ac,
+ 
+ static int process_one_ticket(struct ceph_auth_client *ac,
+ 			      struct ceph_crypto_key *secret,
+-			      void **p, void *end,
+-			      void *dbuf, void *ticket_buf)
++			      void **p, void *end)
+ {
+ 	struct ceph_x_info *xi = ac->private;
+ 	int type;
+ 	u8 tkt_struct_v, blob_struct_v;
+ 	struct ceph_x_ticket_handler *th;
++	void *dbuf = NULL;
+ 	void *dp, *dend;
+ 	int dlen;
+ 	char is_enc;
+ 	struct timespec validity;
+ 	struct ceph_crypto_key old_key;
++	void *ticket_buf = NULL;
+ 	void *tp, *tpend;
+ 	struct ceph_timespec new_validity;
+ 	struct ceph_crypto_key new_session_key;
+@@ -167,8 +172,7 @@ static int process_one_ticket(struct ceph_auth_client *ac,
+ 	}
+ 
+ 	/* blob for me */
+-	dlen = ceph_x_decrypt(secret, p, end, dbuf,
+-			      TEMP_TICKET_BUF_LEN);
++	dlen = ceph_x_decrypt(secret, p, end, &dbuf, 0);
+ 	if (dlen <= 0) {
+ 		ret = dlen;
+ 		goto out;
+@@ -195,20 +199,25 @@ static int process_one_ticket(struct ceph_auth_client *ac,
+ 
+ 	/* ticket blob for service */
+ 	ceph_decode_8_safe(p, end, is_enc, bad);
+-	tp = ticket_buf;
+ 	if (is_enc) {
+ 		/* encrypted */
+ 		dout(" encrypted ticket\n");
+-		dlen = ceph_x_decrypt(&old_key, p, end, ticket_buf,
+-				      TEMP_TICKET_BUF_LEN);
++		dlen = ceph_x_decrypt(&old_key, p, end, &ticket_buf, 0);
+ 		if (dlen < 0) {
+ 			ret = dlen;
+ 			goto out;
+ 		}
++		tp = ticket_buf;
+ 		dlen = ceph_decode_32(&tp);
+ 	} else {
+ 		/* unencrypted */
+ 		ceph_decode_32_safe(p, end, dlen, bad);
++		ticket_buf = kmalloc(dlen, GFP_NOFS);
++		if (!ticket_buf) {
++			ret = -ENOMEM;
++			goto out;
++		}
++		tp = ticket_buf;
+ 		ceph_decode_need(p, end, dlen, bad);
+ 		ceph_decode_copy(p, ticket_buf, dlen);
+ 	}
+@@ -237,6 +246,8 @@ static int process_one_ticket(struct ceph_auth_client *ac,
+ 	xi->have_keys |= th->service;
+ 
+ out:
++	kfree(ticket_buf);
++	kfree(dbuf);
+ 	return ret;
+ 
+ bad:
+@@ -249,21 +260,10 @@ static int ceph_x_proc_ticket_reply(struct ceph_auth_client *ac,
+ 				    void *buf, void *end)
+ {
+ 	void *p = buf;
+-	char *dbuf;
+-	char *ticket_buf;
+ 	u8 reply_struct_v;
+ 	u32 num;
+ 	int ret;
+ 
+-	dbuf = kmalloc(TEMP_TICKET_BUF_LEN, GFP_NOFS);
+-	if (!dbuf)
+-		return -ENOMEM;
+-
+-	ret = -ENOMEM;
+-	ticket_buf = kmalloc(TEMP_TICKET_BUF_LEN, GFP_NOFS);
+-	if (!ticket_buf)
+-		goto out_dbuf;
+-
+ 	ceph_decode_8_safe(&p, end, reply_struct_v, bad);
+ 	if (reply_struct_v != 1)
+ 		return -EINVAL;
+@@ -272,22 +272,15 @@ static int ceph_x_proc_ticket_reply(struct ceph_auth_client *ac,
+ 	dout("%d tickets\n", num);
+ 
+ 	while (num--) {
+-		ret = process_one_ticket(ac, secret, &p, end,
+-					 dbuf, ticket_buf);
++		ret = process_one_ticket(ac, secret, &p, end);
+ 		if (ret)
+-			goto out;
++			return ret;
+ 	}
+ 
+-	ret = 0;
+-out:
+-	kfree(ticket_buf);
+-out_dbuf:
+-	kfree(dbuf);
+-	return ret;
++	return 0;
+ 
+ bad:
+-	ret = -EINVAL;
+-	goto out;
++	return -EINVAL;
+ }
+ 
+ static int ceph_x_build_authorizer(struct ceph_auth_client *ac,
+@@ -603,13 +596,14 @@ static int ceph_x_verify_authorizer_reply(struct ceph_auth_client *ac,
+ 	struct ceph_x_ticket_handler *th;
+ 	int ret = 0;
+ 	struct ceph_x_authorize_reply reply;
++	void *preply = &reply;
+ 	void *p = au->reply_buf;
+ 	void *end = p + sizeof(au->reply_buf);
+ 
+ 	th = get_ticket_handler(ac, au->service);
+ 	if (IS_ERR(th))
+ 		return PTR_ERR(th);
+-	ret = ceph_x_decrypt(&th->session_key, &p, end, &reply, sizeof(reply));
++	ret = ceph_x_decrypt(&th->session_key, &p, end, &preply, sizeof(reply));
+ 	if (ret < 0)
+ 		return ret;
+ 	if (ret != sizeof(reply))
 -- 
 1.9.1
 
