@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964824AbbA1EVE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 23:21:04 -0500
-Received: from mail.kernel.org ([198.145.29.136]:39380 "EHLO mail.kernel.org"
+	id S965654AbbA1E6F (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 23:58:05 -0500
+Received: from mail.kernel.org ([198.145.29.136]:39397 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964788AbbA1EU5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 23:20:57 -0500
+	id S964804AbbA1EVA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 23:21:00 -0500
 From: lizf@kernel.org
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, "Theodore Ts'o" <tytso@mit.edu>,
-        Zefan Li <lizefan@huawei.com>
-Subject: [PATCH 3.4 76/91] ext4: propagate errors up to ext4_find_entry()'s callers
-Date: Wed, 28 Jan 2015 12:08:39 +0800
-Message-Id: <1422418236-12852-152-git-send-email-lizf@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Nadav Amit <namit@cs.technion.ac.il>,
+        Paolo Bonzini <pbonzini@redhat.com>, Zefan Li <lizefan@huawei.com>
+Subject: [PATCH 3.4 077/177] KVM: x86: Check non-canonical addresses upon WRMSR
+Date: Wed, 28 Jan 2015 12:08:40 +0800
+Message-Id: <1422418236-12852-153-git-send-email-lizf@kernel.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422418050-12581-1-git-send-email-lizf@kernel.org>
 References: <1422418050-12581-1-git-send-email-lizf@kernel.org>
@@ -20,158 +20,156 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Theodore Ts'o <tytso@mit.edu>
+From: Nadav Amit <namit@cs.technion.ac.il>
 
-3.4.105-rc1 review patch.  If anyone has any objections, please let me know.
+3.4.106-rc1 review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
 
-commit 36de928641ee48b2078d3fe9514242aaa2f92013 upstream.
+commit 854e8bb1aa06c578c2c9145fa6bfe3680ef63b23 upstream.
 
-If we run into some kind of error, such as ENOMEM, while calling
-ext4_getblk() or ext4_dx_find_entry(), we need to make sure this error
-gets propagated up to ext4_find_entry() and then to its callers.  This
-way, transient errors such as ENOMEM can get propagated to the VFS.
-This is important so that the system calls return the appropriate
-error, and also so that in the case of ext4_lookup(), we return an
-error instead of a NULL inode, since that will result in a negative
-dentry cache entry that will stick around long past the OOM condition
-which caused a transient ENOMEM error.
+Upon WRMSR, the CPU should inject #GP if a non-canonical value (address) is
+written to certain MSRs. The behavior is "almost" identical for AMD and Intel
+(ignoring MSRs that are not implemented in either architecture since they would
+anyhow #GP). However, IA32_SYSENTER_ESP and IA32_SYSENTER_EIP cause #GP if
+non-canonical address is written on Intel but not on AMD (which ignores the top
+32-bits).
 
-Google-Bug-Id: #17142205
+Accordingly, this patch injects a #GP on the MSRs which behave identically on
+Intel and AMD.  To eliminate the differences between the architecutres, the
+value which is written to IA32_SYSENTER_ESP and IA32_SYSENTER_EIP is turned to
+canonical value before writing instead of injecting a #GP.
 
-Signed-off-by: Theodore Ts'o <tytso@mit.edu>
+Some references from Intel and AMD manuals:
+
+According to Intel SDM description of WRMSR instruction #GP is expected on
+WRMSR "If the source register contains a non-canonical address and ECX
+specifies one of the following MSRs: IA32_DS_AREA, IA32_FS_BASE, IA32_GS_BASE,
+IA32_KERNEL_GS_BASE, IA32_LSTAR, IA32_SYSENTER_EIP, IA32_SYSENTER_ESP."
+
+According to AMD manual instruction manual:
+LSTAR/CSTAR (SYSCALL): "The WRMSR instruction loads the target RIP into the
+LSTAR and CSTAR registers.  If an RIP written by WRMSR is not in canonical
+form, a general-protection exception (#GP) occurs."
+IA32_GS_BASE and IA32_FS_BASE (WRFSBASE/WRGSBASE): "The address written to the
+base field must be in canonical form or a #GP fault will occur."
+IA32_KERNEL_GS_BASE (SWAPGS): "The address stored in the KernelGSbase MSR must
+be in canonical form."
+
+This patch fixes CVE-2014-3610.
+
+Signed-off-by: Nadav Amit <namit@cs.technion.ac.il>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 [lizf: Backported to 3.4:
-- adjust context
-- s/old.bh/old_bh/g
-- s/new.bh/new_bh/g
-- drop the changes to ext4_find_delete_entry() and ext4_cross_rename()
-- add return value check for one more exr4_find_entry() in ext4_rename()]
+ - adjust context
+ - s/msr->index/msr_index and s/msr->data/data]
 Signed-off-by: Zefan Li <lizefan@huawei.com>
 ---
- fs/ext4/ext4.h  |  2 +-
- fs/ext4/namei.c | 31 ++++++++++++++++++++++++++++---
- 2 files changed, 29 insertions(+), 4 deletions(-)
+ arch/x86/include/asm/kvm_host.h | 14 ++++++++++++++
+ arch/x86/kvm/svm.c              |  2 +-
+ arch/x86/kvm/vmx.c              |  2 +-
+ arch/x86/kvm/x86.c              | 27 ++++++++++++++++++++++++++-
+ 4 files changed, 42 insertions(+), 3 deletions(-)
 
-diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
-index 2922486..521ba9d 100644
---- a/fs/ext4/ext4.h
-+++ b/fs/ext4/ext4.h
-@@ -1674,7 +1674,7 @@ ext4_group_first_block_no(struct super_block *sb, ext4_group_t group_no)
+diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+index c29677e..c1e0ef0 100644
+--- a/arch/x86/include/asm/kvm_host.h
++++ b/arch/x86/include/asm/kvm_host.h
+@@ -882,6 +882,20 @@ static inline void kvm_inject_gp(struct kvm_vcpu *vcpu, u32 error_code)
+ 	kvm_queue_exception_e(vcpu, GP_VECTOR, error_code);
+ }
+ 
++static inline u64 get_canonical(u64 la)
++{
++	return ((int64_t)la << 16) >> 16;
++}
++
++static inline bool is_noncanonical_address(u64 la)
++{
++#ifdef CONFIG_X86_64
++	return get_canonical(la) != la;
++#else
++	return false;
++#endif
++}
++
+ #define TSS_IOPB_BASE_OFFSET 0x66
+ #define TSS_BASE_SIZE 0x68
+ #define TSS_IOPB_SIZE (65536 / 8)
+diff --git a/arch/x86/kvm/svm.c b/arch/x86/kvm/svm.c
+index b567285..1cd908c 100644
+--- a/arch/x86/kvm/svm.c
++++ b/arch/x86/kvm/svm.c
+@@ -3212,7 +3212,7 @@ static int wrmsr_interception(struct vcpu_svm *svm)
+ 
+ 
+ 	svm->next_rip = kvm_rip_read(&svm->vcpu) + 2;
+-	if (svm_set_msr(&svm->vcpu, ecx, data)) {
++	if (kvm_set_msr(&svm->vcpu, ecx, data)) {
+ 		trace_kvm_msr_write_ex(ecx, data);
+ 		kvm_inject_gp(&svm->vcpu, 0);
+ 	} else {
+diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+index 443635d..7806435 100644
+--- a/arch/x86/kvm/vmx.c
++++ b/arch/x86/kvm/vmx.c
+@@ -4545,7 +4545,7 @@ static int handle_wrmsr(struct kvm_vcpu *vcpu)
+ 	u64 data = (vcpu->arch.regs[VCPU_REGS_RAX] & -1u)
+ 		| ((u64)(vcpu->arch.regs[VCPU_REGS_RDX] & -1u) << 32);
+ 
+-	if (vmx_set_msr(vcpu, ecx, data) != 0) {
++	if (kvm_set_msr(vcpu, ecx, data) != 0) {
+ 		trace_kvm_msr_write_ex(ecx, data);
+ 		kvm_inject_gp(vcpu, 0);
+ 		return 1;
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index 4b1be29..51cc661 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -858,7 +858,6 @@ void kvm_enable_efer_bits(u64 mask)
+ }
+ EXPORT_SYMBOL_GPL(kvm_enable_efer_bits);
+ 
+-
  /*
-  * Special error return code only used by dx_probe() and its callers.
+  * Writes msr value into into the appropriate "register".
+  * Returns 0 on success, non-0 otherwise.
+@@ -866,8 +865,34 @@ EXPORT_SYMBOL_GPL(kvm_enable_efer_bits);
   */
--#define ERR_BAD_DX_DIR	-75000
-+#define ERR_BAD_DX_DIR	(-(MAX_ERRNO - 1))
- 
- void ext4_get_group_no_and_offset(struct super_block *sb, ext4_fsblk_t blocknr,
- 			ext4_group_t *blockgrpp, ext4_grpblk_t *offsetp);
-diff --git a/fs/ext4/namei.c b/fs/ext4/namei.c
-index 54ad9a5..a2efbda 100644
---- a/fs/ext4/namei.c
-+++ b/fs/ext4/namei.c
-@@ -861,7 +861,7 @@ static struct buffer_head * ext4_find_entry (struct inode *dir,
- 				   buffer */
- 	int num = 0;
- 	ext4_lblk_t  nblocks;
--	int i, err;
-+	int i, err = 0;
- 	int namelen;
- 
- 	*res_dir = NULL;
-@@ -886,7 +886,11 @@ static struct buffer_head * ext4_find_entry (struct inode *dir,
- 		 * return.  Otherwise, fall back to doing a search the
- 		 * old fashioned way.
- 		 */
--		if (bh || (err != ERR_BAD_DX_DIR))
-+		if (err == -ENOENT)
-+			return NULL;
-+		if (err && err != ERR_BAD_DX_DIR)
-+			return ERR_PTR(err);
-+		if (bh)
- 			return bh;
- 		dxtrace(printk(KERN_DEBUG "ext4_find_entry: dx failed, "
- 			       "falling back\n"));
-@@ -917,6 +921,11 @@ restart:
- 				}
- 				num++;
- 				bh = ext4_getblk(NULL, dir, b++, 0, &err);
-+				if (unlikely(err)) {
-+					if (ra_max == 0)
-+						return ERR_PTR(err);
-+					break;
-+				}
- 				bh_use[ra_max] = bh;
- 				if (bh)
- 					ll_rw_block(READ | REQ_META | REQ_PRIO,
-@@ -1026,6 +1035,8 @@ static struct dentry *ext4_lookup(struct inode *dir, struct dentry *dentry, stru
- 		return ERR_PTR(-ENAMETOOLONG);
- 
- 	bh = ext4_find_entry(dir, &dentry->d_name, &de);
-+	if (IS_ERR(bh))
-+		return (struct dentry *) bh;
- 	inode = NULL;
- 	if (bh) {
- 		__u32 ino = le32_to_cpu(de->inode);
-@@ -1063,6 +1074,8 @@ struct dentry *ext4_get_parent(struct dentry *child)
- 	struct buffer_head *bh;
- 
- 	bh = ext4_find_entry(child->d_inode, &dotdot, &de);
-+	if (IS_ERR(bh))
-+		return (struct dentry *) bh;
- 	if (!bh)
- 		return ERR_PTR(-ENOENT);
- 	ino = le32_to_cpu(de->inode);
-@@ -2137,6 +2150,8 @@ static int ext4_rmdir(struct inode *dir, struct dentry *dentry)
- 
- 	retval = -ENOENT;
- 	bh = ext4_find_entry(dir, &dentry->d_name, &de);
-+	if (IS_ERR(bh))
-+		return PTR_ERR(bh);
- 	if (!bh)
- 		goto end_rmdir;
- 
-@@ -2202,6 +2217,8 @@ static int ext4_unlink(struct inode *dir, struct dentry *dentry)
- 
- 	retval = -ENOENT;
- 	bh = ext4_find_entry(dir, &dentry->d_name, &de);
-+	if (IS_ERR(bh))
-+		return PTR_ERR(bh);
- 	if (!bh)
- 		goto end_unlink;
- 
-@@ -2418,6 +2435,8 @@ static int ext4_rename(struct inode *old_dir, struct dentry *old_dentry,
- 		ext4_handle_sync(handle);
- 
- 	old_bh = ext4_find_entry(old_dir, &old_dentry->d_name, &old_de);
-+	if (IS_ERR(old_bh))
-+		return PTR_ERR(old_bh);
- 	/*
- 	 *  Check for inode number is _not_ due to possible IO errors.
- 	 *  We might rmdir the source, keep it as pwd of some process
-@@ -2431,6 +2450,10 @@ static int ext4_rename(struct inode *old_dir, struct dentry *old_dentry,
- 
- 	new_inode = new_dentry->d_inode;
- 	new_bh = ext4_find_entry(new_dir, &new_dentry->d_name, &new_de);
-+	if (IS_ERR(new_bh)) {
-+		retval = PTR_ERR(new_bh);
-+		goto end_rename;
+ int kvm_set_msr(struct kvm_vcpu *vcpu, u32 msr_index, u64 data)
+ {
++	switch (msr_index) {
++	case MSR_FS_BASE:
++	case MSR_GS_BASE:
++	case MSR_KERNEL_GS_BASE:
++	case MSR_CSTAR:
++	case MSR_LSTAR:
++		if (is_noncanonical_address(data))
++			return 1;
++		break;
++	case MSR_IA32_SYSENTER_EIP:
++	case MSR_IA32_SYSENTER_ESP:
++		/*
++		 * IA32_SYSENTER_ESP and IA32_SYSENTER_EIP cause #GP if
++		 * non-canonical address is written on Intel but not on
++		 * AMD (which ignores the top 32-bits, because it does
++		 * not implement 64-bit SYSENTER).
++		 *
++		 * 64-bit code should hence be able to write a non-canonical
++		 * value on AMD.  Making the address canonical ensures that
++		 * vmentry does not fail on Intel after writing a non-canonical
++		 * value, and that something deterministic happens if the guest
++		 * invokes 64-bit SYSENTER.
++		 */
++		data = get_canonical(data);
 +	}
- 	if (new_bh) {
- 		if (!new_inode) {
- 			brelse(new_bh);
-@@ -2509,7 +2532,9 @@ static int ext4_rename(struct inode *old_dir, struct dentry *old_dentry,
- 		struct ext4_dir_entry_2 *old_de2;
+ 	return kvm_x86_ops->set_msr(vcpu, msr_index, data);
+ }
++EXPORT_SYMBOL_GPL(kvm_set_msr);
  
- 		old_bh2 = ext4_find_entry(old_dir, &old_dentry->d_name, &old_de2);
--		if (old_bh2) {
-+		if (IS_ERR(old_bh2)) {
-+			retval = PTR_ERR(old_bh2);
-+		} else if (old_bh2) {
- 			retval = ext4_delete_entry(handle, old_dir,
- 						   old_de2, old_bh2);
- 			brelse(old_bh2);
+ /*
+  * Adapt set_msr() to msr_io()'s calling convention
 -- 
 1.9.1
 
