@@ -1,115 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759505AbbA1Uah (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 15:30:37 -0500
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:43236 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756175AbbA1Ua0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 15:30:26 -0500
-X-AuditID: cbfec7f5-b7fc86d0000066b7-15-54c8ef8b0023
-Message-id: <54C8F01B.5030300@samsung.com>
-Date: Wed, 28 Jan 2015 15:20:11 +0100
-From: Robert Baldyga <r.baldyga@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
- Thunderbird/31.3.0
-MIME-version: 1.0
-To: lee.jones@linaro.org, dmitry.torokhov@gmail.com, a.zummo@towertech.it
-Cc: sameo@linux.intel.com, myungjoo.ham@samsung.com, cw00.choi@samsung.com,
-        cooloney@gmail.com, rpurdie@rpsys.net, sre@kernel.org,
-        dbaryshkov@gmail.com, dwmw2@infradead.org, lgirdwood@gmail.com,
-        broonie@kernel.org, paul.gortmaker@windriver.com,
-        sachin.kamat@linaro.org, k.kozlowski@samsung.com,
-        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
-        linux-leds@vger.kernel.org, linux-pm@vger.kernel.org,
-        rtc-linux@googlegroups.com
-Subject: Re: [PATCH v5 0/3] mfd: max8997: add regmap support
-References: <1415776996-11569-1-git-send-email-r.baldyga@samsung.com>
-In-reply-to: <1415776996-11569-1-git-send-email-r.baldyga@samsung.com>
-Content-type: text/plain; charset=windows-1252
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprFIsWRmVeSWpSXmKPExsVy+t/xa7rd70+EGDz5Y2ix5OJVdoupD5+w
-	WRzdOZHJ4vqX56wWk568Z7Y4vOgFo8XElZOZLV6/MLS4//Uoo8W3Kx1MFjc/fWO1uLxrDpvF
-	1jfrGC0+9x5htLjduILN4tre48wWu3c9ZbXY39nBaHHyTy+jxeluVovTu0scRD12zrrL7rFn
-	4kk2j80rtDw2repk87hzbQ+bx7yTgR575v9g9ejbsorRY/q8n0wenzfJeazfspUpgDuKyyYl
-	NSezLLVI3y6BK6Nz0j7WgqnCFW923WNvYHzG18XIwSEhYCLx7796FyMnkCkmceHeerYuRi4O
-	IYGljBLN7/eyQjgfGSVuvp7AAlLFK6Al8bX/GxuIzSKgKnG2+T07iM0moCOx5fsERhBbVCBC
-	4sOqr2wQ9YISPybfA+sVEfCU6Ox/wQxiMwvsY5ZYs1kPxBYWsJE403+eFcQWEnCVmPfsHVgv
-	p4CbRN+tgywghzIL6Encv6gF0SovsXnNW+YJjAKzkGyYhVA1C0nVAkbmVYyiqaXJBcVJ6blG
-	esWJucWleel6yfm5mxgh8fl1B+PSY1aHGAU4GJV4eBl8ToQIsSaWFVfmHmKU4GBWEuENegkU
-	4k1JrKxKLcqPLyrNSS0+xMjEwSnVwFgjkKN14lli9tszapEXN//bcWQ2n6JtjXW/X1fC24UM
-	y7P3KFz2+1o13ymxfQ+TaJnx5ItX/a/uZ/3V9ffuYa/4OjnxKHbZmG87pL2+dzwwyK/gjDuV
-	ZNa05aiiXXAte661W+O6+9el2uI+dAlrrz+osf7K+cLiPW93/Zls+fOzdHDl+x/9JkosxRmJ
-	hlrMRcWJAOKahZ+tAgAA
+	id S1761911AbbA1Up6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 15:45:58 -0500
+Received: from mga14.intel.com ([192.55.52.115]:5071 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1761884AbbA1Up4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jan 2015 15:45:56 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.09,481,1418112000"; 
+   d="scan'208";a="677408915"
+Date: Wed, 28 Jan 2015 16:20:25 +0200
+From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+To: David Cohen <david.a.cohen@linux.intel.com>
+Cc: Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Baolu Lu <baolu.lu@linux.intel.com>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Kishon Vijay Abraham I <kishon@ti.com>
+Subject: Re: [PATCH 8/8] phy: add driver for TI TUSB1210 ULPI PHY
+Message-ID: <20150128142024.GA2378@kuha.fi.intel.com>
+References: <1422025978-178336-1-git-send-email-heikki.krogerus@linux.intel.com>
+ <1422025978-178336-9-git-send-email-heikki.krogerus@linux.intel.com>
+ <20150124235811.GA24665@psi-dev26.jf.intel.com>
+ <20150126125503.GB28539@kuha.fi.intel.com>
+ <20150126192337.GA13936@psi-dev26.jf.intel.com>
+ <20150127092856.GD28539@kuha.fi.intel.com>
+ <20150127173801.GA8441@psi-dev26.jf.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150127173801.GA8441@psi-dev26.jf.intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi,
 
-The first version of this patchset was send to kernel list almost 9
-months ago and still I don't have all needed Acks. The missing ones are
-for changes in INPUT and RTC subsystems.
+> > > Can you share how tusb1210 is connected on the platform you're using as
+> > > test for this patch? I don't think this driver would work reliably with
+> > > this device:
+> > > http://liliputing.com/2014/11/trekstor-launches-first-android-tablet-based-intels-irda-reference-design.html
+> > 
+> > The only reason why that board doesn't work is because of very much
+> > Baytrail-CR specific problems. These are are two issues, but the first
+> 
+> That's not BYT-CR specific problems. That's just dwc3 and tusb1210
+> interacting as they're expecting to.
+> 
+> > one is critical for getting it working. Both will be handled, but
+> > separately from this set:
+> > 
+> > 1) The firmware leaves the PHY in reset, forcing us to enable it
+> > somehow in OS before accessing ulpi. Unless we can get a firmware fix
+> > for that (it's starting to look like it's not going to happen; please
+> > correct me if you know something else!), we need to add a quirk for
+> > Baytrails (attached), which is probable still OK. But IMO this really
+> > should be fixed in the firmware.
+> 
+> It seems you're expecting the PHY to be fully operational in order to
+> probe it. That's wrong assumption. BYT-CR's BIOS is doing nothing wrong
+> by leaving PHY on reset state.
 
-Dmitry, Alessandro, could you please have a look at this patches and
-give your Acks?
+But it is. If we want to use ULPI as a bus like we do, then the PHY
+will be no different then devices attached to many other buses. We
+have made firmware fixes like that before. All the devices need to be
+in a state, operational enough after bootup, so we can probe them in
+OS without the need for hacks where they are separately enabled before
+it's possible.
 
-Best regards,
-Robert Baldyga
+> The real problem is what I stated above.
+> With your current logic, you'll get stuck with checking/egg problem: you
+> need phy probed to probe dwc3, but need dwc3 probed to power on phy.
+> You need a logic to break this circular dependency.
 
-On 11/12/2014 08:23 AM, Robert Baldyga wrote:
-> This patchset modifies max8997 driver and associated function drivers to use
-> register maps instead of operating directly on i2c bus. This change allowed
-> to simplify irq handling, and to move some initializations to individual
-> function drivers. Hence now when some functions are not enabled, their i2c
-> clients, regmaps and irqs are not registered.
-> 
-> Because patches are under review for very long time and I still don't have
-> all needed Acks, I'm resending this series rebased to the latest next branch.
-> 
-> Best regards
-> Robert Baldyga
-> Samsung R&D Institute Poland
-> 
-> Changelog:
-> 
-> v5:
-> - rebase patches to last next branch
-> 
-> v4:
-> - remove patch moving regmap handling to function drivers
-> 
-> v3: https://lkml.org/lkml/2014/3/13/101
-> - fix error handling
-> - fix deinitializations order
-> - move muic irq enum values renaming to separate patch
-> 
-> v2: https://lkml.org/lkml/2014/3/12/237
-> - rebase patches on Lee Jones' MFD tree
-> - add missing selects in Kconfig
-> - add missing deinitializations
-> - add interrupt disabling when suspend
-> - few minor changes and typo fixes
-> 
-> v1: https://lkml.org/lkml/2014/3/11/291
-> 
-> Robert Baldyga (3):
->   mfd: max8997: use regmap to access registers
->   mfd: max8997: handle IRQs using regmap
->   mfd: max8997: change irq names to upper case
-> 
->  drivers/extcon/extcon-max8997.c     |  66 +++---
->  drivers/input/misc/max8997_haptic.c |  34 ++--
->  drivers/leds/leds-max8997.c         |  13 +-
->  drivers/mfd/Kconfig                 |   3 +-
->  drivers/mfd/Makefile                |   2 +-
->  drivers/mfd/max8997-irq.c           | 387 ------------------------------------
->  drivers/mfd/max8997.c               | 245 +++++++++++++++--------
->  drivers/power/max8997_charger.c     |  33 +--
->  drivers/regulator/max8997.c         |  87 ++++----
->  drivers/rtc/rtc-max8997.c           |  58 +++---
->  include/linux/mfd/max8997-private.h |  82 ++++++--
->  11 files changed, 381 insertions(+), 629 deletions(-)
->  delete mode 100644 drivers/mfd/max8997-irq.c
-> 
+The moment we register the ulpi interface with the ulpi bus in
+dwc3_probe(), we know dwc3 has it's PHY interface in operational mode
+and register access to ULPI PHY is possible. And that is all dwc3
+needs to/can do.
 
+I don't think you are seeing the whole "ulpi bus" in these patches,
+but in any case; Like I said, this problem is purely BYT-CR specific,
+which IMO really should be fixed in the firmware.
+
+> > 2) Since the gpio resources are given to the controller device in ACPI
+> > tables and there isn't separate device object for the PHY at all, we
+> > need to deliver the gpios somehow separately to the phy driver. There
+> > is a thread where we are talking about how to do that:
+> > https://lkml.org/lkml/2014/12/18/82
+> 
+> How about just leave the logic the way it is:
+> dwc3-pci.c registers platform_device with gpio as resource if the GPIOs
+> are provided to dwc3. If not, then dwc3-pci.c will expect phy to have
+> its own ACPI id.
+
+I think you are now talking about the platform devices for the legacy
+USB PHY framework created in dwc3-pci.c, which btw. were removed.
+Please note that we are not using platform bus with the ULPI devices,
+and those devices are created by the bus driver and not dwc3.
+
+I'm pretty sure now that you are not seeing the whole point with this
+set, which is to provide new bus type for ULPI. If so, then could you
+please review the whole series.
+
+
+Thanks,
+
+-- 
+heikki
