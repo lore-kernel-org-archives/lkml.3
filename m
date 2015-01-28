@@ -1,103 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760650AbbA1VqF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 16:46:05 -0500
-Received: from mga03.intel.com ([134.134.136.65]:17025 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760684AbbA1UfY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 15:35:24 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.09,481,1418112000"; 
-   d="scan'208";a="644021572"
-Message-ID: <1422464493.2399.68.camel@schen9-desk2.jf.intel.com>
-Subject: Re: [PATCH 4/6] locking/rwsem: Avoid deceiving lock spinners
-From: Tim Chen <tim.c.chen@linux.intel.com>
-To: Davidlohr Bueso <dave@stgolabs.net>
-Cc: Jason Low <jason.low2@hp.com>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Michel Lespinasse <walken@google.com>, linux-kernel@vger.kernel.org
-Date: Wed, 28 Jan 2015 09:01:33 -0800
-In-Reply-To: <1422417294.4604.15.camel@stgolabs.net>
-References: <1422257769-14083-1-git-send-email-dave@stgolabs.net>
-	 <1422257769-14083-5-git-send-email-dave@stgolabs.net>
-	 <1422379430.6710.6.camel@j-VirtualBox>
-	 <1422417294.4604.15.camel@stgolabs.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1759689AbbA1Vjs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 16:39:48 -0500
+Received: from pandora.arm.linux.org.uk ([78.32.30.218]:60818 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759522AbbA1Ulj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jan 2015 15:41:39 -0500
+Date: Wed, 28 Jan 2015 17:01:36 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Will Deacon <will.deacon@arm.com>
+Cc: Rob Herring <robherring2@gmail.com>, Nicolas Pitre <nico@fluxnic.net>,
+        Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
+        Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>,
+        Tony Lindgren <tony@atomide.com>, Sebastian Reichel <sre@debian.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Pavel Machek <pavel@ucw.cz>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] ARM: /proc/atags: Export also for DT
+Message-ID: <20150128170136.GT26493@n2100.arm.linux.org.uk>
+References: <1403110464-29646-1-git-send-email-pali.rohar@gmail.com>
+ <20150127174818.GM26493@n2100.arm.linux.org.uk>
+ <20150128005032.GK28663@atomide.com>
+ <201501281458.22088@pali>
+ <alpine.LFD.2.11.1501280925400.1322@knanqh.ubzr>
+ <CAL_Jsq+rESm8q44ABRbh9hqMsfcMNx0kcXJ5ONbn1=ue-RvHFg@mail.gmail.com>
+ <20150128161316.GS26493@n2100.arm.linux.org.uk>
+ <20150128161913.GU1569@arm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150128161913.GU1569@arm.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2015-01-27 at 19:54 -0800, Davidlohr Bueso wrote:
-> On Tue, 2015-01-27 at 09:23 -0800, Jason Low wrote:
-> > On Sun, 2015-01-25 at 23:36 -0800, Davidlohr Bueso wrote:
-> > > When readers hold the semaphore, the ->owner is nil. As such,
-> > > and unlike mutexes, '!owner' does not necessarily imply that
-> > > the lock is free. This will cause writer spinners to potentially
-> > > spin excessively as they've been mislead to thinking they have
-> > > a chance of acquiring the lock, instead of blocking.
-> > > 
-> > > This patch therefore replaces this bogus check to solely rely on
-> > > the counter to know if the lock is available. Because we don't
-> > > hold the wait lock, we can obviously do this in an unqueued
-> > > manner.
-> > > 
-> > > Signed-off-by: Davidlohr Bueso <dbueso@suse.de>
-> > > ---
-> > >  kernel/locking/rwsem-xadd.c | 8 ++++++--
-> > >  1 file changed, 6 insertions(+), 2 deletions(-)
-> > > 
-> > > diff --git a/kernel/locking/rwsem-xadd.c b/kernel/locking/rwsem-xadd.c
-> > > index 5e425d8..18a50da 100644
-> > > --- a/kernel/locking/rwsem-xadd.c
-> > > +++ b/kernel/locking/rwsem-xadd.c
-> > > @@ -335,6 +335,8 @@ static inline bool owner_running(struct rw_semaphore *sem,
-> > >  static noinline
-> > >  bool rwsem_spin_on_owner(struct rw_semaphore *sem, struct task_struct *owner)
-> > >  {
-> > > +	long count;
-> > > +
-> > >  	rcu_read_lock();
-> > >  	while (owner_running(sem, owner)) {
-> > >  		if (need_resched())
-> > > @@ -347,9 +349,11 @@ bool rwsem_spin_on_owner(struct rw_semaphore *sem, struct task_struct *owner)
-> > >  	/*
-> > >  	 * We break out the loop above on need_resched() or when the
-> > >  	 * owner changed, which is a sign for heavy contention. Return
-> > > -	 * success only when sem->owner is NULL.
-> > > +	 * success only when the lock is available in order to attempt
-> > > +	 * another trylock.
-> > >  	 */
-> > > -	return sem->owner == NULL;
-> > > +	count = READ_ONCE(sem->count);
-> > > +	return count == 0 || count == RWSEM_WAITING_BIAS;
+On Wed, Jan 28, 2015 at 04:19:13PM +0000, Will Deacon wrote:
+> On Wed, Jan 28, 2015 at 04:13:17PM +0000, Russell King - ARM Linux wrote:
+> > On Wed, Jan 28, 2015 at 09:57:18AM -0600, Rob Herring wrote:
+> > > I'm fine with that, but we just need to have a standard kernel
+> > > userspace interface in addition to something like
+> > > /proc/device-tree/bootreason. Perhaps this can be the default
+> > > implementation for the watchdog dev. Someday when we decide DT is crap
+> > > and have a new boot interface, we'll have people relying on
+> > > /proc/device-tree. I hope to be retired when that happens...
 > > 
-> > If we clear the owner field right before unlocking, would this cause
-> > some situations where we spin until the owner is cleared (about to
-> > release the lock), and then the spinner return false from
-> > rwsem_spin_on_owner?
+> > Anyone who thinks that DT can be replaced in the same way that we made
+> > the mistake with ATAGs would really need their head examined.
+> > 
+> > As you point out, removing DT removes the /proc/device-tree/ sub-tree.
+> > Whether we like it or not, that is a userspace API, one which we have
+> > users of already.  That pretty much means that we can't remove DT for
+> > existing platforms or any platform we have now converted to DT.
 > 
-> I'm not sure I understand your concern ;) could you rephrase that? 
+> <ok, I'll go there!>
 > 
-> So I think you're referring to the window between when we 1) clear the
-> ->owner and 2) update the ->counter in the unlocking paths. That would
-> lead the function to break out of the loop ("owner changed") and return
-> a bogus "sem is locked, thus taken by a new owner now, continue
-> spinning" reason for it (counter !=0 yet, for example). 
+> ... and for platforms that can also be booted via ACPI? If we have to
+> convert the ACPI tables into a device-tree purely for /proc/device-tree,
+> then we may as well boot with the thing too :)
 > 
-> And that's perfectly fine, really. We've never held a strict
-> owner-counter dependency, and the owner pointer is completely
-> unreliable. So all this would end up doing is causing us to perform an
-> extra iteration per race. This is a pretty good tradeoff for what the
-> patch addresses.
+> Seriously though, I don't see how we can maintain this directory for
+> ACPI, regardless of whether or not it's ABI.
 
-I agree.  The counter is a more accurate and immediate indicator
-of whether the lock is available, which is what we want to find out
-here.
+Welcome to the problem that exporting information to userspace creates.
+The same problem is also true where ACPI is exported to userspace too.
+As soon as ACPI is exported to userspace, it also becomes part of the
+userspace API that the kernel provides - even if it is merely passing
+through the data that it received from the firmware.
 
-Tim
+(I'm not saying that the kernel is ultimately responsible for the
+contents of the blob.)
 
+If we took the idea that the kernel receives a blob from the firmware,
+and it parses it to discover whatever it needs using the appropriate
+parser for that blob, and then passes the blob to userspace, then it's
+pretty clear that where a platform switches between providing DT or
+ACPI tables is neither here nor there, and can't cause a kernel
+regression.  The specification for such an API is that the kernel
+provides userspace with whatever data the firmware provided it.
 
+If we take the idea that the kernel receives a blob from the firmware,
+decodes it, and then provides the decoded form to userspace, then we're
+vulnerable to changes in firmware providers causing regressions for us
+because they've changed the way that that information is provided to us.
+
+That's the difference, and this is why I feel that a lack of thought has
+been put into stuff like the /sys/firmware/device-tree and similar which
+provides the decoded forms of the "blob".  It's far too easy to export
+a string or number to userspace, which then becomes part of the user API,
+and which can then later become quite a headache later.
+
+-- 
+FTTC broadband for 0.8mile line: currently at 10.5Mbps down 400kbps up
+according to speedtest.net.
