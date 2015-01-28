@@ -1,84 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759224AbbA1VTY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 16:19:24 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:40980 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761157AbbA1UuZ (ORCPT
+	id S1752541AbbA2BJH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 20:09:07 -0500
+Received: from mout.kundenserver.de ([212.227.126.131]:53523 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752447AbbA2BJD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 15:50:25 -0500
-Date: Wed, 28 Jan 2015 07:00:04 -0800
-From: tip-bot for Arnaldo Carvalho de Melo <tipbot@zytor.com>
-Message-ID: <tip-kb9s0xy5z8i51abdu4bgm3rv@git.kernel.org>
-Cc: jolsa@redhat.com, namhyung@kernel.org, dsahern@gmail.com,
-        adrian.hunter@intel.com, acme@redhat.com, hpa@zytor.com,
-        eranian@google.com, tglx@linutronix.de, efault@gmx.de, bp@suse.de,
-        linux-kernel@vger.kernel.org, fweisbec@gmail.com, dzickus@redhat.com,
-        mingo@kernel.org
-Reply-To: eranian@google.com, tglx@linutronix.de, efault@gmx.de, bp@suse.de,
-        fweisbec@gmail.com, linux-kernel@vger.kernel.org, mingo@kernel.org,
-        dzickus@redhat.com, namhyung@kernel.org, adrian.hunter@intel.com,
-        dsahern@gmail.com, jolsa@redhat.com, acme@redhat.com, hpa@zytor.com
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf evlist: Remove extraneous 'was'
-  on error message
-Git-Commit-ID: 267b677eec06de178558337f0074e30ec3d11d9b
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Wed, 28 Jan 2015 20:09:03 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: minyard@acm.org
+Cc: openipmi-developer@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: [PATCH] ipmi: avoid gcc warning
+Date: Wed, 28 Jan 2015 16:00:11 +0100
+Message-ID: <2457592.UIVPJ2WNL3@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V03:K0:pBernes/4f9rsSsSWD4qvd77hJ1rA4gBwc2/7EdVHA5hDy4v7KA
+ cW5Qe2afBfEeOJz8mqBGTcJcyKGeVjYlVVRa9WO88Ouow6PLPRz9m43P5LGdHn4GevfdOW3
+ gxhlC3XU86yWZtE/eS2IPLCvyE/CFrhGDv5bL/uVR5VIm/Y/BJE6noxXne6359yvZ1LvK05
+ PL7lGXmCdSxun4+2e+TmA==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  267b677eec06de178558337f0074e30ec3d11d9b
-Gitweb:     http://git.kernel.org/tip/267b677eec06de178558337f0074e30ec3d11d9b
-Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Mon, 19 Jan 2015 11:54:06 -0300
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Wed, 21 Jan 2015 10:04:15 -0300
+A new harmless warning has come up on ARM builds with gcc-4.9:
 
-perf evlist: Remove extraneous 'was' on error message
+drivers/char/ipmi/ipmi_msghandler.c: In function 'smi_send.isra.11':
+include/linux/spinlock.h:372:95: warning: 'flags' may be used uninitialized in this function [-Wmaybe-uninitialized]
+  raw_spin_unlock_irqrestore(&lock->rlock, flags);
+                                                                                               ^
+drivers/char/ipmi/ipmi_msghandler.c:1490:16: note: 'flags' was declared here
+  unsigned long flags;
+                ^
 
-  [acme@mica ~]$ trace -p 3330
-  Error:  Unable to find debugfs
-  Hint:   Was your kernel was compiled with debugfs support?
-                          ^^^
-                          ^^^
-  Hint:   Is the debugfs filesystem mounted?
-  Hint:   Try 'sudo mount -t debugfs nodev /sys/kernel/debug'
+This could be worked around by initializing the 'flags' variable, but it
+seems better to rework the code to avoid this.
 
-Fix it.
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Fixes: 7ea0ed2b5be81 ("ipmi: Make the message handler easier to use for SMI interfaces")
 
-Cc: Adrian Hunter <adrian.hunter@intel.com>
-Cc: Borislav Petkov <bp@suse.de>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Don Zickus <dzickus@redhat.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-kb9s0xy5z8i51abdu4bgm3rv@git.kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/util/evlist.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+diff --git a/drivers/char/ipmi/ipmi_msghandler.c b/drivers/char/ipmi/ipmi_msghandler.c
+index 6b65fa4e0c55..fb0f8eacd208 100644
+--- a/drivers/char/ipmi/ipmi_msghandler.c
++++ b/drivers/char/ipmi/ipmi_msghandler.c
+@@ -1483,14 +1483,10 @@ static inline void format_lan_msg(struct ipmi_smi_msg   *smi_msg,
+ 	smi_msg->msgid = msgid;
+ }
+ 
+-static void smi_send(ipmi_smi_t intf, struct ipmi_smi_handlers *handlers,
+-		     struct ipmi_smi_msg *smi_msg, int priority)
++static struct ipmi_smi_msg *smi_add_send_msg(ipmi_smi_t intf,
++					     struct ipmi_smi_msg *smi_msg,
++					     int priority)
+ {
+-	int run_to_completion = intf->run_to_completion;
+-	unsigned long flags;
+-
+-	if (!run_to_completion)
+-		spin_lock_irqsave(&intf->xmit_msgs_lock, flags);
+ 	if (intf->curr_msg) {
+ 		if (priority > 0)
+ 			list_add_tail(&smi_msg->link, &intf->hp_xmit_msgs);
+@@ -1500,8 +1496,24 @@ static void smi_send(ipmi_smi_t intf, struct ipmi_smi_handlers *handlers,
+ 	} else {
+ 		intf->curr_msg = smi_msg;
+ 	}
+-	if (!run_to_completion)
++
++	return smi_msg;
++}
++
++
++static void smi_send(ipmi_smi_t intf, struct ipmi_smi_handlers *handlers,
++		     struct ipmi_smi_msg *smi_msg, int priority)
++{
++	int run_to_completion = intf->run_to_completion;
++
++	if (run_to_completion) {
++		smi_msg = smi_add_send_msg(intf, smi_msg, priority);
++	} else {
++		unsigned long flags;
++		spin_lock_irqsave(&intf->xmit_msgs_lock, flags);
++		smi_msg = smi_add_send_msg(intf, smi_msg, priority);
+ 		spin_unlock_irqrestore(&intf->xmit_msgs_lock, flags);
++	}
+ 
+ 	if (smi_msg)
+ 		handlers->sender(intf->send_info, smi_msg);
 
-diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-index cbab1fb..2e507b5 100644
---- a/tools/perf/util/evlist.c
-+++ b/tools/perf/util/evlist.c
-@@ -1445,7 +1445,7 @@ int perf_evlist__strerror_tp(struct perf_evlist *evlist __maybe_unused,
- 	case ENOENT:
- 		scnprintf(buf, size, "%s",
- 			  "Error:\tUnable to find debugfs\n"
--			  "Hint:\tWas your kernel was compiled with debugfs support?\n"
-+			  "Hint:\tWas your kernel compiled with debugfs support?\n"
- 			  "Hint:\tIs the debugfs filesystem mounted?\n"
- 			  "Hint:\tTry 'sudo mount -t debugfs nodev /sys/kernel/debug'");
- 		break;
