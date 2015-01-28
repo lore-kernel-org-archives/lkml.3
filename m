@@ -1,18 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761946AbbA1FEp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 00:04:45 -0500
-Received: from mail.kernel.org ([198.145.29.136]:38897 "EHLO mail.kernel.org"
+	id S1761610AbbA1ETj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 23:19:39 -0500
+Received: from mail.kernel.org ([198.145.29.136]:38907 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761580AbbA1ETb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 23:19:31 -0500
+	id S1761570AbbA1ETf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 23:19:35 -0500
 From: lizf@kernel.org
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, "Theodore Ts'o" <tytso@mit.edu>,
-        Zefan Li <lizefan@huawei.com>
-Subject: [PATCH 3.4 063/177] ext4: don't orphan or truncate the boot loader inode
-Date: Wed, 28 Jan 2015 12:08:12 +0800
-Message-Id: <1422418236-12852-125-git-send-email-lizf@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Zefan Li <lizefan@huawei.com>,
+        Ingo Molnar <mingo@kernel.org>, Miao Xie <miaox@cn.fujitsu.com>,
+        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
+        Tejun Heo <tj@kernel.org>
+Subject: [PATCH 3.4 63/91] sched: add macros to define bitops for task atomic flags
+Date: Wed, 28 Jan 2015 12:08:13 +0800
+Message-Id: <1422418236-12852-126-git-send-email-lizf@kernel.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422418050-12581-1-git-send-email-lizf@kernel.org>
 References: <1422418050-12581-1-git-send-email-lizf@kernel.org>
@@ -20,78 +22,100 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Theodore Ts'o <tytso@mit.edu>
+From: Zefan Li <lizefan@huawei.com>
 
-3.4.106-rc1 review patch.  If anyone has any objections, please let me know.
+3.4.105-rc1 review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
 
-commit e2bfb088fac03c0f621886a04cffc7faa2b49b1d upstream.
+commit e0e5070b20e01f0321f97db4e4e174f3f6b49e50 upstream.
 
-The boot loader inode (inode #5) should never be visible in the
-directory hierarchy, but it's possible if the file system is corrupted
-that there will be a directory entry that points at inode #5.  In
-order to avoid accidentally trashing it, when such a directory inode
-is opened, the inode will be marked as a bad inode, so that it's not
-possible to modify (or read) the inode from userspace.
+This will simplify code when we add new flags.
 
-Unfortunately, when we unlink this (invalid/illegal) directory entry,
-we will put the bad inode on the ophan list, and then when try to
-unlink the directory, we don't actually remove the bad inode from the
-orphan list before freeing in-memory inode structure.  This means the
-in-memory orphan list is corrupted, leading to a kernel oops.
+v3:
+- Kees pointed out that no_new_privs should never be cleared, so we
+shouldn't define task_clear_no_new_privs(). we define 3 macros instead
+of a single one.
 
-In addition, avoid truncating a bad inode in ext4_destroy_inode(),
-since truncating the boot loader inode is not a smart thing to do.
+v2:
+- updated scripts/tags.sh, suggested by Peter
 
-Reported-by: Sami Liedes <sami.liedes@iki.fi>
-Reviewed-by: Jan Kara <jack@suse.cz>
-Signed-off-by: Theodore Ts'o <tytso@mit.edu>
-[lizf: Backported to 3.4: adjust context]
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Miao Xie <miaox@cn.fujitsu.com>
+Cc: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Acked-by: Peter Zijlstra (Intel) <peterz@infradead.org>
+Acked-by: Kees Cook <keescook@chromium.org>
 Signed-off-by: Zefan Li <lizefan@huawei.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+[lizf: Backported to 3.4:
+ - adjust context
+ - remove no_new_priv code
+ - add atomic_flags to struct task_struct]
 ---
- fs/ext4/inode.c | 8 +++-----
- fs/ext4/namei.c | 2 +-
- 2 files changed, 4 insertions(+), 6 deletions(-)
+ include/linux/sched.h | 13 +++++++++++++
+ scripts/tags.sh       | 10 ++++++++--
+ 2 files changed, 21 insertions(+), 2 deletions(-)
 
-diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
-index 5b6dcba..b9c3995 100644
---- a/fs/ext4/inode.c
-+++ b/fs/ext4/inode.c
-@@ -157,16 +157,14 @@ void ext4_evict_inode(struct inode *inode)
- 		goto no_delete;
- 	}
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 8cd5cb8..b85b719 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1359,6 +1359,7 @@ struct task_struct {
+ 	/* IRQ handler threads */
+ 	unsigned irq_thread:1;
+ #endif
++	unsigned long atomic_flags; /* Flags needing atomic access. */
  
--	if (!is_bad_inode(inode))
--		dquot_initialize(inode);
-+	if (is_bad_inode(inode))
-+		goto no_delete;
-+	dquot_initialize(inode);
+ 	pid_t pid;
+ 	pid_t tgid;
+@@ -1866,6 +1867,18 @@ extern void thread_group_times(struct task_struct *p, cputime_t *ut, cputime_t *
+ #define tsk_used_math(p) ((p)->flags & PF_USED_MATH)
+ #define used_math() tsk_used_math(current)
  
- 	if (ext4_should_order_data(inode))
- 		ext4_begin_ordered_truncate(inode, 0);
- 	truncate_inode_pages(&inode->i_data, 0);
++/* Per-process atomic flags. */
++
++#define TASK_PFA_TEST(name, func)					\
++	static inline bool task_##func(struct task_struct *p)		\
++	{ return test_bit(PFA_##name, &p->atomic_flags); }
++#define TASK_PFA_SET(name, func)					\
++	static inline void task_set_##func(struct task_struct *p)	\
++	{ set_bit(PFA_##name, &p->atomic_flags); }
++#define TASK_PFA_CLEAR(name, func)					\
++	static inline void task_clear_##func(struct task_struct *p)	\
++	{ clear_bit(PFA_##name, &p->atomic_flags); }
++
+ /*
+  * task->jobctl flags
+  */
+diff --git a/scripts/tags.sh b/scripts/tags.sh
+index cf7b12f..246e4f6 100755
+--- a/scripts/tags.sh
++++ b/scripts/tags.sh
+@@ -153,7 +153,10 @@ exuberant()
+ 	--regex-c++='/CLEARPAGEFLAG_NOOP\(([^,)]*).*/ClearPage\1/'	\
+ 	--regex-c++='/__CLEARPAGEFLAG_NOOP\(([^,)]*).*/__ClearPage\1/'	\
+ 	--regex-c++='/TESTCLEARFLAG_FALSE\(([^,)]*).*/TestClearPage\1/' \
+-	--regex-c++='/__TESTCLEARFLAG_FALSE\(([^,)]*).*/__TestClearPage\1/'
++	--regex-c++='/__TESTCLEARFLAG_FALSE\(([^,)]*).*/__TestClearPage\1/'\
++	--regex-c++='/TASK_PFA_TEST\([^,]*,\s*([^)]*)\)/task_\1/'	\
++	--regex-c++='/TASK_PFA_SET\([^,]*,\s*([^)]*)\)/task_set_\1/'	\
++	--regex-c++='/TASK_PFA_CLEAR\([^,]*,\s*([^)]*)\)/task_clear_\1/'
  
--	if (is_bad_inode(inode))
--		goto no_delete;
--
- 	handle = ext4_journal_start(inode, ext4_blocks_for_truncate(inode)+3);
- 	if (IS_ERR(handle)) {
- 		ext4_std_error(inode->i_sb, PTR_ERR(handle));
-diff --git a/fs/ext4/namei.c b/fs/ext4/namei.c
-index 665e55c..11566d7 100644
---- a/fs/ext4/namei.c
-+++ b/fs/ext4/namei.c
-@@ -1992,7 +1992,7 @@ int ext4_orphan_add(handle_t *handle, struct inode *inode)
- 	struct ext4_iloc iloc;
- 	int err = 0, rc;
+ 	all_kconfigs | xargs $1 -a                              \
+ 	--langdef=kconfig --language-force=kconfig              \
+@@ -195,7 +198,10 @@ emacs()
+ 	--regex='/CLEARPAGEFLAG_NOOP\(([^,)]*).*/ClearPage\1/'	\
+ 	--regex='/__CLEARPAGEFLAG_NOOP\(([^,)]*).*/__ClearPage\1/' \
+ 	--regex='/TESTCLEARFLAG_FALSE\(([^,)]*).*/TestClearPage\1/' \
+-	--regex='/__TESTCLEARFLAG_FALSE\(([^,)]*).*/__TestClearPage\1/'
++	--regex='/__TESTCLEARFLAG_FALSE\(([^,)]*).*/__TestClearPage\1/'\
++	--regex='/TASK_PFA_TEST\([^,]*,\s*([^)]*)\)/task_\1/'		\
++	--regex='/TASK_PFA_SET\([^,]*,\s*([^)]*)\)/task_set_\1/'	\
++	--regex='/TASK_PFA_CLEAR\([^,]*,\s*([^)]*)\)/task_clear_\1/'
  
--	if (!ext4_handle_valid(handle))
-+	if (!ext4_handle_valid(handle) || is_bad_inode(inode))
- 		return 0;
- 
- 	mutex_lock(&EXT4_SB(sb)->s_orphan_lock);
+ 	all_kconfigs | xargs $1 -a                              \
+ 	--regex='/^[ \t]*\(\(menu\)*config\)[ \t]+\([a-zA-Z0-9_]+\)/\3/'
 -- 
 1.9.1
 
