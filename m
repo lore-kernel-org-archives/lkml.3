@@ -1,100 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754699AbbA1U4T (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 15:56:19 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:54067 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754643AbbA1U4O (ORCPT
+	id S932998AbbA1UTr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 15:19:47 -0500
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:43656 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932760AbbA1UTm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 15:56:14 -0500
-From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
-To: Peter Ujfalusi <peter.ujfalusi@ti.com>
-Subject: Re: [PATCH] ASoC: rx51: do not fail if could not get jack detection gpio
-Date: Wed, 28 Jan 2015 15:09:17 +0100
-User-Agent: KMail/1.13.7 (Linux/3.13.0-44-generic; KDE/4.14.2; x86_64; ; )
-Cc: Pavel Machek <pavel@ucw.cz>, Jarkko Nikula <jarkko.nikula@bitmer.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        linux-omap@vger.kernel.org, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org, Sebastian Reichel <sre@debian.org>,
-        Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>,
-        Aaro Koskinen <aaro.koskinen@iki.fi>
-References: <1422305507-10533-1-git-send-email-pali.rohar@gmail.com> <54C79597.40105@ti.com> <201501271511.08933@pali>
-In-Reply-To: <201501271511.08933@pali>
-MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart1989159.qfoVUJsl4f";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
-Content-Transfer-Encoding: 7bit
-Message-Id: <201501281509.17333@pali>
+	Wed, 28 Jan 2015 15:19:42 -0500
+X-AuditID: cbfec7f4-b7f126d000001e9a-50-54c8ed0a41c2
+Message-id: <54C8ED9A.9070201@samsung.com>
+Date: Wed, 28 Jan 2015 15:09:30 +0100
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101
+ Thunderbird/31.4.0
+MIME-version: 1.0
+To: Sumit Semwal <sumit.semwal@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-media@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        linaro-mm-sig@lists.linaro.org, linux-arm-kernel@lists.infradead.org,
+        linux-mm@kvack.org
+Cc: linaro-kernel@lists.linaro.org, robdclark@gmail.com, daniel@ffwll.ch,
+        stanislawski.tomasz@googlemail.com, robin.murphy@arm.com
+Subject: Re: [RFCv3 1/2] device: add dma_params->max_segment_count
+References: <1422347154-15258-1-git-send-email-sumit.semwal@linaro.org>
+In-reply-to: <1422347154-15258-1-git-send-email-sumit.semwal@linaro.org>
+Content-type: text/plain; charset=utf-8; format=flowed
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrALMWRmVeSWpSXmKPExsVy+t/xq7rcb0+EGDzltPi/bSKzxZWv79ks
+	3h96xmzx5cpDJotNj6+xWlzeNYfNomfDVlaLe2v+s1o8X/iD2eLghyesFj1/z7JanLr7md2B
+	x2PNvDWMHnu/LWDx2DnrLrvH0wmT2T02fZrE7nHn2h42j/vdx5k8Ni+p97j97zGzx+dNcgFc
+	UVw2Kak5mWWpRfp2CVwZTfd62At+iVZcftLL1MD4VLCLkZNDQsBE4vGqbSwQtpjEhXvr2boY
+	uTiEBJYySqzY3s0K4XxilNi7/zMzSBWvgJbEwv5WJhCbRUBVYubFB2BxNgFDia63XWwgtqhA
+	jMS7VX1Q9YISPybfYwEZJCLwjFFi7tdNYFOZBVqAnPU3wCYJCzhJ3PyxjxHEFhJwl/hx6ieY
+	zSngIXFh61p2EJtZwEziy8vDrBC2vMTmNW+ZJzAKzEKyZBaSsllIyhYwMq9iFE0tTS4oTkrP
+	NdQrTswtLs1L10vOz93ECImlLzsYFx+zOsQowMGoxMP7wuxEiBBrYllxZe4hRgkOZiUR3sd7
+	gUK8KYmVValF+fFFpTmpxYcYmTg4pRoYp/RFfMjOX69SFuex6ppX7ycL1YUiJ3eK121ueBir
+	zheevm2dj85GgSrl6sR3K5/HnJHbOO/ZmV+ueza5pfYuXpa4xsvz9IzWkzsYtwbcniFr/reh
+	Tiqij+mgj40I44tT+UkT15gsCph78OqHrMN/J8Ve2aH42iny5ZUv2ps672iWLPr4gkM2T4ml
+	OCPRUIu5qDgRAGLGEPyDAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart1989159.qfoVUJsl4f
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: quoted-printable
+Hello,
 
-> > > It is quite important to keep qemu working, really.
-> > > Debugging early boot on hardware is very hard, for
-> > > example.
-> >=20
-> > I understand, but looking at the history of the driver, if
-> > it fails now with the jack-detection GPIO, it should have
-> > been failing in the past as well. What triggered this
-> > sudden qemu does not like jack-detection GPIO? Before the
-> > devm_gpiod_get() conversion the driver should have failed in
-> > snd_soc_jack_add_gpios() phase.
->=20
-> With 3.12 kernel rx51-audio driver loads without any problem.
-> So there is some regression. Here is dmesg log from 3.12
-> kernel:
->=20
-> [    1.123779] rx51-audio rx51-audio:  tlv320aic3x-hifi <->
-> omap- mcbsp.2 mapping ok
-> [    1.130737] tlv320aic3x-codec 2-0019: ASoC: mux b Right
-> Line1L Mux has no paths
-> [    1.131347] tlv320aic3x-codec 2-0019: ASoC: mux b Left
-> Line1R Mux has no paths
-> [    1.133697] tlv320aic3x-codec 2-0018: ASoC: mux Right
-> Line1L Mux has no paths
-> [    1.134307] tlv320aic3x-codec 2-0018: ASoC: mux Left Line1R
-> Mux has no paths
-> [    1.137451] input: RX-51 AV Jack as /devices/platform/rx51-
-> audio/sound/card0/input2
->=20
-> I will try to investigate where is problem...
->=20
+On 2015-01-27 09:25, Sumit Semwal wrote:
+> From: Rob Clark <robdclark@gmail.com>
+>
+> For devices which have constraints about maximum number of segments in
+> an sglist.  For example, a device which could only deal with contiguous
+> buffers would set max_segment_count to 1.
+>
+> The initial motivation is for devices sharing buffers via dma-buf,
+> to allow the buffer exporter to know the constraints of other
+> devices which have attached to the buffer.  The dma_mask and fields
+> in 'struct device_dma_parameters' tell the exporter everything else
+> that is needed, except whether the importer has constraints about
+> maximum number of segments.
+>
+> Signed-off-by: Rob Clark <robdclark@gmail.com>
+>   [sumits: Minor updates wrt comments]
+> Signed-off-by: Sumit Semwal <sumit.semwal@linaro.org>
 
-Ok, problem found and solved. Please drop my patch and sorry for=20
-a noise.
+This feature is definitely needed to start thinking of real buffer
+sharing between devices.
 
-As is visible in above lines AV Jack is working fine on non DT=20
-kernel (3.12) and fails on DT kernel.
+Acked-by: Marek Szyprowski <m.szyprowski@samsung.com>
 
-Reason is because I have another non-mainline driver which is=20
-using GPIOs and in non DT kernel is initialized *after* audio.=20
-And in DT kernel is initialized *before* audio.
+> ---
+>
+> v3: include Robin Murphy's fix[1] for handling '0' as a value for
+>       max_segment_count
+> v2: minor updates wrt comments on the first version
+>
+> [1]: http://article.gmane.org/gmane.linux.kernel.iommu/8175/
+>
+>   include/linux/device.h      |  1 +
+>   include/linux/dma-mapping.h | 19 +++++++++++++++++++
+>   2 files changed, 20 insertions(+)
+>
+> diff --git a/include/linux/device.h b/include/linux/device.h
+> index fb506738f7b7..a32f9b67315c 100644
+> --- a/include/linux/device.h
+> +++ b/include/linux/device.h
+> @@ -647,6 +647,7 @@ struct device_dma_parameters {
+>   	 * sg limitations.
+>   	 */
+>   	unsigned int max_segment_size;
+> +	unsigned int max_segment_count;    /* INT_MAX for unlimited */
+>   	unsigned long segment_boundary_mask;
+>   };
+>   
+> diff --git a/include/linux/dma-mapping.h b/include/linux/dma-mapping.h
+> index c3007cb4bfa6..d3351a36d5ec 100644
+> --- a/include/linux/dma-mapping.h
+> +++ b/include/linux/dma-mapping.h
+> @@ -154,6 +154,25 @@ static inline unsigned int dma_set_max_seg_size(struct device *dev,
+>   		return -EIO;
+>   }
+>   
+> +#define DMA_SEGMENTS_MAX_SEG_COUNT ((unsigned int) INT_MAX)
+> +
+> +static inline unsigned int dma_get_max_seg_count(struct device *dev)
+> +{
+> +	if (dev->dma_parms && dev->dma_parms->max_segment_count)
+> +		return dev->dma_parms->max_segment_count;
+> +	return DMA_SEGMENTS_MAX_SEG_COUNT;
+> +}
+> +
+> +static inline int dma_set_max_seg_count(struct device *dev,
+> +						unsigned int count)
+> +{
+> +	if (dev->dma_parms) {
+> +		dev->dma_parms->max_segment_count = count;
+> +		return 0;
+> +	}
+> +	return -EIO;
+> +}
+> +
+>   static inline unsigned long dma_get_seg_boundary(struct device *dev)
+>   {
+>   	return dev->dma_parms ?
 
-Once I changed my non-mainline driver to not request av jack=20
-gpio, rx51-audio driver loads fine in qemu.
+Best regards
+-- 
+Marek Szyprowski, PhD
+Samsung R&D Institute Poland
 
-=2D-=20
-Pali Roh=C3=A1r
-pali.rohar@gmail.com
-
---nextPart1989159.qfoVUJsl4f
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iEYEABECAAYFAlTI7Y0ACgkQi/DJPQPkQ1K5WACfcXmeUks3GiUTeE/3+sb31nrQ
-3nEAn3P9MzMyEo/b82MHnM5kGlrMjn0W
-=kDoz
------END PGP SIGNATURE-----
-
---nextPart1989159.qfoVUJsl4f--
