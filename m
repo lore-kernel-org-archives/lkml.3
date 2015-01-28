@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932829AbbA2KkX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 05:40:23 -0500
+	id S1757444AbbA2KmZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 05:42:25 -0500
 Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:44737 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755041AbbA2JAK (ORCPT
+	by vger.kernel.org with ESMTP id S1754829AbbA2JAD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 04:00:10 -0500
+	Thu, 29 Jan 2015 04:00:03 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, NeilBrown <neilb@suse.de>,
+Cc: linux-kernel@vger.kernel.org, Dan Carpenter <dan.carpenter@oracle.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 172/176] md/raid5: fetch_block must fetch all the blocks handle_stripe_dirtying wants.
-Date: Wed, 28 Jan 2015 15:30:02 +0100
-Message-Id: <852e783e104c8730e6c6b6fd6520480dca1e6eb9.1422455352.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 173/176] USB: adutux: NULL dereferences on disconnect
+Date: Wed, 28 Jan 2015 15:30:03 +0100
+Message-Id: <ad8ec432bd1c7714f0b8bd6b13a8b79129412cf5.1422455352.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <ce4a451f616a1e7ab58cfeceea5e49c8b1c68c81.1422455352.git.jslaby@suse.cz>
 References: <ce4a451f616a1e7ab58cfeceea5e49c8b1c68c81.1422455352.git.jslaby@suse.cz>
@@ -23,53 +24,45 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: NeilBrown <neilb@suse.de>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 108cef3aa41669610e1836fe638812dd067d72de upstream.
+commit fc625960edecfb57e62c2975d1f155155e28e6ba upstream.
 
-It is critical that fetch_block() and handle_stripe_dirtying()
-are consistent in their analysis of what needs to be loaded.
-Otherwise raid5 can wait forever for a block that won't be loaded.
+Both "dev->udev" and "interface->dev" are NULL.  These printks are not
+very interesting so I just deleted them.
 
-Currently when writing to a RAID5 that is resyncing, to a location
-beyond the resync offset, handle_stripe_dirtying chooses a
-reconstruct-write cycle, but fetch_block() assumes a
-read-modify-write, and a lockup can happen.
-
-So treat that case just like RAID6, just as we do in
-handle_stripe_dirtying.  RAID6 always does reconstruct-write.
-
-This bug was introduced when the behaviour of handle_stripe_dirtying
-was changed in 3.7, so the patch is suitable for any kernel since,
-though it will need careful merging for some versions.
-
-Cc: stable@vger.kernel.org (v3.7+)
-Fixes: a7854487cd7128a30a7f4f5259de9f67d5efb95f
-Reported-by: Henry Cai <henryplusplus@gmail.com>
-Signed-off-by: NeilBrown <neilb@suse.de>
+Fixes: 03270634e242 ('USB: Add ADU support for Ontrak ADU devices')
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/md/raid5.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/usb/misc/adutux.c | 5 -----
+ 1 file changed, 5 deletions(-)
 
-diff --git a/drivers/md/raid5.c b/drivers/md/raid5.c
-index 582bc3f69a43..7b54c3bf9f8f 100644
---- a/drivers/md/raid5.c
-+++ b/drivers/md/raid5.c
-@@ -2789,7 +2789,8 @@ static int fetch_block(struct stripe_head *sh, struct stripe_head_state *s,
- 	     (s->failed >= 2 && fdev[1]->toread) ||
- 	     (sh->raid_conf->level <= 5 && s->failed && fdev[0]->towrite &&
- 	      !test_bit(R5_OVERWRITE, &fdev[0]->flags)) ||
--	     (sh->raid_conf->level == 6 && s->failed && s->to_write))) {
-+	     ((sh->raid_conf->level == 6 || sh->sector >= sh->raid_conf->mddev->recovery_cp)
-+	      && s->failed && s->to_write))) {
- 		/* we would like to get this block, possibly by computing it,
- 		 * otherwise read it if the backing disk is insync
- 		 */
+diff --git a/drivers/usb/misc/adutux.c b/drivers/usb/misc/adutux.c
+index 3eaa83f05086..e2373f179522 100644
+--- a/drivers/usb/misc/adutux.c
++++ b/drivers/usb/misc/adutux.c
+@@ -815,15 +815,10 @@ static void adu_disconnect(struct usb_interface *interface)
+ 	usb_set_intfdata(interface, NULL);
+ 
+ 	/* if the device is not opened, then we clean up right now */
+-	dev_dbg(&dev->udev->dev, "%s : open count %d\n",
+-		__func__, dev->open_count);
+ 	if (!dev->open_count)
+ 		adu_delete(dev);
+ 
+ 	mutex_unlock(&adutux_mutex);
+-
+-	dev_info(&interface->dev, "ADU device adutux%d now disconnected\n",
+-		 (minor - ADU_MINOR_BASE));
+ }
+ 
+ /* usb specific object needed to register this driver with the usb subsystem */
 -- 
 2.2.2
 
