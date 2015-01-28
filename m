@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760810AbbA1Cod (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 21:44:33 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42869 "EHLO
+	id S933230AbbA1BiW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 20:38:22 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41419 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753315AbbA1Coc (ORCPT
+	with ESMTP id S1759067AbbA1BiT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 21:44:32 -0500
+	Tue, 27 Jan 2015 20:38:19 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Philipp Reisner <philipp.reisner@linbit.com>,
-        Lars Ellenberg <lars.ellenberg@linbit.com>, Jens Axboe <axboe@fb.com>
-Subject: [PATCH 3.10 26/32] drbd: merge_bvec_fn: properly remap bvm->bi_bdev
-Date: Tue, 27 Jan 2015 17:26:56 -0800
-Message-Id: <20150128012630.795769100@linuxfoundation.org>
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Andrew Lunn <andrew@lunn.ch>
+Subject: [PATCH 3.14 19/77] bus: mvebu-mbus: fix support of MBus window 13
+Date: Tue, 27 Jan 2015 17:26:57 -0800
+Message-Id: <20150128012746.540386954@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150128012627.081285723@linuxfoundation.org>
-References: <20150128012627.081285723@linuxfoundation.org>
+In-Reply-To: <20150128012745.971137091@linuxfoundation.org>
+References: <20150128012745.971137091@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -25,36 +25,59 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Lars Ellenberg <lars.ellenberg@linbit.com>
+From: Andrew Lunn <andrew@lunn.ch>
 
-commit 3b9d35d744bb5139f9fed57f38c019bb8c7d351c upstream.
+commit 38bdf45f4aa5cb6186d50a29e6cbbd9d486a1519 upstream.
 
-This was not noticed for many years. Affects operation if
-md raid is used a backing device for DRBD.
+On Armada XP, 375 and 38x the MBus window 13 has the remap capability,
+like windows 0 to 7. However, the mvebu-mbus driver isn't currently
+taking into account this special case, which means that when window 13
+is actually used, the remap registers are left to 0, making the device
+using this MBus window unavailable.
 
-CC: stable@kernel.org # v3.2+
-Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
-Signed-off-by: Lars Ellenberg <lars.ellenberg@linbit.com>
-Signed-off-by: Jens Axboe <axboe@fb.com>
+As a minimal fix for stable, don't use window 13. A full fix will
+follow later.
+
+Fixes: fddddb52a6c ("bus: introduce an Marvell EBU MBus driver")
+Reviewed-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Signed-off-by: Andrew Lunn <andrew@lunn.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/block/drbd/drbd_req.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/bus/mvebu-mbus.c |   13 +++++++++++++
+ 1 file changed, 13 insertions(+)
 
---- a/drivers/block/drbd/drbd_req.c
-+++ b/drivers/block/drbd/drbd_req.c
-@@ -1309,6 +1309,7 @@ int drbd_merge_bvec(struct request_queue
- 		struct request_queue * const b =
- 			mdev->ldev->backing_bdev->bd_disk->queue;
- 		if (b->merge_bvec_fn) {
-+			bvm->bi_bdev = mdev->ldev->backing_bdev;
- 			backing_limit = b->merge_bvec_fn(b, bvm, bvec);
- 			limit = min(limit, backing_limit);
- 		}
+--- a/drivers/bus/mvebu-mbus.c
++++ b/drivers/bus/mvebu-mbus.c
+@@ -181,12 +181,25 @@ static void mvebu_mbus_disable_window(st
+ }
+ 
+ /* Checks whether the given window number is available */
++
++/* On Armada XP, 375 and 38x the MBus window 13 has the remap
++ * capability, like windows 0 to 7. However, the mvebu-mbus driver
++ * isn't currently taking into account this special case, which means
++ * that when window 13 is actually used, the remap registers are left
++ * to 0, making the device using this MBus window unavailable. The
++ * quick fix for stable is to not use window 13. A follow up patch
++ * will correctly handle this window.
++*/
+ static int mvebu_mbus_window_is_free(struct mvebu_mbus_state *mbus,
+ 				     const int win)
+ {
+ 	void __iomem *addr = mbus->mbuswins_base +
+ 		mbus->soc->win_cfg_offset(win);
+ 	u32 ctrl = readl(addr + WIN_CTRL_OFF);
++
++	if (win == 13)
++		return false;
++
+ 	return !(ctrl & WIN_CTRL_ENABLE);
+ }
+ 
 
 
