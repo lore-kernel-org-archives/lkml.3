@@ -1,243 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932292AbbA1URL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 15:17:11 -0500
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:37132 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755350AbbA1URB (ORCPT
+	id S1753148AbbA1UMG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 15:12:06 -0500
+Received: from bombadil.infradead.org ([198.137.202.9]:37297 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753060AbbA1UMB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 15:17:01 -0500
-X-AuditID: cbfec7f5-b7fc86d0000066b7-2b-54c8ec61ba4f
-From: Karol Wrona <k.wrona@samsung.com>
-To: Jonathan Cameron <jic23@kernel.org>, linux-iio@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Hartmut Knaack <knaack.h@gmx.de>, Lars-Peter Clausen <lars@metafoo.de>,
-        Peter Meerwald <pmeerw@pmeerw.net>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Karol Wrona <wrona.vy@gmail.com>, Karol Wrona <k.wrona@samsung.com>
-Subject: [PATCH v5 5/5] iio: common: ssp_sensors: Add sensorhub gyroscope sensor
-Date: Wed, 28 Jan 2015 15:05:54 +0100
-Message-id: <1422453954-27317-6-git-send-email-k.wrona@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
-In-reply-to: <1422453954-27317-1-git-send-email-k.wrona@samsung.com>
-References: <1422453954-27317-1-git-send-email-k.wrona@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrJLMWRmVeSWpSXmKPExsVy+t/xy7qJb06EGDwptNg4Yz2rxfwj51gt
-	+t8sZLU492olo8WDplVMFqeW7Wey2PX/DbPF2aY37BZLJs9ntZh35B2LxeVdc9gsll6/yGQx
-	YfpaFovfu46xW7TuPcJusWfdFiYHAY8189Ywelzu62Xy2DnrLrvHh49xHiuXf2Hz2LSqk81j
-	yZtDrB7nm48wevRtWcXo8XmTXABXFJdNSmpOZllqkb5dAlfG+XfTWAtO61Wce+rWwPhDrYuR
-	k0NCwETiy9037BC2mMSFe+vZuhi5OIQEljJKdDz7xATh9DFJvP+xmgWkik1AXaJ5x2JmEFtE
-	oE7iyOqtLCBFzAK3mSU6mj+AjRIWCJCYu/sNK4jNIqAq8fjfUrAGXgFniduTXgDFOYDWKUjM
-	mWQDEuYUcJGYsu0vG4gtBFRycvt91gmMvAsYGVYxiqaWJhcUJ6XnGukVJ+YWl+al6yXn525i
-	hAT31x2MS49ZHWIU4GBU4uFl8DkRIsSaWFZcmXuIUYKDWUmEN+glUIg3JbGyKrUoP76oNCe1
-	+BAjEwenVAOjlI+f1Le4Nyt36hyXWsDP1xfW/FIrZcOxg0LxadnR7n3/rpv+Zt732z5qe1dy
-	UGLOdamzPZ9WzVdfULur62OCl2q2dObd3pTPO9OE5854JfXs4JTTdb6TZ99z2MG7MqQ2JLll
-	4eT1/gxnbmnk7lxuds7wPt+KuXY2PZI5HYkBNUZ6PyvabnErsRRnJBpqMRcVJwIA47kppkwC	AAA=
+	Wed, 28 Jan 2015 15:12:01 -0500
+Date: Wed, 28 Jan 2015 15:08:03 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Luca Abeni <luca.abeni@unitn.it>
+Cc: Kirill Tkhai <tkhai@yandex.ru>, Juri Lelli <juri.lelli@arm.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "juri.lelli@gmail.com" <juri.lelli@gmail.com>
+Subject: Re: Another SCHED_DEADLINE bug (with bisection and possible fix)
+Message-ID: <20150128140803.GF23038@twins.programming.kicks-ass.net>
+References: <1420499241.3361.14.camel@yandex.ru>
+ <20150107080155.1d42d123@luca-1225C>
+ <1420633741.12772.10.camel@yandex.ru>
+ <54B4D2DF.9010308@arm.com>
+ <4500351421141200@web2m.yandex.ru>
+ <20150113140436.GI25256@twins.programming.kicks-ass.net>
+ <4632021421239387@web25g.yandex.ru>
+ <54B7A33F.20904@unitn.it>
+ <20150115122323.GU23965@worktop.programming.kicks-ass.net>
+ <54B7C232.8060806@unitn.it>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54B7C232.8060806@unitn.it>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds gyroscope iio driver which uses sensorhub as data
-provider.
+On Thu, Jan 15, 2015 at 02:35:46PM +0100, Luca Abeni wrote:
 
-Signed-off-by: Karol Wrona <k.wrona@samsung.com>
-Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
+> >>From what I understand we should either modify the tasks run/sleep stats
+> >when we change its parameters or we should schedule a delayed release of
+> >the bandwidth delta (when it reaches its 0-lag point, if thats in the
+> >future).
+
+> I suspect the correct behaviour can be difficult to implement:
+> - When a SCHED_DEADLINE task ends (or changes its scheduling policy to
+>   something different), its bandwidth cannot be released immediately,
+>   but should be released at the "0-lag time" (which reminds me about the
+>   GRUB patches... I had to implement a similar behaviour in those patches :)
+> - The same applies when the task changes its scheduling parameters decreasing
+>   its bandwidth. In this case, we also need to update the current runtime (if
+>   it is larger than the new runtime, set it to the new maximum value - I think
+>   this is the safest thing to do)
+> - When a task changes its parameters to increase its bandwidth, be do not
+>   have such problems.
+> 
+> As far as I can see, if we apply the runtime / deadline changes starting from
+> the next reservation period we are safe (because the "0-lag time" is always
+> smaller than the current scheduling deadline).
+> This might cause some transient overloads (because if I change the parameters
+> of a task at time t, the update takes action a little bit later - at the next
+> scheduling deadline), but guarantees that a task never consumes more than
+> expected (for example: if a task continuously changes its bandwidth between
+> 0.4 and 0.3, it will never consume more than 0.4. I suspect that if we
+> immediately update dl_se->deadline and dl_se->runtime a task can arrive to
+> consume much more CPU time).
+
+
+OK, how about something like this; it seems to survive your Bug-Test for
+at least 50 cycles.
+
 ---
- drivers/iio/gyro/Makefile          |    2 +
- drivers/iio/gyro/ssp_gyro_sensor.c |  168 ++++++++++++++++++++++++++++++++++++
- 2 files changed, 170 insertions(+)
- create mode 100644 drivers/iio/gyro/ssp_gyro_sensor.c
+ kernel/sched/core.c     | 33 ++++++++++++++++++++++++++++-----
+ kernel/sched/deadline.c |  3 ++-
+ 2 files changed, 30 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/iio/gyro/Makefile b/drivers/iio/gyro/Makefile
-index 36a3877..f46341b 100644
---- a/drivers/iio/gyro/Makefile
-+++ b/drivers/iio/gyro/Makefile
-@@ -16,6 +16,8 @@ itg3200-y               := itg3200_core.o
- itg3200-$(CONFIG_IIO_BUFFER) += itg3200_buffer.o
- obj-$(CONFIG_ITG3200)   += itg3200.o
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index ade2958a9197..d787d6553d72 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -1816,6 +1816,10 @@ void __dl_clear_params(struct task_struct *p)
+ 	dl_se->dl_period = 0;
+ 	dl_se->flags = 0;
+ 	dl_se->dl_bw = 0;
++
++	dl_se->dl_throttled = 0;
++	dl_se->dl_new = 1;
++	dl_se->dl_yielded = 0;
+ }
  
-+obj-$(CONFIG_IIO_SSP_SENSORS_COMMONS) += ssp_gyro_sensor.o
-+
- obj-$(CONFIG_IIO_ST_GYRO_3AXIS) += st_gyro.o
- st_gyro-y := st_gyro_core.o
- st_gyro-$(CONFIG_IIO_BUFFER) += st_gyro_buffer.o
-diff --git a/drivers/iio/gyro/ssp_gyro_sensor.c b/drivers/iio/gyro/ssp_gyro_sensor.c
-new file mode 100644
-index 0000000..0a8afdd
---- /dev/null
-+++ b/drivers/iio/gyro/ssp_gyro_sensor.c
-@@ -0,0 +1,168 @@
-+/*
-+ *  Copyright (C) 2014, Samsung Electronics Co. Ltd. All Rights Reserved.
+ /*
+@@ -1844,7 +1848,7 @@ static void __sched_fork(unsigned long clone_flags, struct task_struct *p)
+ #endif
+ 
+ 	RB_CLEAR_NODE(&p->dl.rb_node);
+-	hrtimer_init(&p->dl.dl_timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
++	init_dl_task_timer(&p->dl);
+ 	__dl_clear_params(p);
+ 
+ 	INIT_LIST_HEAD(&p->rt.run_list);
+@@ -2054,6 +2058,9 @@ static inline int dl_bw_cpus(int i)
+  * allocated bandwidth to reflect the new situation.
+  *
+  * This function is called while holding p's rq->lock.
 + *
-+ *  This program is free software; you can redistribute it and/or modify
-+ *  it under the terms of the GNU General Public License as published by
-+ *  the Free Software Foundation; either version 2 of the License, or
-+ *  (at your option) any later version.
-+ *
-+ *  This program is distributed in the hope that it will be useful,
-+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ *  GNU General Public License for more details.
-+ *
-+ */
++ * XXX we should delay bw change until the task's 0-lag point, see
++ * __setparam_dl().
+  */
+ static int dl_overflow(struct task_struct *p, int policy,
+ 		       const struct sched_attr *attr)
+@@ -3258,15 +3265,31 @@ __setparam_dl(struct task_struct *p, const struct sched_attr *attr)
+ {
+ 	struct sched_dl_entity *dl_se = &p->dl;
+ 
+-	init_dl_task_timer(dl_se);
+ 	dl_se->dl_runtime = attr->sched_runtime;
+ 	dl_se->dl_deadline = attr->sched_deadline;
+ 	dl_se->dl_period = attr->sched_period ?: dl_se->dl_deadline;
+ 	dl_se->flags = attr->sched_flags;
+ 	dl_se->dl_bw = to_ratio(dl_se->dl_period, dl_se->dl_runtime);
+-	dl_se->dl_throttled = 0;
+-	dl_se->dl_new = 1;
+-	dl_se->dl_yielded = 0;
 +
-+#include <linux/iio/common/ssp_sensors.h>
-+#include <linux/iio/iio.h>
-+#include <linux/iio/kfifo_buf.h>
-+#include <linux/module.h>
-+#include <linux/platform_device.h>
-+#include <linux/slab.h>
-+#include "../common/ssp_sensors/ssp_iio_sensor.h"
-+
-+#define SSP_CHANNEL_COUNT 3
-+
-+#define SSP_GYROSCOPE_NAME "ssp-gyroscope"
-+static const char ssp_gyro_name[] = SSP_GYROSCOPE_NAME;
-+
-+enum ssp_gyro_3d_channel {
-+	SSP_CHANNEL_SCAN_INDEX_X,
-+	SSP_CHANNEL_SCAN_INDEX_Y,
-+	SSP_CHANNEL_SCAN_INDEX_Z,
-+	SSP_CHANNEL_SCAN_INDEX_TIME,
-+};
-+
-+static int ssp_gyro_read_raw(struct iio_dev *indio_dev,
-+			     struct iio_chan_spec const *chan, int *val,
-+			     int *val2, long mask)
-+{
-+	u32 t;
-+	struct ssp_data *data = dev_get_drvdata(indio_dev->dev.parent->parent);
-+
-+	switch (mask) {
-+	case IIO_CHAN_INFO_SAMP_FREQ:
-+		t = ssp_get_sensor_delay(data, SSP_GYROSCOPE_SENSOR);
-+		ssp_convert_to_freq(t, val, val2);
-+		return IIO_VAL_INT_PLUS_MICRO;
-+	default:
-+		break;
-+	}
-+
-+	return -EINVAL;
-+}
-+
-+static int ssp_gyro_write_raw(struct iio_dev *indio_dev,
-+			      struct iio_chan_spec const *chan, int val,
-+			      int val2, long mask)
-+{
-+	int ret;
-+	struct ssp_data *data = dev_get_drvdata(indio_dev->dev.parent->parent);
-+
-+	switch (mask) {
-+	case IIO_CHAN_INFO_SAMP_FREQ:
-+		ret = ssp_convert_to_time(val, val2);
-+		ret = ssp_change_delay(data, SSP_GYROSCOPE_SENSOR, ret);
-+		if (ret < 0)
-+			dev_err(&indio_dev->dev, "gyro sensor enable fail\n");
-+
-+		return ret;
-+	default:
-+		break;
-+	}
-+
-+	return -EINVAL;
-+}
-+
-+static struct iio_info ssp_gyro_iio_info = {
-+	.read_raw = &ssp_gyro_read_raw,
-+	.write_raw = &ssp_gyro_write_raw,
-+};
-+
-+static const unsigned long ssp_gyro_scan_mask[] = { 0x07, 0, };
-+
-+static const struct iio_chan_spec ssp_gyro_channels[] = {
-+	SSP_CHANNEL_AG(IIO_ANGL_VEL, IIO_MOD_X, SSP_CHANNEL_SCAN_INDEX_X),
-+	SSP_CHANNEL_AG(IIO_ANGL_VEL, IIO_MOD_Y, SSP_CHANNEL_SCAN_INDEX_Y),
-+	SSP_CHANNEL_AG(IIO_ANGL_VEL, IIO_MOD_Z, SSP_CHANNEL_SCAN_INDEX_Z),
-+	SSP_CHAN_TIMESTAMP(SSP_CHANNEL_SCAN_INDEX_TIME),
-+};
-+
-+static int ssp_process_gyro_data(struct iio_dev *indio_dev, void *buf,
-+				 int64_t timestamp)
-+{
-+	return ssp_common_process_data(indio_dev, buf, SSP_GYROSCOPE_SIZE,
-+				       timestamp);
-+}
-+
-+static const struct iio_buffer_setup_ops ssp_gyro_buffer_ops = {
-+	.postenable = &ssp_common_buffer_postenable,
-+	.postdisable = &ssp_common_buffer_postdisable,
-+};
-+
-+static int ssp_gyro_probe(struct platform_device *pdev)
-+{
-+	int ret;
-+	struct iio_dev *indio_dev;
-+	struct ssp_sensor_data *spd;
-+	struct iio_buffer *buffer;
-+
-+	indio_dev = devm_iio_device_alloc(&pdev->dev, sizeof(*spd));
-+	if (!indio_dev)
-+		return -ENOMEM;
-+
-+	spd = iio_priv(indio_dev);
-+
-+	spd->process_data = ssp_process_gyro_data;
-+	spd->type = SSP_GYROSCOPE_SENSOR;
-+
-+	indio_dev->name = ssp_gyro_name;
-+	indio_dev->dev.parent = &pdev->dev;
-+	indio_dev->info = &ssp_gyro_iio_info;
-+	indio_dev->modes = INDIO_BUFFER_SOFTWARE;
-+	indio_dev->channels = ssp_gyro_channels;
-+	indio_dev->num_channels = ARRAY_SIZE(ssp_gyro_channels);
-+	indio_dev->available_scan_masks = ssp_gyro_scan_mask;
-+
-+	buffer = devm_iio_kfifo_allocate(&pdev->dev);
-+	if (!buffer)
-+		return -ENOMEM;
-+
-+	iio_device_attach_buffer(indio_dev, buffer);
-+
-+	indio_dev->setup_ops = &ssp_gyro_buffer_ops;
-+
-+	platform_set_drvdata(pdev, indio_dev);
-+
-+	ret = iio_device_register(indio_dev);
-+	if (ret < 0)
-+		return ret;
-+
-+	/* ssp registering should be done after all iio setup */
-+	ssp_register_consumer(indio_dev, SSP_GYROSCOPE_SENSOR);
-+
-+	return 0;
-+}
-+
-+static int ssp_gyro_remove(struct platform_device *pdev)
-+{
-+	struct iio_dev *indio_dev = platform_get_drvdata(pdev);
-+
-+	iio_device_unregister(indio_dev);
-+
-+	return 0;
-+}
-+
-+static struct platform_driver ssp_gyro_driver = {
-+	.driver = {
-+		.name = SSP_GYROSCOPE_NAME,
-+	},
-+	.probe = ssp_gyro_probe,
-+	.remove = ssp_gyro_remove,
-+};
-+
-+module_platform_driver(ssp_gyro_driver);
-+
-+MODULE_AUTHOR("Karol Wrona <k.wrona@samsung.com>");
-+MODULE_DESCRIPTION("Samsung sensorhub gyroscopes driver");
-+MODULE_LICENSE("GPL");
--- 
-1.7.9.5
-
++	/*
++	 * Changing the parameters of a task is 'tricky' and we're not doing
++	 * the correct thing -- also see task_dead_dl() and switched_from_dl().
++	 *
++	 * What we SHOULD do is delay the bandwidth release until the 0-lag
++	 * point. This would include retaining the task_struct until that time
++	 * and change dl_overflow() to not immediately decrement the current
++	 * amount.
++	 *
++	 * Instead we retain the current runtime/deadline and let the new
++	 * parameters take effect after the current reservation period lapses.
++	 * This is safe (albeit pessimistic) because the 0-lag point is always
++	 * before the current scheduling deadline.
++	 *
++	 * We can still have temporary overloads because we do not delay the
++	 * change in bandwidth until that time; so admission control is
++	 * not on the safe side. It does however guarantee tasks will never
++	 * consume more than promised.
++	 */
+ }
+ 
+ /*
+diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
+index b52092f2636d..726470d47f87 100644
+--- a/kernel/sched/deadline.c
++++ b/kernel/sched/deadline.c
+@@ -1094,6 +1094,7 @@ static void task_dead_dl(struct task_struct *p)
+ 	 * Since we are TASK_DEAD we won't slip out of the domain!
+ 	 */
+ 	raw_spin_lock_irq(&dl_b->lock);
++	/* XXX we should retain the bw until 0-lag */
+ 	dl_b->total_bw -= p->dl.dl_bw;
+ 	raw_spin_unlock_irq(&dl_b->lock);
+ 
+@@ -1614,8 +1615,8 @@ static void cancel_dl_timer(struct rq *rq, struct task_struct *p)
+ 
+ static void switched_from_dl(struct rq *rq, struct task_struct *p)
+ {
++	/* XXX we should retain the bw until 0-lag */
+ 	cancel_dl_timer(rq, p);
+-
+ 	__dl_clear_params(p);
+ 
+ 	/*
