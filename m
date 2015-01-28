@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932628AbbA2JID (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 04:08:03 -0500
-Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:44915 "EHLO
+	id S1760625AbbA2JIe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 04:08:34 -0500
+Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:44926 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932456AbbA2JHz (ORCPT
+	by vger.kernel.org with ESMTP id S932762AbbA2JIW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 04:07:55 -0500
+	Thu, 29 Jan 2015 04:08:22 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, Felix Fietkau <nbd@openwrt.org>,
         "John W. Linville" <linville@tuxdriver.com>,
         Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 004/176] ath9k_hw: fix hardware queue allocation
-Date: Wed, 28 Jan 2015 15:27:14 +0100
-Message-Id: <7a2dbfb651aeb95a78029b01af55cde96a2f8db7.1422455352.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 005/176] ath9k: fix BE/BK queue order
+Date: Wed, 28 Jan 2015 15:27:15 +0100
+Message-Id: <5dc24dd1e87703800d669192643ead195d080b52.1422455352.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <ce4a451f616a1e7ab58cfeceea5e49c8b1c68c81.1422455352.git.jslaby@suse.cz>
 References: <ce4a451f616a1e7ab58cfeceea5e49c8b1c68c81.1422455352.git.jslaby@suse.cz>
@@ -30,40 +30,33 @@ From: Felix Fietkau <nbd@openwrt.org>
 
 ===============
 
-commit ad8fdccf9c197a89e2d2fa78c453283dcc2c343f upstream.
+commit 78063d81d353e10cbdd279c490593113b8fdae1c upstream.
 
-The driver passes the desired hardware queue index for a WMM data queue
-in qinfo->tqi_subtype. This was ignored in ath9k_hw_setuptxqueue, which
-instead relied on the order in which the function is called.
+Hardware queues are ordered by priority. Use queue index 0 for BK, which
+has lower priority than BE.
 
-Reported-by: Hubert Feurstein <h.feurstein@gmail.com>
 Signed-off-by: Felix Fietkau <nbd@openwrt.org>
 Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/net/wireless/ath/ath9k/mac.c | 9 +--------
- 1 file changed, 1 insertion(+), 8 deletions(-)
+ drivers/net/wireless/ath/ath9k/hw.h | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/net/wireless/ath/ath9k/mac.c b/drivers/net/wireless/ath/ath9k/mac.c
-index a3eff0986a3f..02446801cb3a 100644
---- a/drivers/net/wireless/ath/ath9k/mac.c
-+++ b/drivers/net/wireless/ath/ath9k/mac.c
-@@ -311,14 +311,7 @@ int ath9k_hw_setuptxqueue(struct ath_hw *ah, enum ath9k_tx_queue type,
- 		q = ATH9K_NUM_TX_QUEUES - 3;
- 		break;
- 	case ATH9K_TX_QUEUE_DATA:
--		for (q = 0; q < ATH9K_NUM_TX_QUEUES; q++)
--			if (ah->txq[q].tqi_type ==
--			    ATH9K_TX_QUEUE_INACTIVE)
--				break;
--		if (q == ATH9K_NUM_TX_QUEUES) {
--			ath_err(common, "No available TX queue\n");
--			return -1;
--		}
-+		q = qinfo->tqi_subtype;
- 		break;
- 	default:
- 		ath_err(common, "Invalid TX queue type: %u\n", type);
+diff --git a/drivers/net/wireless/ath/ath9k/hw.h b/drivers/net/wireless/ath/ath9k/hw.h
+index 69a907b55a73..5bf775e59ee9 100644
+--- a/drivers/net/wireless/ath/ath9k/hw.h
++++ b/drivers/net/wireless/ath/ath9k/hw.h
+@@ -215,8 +215,8 @@
+ #define AH_WOW_BEACON_MISS		BIT(3)
+ 
+ enum ath_hw_txq_subtype {
+-	ATH_TXQ_AC_BE = 0,
+-	ATH_TXQ_AC_BK = 1,
++	ATH_TXQ_AC_BK = 0,
++	ATH_TXQ_AC_BE = 1,
+ 	ATH_TXQ_AC_VI = 2,
+ 	ATH_TXQ_AC_VO = 3,
+ };
 -- 
 2.2.2
 
