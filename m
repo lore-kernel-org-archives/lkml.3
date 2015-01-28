@@ -1,137 +1,263 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934180AbbA1EV1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 23:21:27 -0500
-Received: from mail.kernel.org ([198.145.29.136]:39534 "EHLO mail.kernel.org"
+	id S965633AbbA1E4Y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 23:56:24 -0500
+Received: from mail.kernel.org ([198.145.29.136]:39544 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761206AbbA1EVW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 23:21:22 -0500
+	id S1760501AbbA1EVY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 23:21:24 -0500
 From: lizf@kernel.org
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Tim Niemeyer <tim.niemeyer@corscience.de>,
-        Zefan Li <lizefan@huawei.com>
-Subject: [PATCH 3.4 80/91] bluetooth: hci_ldisc: fix deadlock condition
-Date: Wed, 28 Jan 2015 12:08:47 +0800
-Message-Id: <1422418236-12852-160-git-send-email-lizf@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Nadav Amit <namit@cs.technion.ac.il>,
+        Paolo Bonzini <pbonzini@redhat.com>, Zefan Li <lizefan@huawei.com>
+Subject: [PATCH 3.4 081/177] KVM: x86: Emulator fixes for eip canonical checks on near branches
+Date: Wed, 28 Jan 2015 12:08:48 +0800
+Message-Id: <1422418236-12852-161-git-send-email-lizf@kernel.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422418050-12581-1-git-send-email-lizf@kernel.org>
 References: <1422418050-12581-1-git-send-email-lizf@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Felipe Balbi <balbi@ti.com>
+From: Nadav Amit <namit@cs.technion.ac.il>
 
-3.4.105-rc1 review patch.  If anyone has any objections, please let me know.
+3.4.106-rc1 review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
 
-commit da64c27d3c93ee9f89956b9de86c4127eb244494 upstream.
+commit 234f3ce485d54017f15cf5e0699cff4100121601 upstream.
 
-LDISCs shouldn't call tty->ops->write() from within
-->write_wakeup().
+Before changing rip (during jmp, call, ret, etc.) the target should be asserted
+to be canonical one, as real CPUs do.  During sysret, both target rsp and rip
+should be canonical. If any of these values is noncanonical, a #GP exception
+should occur.  The exception to this rule are syscall and sysenter instructions
+in which the assigned rip is checked during the assignment to the relevant
+MSRs.
 
-->write_wakeup() is called with port lock taken and
-IRQs disabled, tty->ops->write() will try to acquire
-the same port lock and we will deadlock.
+This patch fixes the emulator to behave as real CPUs do for near branches.
+Far branches are handled by the next patch.
 
-Acked-by: Marcel Holtmann <marcel@holtmann.org>
-Reviewed-by: Peter Hurley <peter@hurleysoftware.com>
-Reported-by: Huang Shijie <b32955@freescale.com>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
-Tested-by: Andreas Bießmann <andreas@biessmann.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-[tim.niemeyer@corscience.de: rebased on 3.4.103]
-Signed-off-by: Tim Niemeyer <tim.niemeyer@corscience.de>
+This fixes CVE-2014-3647.
+
+Signed-off-by: Nadav Amit <namit@cs.technion.ac.il>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+[lizf: Backported to 3.4:
+ - adjust context
+ - use ctxt->regs rather than reg_read() and reg_write()]
 Signed-off-by: Zefan Li <lizefan@huawei.com>
 ---
- drivers/bluetooth/hci_ldisc.c | 25 ++++++++++++++++++++-----
- drivers/bluetooth/hci_uart.h  |  2 ++
- 2 files changed, 22 insertions(+), 5 deletions(-)
+ arch/x86/kvm/emulate.c | 78 ++++++++++++++++++++++++++++++++++----------------
+ 1 file changed, 54 insertions(+), 24 deletions(-)
 
-diff --git a/drivers/bluetooth/hci_ldisc.c b/drivers/bluetooth/hci_ldisc.c
-index 98a8c05..d4550f9 100644
---- a/drivers/bluetooth/hci_ldisc.c
-+++ b/drivers/bluetooth/hci_ldisc.c
-@@ -118,10 +118,6 @@ static inline struct sk_buff *hci_uart_dequeue(struct hci_uart *hu)
- 
- int hci_uart_tx_wakeup(struct hci_uart *hu)
- {
--	struct tty_struct *tty = hu->tty;
--	struct hci_dev *hdev = hu->hdev;
--	struct sk_buff *skb;
--
- 	if (test_and_set_bit(HCI_UART_SENDING, &hu->tx_state)) {
- 		set_bit(HCI_UART_TX_WAKEUP, &hu->tx_state);
- 		return 0;
-@@ -129,6 +125,22 @@ int hci_uart_tx_wakeup(struct hci_uart *hu)
- 
- 	BT_DBG("");
- 
-+	schedule_work(&hu->write_work);
-+
-+	return 0;
-+}
-+
-+static void hci_uart_write_work(struct work_struct *work)
-+{
-+	struct hci_uart *hu = container_of(work, struct hci_uart, write_work);
-+	struct tty_struct *tty = hu->tty;
-+	struct hci_dev *hdev = hu->hdev;
-+	struct sk_buff *skb;
-+
-+	/* REVISIT: should we cope with bad skbs or ->write() returning
-+	 * and error value ?
-+	 */
-+
- restart:
- 	clear_bit(HCI_UART_TX_WAKEUP, &hu->tx_state);
- 
-@@ -153,7 +165,6 @@ restart:
- 		goto restart;
- 
- 	clear_bit(HCI_UART_SENDING, &hu->tx_state);
--	return 0;
+diff --git a/arch/x86/kvm/emulate.c b/arch/x86/kvm/emulate.c
+index fa23346..c3e1942 100644
+--- a/arch/x86/kvm/emulate.c
++++ b/arch/x86/kvm/emulate.c
+@@ -532,7 +532,8 @@ static int emulate_nm(struct x86_emulate_ctxt *ctxt)
+ 	return emulate_exception(ctxt, NM_VECTOR, 0, false);
  }
  
- /* ------- Interface to HCI layer ------ */
-@@ -264,6 +275,8 @@ static int hci_uart_tty_open(struct tty_struct *tty)
- 	hu->tty = tty;
- 	tty->receive_room = 65536;
- 
-+	INIT_WORK(&hu->write_work, hci_uart_write_work);
+-static inline void assign_eip_near(struct x86_emulate_ctxt *ctxt, ulong dst)
++static inline int assign_eip_far(struct x86_emulate_ctxt *ctxt, ulong dst,
++			       int cs_l)
+ {
+ 	switch (ctxt->op_bytes) {
+ 	case 2:
+@@ -542,16 +543,25 @@ static inline void assign_eip_near(struct x86_emulate_ctxt *ctxt, ulong dst)
+ 		ctxt->_eip = (u32)dst;
+ 		break;
+ 	case 8:
++		if ((cs_l && is_noncanonical_address(dst)) ||
++		    (!cs_l && (dst & ~(u32)-1)))
++			return emulate_gp(ctxt, 0);
+ 		ctxt->_eip = dst;
+ 		break;
+ 	default:
+ 		WARN(1, "unsupported eip assignment size\n");
+ 	}
++	return X86EMUL_CONTINUE;
++}
 +
- 	spin_lock_init(&hu->rx_lock);
++static inline int assign_eip_near(struct x86_emulate_ctxt *ctxt, ulong dst)
++{
++	return assign_eip_far(ctxt, dst, ctxt->mode == X86EMUL_MODE_PROT64);
+ }
  
- 	/* Flush any pending characters in the driver and line discipline. */
-@@ -298,6 +311,8 @@ static void hci_uart_tty_close(struct tty_struct *tty)
- 		if (hdev)
- 			hci_uart_close(hdev);
+-static inline void jmp_rel(struct x86_emulate_ctxt *ctxt, int rel)
++static inline int jmp_rel(struct x86_emulate_ctxt *ctxt, int rel)
+ {
+-	assign_eip_near(ctxt, ctxt->_eip + rel);
++	return assign_eip_near(ctxt, ctxt->_eip + rel);
+ }
  
-+		cancel_work_sync(&hu->write_work);
+ static u16 get_segment_selector(struct x86_emulate_ctxt *ctxt, unsigned seg)
+@@ -1802,13 +1812,15 @@ static int em_grp45(struct x86_emulate_ctxt *ctxt)
+ 	case 2: /* call near abs */ {
+ 		long int old_eip;
+ 		old_eip = ctxt->_eip;
+-		ctxt->_eip = ctxt->src.val;
++		rc = assign_eip_near(ctxt, ctxt->src.val);
++		if (rc != X86EMUL_CONTINUE)
++			break;
+ 		ctxt->src.val = old_eip;
+ 		rc = em_push(ctxt);
+ 		break;
+ 	}
+ 	case 4: /* jmp abs */
+-		ctxt->_eip = ctxt->src.val;
++		rc = assign_eip_near(ctxt, ctxt->src.val);
+ 		break;
+ 	case 5: /* jmp far */
+ 		rc = em_jmp_far(ctxt);
+@@ -1840,10 +1852,14 @@ static int em_cmpxchg8b(struct x86_emulate_ctxt *ctxt)
+ 
+ static int em_ret(struct x86_emulate_ctxt *ctxt)
+ {
+-	ctxt->dst.type = OP_REG;
+-	ctxt->dst.addr.reg = &ctxt->_eip;
+-	ctxt->dst.bytes = ctxt->op_bytes;
+-	return em_pop(ctxt);
++	int rc;
++	unsigned long eip;
 +
- 		if (test_and_clear_bit(HCI_UART_PROTO_SET, &hu->flags)) {
- 			if (hdev) {
- 				hci_unregister_dev(hdev);
-diff --git a/drivers/bluetooth/hci_uart.h b/drivers/bluetooth/hci_uart.h
-index 6cf6ab22..af93d83 100644
---- a/drivers/bluetooth/hci_uart.h
-+++ b/drivers/bluetooth/hci_uart.h
-@@ -66,6 +66,8 @@ struct hci_uart {
- 	unsigned long		flags;
- 	unsigned long		hdev_flags;
- 
-+	struct work_struct	write_work;
++	rc = emulate_pop(ctxt, &eip, ctxt->op_bytes);
++	if (rc != X86EMUL_CONTINUE)
++		return rc;
 +
- 	struct hci_uart_proto	*proto;
- 	void			*priv;
++	return assign_eip_near(ctxt, eip);
+ }
  
+ static int em_ret_far(struct x86_emulate_ctxt *ctxt)
+@@ -2108,7 +2124,7 @@ static int em_sysexit(struct x86_emulate_ctxt *ctxt)
+ {
+ 	struct x86_emulate_ops *ops = ctxt->ops;
+ 	struct desc_struct cs, ss;
+-	u64 msr_data;
++	u64 msr_data, rcx, rdx;
+ 	int usermode;
+ 	u16 cs_sel = 0, ss_sel = 0;
+ 
+@@ -2124,6 +2140,9 @@ static int em_sysexit(struct x86_emulate_ctxt *ctxt)
+ 	else
+ 		usermode = X86EMUL_MODE_PROT32;
+ 
++	rcx = ctxt->regs[VCPU_REGS_RCX];
++	rdx = ctxt->regs[VCPU_REGS_RDX];
++
+ 	cs.dpl = 3;
+ 	ss.dpl = 3;
+ 	ops->get_msr(ctxt, MSR_IA32_SYSENTER_CS, &msr_data);
+@@ -2141,6 +2160,9 @@ static int em_sysexit(struct x86_emulate_ctxt *ctxt)
+ 		ss_sel = cs_sel + 8;
+ 		cs.d = 0;
+ 		cs.l = 1;
++		if (is_noncanonical_address(rcx) ||
++		    is_noncanonical_address(rdx))
++			return emulate_gp(ctxt, 0);
+ 		break;
+ 	}
+ 	cs_sel |= SELECTOR_RPL_MASK;
+@@ -2149,8 +2171,8 @@ static int em_sysexit(struct x86_emulate_ctxt *ctxt)
+ 	ops->set_segment(ctxt, cs_sel, &cs, 0, VCPU_SREG_CS);
+ 	ops->set_segment(ctxt, ss_sel, &ss, 0, VCPU_SREG_SS);
+ 
+-	ctxt->_eip = ctxt->regs[VCPU_REGS_RDX];
+-	ctxt->regs[VCPU_REGS_RSP] = ctxt->regs[VCPU_REGS_RCX];
++	ctxt->_eip = rdx;
++	ctxt->regs[VCPU_REGS_RSP] = rcx;
+ 
+ 	return X86EMUL_CONTINUE;
+ }
+@@ -2646,10 +2668,13 @@ static int em_das(struct x86_emulate_ctxt *ctxt)
+ 
+ static int em_call(struct x86_emulate_ctxt *ctxt)
+ {
++	int rc;
+ 	long rel = ctxt->src.val;
+ 
+ 	ctxt->src.val = (unsigned long)ctxt->_eip;
+-	jmp_rel(ctxt, rel);
++	rc = jmp_rel(ctxt, rel);
++	if (rc != X86EMUL_CONTINUE)
++		return rc;
+ 	return em_push(ctxt);
+ }
+ 
+@@ -2681,11 +2706,12 @@ static int em_call_far(struct x86_emulate_ctxt *ctxt)
+ static int em_ret_near_imm(struct x86_emulate_ctxt *ctxt)
+ {
+ 	int rc;
++	unsigned long eip;
+ 
+-	ctxt->dst.type = OP_REG;
+-	ctxt->dst.addr.reg = &ctxt->_eip;
+-	ctxt->dst.bytes = ctxt->op_bytes;
+-	rc = emulate_pop(ctxt, &ctxt->dst.val, ctxt->op_bytes);
++	rc = emulate_pop(ctxt, &eip, ctxt->op_bytes);
++	if (rc != X86EMUL_CONTINUE)
++		return rc;
++	rc = assign_eip_near(ctxt, eip);
+ 	if (rc != X86EMUL_CONTINUE)
+ 		return rc;
+ 	register_address_increment(ctxt, &ctxt->regs[VCPU_REGS_RSP], ctxt->src.val);
+@@ -2994,20 +3020,24 @@ static int em_lmsw(struct x86_emulate_ctxt *ctxt)
+ 
+ static int em_loop(struct x86_emulate_ctxt *ctxt)
+ {
++	int rc = X86EMUL_CONTINUE;
++
+ 	register_address_increment(ctxt, &ctxt->regs[VCPU_REGS_RCX], -1);
+ 	if ((address_mask(ctxt, ctxt->regs[VCPU_REGS_RCX]) != 0) &&
+ 	    (ctxt->b == 0xe2 || test_cc(ctxt->b ^ 0x5, ctxt->eflags)))
+-		jmp_rel(ctxt, ctxt->src.val);
++		rc = jmp_rel(ctxt, ctxt->src.val);
+ 
+-	return X86EMUL_CONTINUE;
++	return rc;
+ }
+ 
+ static int em_jcxz(struct x86_emulate_ctxt *ctxt)
+ {
++	int rc = X86EMUL_CONTINUE;
++
+ 	if (address_mask(ctxt, ctxt->regs[VCPU_REGS_RCX]) == 0)
+-		jmp_rel(ctxt, ctxt->src.val);
++		rc = jmp_rel(ctxt, ctxt->src.val);
+ 
+-	return X86EMUL_CONTINUE;
++	return rc;
+ }
+ 
+ static int em_in(struct x86_emulate_ctxt *ctxt)
+@@ -4185,7 +4215,7 @@ special_insn:
+ 		break;
+ 	case 0x70 ... 0x7f: /* jcc (short) */
+ 		if (test_cc(ctxt->b, ctxt->eflags))
+-			jmp_rel(ctxt, ctxt->src.val);
++			rc = jmp_rel(ctxt, ctxt->src.val);
+ 		break;
+ 	case 0x8d: /* lea r16/r32, m */
+ 		ctxt->dst.val = ctxt->src.addr.mem.ea;
+@@ -4224,7 +4254,7 @@ special_insn:
+ 		break;
+ 	case 0xe9: /* jmp rel */
+ 	case 0xeb: /* jmp rel short */
+-		jmp_rel(ctxt, ctxt->src.val);
++		rc = jmp_rel(ctxt, ctxt->src.val);
+ 		ctxt->dst.type = OP_NONE; /* Disable writeback. */
+ 		break;
+ 	case 0xf4:              /* hlt */
+@@ -4327,7 +4357,7 @@ twobyte_insn:
+ 		break;
+ 	case 0x80 ... 0x8f: /* jnz rel, etc*/
+ 		if (test_cc(ctxt->b, ctxt->eflags))
+-			jmp_rel(ctxt, ctxt->src.val);
++			rc = jmp_rel(ctxt, ctxt->src.val);
+ 		break;
+ 	case 0x90 ... 0x9f:     /* setcc r/m8 */
+ 		ctxt->dst.val = test_cc(ctxt->b, ctxt->eflags);
 -- 
 1.9.1
 
