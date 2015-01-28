@@ -1,132 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761419AbbA1GWb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 01:22:31 -0500
-Received: from mo6.mail-out.ovh.net ([178.32.228.6]:43537 "EHLO
-	mo6.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759905AbbA1GWa convert rfc822-to-8bit (ORCPT
+	id S1760893AbbA1G0V (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 01:26:21 -0500
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:36697 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751464AbbA1G0U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 01:22:30 -0500
-Content-Type: text/plain; charset=utf-8
-Mime-Version: 1.0 (Mac OS X Mail 8.1 \(1993\))
-Subject: Re: [PATCH] ARM: /proc/atags: Export also for DT
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-In-Reply-To: <alpine.LFD.2.11.1501272027390.1322@knanqh.ubzr>
-Date: Wed, 28 Jan 2015 14:21:55 +0800
-Cc: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>,
-        Tony Lindgren <tony@atomide.com>, Sebastian Reichel <sre@debian.org>,
-        Will Deacon <will.deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Pavel Machek <pavel@ucw.cz>,
-        =?utf-8?Q?Pali_Roh=C3=A1r?= <pali.rohar@gmail.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <1FECE32B-0D63-4696-BED7-74FE5845C260@jcrosoft.com>
-References: <1403110464-29646-1-git-send-email-pali.rohar@gmail.com> <20150127132127.GA869@amd> <CAL_JsqKM+2PtX_EpWXyOQHVXwf=jqVj8SroUGPO1Y2=Zj8_kMg@mail.gmail.com> <201501271532.25540@pali> <20150127174818.GM26493@n2100.arm.linux.org.uk> <alpine.LFD.2.11.1501271446330.1322@knanqh.ubzr> <20150127210943.GN26493@n2100.arm.linux.org.uk> <alpine.LFD.2.11.1501271614280.1322@knanqh.ubzr> <20150127223331.GP26493@n2100.arm.linux.org.uk> <alpine.LFD.2.11.1501272027390.1322@knanqh.ubzr>
-To: Nicolas Pitre <nico@fluxnic.net>
-X-Mailer: Apple Mail (2.1993)
-X-Ovh-Tracer-Id: 9225905312511601592
-X-Ovh-Remote: 80.15.34.121 (lmontsouris-656-1-34-121.w80-15.abo.wanadoo.fr)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejkedrvdejucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejkedrvdejucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+	Wed, 28 Jan 2015 01:26:20 -0500
+Date: Wed, 28 Jan 2015 15:26:10 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Vlastimil Babka <vbabka@suse.cz>
+Cc: John Moser <john.r.moser@gmail.com>, linux-kernel@vger.kernel.org,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Christoph Lameter <cl@linux-foundation.org>
+Subject: Re: OOM at low page cache?
+Message-ID: <20150128062609.GA4706@blaptop>
+References: <54C2C89C.8080002@gmail.com>
+ <54C77086.7090505@suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54C77086.7090505@suse.cz>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello,
 
-> On Jan 28, 2015, at 10:07 AM, Nicolas Pitre <nico@fluxnic.net> wrote:
+On Tue, Jan 27, 2015 at 12:03:34PM +0100, Vlastimil Babka wrote:
+> CC linux-mm in case somebody has a good answer but missed this in lkml traffic
 > 
-> On Tue, 27 Jan 2015, Russell King - ARM Linux wrote:
-> 
->> On Tue, Jan 27, 2015 at 04:34:47PM -0500, Nicolas Pitre wrote:
->>> On Tue, 27 Jan 2015, Russell King - ARM Linux wrote:
->>>> Or we pass both the ATAGs and wrapped DT to the kernel when both exist,
->>>> and let the kernel deal with it in a much saner environment than the
->>>> restricted decompressor environment.
->>> 
->>> ... which would be a step backward in the context of the transition to 
->>> DT we accepted.  People will have even less of an incentive to fix their 
->>> stuff.
->> 
->> Where's the people fixing their stuff today?
-> 
-> At least some people in this thread are, otherwise they'd still be away 
-> hacking on their own.
-> 
->> I think your position is something of an idealist rather than a 
->> realist - the reality is that five years down the line of DT, the 
->> platforms which have not converted are now *never* going to convert, 
->> irrespective of how much "incentive" we may think we should apply to 
->> the situation.
-> 
-> Don't get me wrong.  I'm not expecting those platforms to do native DT 
-> booting ever.  However "faking" DT booting with already proven solutions 
-> that don't bastardize the kernel further should be encouraged.
-> 
->>> If there is indeed a sizable following for the device then someone 
->>> should figure out how to cope with upstream kernels, either through the 
->>> installation of some intermediate bootloader that can talk FDT directly, 
->>> or via a shim layer.  None of that has to be performed by nor linked 
->>> with the kernel binary, nor maintained in the kernel tree. And it's not 
->>> even that hard to do: we have precedents on other platforms with crappy 
->>> bootloaders where this just works.
->> 
->> That's a rediculous position if you want something which "just works"
->> on as much hardware as possible, which is, after all, what the single
->> zImage project is all about.
-> 
-> Agreed.
-> 
->> To be pro single-zImage, and anti popular hardware is quite contradictory.
-> 
-> Indeed.  I'm not against popular hardware.
-> 
->> You only have to look at x86 for this: just because ACPI came along does
->> not mean that the Linux kernel started demanding that ACPI is the only
->> way to describe the world.  Linux continues to directly support all the
->> old boot protocols that it did since the days of i386, such as the e820
->> memory interface and doesn't convert these to an ACPI table just because
->> it can.
-> 
-> Booting from a floppy boot sector is no longer supported though.
-> 
-> But that's besides the point.  If someone needs a 5-line addition to 
-> atags_to_fdt.c in order to boot some old stuff then let's just do it and 
-> move on. I'll happily ACK the patch. The code is there and it is not 
-> going away soon.
-> 
-> However, if something more involved is needed, is platform specific and 
-> is likely to require about as many lines in the kernel than it would 
-> need in some externat shim then the shim solution should be encouraged 
-> instead.  After all that's why LILO, Syslinux and Grub were created on 
-> X86: to Supplement the crappy PC BIOS boot interface.  And if the 
-> hardware is popular, then finding a motivated hacker to do it shouldn't 
-> be too hard, right?
-> 
-> In other words, what prevents someone from creating, say, a custom 
-> minimal Barebox version that sits on top of the existing N900 
-> bootloader?  Wouldn't that provide a much better user experience?
+> On 01/23/2015 11:18 PM, John Moser wrote:
+> > Why is there no tunable to OOM at low page cache?
 
-I do agree with Nicolas
+AFAIR, there were several trial although there wasn't acceptable
+at that time. One thing I can remember is min_filelist_kbytes.
+FYI, http://lwn.net/Articles/412313/
 
-If I can get my hand on a phone I’ll put barebox on it
+> > 
+> > I have no swap configured.  I have 16GB RAM.  If Chrome or Gimp or some
+> > other stupid program goes off the deep end and eats up my RAM, I hit
+> > some 15.5GB or 15.75GB usage and stay there for about 40 minutes.  Every
+> > time the program tries to do something to eat more RAM, it cranks disk
+> > hard; the disk starts thrashing, the mouse pointer stops moving, and
+> > nothing goes on.  It's like swapping like crazy, except you're reading
+> > library files instead of paged anonymous RAM.
+> > 
+> > If only I could tell the system to OOM kill at 512MB or 1GB or 95%
+> > non-evictable RAM, it would recover on its own.  As-is, I need to wait
+> > or trigger the OOM killer by sysrq.
+> > 
+> > Am I just the only person in the world who's ever had that problem?  Or
+> > is it a matter of questions fast popping up when you try to do this
+> > *and* enable paging to disk?  (In my experience, that's a matter of too
+> > much swap space:  if you have 16GB RAM and your computer dies at 15.25GB
+> > usage, your swap space should be no larger than 750MB plus inactive
+> > working RAM; obviously, your computer can't handle paging 750MB back and
+> > forth.  If you make it 8GB wide and you start swap thrashing at 2GB
+> > usage, you have too much swap available).
+> > 
+> > I guess you could try to detect excessive swap and page cache thrashing,
+> > but that's complex; if anyone really wanted to do that, it would be done
+> > by now.  A low-barrier OOM is much simpler.
 
-Best Regards,
-J.
-> 
-> 
-> Nicolas
-> 
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+I'm far away from reclaim code for a long time but when I read again,
+I found something strange.
 
+With having swap in get_scan_count, we keep a mount of file LRU + free
+as above than high wmark to prevent file LRU thrashing but we don't
+with no swap. Why?
+
+Anyway, I believe we should fix it and we now have workingset.c so
+there might be more ways to be smart than old(although I am concern
+about that shadow shrinker blows out lots of information to be useful
+to detect in heavy memory pressure like page thrashing)
+
+Below could be band-aid until we find a elegant solution?
+
+>From c51787f7d75340b54bab2b5e3c587f4a483da51a Mon Sep 17 00:00:00 2001
+From: Minchan Kim <minchan@kernel.org>
+Date: Wed, 28 Jan 2015 14:01:57 +0900
+Subject: [PATCH] mm: prevent page thrashing
+
+No-Signed-off-by: Minchan Kim <minchan@kernel.org>
+---
+ mm/vmscan.c | 19 +++++++++++++++++++
+ 1 file changed, 19 insertions(+)
+
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 671e47edb584..b258df552e3a 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -2143,6 +2143,25 @@ out:
+ 							denominator);
+ 				break;
+ 			case SCAN_FILE:
++				if (file && global_reclaim(sc)) {
++					unsigned long zonefile;
++					unsigned long zonefree;
++
++					zonefree = zone_page_state(zone,
++								NR_FREE_PAGES);
++					zonefile = zone_page_state(zone,
++							NR_ACTIVE_FILE) +
++							zone_page_state(zone,
++							NR_INACTIVE_FILE);
++
++					/* OOM is better than code thrashing */
++					if (zonefile + zonefree <=
++						high_wmark_pages(zone)) {
++						size = 0;
++						scan = 0;
++					}
++					break;
++				}
+ 			case SCAN_ANON:
+ 				/* Scan one type exclusively */
+ 				if ((scan_balance == SCAN_FILE) != file) {
+-- 
+1.9.1
+
+
+-- 
+Kind regards,
+Minchan Kim
