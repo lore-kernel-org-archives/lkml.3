@@ -1,57 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762890AbbA2CrH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 21:47:07 -0500
-Received: from mail-lb0-f178.google.com ([209.85.217.178]:36265 "EHLO
-	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762878AbbA2CrE (ORCPT
+	id S1756069AbbA1UVf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 15:21:35 -0500
+Received: from mail-lb0-f170.google.com ([209.85.217.170]:55076 "EHLO
+	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754585AbbA1UVc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 21:47:04 -0500
-Date: Wed, 28 Jan 2015 17:10:07 +0100
-From: Johan Hovold <johan@kernel.org>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: stable@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Johan Hovold <johan@kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: [PATCH 3.12 140/176] gpio: sysfs: fix gpio device-attribute leak
-Message-ID: <20150128161007.GC2433@localhost>
-References: <cover.1422455352.git.jslaby@suse.cz>
- <e66a96f38a5a35c96eadcabbe20921ad32ed087a.1422455352.git.jslaby@suse.cz>
+	Wed, 28 Jan 2015 15:21:32 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <e66a96f38a5a35c96eadcabbe20921ad32ed087a.1422455352.git.jslaby@suse.cz>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <54C905CA.80908@i2se.com>
+References: <1419762402-4548-1-git-send-email-stefan.wahren@i2se.com>
+	<CAHrpEqQ-eoqM3W1hYcS6EPTmur1FSfm8TeEjYrtZ+PquavL86w@mail.gmail.com>
+	<201501220039.02073.marex@denx.de>
+	<20150128015131.22722.22882@quantum>
+	<CAHrpEqSFfdWsCif_wZO2ToRpwOuC2yt45+HwOpGgv+B=EwKTCw@mail.gmail.com>
+	<54C905CA.80908@i2se.com>
+Date: Wed, 28 Jan 2015 10:10:17 -0600
+Message-ID: <CAHrpEqQ=7EZNzpt1tmjBUrH8oDzjQmCCOrZaH8MBdmvV1+uFZg@mail.gmail.com>
+Subject: Re: [PATCH V2] clk: mxs: Fix invalid 32-bit access to frac registers
+From: Zhi Li <lznuaa@gmail.com>
+To: Stefan Wahren <stefan.wahren@i2se.com>
+Cc: Mike Turquette <mturquette@linaro.org>, Marek Vasut <marex@denx.de>,
+        kernel list <linux-kernel@vger.kernel.org>,
+        Sascha Hauer <kernel@pengutronix.de>, harald@ccbib.org,
+        Shawn Guo <shawn.guo@linaro.org>, Fabio Estevam <festevam@gmail.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 28, 2015 at 03:29:30PM +0100, Jiri Slaby wrote:
-> From: Johan Hovold <johan@kernel.org>
-> 
-> 3.12-stable review patch.  If anyone has any objections, please let me know.
-> 
-> ===============
-> 
-> commit 0915e6feb38de8d3601819992a5bd050201a56fa upstream.
-> 
-> The gpio device attributes were never destroyed when the gpio was
-> unexported (or on export failures).
-> 
-> Use device_create_with_groups() to create the default device attributes
-> of the gpio class device. Note that this also fixes the
-> attribute-creation race with userspace for these attributes.
-> 
-> Remove contingent attributes in export error path and on unexport.
-> 
-> Fixes: d8f388d8dc8d ("gpio: sysfs interface")
-> Signed-off-by: Johan Hovold <johan@kernel.org>
-> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
-> Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+On Wed, Jan 28, 2015 at 9:52 AM, Stefan Wahren <stefan.wahren@i2se.com> wrote:
+> Hi,
+>
+> Am 28.01.2015 um 04:36 schrieb Zhi Li:
+>> On Tue, Jan 27, 2015 at 7:51 PM, Mike Turquette <mturquette@linaro.org> wrote:
+>>> Quoting Marek Vasut (2015-01-21 15:39:01)
+>>>> On Wednesday, January 21, 2015 at 05:16:03 PM, Zhi Li wrote:
+>>>>> On Sun, Dec 28, 2014 at 4:26 AM, Stefan Wahren <stefan.wahren@i2se.com> wrote:
+>>>>>> According to i.MX23 and i.MX28 reference manual the fractional
+>>>>>> clock control registers must be addressed by byte instructions.
+>>>>> I don't think mx23 and mx28 have such limitation. I will double check
+>>>>> with IC team about this.
+>>>>> RTL is generated from a xml file. All registers implement is unified.
+>>>>> I don't think only clock control register have such limitation and
+>>>>> other registers not.
+>>>> Hi,
+>>>>
+>>>> Section 10.8.24 in the MX28 datasheet (Fractional Clock Control Register 0)
+>>>> states otherwise, but maybe the documentation is simply not matching the
+>>>> silicon.
+>>>>
+>>>> Here's a quote:
+>>>> "
+>>>> This register controls the 9-phase fractional clock dividers. The fractional
+>>>> clock frequencies are a product of the values in these registers. NOTE: This
+>>>> register can only be addressed by byte instructions. Addressing word or half-
+>>>> word are not allowed.
+>>>> "
+>>>>
+>>>> I also recall seeing weird behavior when these registers were accessed by word
+>>>> access in U-Boot, so I believe the datasheet is correct.
+>>> Hi Frank,
+>>>
+>>> Are you satisfied with this patch?
+>> I asked IC designer about this.
+>> They will check RTL code.
+>> I will check their status again.
+>> Our released BSP code used 32bit WORD access.
+>
+> i want to point out that the 32bit WORD is divided in 4 parts (IO0FRAC,
+> IO1FRAC, EMIFRAC, CPUFRAC). Yes, it's true that BSP code access the
+> register as 32bit, but it's never modify the complete 32bit at once just
+> only 1 part (8bit) at a time.
+>
+> So here is my theory about Fractional Clock Control Register:
+>
+> Reading as 32bit WORD => safe
+> Modify only 1 part (8bit) of the 32bit WORD => safe
+> Modify more than 1 part of the 32bit WORD => unsafe !!!
 
-There was a mistake in the 3.14 (and 3.12) backport. A fixed v2 backport
-has been posted in this thread:
+Yes, it is align with what I get from IC designer.
 
-	https://marc.info/?l=linux-kernel&m=142241055931689&w=2
+best regards
+Frank Li
 
-Johan
+>
+> Best regards
+> Stefan
+>
+>>
+>> best regards
+>> Frank Li
+>>> Regards,
+>>> Mike
+>>>
+>>>> Best regards,
+>>>> Marek Vasut
+>
+>
