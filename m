@@ -1,107 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763031AbbA1FaG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 00:30:06 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:33152 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1763013AbbA1FaC (ORCPT
+	id S1762883AbbA1F0e (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 00:26:34 -0500
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:50099 "EHLO
+	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761657AbbA1F0c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 00:30:02 -0500
-From: HuKeping <hukeping@huawei.com>
-To: <gregkh@linuxfoundation.org>
-CC: <linux-kernel@vger.kernel.org>, <matt.fleming@intel.com>,
-        <cbouatmailru@gmail.com>, <ccross@android.com>,
-        <keescook@chromium.org>, <tony.luck@intel.com>,
-        <stable@vger.kernel.org>, <sdu.liu@huawei.com>, <wangnan0@huawei.com>,
-        <peifeiyue@huawei.com>
-Subject: [PATCH 2/2] efi-pstore: Make efi-pstore return a unique id
-Date: Wed, 28 Jan 2015 13:23:41 +0800
-Message-ID: <1422422621-5003-3-git-send-email-hukeping@huawei.com>
-X-Mailer: git-send-email 1.8.5.5
-In-Reply-To: <1422422621-5003-1-git-send-email-hukeping@huawei.com>
-References: <1422422621-5003-1-git-send-email-hukeping@huawei.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.107.197.247]
-X-CFilter-Loop: Reflected
+	Wed, 28 Jan 2015 00:26:32 -0500
+From: Behan Webster <behanw@converseincode.com>
+To: torvalds@linux-foundation.org
+Cc: behanw@converseincode.com, linux-kernel@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>, "Christopher Li" <sparse@chrisli.org>
+Subject: [PATCH] Mark inline functions as __maybe_unused
+Date: Tue, 27 Jan 2015 21:26:19 -0800
+Message-Id: <1422422779-3876-1-git-send-email-behanw@converseincode.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Madper Xie <cxie@redhat.com>
+clang warns if inline functions aren't used. By making them __maybe_unused
+there is no warning for either gcc nor clang.
 
-Commit fdeadb43fdf1e7d5698c027b555c389174548e5a upstream.
-
-Pstore fs expects that backends provide a unique id which could avoid
-pstore making entries as duplication or denominating entries the same
-name. So I combine the timestamp, part and count into id.
-
-Signed-off-by: Madper Xie <cxie@redhat.com>
-Cc: Seiji Aguchi <seiji.aguchi@hds.com>
-Cc: stable@vger.kernel.org
-Signed-off-by: Matt Fleming <matt.fleming@intel.com>
-[hkp: Backported to 3.10: adjust context]
-Signed-off-by: Hu Keping <hukeping@huawei.com>
-
+Signed-off-by: Behan Webster <behanw@converseincode.com>
+Suggested-by: Arnd Bergmann <arnd@arndb.de>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: "Christopher Li" <sparse@chrisli.org>
 ---
- drivers/firmware/efi/efi-pstore.c | 18 +++++++++++++-----
- 1 file changed, 13 insertions(+), 5 deletions(-)
+ include/linux/compiler-gcc.h | 12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/firmware/efi/efi-pstore.c b/drivers/firmware/efi/efi-pstore.c
-index 66c0c76..c5163e3 100644
---- a/drivers/firmware/efi/efi-pstore.c
-+++ b/drivers/firmware/efi/efi-pstore.c
-@@ -38,6 +38,12 @@ struct pstore_read_data {
- 	char **buf;
- };
+diff --git a/include/linux/compiler-gcc.h b/include/linux/compiler-gcc.h
+index 02ae99e..c7b98fb 100644
+--- a/include/linux/compiler-gcc.h
++++ b/include/linux/compiler-gcc.h
+@@ -53,14 +53,14 @@
+  */
+ #if !defined(CONFIG_ARCH_SUPPORTS_OPTIMIZED_INLINING) || \
+     !defined(CONFIG_OPTIMIZE_INLINING) || (__GNUC__ < 4)
+-# define inline		inline		__attribute__((always_inline)) notrace
+-# define __inline__	__inline__	__attribute__((always_inline)) notrace
+-# define __inline	__inline	__attribute__((always_inline)) notrace
++# define inline		inline		__attribute__((always_inline)) notrace __maybe_unused
++# define __inline__	__inline__	__attribute__((always_inline)) notrace __maybe_unused
++# define __inline	__inline	__attribute__((always_inline)) notrace __maybe_unused
+ #else
+ /* A lot of inline functions can cause havoc with function tracing */
+-# define inline		inline		notrace
+-# define __inline__	__inline__	notrace
+-# define __inline	__inline	notrace
++# define inline		inline		notrace __maybe_unused
++# define __inline__	__inline__	notrace __maybe_unused
++# define __inline	__inline	notrace __maybe_unused
+ #endif
  
-+static inline u64 generic_id(unsigned long timestamp,
-+			     unsigned int part, int count)
-+{
-+	return (timestamp * 100 + part) * 1000 + count;
-+}
-+
- static int efi_pstore_read_func(struct efivar_entry *entry, void *data)
- {
- 	efi_guid_t vendor = LINUX_EFI_CRASH_GUID;
-@@ -56,7 +62,7 @@ static int efi_pstore_read_func(struct efivar_entry *entry, void *data)
- 
- 	if (sscanf(name, "dump-type%u-%u-%d-%lu",
- 		   cb_data->type, &part, &cnt, &time) == 4) {
--		*cb_data->id = part;
-+		*cb_data->id = generic_id(time, part, cnt);
- 		*cb_data->count = cnt;
- 		cb_data->timespec->tv_sec = time;
- 		cb_data->timespec->tv_nsec = 0;
-@@ -67,7 +73,7 @@ static int efi_pstore_read_func(struct efivar_entry *entry, void *data)
- 		 * which doesn't support holding
- 		 * multiple logs, remains.
- 		 */
--		*cb_data->id = part;
-+		*cb_data->id = generic_id(time, part, 0);
- 		*cb_data->count = 0;
- 		cb_data->timespec->tv_sec = time;
- 		cb_data->timespec->tv_nsec = 0;
-@@ -185,14 +191,16 @@ static int efi_pstore_erase(enum pstore_type_id type, u64 id, int count,
- 	char name[DUMP_NAME_LEN];
- 	efi_char16_t efi_name[DUMP_NAME_LEN];
- 	int found, i;
-+	unsigned int part;
- 
--	sprintf(name, "dump-type%u-%u-%d-%lu", type, (unsigned int)id, count,
--		time.tv_sec);
-+	do_div(id, 1000);
-+	part = do_div(id, 100);
-+	sprintf(name, "dump-type%u-%u-%d-%lu", type, part, count, time.tv_sec);
- 
- 	for (i = 0; i < DUMP_NAME_LEN; i++)
- 		efi_name[i] = name[i];
- 
--	edata.id = id;
-+	edata.id = part;
- 	edata.type = type;
- 	edata.count = count;
- 	edata.time = time;
+ #define __deprecated			__attribute__((deprecated))
 -- 
-1.8.5.5
+1.9.1
 
