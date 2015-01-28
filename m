@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756315AbbA1B2J (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 20:28:09 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41003 "EHLO
+	id S1760769AbbA1CBj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 21:01:39 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41449 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752222AbbA1B2F (ORCPT
+	with ESMTP id S933203AbbA1BiV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 20:28:05 -0500
+	Tue, 27 Jan 2015 20:38:21 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        John Stultz <john.stultz@linaro.org>
-Subject: [PATCH 3.10 10/32] time: settimeofday: Validate the values of tv from user
-Date: Tue, 27 Jan 2015 17:26:40 -0800
-Message-Id: <20150128012628.569705843@linuxfoundation.org>
+        Jim Lin <jilin@nvidia.com>, Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH 3.14 03/77] pinctrl: Fix two deadlocks
+Date: Tue, 27 Jan 2015 17:26:41 -0800
+Message-Id: <20150128012746.071728834@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150128012627.081285723@linuxfoundation.org>
-References: <20150128012627.081285723@linuxfoundation.org>
+In-Reply-To: <20150128012745.971137091@linuxfoundation.org>
+References: <20150128012745.971137091@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -26,65 +24,84 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Sasha Levin <sasha.levin@oracle.com>
+From: Jim Lin <jilin@nvidia.com>
 
-commit 6ada1fc0e1c4775de0e043e1bd3ae9d065491aa5 upstream.
+commit db93facfb0ef542aa5d8079e47580b3e669a4d82 upstream.
 
-An unvalidated user input is multiplied by a constant, which can result in
-an undefined behaviour for large values. While this is validated later,
-we should avoid triggering undefined behaviour.
+This patch is to fix two deadlock cases.
+Deadlock 1:
+CPU #1
+ pinctrl_register-> pinctrl_get ->
+ create_pinctrl
+ (Holding lock pinctrl_maps_mutex)
+ -> get_pinctrl_dev_from_devname
+ (Trying to acquire lock pinctrldev_list_mutex)
+CPU #0
+ pinctrl_unregister
+ (Holding lock pinctrldev_list_mutex)
+ -> pinctrl_put ->> pinctrl_free ->
+ pinctrl_dt_free_maps -> pinctrl_unregister_map
+ (Trying to acquire lock pinctrl_maps_mutex)
 
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@kernel.org>
-Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
-[jstultz: include trivial milisecond->microsecond correction noticed
-by Andy]
-Signed-off-by: John Stultz <john.stultz@linaro.org>
+Simply to say
+CPU#1 is holding lock A and trying to acquire lock B,
+CPU#0 is holding lock B and trying to acquire lock A.
+
+Deadlock 2:
+CPU #3
+ pinctrl_register-> pinctrl_get ->
+ create_pinctrl
+ (Holding lock pinctrl_maps_mutex)
+ -> get_pinctrl_dev_from_devname
+ (Trying to acquire lock pinctrldev_list_mutex)
+CPU #2
+ pinctrl_unregister
+ (Holding lock pctldev->mutex)
+ -> pinctrl_put ->> pinctrl_free ->
+ pinctrl_dt_free_maps -> pinctrl_unregister_map
+ (Trying to acquire lock pinctrl_maps_mutex)
+CPU #0
+ tegra_gpio_request
+ (Holding lock pinctrldev_list_mutex)
+ -> pinctrl_get_device_gpio_range
+ (Trying to acquire lock pctldev->mutex)
+
+Simply to say
+CPU#3 is holding lock A and trying to acquire lock D,
+CPU#2 is holding lock B and trying to acquire lock A,
+CPU#0 is holding lock D and trying to acquire lock B.
+
+Signed-off-by: Jim Lin <jilin@nvidia.com>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/time.h |   13 +++++++++++++
- kernel/time.c        |    4 ++++
- 2 files changed, 17 insertions(+)
+ drivers/pinctrl/core.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/include/linux/time.h
-+++ b/include/linux/time.h
-@@ -173,6 +173,19 @@ extern void getboottime(struct timespec
- extern void monotonic_to_bootbased(struct timespec *ts);
- extern void get_monotonic_boottime(struct timespec *ts);
+--- a/drivers/pinctrl/core.c
++++ b/drivers/pinctrl/core.c
+@@ -1812,14 +1812,15 @@ void pinctrl_unregister(struct pinctrl_d
+ 	if (pctldev == NULL)
+ 		return;
  
-+static inline bool timeval_valid(const struct timeval *tv)
-+{
-+	/* Dates before 1970 are bogus */
-+	if (tv->tv_sec < 0)
-+		return false;
-+
-+	/* Can't have more microseconds then a second */
-+	if (tv->tv_usec < 0 || tv->tv_usec >= USEC_PER_SEC)
-+		return false;
-+
-+	return true;
-+}
-+
- extern struct timespec timespec_trunc(struct timespec t, unsigned gran);
- extern int timekeeping_valid_for_hres(void);
- extern u64 timekeeping_max_deferment(void);
---- a/kernel/time.c
-+++ b/kernel/time.c
-@@ -195,6 +195,10 @@ SYSCALL_DEFINE2(settimeofday, struct tim
- 	if (tv) {
- 		if (copy_from_user(&user_tv, tv, sizeof(*tv)))
- 			return -EFAULT;
-+
-+		if (!timeval_valid(&user_tv))
-+			return -EINVAL;
-+
- 		new_ts.tv_sec = user_tv.tv_sec;
- 		new_ts.tv_nsec = user_tv.tv_usec * NSEC_PER_USEC;
- 	}
+-	mutex_lock(&pinctrldev_list_mutex);
+ 	mutex_lock(&pctldev->mutex);
+-
+ 	pinctrl_remove_device_debugfs(pctldev);
++	mutex_unlock(&pctldev->mutex);
+ 
+ 	if (!IS_ERR(pctldev->p))
+ 		pinctrl_put(pctldev->p);
+ 
++	mutex_lock(&pinctrldev_list_mutex);
++	mutex_lock(&pctldev->mutex);
+ 	/* TODO: check that no pinmuxes are still active? */
+ 	list_del(&pctldev->node);
+ 	/* Destroy descriptor tree */
 
 
