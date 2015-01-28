@@ -1,124 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759638AbbA1UbB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 15:31:01 -0500
-Received: from mga11.intel.com ([192.55.52.93]:11145 "EHLO mga11.intel.com"
+	id S1752274AbbA2BIY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 20:08:24 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:53612 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754252AbbA1Ua5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 15:30:57 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.09,480,1418112000"; 
-   d="scan'208";a="677318687"
-From: "Zhang, Yang Z" <yang.z.zhang@intel.com>
-To: Wincy Van <fanwenyi0529@gmail.com>
-CC: Paolo Bonzini <pbonzini@redhat.com>, "gleb@kernel.org" <gleb@kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Wanpeng Li <wanpeng.li@linux.intel.com>,
-        Jan Kiszka <jan.kiszka@web.de>
-Subject: RE: [PATCH v3 1/6] KVM: nVMX: Use hardware MSR bitmap
-Thread-Topic: [PATCH v3 1/6] KVM: nVMX: Use hardware MSR bitmap
-Thread-Index: AQHQN79lT9Shw/DNlk+phY4fCFwl65zVMZZg//+J0gCAAKsDYP//gx4AgACHCkD//395AAAQ3TKAAAClv/D//37JAP//dp/Q
-Date: Wed, 28 Jan 2015 13:06:12 +0000
-Message-ID: <A9667DDFB95DB7438FA9D7D576C3D87E0AC2C9D6@SHSMSX104.ccr.corp.intel.com>
-References: <CACzj_yUu5omqFL7u8NE6vyqXGy_-dAeukRspJha+EiGXVBzmYg@mail.gmail.com>
- <A9667DDFB95DB7438FA9D7D576C3D87E0AC2C563@SHSMSX104.ccr.corp.intel.com>
- <CACzj_yVqDYyz5VwCX5d=Po2X_DdsHbqLmON8N=1PVLLocoHNpw@mail.gmail.com>
- <A9667DDFB95DB7438FA9D7D576C3D87E0AC2C800@SHSMSX104.ccr.corp.intel.com>
- <CACzj_yWZzhgjqBPNkxy39v6-uXnRpKb0Eo-YjEQwfSYL+tT-bQ@mail.gmail.com>
- <A9667DDFB95DB7438FA9D7D576C3D87E0AC2C865@SHSMSX104.ccr.corp.intel.com>
- <CACzj_yV+eQP1bZZ07MvECMrQ52DgkcrfsJTFDQ=uPz4j7LkEHg@mail.gmail.com>
- <A9667DDFB95DB7438FA9D7D576C3D87E0AC2C932@SHSMSX104.ccr.corp.intel.com>
- <CACzj_yXCPWFxFxPq45OQEwS_ASE6TQK8XwXEFOcSzQS8r90jaA@mail.gmail.com>
-In-Reply-To: <CACzj_yXCPWFxFxPq45OQEwS_ASE6TQK8XwXEFOcSzQS8r90jaA@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="utf-8"
+	id S1752177AbbA2BIV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jan 2015 20:08:21 -0500
+From: Vitaly Kuznetsov <vkuznets@redhat.com>
+To: Dexuan Cui <decui@microsoft.com>
+Cc: KY Srinivasan <kys@microsoft.com>,
+        "devel\@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        Haiyang Zhang <haiyangz@microsoft.com>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jason Wang <jasowang@redhat.com>,
+        Radim =?utf-8?B?S3LEjW3DocWZ?= <rkrcmar@redhat.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>
+Subject: Re: [PATCH v3 3/3] Drivers: hv: vmbus: serialize Offer and Rescind offer
+References: <1421768706-5363-1-git-send-email-vkuznets@redhat.com>
+	<1421768706-5363-4-git-send-email-vkuznets@redhat.com>
+	<F792CF86EFE20D4AB8064279AFBA51C61EA94FB7@SIXPRD3002MB028.064d.mgd.msft.net>
+	<8761br9kfd.fsf@vitty.brq.redhat.com>
+	<F792CF86EFE20D4AB8064279AFBA51C61EA9510B@SIXPRD3002MB028.064d.mgd.msft.net>
+Date: Wed, 28 Jan 2015 14:09:57 +0100
+In-Reply-To: <F792CF86EFE20D4AB8064279AFBA51C61EA9510B@SIXPRD3002MB028.064d.mgd.msft.net>
+	(Dexuan Cui's message of "Wed, 28 Jan 2015 12:51:42 +0000")
+Message-ID: <87egqf8316.fsf@vitty.brq.redhat.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id t0SLqjkS007566
 
-Wincy Van wrote on 2015-01-28:
-> On Wed, Jan 28, 2015 at 8:33 PM, Zhang, Yang Z <yang.z.zhang@intel.com>
-> wrote:
->>>> 
->>>> You are right, but this is not fit for all the cases, we should
->>>> custom the nested_msr_bitmap.
->>>> e.g.  Currently L0 wants to intercept some of the x2apic msrs' reading:
->>>>          if (enable_apicv) {
->>>>                 for (msr = 0x800; msr <= 0x8ff; msr++)
->>>>                 vmx_disable_intercept_msr_read_x2apic(msr); /*
->>>>                 According SDM, in x2apic mode, the whole id reg
->>>> is
->>> used.
->>>>                  * But in KVM, it only use the highest eight bits.
->>>> Need
-> to
->>>>                  * intercept it */
->>>>                 vmx_enable_intercept_msr_read_x2apic(0x802); /* TMCCT
->>>>                 */ vmx_enable_intercept_msr_read_x2apic(0x839); /*
->>>>                 TPR */ vmx_disable_intercept_msr_write_x2apic(0x808);
-> /*
->>>> EOI
->>> */
->>>>                 vmx_disable_intercept_msr_write_x2apic(0x80b); /*
->>>>                 SELF-IPI */
->>>>                 vmx_disable_intercept_msr_write_x2apic(0x83f);
->>>>         }
->>>> But L1 may not want this. So I think we are better to deal with
->>>> the
->>> 
->>> Actually, from L0's point, it is totally unaware of the L2. The only
->>> thing L0 aware is that the CPU should follow L0's configuration when
->>> VCPU is running. So if L0 wants to trap a msr, then the read operation
->>> to this msr should cause vmexit unconditionally no matter who is
->>> running(who means L1, L2, L3.....).
->>> 
->>>> msrs seperately, there is not a common way suit for all the cases.
->>>> If other features want to intercept a msr in nested entry, they
->>>> can put the custom code in nested_vmx_merge_msr_bitmap.
->>> 
->>> Yes, if other features want to do it in 'nested' entry, they can
->>> fill nested_vmx_merge_msr_bitmap. But if in non-nested case, it
->>> should be our responsibly to handle it correctly, how about add following check:
->>> 
->>> if (type & MSR_TYPE_R && !test_bit(msr, vmcs01_msr_bitmap) &&
->>> !test_bit(msr, msr_bitmap_l1 + 0x000 / f))
->>>         __clear_bit(msr, msr_bitmap_nested + 0x000 / f);
+Dexuan Cui <decui@microsoft.com> writes:
+
+>> -----Original Message-----
+>> From: Vitaly Kuznetsov [mailto:vkuznets@redhat.com]
+>> Sent: Wednesday, January 28, 2015 20:09 PM
+>> To: Dexuan Cui
+>> Cc: KY Srinivasan; devel@linuxdriverproject.org; Haiyang Zhang; linux-
+>> kernel@vger.kernel.org; Jason Wang; Radim KrÄmÃ¡Å™; Dan Carpenter
+>> Subject: Re: [PATCH v3 3/3] Drivers: hv: vmbus: serialize Offer and Rescind
+>> offer
 >> 
+>> Dexuan Cui <decui@microsoft.com> writes:
 >> 
->> Anyway, this is not necessary for your current patch. We can consider
->> it later if there really have other features will use it.
+>> >> -----Original Message-----
+>> >> From: Vitaly Kuznetsov [mailto:vkuznets@redhat.com]
+>> >> Sent: Tuesday, January 20, 2015 23:45 PM
+>> >> To: KY Srinivasan; devel@linuxdriverproject.org
+>> >> Cc: Haiyang Zhang; linux-kernel@vger.kernel.org; Dexuan Cui; Jason Wang;
+>> >> Radim KrÄmÃ¡Å™; Dan Carpenter
+>> >> Subject: [PATCH v3 3/3] Drivers: hv: vmbus: serialize Offer and Rescind
+>> offer
+>> ...
+>> >
+>> > Hi Vitaly and all,
+>> > I have 2 questions:
+>> > In vmbus_process_offer(),  in the cases of "goto err_free_chan",
+>> > should we consider the possibility a rescind message could be pending for
+>> > the new channel?
+>> > In the cases,  because we don't run
+>> > "INIT_WORK(&newchannel->work, vmbus_process_rescind_offer); ",
+>> > vmbus_onoffer_rescind() will do nothing and as a result,
+>> > vmbus_process_rescind_offer() won't be invoked.
 >> 
-> 
-> Yep, I know what you mean now, for other msrs which are not forwarded
-> access by a mechanism like virtual-apic page, we should intercept it
-> unconditionally. I think we should ensure the msr can be allowed
-> before call nested_vmx_disable_intercept_for_msr, if L0 want to
-> intercept it, just do not call nested_vmx_disable_intercept_for_msr.
+>> Yes, but processing the rescind offer results in freeing the channel
+>> (and this processing supposes the channel wasn't freed before) so
+>> there is no difference... or is it?
+>> 
+>> >
+>> > Question 2: in vmbus_process_offer(), in the case
+>> > vmbus_device_register() fails, we'll run
+>> > "list_del(&newchannel->listentry);" -- just after this line,
+>> >  what will happen at this time if relid2channel() returns NULL
+>> > in vmbus_onoffer_rescind()?
+>> >
+>> > I think we'll lose the rescind message.
+>> >
+>> 
+>> Yes, but same logic applies - we already freed the channes so no rescind
+>> proccessing required.
+> free_channel() and vmbus_process_rescind_offer() are different, because
+>  the latter does more work, e.g., sending the host a message 
+> CHANNELMSG_RELID_RELEASED.
+>
+> In the cases of "goto err_free_chan" + "a pending rescind message",
+> the host may expect the message CHANNELMSG_RELID_RELEASED and
+> could reoffer the channel once the message is received.
+>
+> It would be better if the VM doesn't lose the rescind message
+> here. :-)
 
-Yes, this is a solution. But I prefer to handle it in nested code path since others may not familiar with nested and may block it by mistake.
+Ah, I see, CHANNELMSG_RELID_RELEASED is expected from us in any
+case. I'll doing that in a separate patch is noone objects.
 
-> 
->  !test_bit(msr, vmcs01_msr_bitmap) will introduce a problem that some
-> of the msrs will be affcted by vmcs01_msr_bitmap, TMCCT and TPR, for example.
-> Intercept reading for these msrs is okay, but it is not efficient.
+Thanks for the review,
 
-TMCCT is always trapped by most VMM. I don't think TPR is trapped in KVM.
-
-> 
+>
+>>  If we still need to do something we need to
+>> add support for already freed channel to the rescind offer processing path.
+>> 
+>
 > Thanks,
-> Wincy
+> -- Dexuan
 
-
-Best regards,
-Yang
-
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+-- 
+  Vitaly
