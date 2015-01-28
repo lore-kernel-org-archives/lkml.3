@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933638AbbA1B4z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 20:56:55 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41426 "EHLO
+	id S933895AbbA1B4I (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 20:56:08 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41450 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933269AbbA1Bi0 (ORCPT
+	with ESMTP id S933273AbbA1Bi0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 27 Jan 2015 20:38:26 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Anton Kolesov <akolesov@synopsys.com>,
-        Vineet Gupta <vgupta@synopsys.com>
-Subject: [PATCH 3.14 41/77] ARC: Fix build breakage for !CONFIG_ARC_DW2_UNWIND
-Date: Tue, 27 Jan 2015 17:27:19 -0800
-Message-Id: <20150128012747.191645131@linuxfoundation.org>
+        Pavel Machek <pavel@ucw.cz>, David Herrmann <dh.herrmann@gmail.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: [PATCH 3.14 42/77] Input: evdev - fix EVIOCG{type} ioctl
+Date: Tue, 27 Jan 2015 17:27:20 -0800
+Message-Id: <20150128012747.220032574@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <20150128012745.971137091@linuxfoundation.org>
 References: <20150128012745.971137091@linuxfoundation.org>
@@ -29,31 +29,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vineet Gupta <vgupta@synopsys.com>
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 
-commit ba25915fb2cd18152cb14b144dbe8bf2f2bd8e45 upstream.
+commit 7c4f56070fde2367766fa1fb04852599b5e1ad35 upstream.
 
-Fixes: ec7ac6afd07b (ARC: switch to generic ENTRY/END assembler annotations)
-Reported-by: Anton Kolesov <akolesov@synopsys.com>
-Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
+The 'max' size passed into the function is measured in number of bits
+(KEY_MAX, LED_MAX, etc) so we need to convert it accordingly before trying
+to copy the data out, otherwise we will try copying too much and end up
+with up with a page fault.
+
+Reported-by: Pavel Machek <pavel@ucw.cz>
+Reviewed-by: Pavel Machek <pavel@ucw.cz>
+Reviewed-by: David Herrmann <dh.herrmann@gmail.com>
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arc/kernel/ctx_sw_asm.S |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/input/evdev.c |   13 ++++++++-----
+ 1 file changed, 8 insertions(+), 5 deletions(-)
 
---- a/arch/arc/kernel/ctx_sw_asm.S
-+++ b/arch/arc/kernel/ctx_sw_asm.S
-@@ -10,9 +10,9 @@
-  *  -This is the more "natural" hand written assembler
+--- a/drivers/input/evdev.c
++++ b/drivers/input/evdev.c
+@@ -757,20 +757,23 @@ static int evdev_handle_set_keycode_v2(s
   */
+ static int evdev_handle_get_val(struct evdev_client *client,
+ 				struct input_dev *dev, unsigned int type,
+-				unsigned long *bits, unsigned int max,
+-				unsigned int size, void __user *p, int compat)
++				unsigned long *bits, unsigned int maxbit,
++				unsigned int maxlen, void __user *p,
++				int compat)
+ {
+ 	int ret;
+ 	unsigned long *mem;
++	size_t len;
  
-+#include <linux/linkage.h>
- #include <asm/entry.h>       /* For the SAVE_* macros */
- #include <asm/asm-offsets.h>
--#include <asm/linkage.h>
+-	mem = kmalloc(sizeof(unsigned long) * max, GFP_KERNEL);
++	len = BITS_TO_LONGS(maxbit) * sizeof(unsigned long);
++	mem = kmalloc(len, GFP_KERNEL);
+ 	if (!mem)
+ 		return -ENOMEM;
  
- #define KSP_WORD_OFF 	((TASK_THREAD + THREAD_KSP) / 4)
+ 	spin_lock_irq(&dev->event_lock);
+ 	spin_lock(&client->buffer_lock);
+ 
+-	memcpy(mem, bits, sizeof(unsigned long) * max);
++	memcpy(mem, bits, len);
+ 
+ 	spin_unlock(&dev->event_lock);
+ 
+@@ -778,7 +781,7 @@ static int evdev_handle_get_val(struct e
+ 
+ 	spin_unlock_irq(&client->buffer_lock);
+ 
+-	ret = bits_to_user(mem, max, size, p, compat);
++	ret = bits_to_user(mem, maxbit, maxlen, p, compat);
+ 	if (ret < 0)
+ 		evdev_queue_syn_dropped(client);
  
 
 
