@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964911AbbA1C0a (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 21:26:30 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41026 "EHLO
+	id S934205AbbA1COJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 21:14:09 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41108 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754745AbbA1B2F (ORCPT
+	with ESMTP id S1759516AbbA1B2T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 20:28:05 -0500
+	Tue, 27 Jan 2015 20:28:19 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jim Lin <jilin@nvidia.com>, Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH 3.10 03/32] pinctrl: Fix two deadlocks
-Date: Tue, 27 Jan 2015 17:26:33 -0800
-Message-Id: <20150128012627.609678910@linuxfoundation.org>
+        Alex Williamson <alex.williamson@redhat.com>,
+        Bjorn Helgaas <bhelgaas@google.com>
+Subject: [PATCH 3.18 22/61] PCI: Add flag for devices where we cant use bus reset
+Date: Tue, 27 Jan 2015 17:26:34 -0800
+Message-Id: <20150128012639.473014319@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150128012627.081285723@linuxfoundation.org>
-References: <20150128012627.081285723@linuxfoundation.org>
+In-Reply-To: <20150128012636.936333725@linuxfoundation.org>
+References: <20150128012636.936333725@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -24,84 +25,124 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.18-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Jim Lin <jilin@nvidia.com>
+From: Alex Williamson <alex.williamson@redhat.com>
 
-commit db93facfb0ef542aa5d8079e47580b3e669a4d82 upstream.
+commit f331a859e0ee5a898c1f47596eddad4c4f02d657 upstream.
 
-This patch is to fix two deadlock cases.
-Deadlock 1:
-CPU #1
- pinctrl_register-> pinctrl_get ->
- create_pinctrl
- (Holding lock pinctrl_maps_mutex)
- -> get_pinctrl_dev_from_devname
- (Trying to acquire lock pinctrldev_list_mutex)
-CPU #0
- pinctrl_unregister
- (Holding lock pinctrldev_list_mutex)
- -> pinctrl_put ->> pinctrl_free ->
- pinctrl_dt_free_maps -> pinctrl_unregister_map
- (Trying to acquire lock pinctrl_maps_mutex)
+Enable a mechanism for devices to quirk that they do not behave when
+doing a PCI bus reset.  We require a modest level of spec compliant
+behavior in order to do a reset, for instance the device should come
+out of reset without throwing errors and PCI config space should be
+accessible after reset.  This is too much to ask for some devices.
 
-Simply to say
-CPU#1 is holding lock A and trying to acquire lock B,
-CPU#0 is holding lock B and trying to acquire lock A.
-
-Deadlock 2:
-CPU #3
- pinctrl_register-> pinctrl_get ->
- create_pinctrl
- (Holding lock pinctrl_maps_mutex)
- -> get_pinctrl_dev_from_devname
- (Trying to acquire lock pinctrldev_list_mutex)
-CPU #2
- pinctrl_unregister
- (Holding lock pctldev->mutex)
- -> pinctrl_put ->> pinctrl_free ->
- pinctrl_dt_free_maps -> pinctrl_unregister_map
- (Trying to acquire lock pinctrl_maps_mutex)
-CPU #0
- tegra_gpio_request
- (Holding lock pinctrldev_list_mutex)
- -> pinctrl_get_device_gpio_range
- (Trying to acquire lock pctldev->mutex)
-
-Simply to say
-CPU#3 is holding lock A and trying to acquire lock D,
-CPU#2 is holding lock B and trying to acquire lock A,
-CPU#0 is holding lock D and trying to acquire lock B.
-
-Signed-off-by: Jim Lin <jilin@nvidia.com>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+Link: http://lkml.kernel.org/r/20140923210318.498dacbd@dualc.maya.org
+Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/pinctrl/core.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ drivers/pci/pci.c   |   40 ++++++++++++++++++++++++++++++++++++----
+ include/linux/pci.h |    2 ++
+ 2 files changed, 38 insertions(+), 4 deletions(-)
 
---- a/drivers/pinctrl/core.c
-+++ b/drivers/pinctrl/core.c
-@@ -1693,14 +1693,15 @@ void pinctrl_unregister(struct pinctrl_d
- 	if (pctldev == NULL)
- 		return;
+--- a/drivers/pci/pci.c
++++ b/drivers/pci/pci.c
+@@ -3280,7 +3280,8 @@ static int pci_parent_bus_reset(struct p
+ {
+ 	struct pci_dev *pdev;
  
--	mutex_lock(&pinctrldev_list_mutex);
- 	mutex_lock(&pctldev->mutex);
--
- 	pinctrl_remove_device_debugfs(pctldev);
-+	mutex_unlock(&pctldev->mutex);
+-	if (pci_is_root_bus(dev->bus) || dev->subordinate || !dev->bus->self)
++	if (pci_is_root_bus(dev->bus) || dev->subordinate ||
++	    !dev->bus->self || dev->dev_flags & PCI_DEV_FLAGS_NO_BUS_RESET)
+ 		return -ENOTTY;
  
- 	if (!IS_ERR(pctldev->p))
- 		pinctrl_put(pctldev->p);
+ 	list_for_each_entry(pdev, &dev->bus->devices, bus_list)
+@@ -3314,7 +3315,8 @@ static int pci_dev_reset_slot_function(s
+ {
+ 	struct pci_dev *pdev;
  
-+	mutex_lock(&pinctrldev_list_mutex);
-+	mutex_lock(&pctldev->mutex);
- 	/* TODO: check that no pinmuxes are still active? */
- 	list_del(&pctldev->node);
- 	/* Destroy descriptor tree */
+-	if (dev->subordinate || !dev->slot)
++	if (dev->subordinate || !dev->slot ||
++	    dev->dev_flags & PCI_DEV_FLAGS_NO_BUS_RESET)
+ 		return -ENOTTY;
+ 
+ 	list_for_each_entry(pdev, &dev->bus->devices, bus_list)
+@@ -3566,6 +3568,20 @@ int pci_try_reset_function(struct pci_de
+ }
+ EXPORT_SYMBOL_GPL(pci_try_reset_function);
+ 
++/* Do any devices on or below this bus prevent a bus reset? */
++static bool pci_bus_resetable(struct pci_bus *bus)
++{
++	struct pci_dev *dev;
++
++	list_for_each_entry(dev, &bus->devices, bus_list) {
++		if (dev->dev_flags & PCI_DEV_FLAGS_NO_BUS_RESET ||
++		    (dev->subordinate && !pci_bus_resetable(dev->subordinate)))
++			return false;
++	}
++
++	return true;
++}
++
+ /* Lock devices from the top of the tree down */
+ static void pci_bus_lock(struct pci_bus *bus)
+ {
+@@ -3616,6 +3632,22 @@ unlock:
+ 	return 0;
+ }
+ 
++/* Do any devices on or below this slot prevent a bus reset? */
++static bool pci_slot_resetable(struct pci_slot *slot)
++{
++	struct pci_dev *dev;
++
++	list_for_each_entry(dev, &slot->bus->devices, bus_list) {
++		if (!dev->slot || dev->slot != slot)
++			continue;
++		if (dev->dev_flags & PCI_DEV_FLAGS_NO_BUS_RESET ||
++		    (dev->subordinate && !pci_bus_resetable(dev->subordinate)))
++			return false;
++	}
++
++	return true;
++}
++
+ /* Lock devices from the top of the tree down */
+ static void pci_slot_lock(struct pci_slot *slot)
+ {
+@@ -3737,7 +3769,7 @@ static int pci_slot_reset(struct pci_slo
+ {
+ 	int rc;
+ 
+-	if (!slot)
++	if (!slot || !pci_slot_resetable(slot))
+ 		return -ENOTTY;
+ 
+ 	if (!probe)
+@@ -3829,7 +3861,7 @@ EXPORT_SYMBOL_GPL(pci_try_reset_slot);
+ 
+ static int pci_bus_reset(struct pci_bus *bus, int probe)
+ {
+-	if (!bus->self)
++	if (!bus->self || !pci_bus_resetable(bus))
+ 		return -ENOTTY;
+ 
+ 	if (probe)
+--- a/include/linux/pci.h
++++ b/include/linux/pci.h
+@@ -175,6 +175,8 @@ enum pci_dev_flags {
+ 	PCI_DEV_FLAGS_DMA_ALIAS_DEVFN = (__force pci_dev_flags_t) (1 << 4),
+ 	/* Use a PCIe-to-PCI bridge alias even if !pci_is_pcie */
+ 	PCI_DEV_FLAG_PCIE_BRIDGE_ALIAS = (__force pci_dev_flags_t) (1 << 5),
++	/* Do not use bus resets for device */
++	PCI_DEV_FLAGS_NO_BUS_RESET = (__force pci_dev_flags_t) (1 << 6),
+ };
+ 
+ enum pci_irq_reroute_variant {
 
 
