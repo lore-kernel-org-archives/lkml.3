@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762124AbbA1FLF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 00:11:05 -0500
-Received: from mail.kernel.org ([198.145.29.136]:38387 "EHLO mail.kernel.org"
+	id S1762105AbbA1FKk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 00:10:40 -0500
+Received: from mail.kernel.org ([198.145.29.136]:38406 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756902AbbA1ESR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 23:18:17 -0500
+	id S1756647AbbA1ESU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 23:18:20 -0500
 From: lizf@kernel.org
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Hans de Goede <hdegoede@redhat.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+Cc: linux-kernel@vger.kernel.org, Mark <markk@clara.co.uk>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Zefan Li <lizefan@huawei.com>
-Subject: [PATCH 3.4 051/177] Input: i8042 - add noloop quirk for Asus X750LN
-Date: Wed, 28 Jan 2015 12:07:48 +0800
-Message-Id: <1422418236-12852-101-git-send-email-lizf@kernel.org>
+Subject: [PATCH 3.4 51/91] USB: storage: Add quirk for Adaptec USBConnect 2000 USB-to-SCSI Adapter
+Date: Wed, 28 Jan 2015 12:07:49 +0800
+Message-Id: <1422418236-12852-102-git-send-email-lizf@kernel.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422418050-12581-1-git-send-email-lizf@kernel.org>
 References: <1422418050-12581-1-git-send-email-lizf@kernel.org>
@@ -21,44 +21,48 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hans de Goede <hdegoede@redhat.com>
+From: Mark <markk@clara.co.uk>
 
-3.4.106-rc1 review patch.  If anyone has any objections, please let me know.
+3.4.105-rc1 review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
 
-commit 9ff84a17302aeb8913ff244ecc0d8f9d219fecb5 upstream.
+commit 67d365a57a51fb9dece6a5ceb504aa381cae1e5b upstream.
 
-Without this the aux port does not get detected, and consequently the
-touchpad will not work.
+The Adaptec USBConnect 2000 is another SCSI-USB converter which uses
+Shuttle Technology/SCM Microsystems chips. The US_FL_SCM_MULT_TARG quirk is
+required to use SCSI devices with ID other than 0.
 
-https://bugzilla.redhat.com/show_bug.cgi?id=1110011
+I don't have a USBConnect 2000, but based on the other entries for Shuttle/
+SCM-based converters this patch is very likely correct. I used 0x0000 and
+0x9999 for bcdDeviceMin and bcdDeviceMax because I'm not sure which
+bcdDevice value the product uses.
 
-Signed-off-by: Hans de Goede <hdegoede@redhat.com>
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Signed-off-by: Mark Knibbs <markk@clara.co.uk>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Zefan Li <lizefan@huawei.com>
 ---
- drivers/input/serio/i8042-x86ia64io.h | 6 ++++++
+ drivers/usb/storage/unusual_devs.h | 6 ++++++
  1 file changed, 6 insertions(+)
 
-diff --git a/drivers/input/serio/i8042-x86ia64io.h b/drivers/input/serio/i8042-x86ia64io.h
-index 1291673..40ff494 100644
---- a/drivers/input/serio/i8042-x86ia64io.h
-+++ b/drivers/input/serio/i8042-x86ia64io.h
-@@ -101,6 +101,12 @@ static const struct dmi_system_id __initconst i8042_dmi_noloop_table[] = {
- 	},
- 	{
- 		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "ASUSTeK COMPUTER INC."),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "X750LN"),
-+		},
-+	},
-+	{
-+		.matches = {
- 			DMI_MATCH(DMI_SYS_VENDOR, "Compaq"),
- 			DMI_MATCH(DMI_PRODUCT_NAME , "ProLiant"),
- 			DMI_MATCH(DMI_PRODUCT_VERSION, "8500"),
+diff --git a/drivers/usb/storage/unusual_devs.h b/drivers/usb/storage/unusual_devs.h
+index 813422e..18a9522 100644
+--- a/drivers/usb/storage/unusual_devs.h
++++ b/drivers/usb/storage/unusual_devs.h
+@@ -93,6 +93,12 @@ UNUSUAL_DEV(  0x03f0, 0x4002, 0x0001, 0x0001,
+ 		"PhotoSmart R707",
+ 		USB_SC_DEVICE, USB_PR_DEVICE, NULL, US_FL_FIX_CAPACITY),
+ 
++UNUSUAL_DEV(  0x03f3, 0x0001, 0x0000, 0x9999,
++		"Adaptec",
++		"USBConnect 2000",
++		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_euscsi_init,
++		US_FL_SCM_MULT_TARG ),
++
+ /* Reported by Sebastian Kapfer <sebastian_kapfer@gmx.net>
+  * and Olaf Hering <olh@suse.de> (different bcd's, same vendor/product)
+  * for USB floppies that need the SINGLE_LUN enforcement.
 -- 
 1.9.1
 
