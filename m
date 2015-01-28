@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965453AbbA1Eqw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 23:46:52 -0500
-Received: from mail.kernel.org ([198.145.29.136]:40211 "EHLO mail.kernel.org"
+	id S934454AbbA1EXS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 23:23:18 -0500
+Received: from mail.kernel.org ([198.145.29.136]:40236 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934426AbbA1EXK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 23:23:10 -0500
+	id S934403AbbA1EXO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 23:23:14 -0500
 From: lizf@kernel.org
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Mathias Krause <minipli@googlemail.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Brad Spengler <spender@grsecurity.net>,
-        PaX Team <pageexec@freemail.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Zefan Li <lizefan@huawei.com>
-Subject: [PATCH 3.4 105/177] posix-timers: Fix stack info leak in timer_create()
-Date: Wed, 28 Jan 2015 12:09:23 +0800
-Message-Id: <1422418236-12852-196-git-send-email-lizf@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Brian Silverman <bsilver16384@gmail.com>,
+        austin.linux@gmail.com, darren@dvhart.com, peterz@infradead.org,
+        Thomas Gleixner <tglx@linutronix.de>, Zefan Li <lizefan@huawei.com>
+Subject: [PATCH 3.4 106/177] futex: Fix a race condition between REQUEUE_PI and task death
+Date: Wed, 28 Jan 2015 12:09:24 +0800
+Message-Id: <1422418236-12852-197-git-send-email-lizf@kernel.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422418050-12581-1-git-send-email-lizf@kernel.org>
 References: <1422418050-12581-1-git-send-email-lizf@kernel.org>
@@ -23,53 +21,120 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mathias Krause <minipli@googlemail.com>
+From: Brian Silverman <bsilver16384@gmail.com>
 
 3.4.106-rc1 review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
 
-commit 6891c4509c792209c44ced55a60f13954cb50ef4 upstream.
+commit 30a6b8031fe14031ab27c1fa3483cb9780e7f63c upstream.
 
-If userland creates a timer without specifying a sigevent info, we'll
-create one ourself, using a stack local variable. Particularly will we
-use the timer ID as sival_int. But as sigev_value is a union containing
-a pointer and an int, that assignment will only partially initialize
-sigev_value on systems where the size of a pointer is bigger than the
-size of an int. On such systems we'll copy the uninitialized stack bytes
-from the timer_create() call to userland when the timer actually fires
-and we're going to deliver the signal.
+free_pi_state and exit_pi_state_list both clean up futex_pi_state's.
+exit_pi_state_list takes the hb lock first, and most callers of
+free_pi_state do too. requeue_pi doesn't, which means free_pi_state
+can free the pi_state out from under exit_pi_state_list. For example:
 
-Initialize sigev_value with 0 to plug the stack info leak.
+task A                            |  task B
+exit_pi_state_list                |
+  pi_state =                      |
+      curr->pi_state_list->next   |
+                                  |  futex_requeue(requeue_pi=1)
+                                  |    // pi_state is the same as
+                                  |    // the one in task A
+                                  |    free_pi_state(pi_state)
+                                  |      list_del_init(&pi_state->list)
+                                  |      kfree(pi_state)
+  list_del_init(&pi_state->list)  |
 
-Found in the PaX patch, written by the PaX Team.
+Move the free_pi_state calls in requeue_pi to before it drops the hb
+locks which it's already holding.
 
-Fixes: 5a9fa7307285 ("posix-timers: kill ->it_sigev_signo and...")
-Signed-off-by: Mathias Krause <minipli@googlemail.com>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Brad Spengler <spender@grsecurity.net>
-Cc: PaX Team <pageexec@freemail.hu>
-Link: http://lkml.kernel.org/r/1412456799-32339-1-git-send-email-minipli@googlemail.com
+[ tglx: Removed a pointless free_pi_state() call and the hb->lock held
+  	debugging. The latter comes via a seperate patch ]
+
+Signed-off-by: Brian Silverman <bsilver16384@gmail.com>
+Cc: austin.linux@gmail.com
+Cc: darren@dvhart.com
+Cc: peterz@infradead.org
+Link: http://lkml.kernel.org/r/1414282837-23092-1-git-send-email-bsilver16384@gmail.com
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-[lizf: Backported to 3.4: adjust filename]
+[lizf: Backported to 3.4: adjust context]
 Signed-off-by: Zefan Li <lizefan@huawei.com>
 ---
- kernel/posix-timers.c | 1 +
- 1 file changed, 1 insertion(+)
+ kernel/futex.c | 22 +++++++++++-----------
+ 1 file changed, 11 insertions(+), 11 deletions(-)
 
-diff --git a/kernel/posix-timers.c b/kernel/posix-timers.c
-index e885be1..02824a5 100644
---- a/kernel/posix-timers.c
-+++ b/kernel/posix-timers.c
-@@ -589,6 +589,7 @@ SYSCALL_DEFINE3(timer_create, const clockid_t, which_clock,
+diff --git a/kernel/futex.c b/kernel/futex.c
+index fafc54f..6b320c2 100644
+--- a/kernel/futex.c
++++ b/kernel/futex.c
+@@ -486,8 +486,14 @@ static struct futex_pi_state * alloc_pi_state(void)
+ 	return pi_state;
+ }
+ 
++/*
++ * Must be called with the hb lock held.
++ */
+ static void free_pi_state(struct futex_pi_state *pi_state)
+ {
++	if (!pi_state)
++		return;
++
+ 	if (!atomic_dec_and_test(&pi_state->refcount))
+ 		return;
+ 
+@@ -1401,15 +1407,6 @@ static int futex_requeue(u32 __user *uaddr1, unsigned int flags,
+ 	}
+ 
+ retry:
+-	if (pi_state != NULL) {
+-		/*
+-		 * We will have to lookup the pi_state again, so free this one
+-		 * to keep the accounting correct.
+-		 */
+-		free_pi_state(pi_state);
+-		pi_state = NULL;
+-	}
+-
+ 	ret = get_futex_key(uaddr1, flags & FLAGS_SHARED, &key1, VERIFY_READ);
+ 	if (unlikely(ret != 0))
+ 		goto out;
+@@ -1497,6 +1494,8 @@ retry_private:
+ 		case 0:
+ 			break;
+ 		case -EFAULT:
++			free_pi_state(pi_state);
++			pi_state = NULL;
+ 			double_unlock_hb(hb1, hb2);
+ 			put_futex_key(&key2);
+ 			put_futex_key(&key1);
+@@ -1506,6 +1505,8 @@ retry_private:
  			goto out;
- 		}
- 	} else {
-+		memset(&event.sigev_value, 0, sizeof(event.sigev_value));
- 		event.sigev_notify = SIGEV_SIGNAL;
- 		event.sigev_signo = SIGALRM;
- 		event.sigev_value.sival_int = new_timer->it_id;
+ 		case -EAGAIN:
+ 			/* The owner was exiting, try again. */
++			free_pi_state(pi_state);
++			pi_state = NULL;
+ 			double_unlock_hb(hb1, hb2);
+ 			put_futex_key(&key2);
+ 			put_futex_key(&key1);
+@@ -1582,6 +1583,7 @@ retry_private:
+ 	}
+ 
+ out_unlock:
++	free_pi_state(pi_state);
+ 	double_unlock_hb(hb1, hb2);
+ 
+ 	/*
+@@ -1598,8 +1600,6 @@ out_put_keys:
+ out_put_key1:
+ 	put_futex_key(&key1);
+ out:
+-	if (pi_state != NULL)
+-		free_pi_state(pi_state);
+ 	return ret ? ret : task_count;
+ }
+ 
 -- 
 1.9.1
 
