@@ -1,108 +1,200 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933720AbbA1C5g (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 21:57:36 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43041 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933650AbbA1C5e (ORCPT
+	id S1760832AbbA1DBp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 22:01:45 -0500
+Received: from mga09.intel.com ([134.134.136.24]:60099 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752808AbbA1DBo convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 21:57:34 -0500
-Date: Tue, 27 Jan 2015 18:57:11 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Joonsoo Kim <js1304@gmail.com>
-Cc: Michael Ellerman <mpe@ellerman.id.au>,
-        Kim Phillips <kim.phillips@freescale.com>,
-        Akinobu Mita <akinobu.mita@gmail.com>,
-        Konstantin Khlebnikov <k.khlebnikov@samsung.com>,
-        Rik van Riel <riel@redhat.com>,
-        Linux Memory Management List <linux-mm@kvack.org>,
-        josh@joshtriplett.org, LKML <linux-kernel@vger.kernel.org>,
-        Jens Axboe <axboe@fb.com>, Minchan Kim <minchan@kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Scott Wood <scottwood@freescale.com>
-Subject: Re: [PATCH v3] powerpc/mm: fix undefined reference to
- `.__kernel_map_pages' on FSL PPC64
-Message-Id: <20150127185711.ee819e4b.akpm@linux-foundation.org>
-In-Reply-To: <CAAmzW4M3O81wBFeZ+JEVZnjRwMNwXnPKeL62Zz96xe_6a7WZpg@mail.gmail.com>
-References: <20150120140200.aa7ba0eb28d95e456972e178@freescale.com>
-	<20150120230150.GA14475@cloud>
-	<20150120160738.edfe64806cc8b943beb1dfa0@linux-foundation.org>
-	<CAC5umyieZn7ppXkKb45O=C=BF+iv6R_A1Dwfhro=cBJzFeovrA@mail.gmail.com>
-	<20150122014550.GA21444@js1304-P5Q-DELUXE>
-	<20150122144147.019eedc41f189eac44c3c4cd@freescale.com>
-	<CAC5umyiF52cykH2_5TD0yzXb+842gywpe-+XZHEwmrDe0nYCPw@mail.gmail.com>
-	<20150122212017.4b7032d52a6c75c06d5b4728@freescale.com>
-	<1421987091.24984.13.camel@ellerman.id.au>
-	<20150126132222.6477257be204a3332601ef11@freescale.com>
-	<1422406862.32234.1.camel@ellerman.id.au>
-	<CAAmzW4M3O81wBFeZ+JEVZnjRwMNwXnPKeL62Zz96xe_6a7WZpg@mail.gmail.com>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 27 Jan 2015 22:01:44 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.09,478,1418112000"; 
+   d="scan'208";a="668739786"
+From: "Wu, Feng" <feng.wu@intel.com>
+To: "tglx@linutronix.de" <tglx@linutronix.de>,
+        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
+        "x86@kernel.org" <x86@kernel.org>, "gleb@kernel.org" <gleb@kernel.org>,
+        "pbonzini@redhat.com" <pbonzini@redhat.com>,
+        "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        "joro@8bytes.org" <joro@8bytes.org>,
+        "alex.williamson@redhat.com" <alex.williamson@redhat.com>,
+        "jiang.liu@linux.intel.com" <jiang.liu@linux.intel.com>
+CC: "eric.auger@linaro.org" <eric.auger@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "Wu, Feng" <feng.wu@intel.com>
+Subject: RE: [v3 00/26] Add VT-d Posted-Interrupts support
+Thread-Topic: [v3 00/26] Add VT-d Posted-Interrupts support
+Thread-Index: AQHQFh/MLVqZuVHeo0y8FKdj3kp1QpzKDcWggAsStYA=
+Date: Wed, 28 Jan 2015 03:01:03 +0000
+Message-ID: <E959C4978C3B6342920538CF579893F0023826A5@SHSMSX104.ccr.corp.intel.com>
+References: <1418397300-10870-1-git-send-email-feng.wu@intel.com>
+ <E959C4978C3B6342920538CF579893F00236670C@SHSMSX104.ccr.corp.intel.com>
+In-Reply-To: <E959C4978C3B6342920538CF579893F00236670C@SHSMSX104.ccr.corp.intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 28 Jan 2015 10:33:59 +0900 Joonsoo Kim <js1304@gmail.com> wrote:
 
-> 2015-01-28 10:01 GMT+09:00 Michael Ellerman <mpe@ellerman.id.au>:
-> > On Mon, 2015-01-26 at 13:22 -0600, Kim Phillips wrote:
-> >> arch/powerpc has __kernel_map_pages implementations in mm/pgtable_32.c, and
-> >> mm/hash_utils_64.c, of which the former is built for PPC32, and the latter
-> >> for PPC64 machines with PPC_STD_MMU.  Fix arch/powerpc/Kconfig to not select
-> >> ARCH_SUPPORTS_DEBUG_PAGEALLOC when CONFIG_PPC_STD_MMU_64 isn't defined,
-> >> i.e., for 64-bit book3e builds to use the generic __kernel_map_pages()
-> >> in mm/debug-pagealloc.c.
-> >>
-> >>   LD      init/built-in.o
-> >> mm/built-in.o: In function `kernel_map_pages':
-> >> include/linux/mm.h:2076: undefined reference to `.__kernel_map_pages'
-> >> include/linux/mm.h:2076: undefined reference to `.__kernel_map_pages'
-> >> include/linux/mm.h:2076: undefined reference to `.__kernel_map_pages'
-> >> Makefile:925: recipe for target 'vmlinux' failed
-> >> make: *** [vmlinux] Error 1
-> >>
-> >> Signed-off-by: Kim Phillips <kim.phillips@freescale.com>
-> >> ---
-> >> v3:
-> >> - fix wording for hash_utils_64.c implementation pointed out by
-> >> Michael Ellerman
-> >> - changed designation from 'mm:' to 'powerpc/mm:', as I think this
-> >> now belongs in ppc-land
-> >>
-> >> v2:
-> >> - corrected SUPPORTS_DEBUG_PAGEALLOC selection to enable
-> >> non-STD_MMU_64 builds to use the generic __kernel_map_pages().
+
+> -----Original Message-----
+> From: Wu, Feng
+> Sent: Wednesday, January 21, 2015 10:26 AM
+> To: tglx@linutronix.de; mingo@redhat.com; hpa@zytor.com; x86@kernel.org;
+> gleb@kernel.org; pbonzini@redhat.com; dwmw2@infradead.org;
+> joro@8bytes.org; alex.williamson@redhat.com; jiang.liu@linux.intel.com
+> Cc: eric.auger@linaro.org; linux-kernel@vger.kernel.org;
+> iommu@lists.linux-foundation.org; kvm@vger.kernel.org; Wu, Feng
+> Subject: RE: [v3 00/26] Add VT-d Posted-Interrupts support
+> 
+> 
+> > -----Original Message-----
+> > From: Wu, Feng
+> > Sent: Friday, December 12, 2014 11:15 PM
+> > To: tglx@linutronix.de; mingo@redhat.com; hpa@zytor.com;
+> x86@kernel.org;
+> > gleb@kernel.org; pbonzini@redhat.com; dwmw2@infradead.org;
+> > joro@8bytes.org; alex.williamson@redhat.com; jiang.liu@linux.intel.com
+> > Cc: eric.auger@linaro.org; linux-kernel@vger.kernel.org;
+> > iommu@lists.linux-foundation.org; kvm@vger.kernel.org; Wu, Feng
+> > Subject: [v3 00/26] Add VT-d Posted-Interrupts support
 > >
-> > I'd be happy to take this through the powerpc tree for 3.20, but for this:
+> > VT-d Posted-Interrupts is an enhancement to CPU side Posted-Interrupt.
+> > With VT-d Posted-Interrupts enabled, external interrupts from
+> > direct-assigned devices can be delivered to guests without VMM
+> > intervention when guest is running in non-root mode.
 > >
-> >> depends on:
-> >> From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-> >> Date: Thu, 22 Jan 2015 10:28:58 +0900
-> >> Subject: [PATCH] mm/debug_pagealloc: fix build failure on ppc and some other archs
+> > You can find the VT-d Posted-Interrtups Spec. in the following URL:
 > >
-> > I don't have that patch in my tree.
+> http://www.intel.com/content/www/us/en/intelligent-systems/intel-technolog
+> > y/vt-directed-io-spec.html
 > >
-> > But in what way does this patch depend on that one?
+> > v1->v2:
+> > * Use VFIO framework to enable this feature, the VFIO part of this series is
+> >   base on Eric's patch "[PATCH v3 0/8] KVM-VFIO IRQ forward control"
+> > * Rebase this patchset on
+> > git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git,
+> >   then revise some irq logic based on the new hierarchy irqdomain patches
+> > provided
+> >   by Jiang Liu <jiang.liu@linux.intel.com>
 > >
-> > It looks to me like it'd be safe to take this on its own, or am I wrong?
+> > v2->v3:
+> > * Adjust the Posted-interrupts Descriptor updating logic when vCPU is
+> >   preempted or blocked.
+> > * KVM_DEV_VFIO_DEVICE_POSTING_IRQ -->
+> > KVM_DEV_VFIO_DEVICE_POST_IRQ
+> > * __KVM_HAVE_ARCH_KVM_VFIO_POSTING -->
+> > __KVM_HAVE_ARCH_KVM_VFIO_POST
+> > * Add KVM_DEV_VFIO_DEVICE_UNPOST_IRQ attribute for VFIO irq, which
+> >   can be used to change back to remapping mode.
+> > * Fix typo
+> >
+> > This patch series is made of the following groups:
+> > 1-6: Some preparation changes in iommu and irq component, this is based on
+> > the
+> >      new hierarchy irqdomain logic.
+> > 7-9, 26: IOMMU changes for VT-d Posted-Interrupts, such as, feature
+> > detection,
+> >           command line parameter.
+> > 10-17, 22-25: Changes related to KVM itself.
+> > 18-20: Changes in VFIO component, this part was previously sent out as
+> > "[RFC PATCH v2 0/2] kvm-vfio: implement the vfio skeleton for VT-d
+> > Posted-Interrupts"
+> > 21: x86 irq related changes
+> >
+> > Feng Wu (26):
+> >   genirq: Introduce irq_set_vcpu_affinity() to target an interrupt to a
+> >     VCPU
+> >   iommu: Add new member capability to struct irq_remap_ops
+> >   iommu, x86: Define new irte structure for VT-d Posted-Interrupts
+> >   iommu, x86: Implement irq_set_vcpu_affinity for intel_ir_chip
+> >   x86, irq: Implement irq_set_vcpu_affinity for pci_msi_ir_controller
+> >   iommu, x86: No need to migrating irq for VT-d Posted-Interrupts
+> >   iommu, x86: Add cap_pi_support() to detect VT-d PI capability
+> >   iommu, x86: Add intel_irq_remapping_capability() for Intel
+> >   iommu, x86: define irq_remapping_cap()
+> >   KVM: change struct pi_desc for VT-d Posted-Interrupts
+> >   KVM: Add some helper functions for Posted-Interrupts
+> >   KVM: Initialize VT-d Posted-Interrupts Descriptor
+> >   KVM: Define a new interface kvm_find_dest_vcpu() for VT-d PI
+> >   KVM: Get Posted-Interrupts descriptor address from struct kvm_vcpu
+> >   KVM: add interfaces to control PI outside vmx
+> >   KVM: Make struct kvm_irq_routing_table accessible
+> >   KVM: make kvm_set_msi_irq() public
+> >   KVM: kvm-vfio: User API for VT-d Posted-Interrupts
+> >   KVM: kvm-vfio: implement the VFIO skeleton for VT-d Posted-Interrupts
+> >   KVM: x86: kvm-vfio: VT-d posted-interrupts setup
+> >   x86, irq: Define a global vector for VT-d Posted-Interrupts
+> >   KVM: Define a wakeup worker thread for vCPU
+> >   KVM: Update Posted-Interrupts Descriptor when vCPU is preempted
+> >   KVM: Update Posted-Interrupts Descriptor when vCPU is blocked
+> >   KVM: Suppress posted-interrupt when 'SN' is set
+> >   iommu/vt-d: Add a command line parameter for VT-d posted-interrupts
+> >
+> >  Documentation/kernel-parameters.txt        |   1 +
+> >  Documentation/virtual/kvm/devices/vfio.txt |   9 ++
+> >  arch/x86/include/asm/entry_arch.h          |   2 +
+> >  arch/x86/include/asm/hardirq.h             |   1 +
+> >  arch/x86/include/asm/hw_irq.h              |   2 +
+> >  arch/x86/include/asm/irq_remapping.h       |  11 ++
+> >  arch/x86/include/asm/irq_vectors.h         |   1 +
+> >  arch/x86/include/asm/kvm_host.h            |  12 ++
+> >  arch/x86/kernel/apic/msi.c                 |   1 +
+> >  arch/x86/kernel/entry_64.S                 |   2 +
+> >  arch/x86/kernel/irq.c                      |  27 ++++
+> >  arch/x86/kernel/irqinit.c                  |   2 +
+> >  arch/x86/kvm/Makefile                      |   2 +-
+> >  arch/x86/kvm/kvm_vfio_x86.c                |  77 +++++++++
+> >  arch/x86/kvm/vmx.c                         | 244
+> > ++++++++++++++++++++++++++++-
+> >  arch/x86/kvm/x86.c                         |  22 ++-
+> >  drivers/iommu/intel_irq_remapping.c        |  68 +++++++-
+> >  drivers/iommu/irq_remapping.c              |  24 ++-
+> >  drivers/iommu/irq_remapping.h              |   8 +
+> >  include/linux/dmar.h                       |  32 ++++
+> >  include/linux/intel-iommu.h                |   1 +
+> >  include/linux/irq.h                        |   7 +
+> >  include/linux/kvm_host.h                   |  46 ++++++
+> >  include/uapi/linux/kvm.h                   |  11 ++
+> >  kernel/irq/chip.c                          |  14 ++
+> >  kernel/irq/manage.c                        |  20 +++
+> >  virt/kvm/irq_comm.c                        |  43 ++++-
+> >  virt/kvm/irqchip.c                         |  11 --
+> >  virt/kvm/kvm_main.c                        |  15 ++
+> >  virt/kvm/vfio.c                            | 107 +++++++++++++
+> >  30 files changed, 795 insertions(+), 28 deletions(-)
+> >  create mode 100644 arch/x86/kvm/kvm_vfio_x86.c
 > >
 > 
-> Hello,
+> Hi Paolo, Alex, and other maintainers,
 > 
-> These two patches are merged to Andrew's tree now.
+> Since this series contain multiple subsystems, IOMMU, irq, x86, VFIO, KVM, etc.
+> I am wondering how you guys handled this case before? If all the patches are
+> reviewed and acked by the associated maintainer, are you only merge the
+> patches
+> related to your own subsystem to your tree? However, you may also need get
+> other
+> patches to make the build successful, so I am a little curious about how you guys
+> handle this? Thanks a lot!
 
-That didn't answer either of Michael's questions ;)
+Can anyone share some experiences about this?
 
-Yes, I think they're independent.  I was holding off on the powerpc
-one, waiting to see if it popped up in linux-next via your tree.  I can
-merge both if you like?
+Thanks,
+Feng
 
+> 
+> Thanks,
+> Feng
+> 
+> > --
+> > 1.9.1
 
