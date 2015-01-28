@@ -1,20 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761777AbbA2KNQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 05:13:16 -0500
-Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:44740 "EHLO
+	id S1762116AbbA2KP6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 05:15:58 -0500
+Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:44737 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752832AbbA2JB3 (ORCPT
+	by vger.kernel.org with ESMTP id S1757043AbbA2JBN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 04:01:29 -0500
+	Thu, 29 Jan 2015 04:01:13 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Jason Cooper <jason@lakedaemon.net>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 048/176] ARM: mvebu: disable I/O coherency on non-SMP situations on Armada 370/375/38x/XP
-Date: Wed, 28 Jan 2015 15:27:58 +0100
-Message-Id: <39ca76b2961ca4667a8035c8bde1ee31a3466d7a.1422455352.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@kernel.org>,
+        Jiri Olsa <jolsa@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        "Yan, Zheng" <zheng.z.yan@intel.com>, Ingo Molnar <mingo@kernel.org>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 049/176] perf/x86/intel/uncore: Make sure only uncore events are collected
+Date: Wed, 28 Jan 2015 15:27:59 +0100
+Message-Id: <5f34dcba9ab45437a8de83aab6298dd0183b334c.1422455352.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <ce4a451f616a1e7ab58cfeceea5e49c8b1c68c81.1422455352.git.jslaby@suse.cz>
 References: <ce4a451f616a1e7ab58cfeceea5e49c8b1c68c81.1422455352.git.jslaby@suse.cz>
@@ -24,105 +30,95 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+From: Jiri Olsa <jolsa@kernel.org>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit e55355453600a33bb5ca4f71f2d7214875f3b061 upstream.
+commit af91568e762d04931dcbdd6bef4655433d8b9418 upstream.
 
-Enabling the hardware I/O coherency on Armada 370, Armada 375, Armada
-38x and Armada XP requires a certain number of conditions:
+The uncore_collect_events functions assumes that event group
+might contain only uncore events which is wrong, because it
+might contain any type of events.
 
- - On Armada 370, the cache policy must be set to write-allocate.
+This bug leads to uncore framework touching 'not' uncore events,
+which could end up all sorts of bugs.
 
- - On Armada 375, 38x and XP, the cache policy must be set to
-   write-allocate, the pages must be mapped with the shareable
-   attribute, and the SMP bit must be set
+One was triggered by Vince's perf fuzzer, when the uncore code
+touched breakpoint event private event space as if it was uncore
+event and caused BUG:
 
-Currently, on Armada XP, when CONFIG_SMP is enabled, those conditions
-are met. However, when Armada XP is used in a !CONFIG_SMP kernel, none
-of these conditions are met. With Armada 370, the situation is worse:
-since the processor is single core, regardless of whether CONFIG_SMP
-or !CONFIG_SMP is used, the cache policy will be set to write-back by
-the kernel and not write-allocate.
+   BUG: unable to handle kernel paging request at ffffffff82822068
+   IP: [<ffffffff81020338>] uncore_assign_events+0x188/0x250
+   ...
 
-Since solving this problem turns out to be quite complicated, and we
-don't want to let users with a mainline kernel known to have
-infrequent but existing data corruptions, this commit proposes to
-simply disable hardware I/O coherency in situations where it is known
-not to work.
+The code in uncore_assign_events() function was looking for
+event->hw.idx data while the event was initialized as a
+breakpoint with different members in event->hw union.
 
-And basically, the is_smp() function of the kernel tells us whether it
-is OK to enable hardware I/O coherency or not, so this commit slightly
-refactors the coherency_type() function to return
-COHERENCY_FABRIC_TYPE_NONE when is_smp() is false, or the appropriate
-type of the coherency fabric in the other case.
+This patch forces uncore_collect_events() to collect only uncore
+events.
 
-Thanks to this, the I/O coherency fabric will no longer be used at all
-in !CONFIG_SMP configurations. It will continue to be used in
-CONFIG_SMP configurations on Armada XP, Armada 375 and Armada 38x
-(which are multiple cores processors), but will no longer be used on
-Armada 370 (which is a single core processor).
-
-In the process, it simplifies the implementation of the
-coherency_type() function, and adds a missing call to of_node_put().
-
-Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Fixes: e60304f8cb7bb545e79fe62d9b9762460c254ec2 ("arm: mvebu: Add hardware I/O Coherency support")
-Acked-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
-Link: https://lkml.kernel.org/r/1415871540-20302-3-git-send-email-thomas.petazzoni@free-electrons.com
-Signed-off-by: Jason Cooper <jason@lakedaemon.net>
+Reported-by: Vince Weaver <vince@deater.net>
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Cc: Yan, Zheng <zheng.z.yan@intel.com>
+Link: http://lkml.kernel.org/r/1418243031-20367-2-git-send-email-jolsa@kernel.org
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- arch/arm/mach-mvebu/coherency.c | 26 ++++++++++++++++++++++++++
- 1 file changed, 26 insertions(+)
+ arch/x86/kernel/cpu/perf_event_intel_uncore.c | 22 +++++++++++++++++++---
+ 1 file changed, 19 insertions(+), 3 deletions(-)
 
-diff --git a/arch/arm/mach-mvebu/coherency.c b/arch/arm/mach-mvebu/coherency.c
-index 58adf2fd9cfc..7e0529ba3bca 100644
---- a/arch/arm/mach-mvebu/coherency.c
-+++ b/arch/arm/mach-mvebu/coherency.c
-@@ -124,6 +124,29 @@ int __init coherency_init(void)
- {
- 	struct device_node *np;
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+index 4118f9f68315..3e1cfbb5a6cf 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+@@ -2764,6 +2764,17 @@ static struct intel_uncore_box *uncore_event_to_box(struct perf_event *event)
+ 	return uncore_pmu_to_box(uncore_event_to_pmu(event), smp_processor_id());
+ }
  
-+	/*
-+	 * The coherency fabric is needed:
-+	 * - For coherency between processors on Armada XP, so only
-+	 *   when SMP is enabled.
-+	 * - For coherency between the processor and I/O devices, but
-+	 *   this coherency requires many pre-requisites (write
-+	 *   allocate cache policy, shareable pages, SMP bit set) that
-+	 *   are only meant in SMP situations.
-+	 *
-+	 * Note that this means that on Armada 370, there is currently
-+	 * no way to use hardware I/O coherency, because even when
-+	 * CONFIG_SMP is enabled, is_smp() returns false due to the
-+	 * Armada 370 being a single-core processor. To lift this
-+	 * limitation, we would have to find a way to make the cache
-+	 * policy set to write-allocate (on all Armada SoCs), and to
-+	 * set the shareable attribute in page tables (on all Armada
-+	 * SoCs except the Armada 370). Unfortunately, such decisions
-+	 * are taken very early in the kernel boot process, at a point
-+	 * where we don't know yet on which SoC we are running.
-+	 */
-+	if (!is_smp())
-+		return 0;
++/*
++ * Using uncore_pmu_event_init pmu event_init callback
++ * as a detection point for uncore events.
++ */
++static int uncore_pmu_event_init(struct perf_event *event);
 +
- 	np = of_find_matching_node(NULL, of_coherency_table);
- 	if (np) {
- 		struct resource res;
-@@ -150,6 +173,9 @@ static int __init coherency_late_init(void)
++static bool is_uncore_event(struct perf_event *event)
++{
++	return event->pmu->event_init == uncore_pmu_event_init;
++}
++
+ static int
+ uncore_collect_events(struct intel_uncore_box *box, struct perf_event *leader, bool dogrp)
  {
- 	struct device_node *np;
+@@ -2778,13 +2789,18 @@ uncore_collect_events(struct intel_uncore_box *box, struct perf_event *leader, b
+ 		return -EINVAL;
  
-+	if (!is_smp())
-+		return 0;
+ 	n = box->n_events;
+-	box->event_list[n] = leader;
+-	n++;
 +
- 	np = of_find_matching_node(NULL, of_coherency_table);
- 	if (np) {
- 		bus_register_notifier(&platform_bus_type,
++	if (is_uncore_event(leader)) {
++		box->event_list[n] = leader;
++		n++;
++	}
++
+ 	if (!dogrp)
+ 		return n;
+ 
+ 	list_for_each_entry(event, &leader->sibling_list, group_entry) {
+-		if (event->state <= PERF_EVENT_STATE_OFF)
++		if (!is_uncore_event(event) ||
++		    event->state <= PERF_EVENT_STATE_OFF)
+ 			continue;
+ 
+ 		if (n >= max_count)
 -- 
 2.2.2
 
