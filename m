@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762199AbbA1FNW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 00:13:22 -0500
-Received: from mail.kernel.org ([198.145.29.136]:38213 "EHLO mail.kernel.org"
+	id S1761251AbbA1ERv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 23:17:51 -0500
+Received: from mail.kernel.org ([198.145.29.136]:38225 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761198AbbA1ERp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 23:17:45 -0500
+	id S1761161AbbA1ERs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 23:17:48 -0500
 From: lizf@kernel.org
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Hans de Goede <hdegoede@redhat.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Zefan Li <lizefan@huawei.com>
-Subject: [PATCH 3.4 46/91] Input: i8042 - add nomux quirk for Avatar AVIU-145A6
-Date: Wed, 28 Jan 2015 12:07:38 +0800
-Message-Id: <1422418236-12852-91-git-send-email-lizf@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Mikulas Patocka <mpatocka@redhat.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, Zefan Li <lizefan@huawei.com>
+Subject: [PATCH 3.4 046/177] fs: make cont_expand_zero interruptible
+Date: Wed, 28 Jan 2015 12:07:39 +0800
+Message-Id: <1422418236-12852-92-git-send-email-lizf@kernel.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422418050-12581-1-git-send-email-lizf@kernel.org>
 References: <1422418050-12581-1-git-send-email-lizf@kernel.org>
@@ -21,47 +20,49 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hans de Goede <hdegoede@redhat.com>
+From: Mikulas Patocka <mpatocka@redhat.com>
 
-3.4.105-rc1 review patch.  If anyone has any objections, please let me know.
+3.4.106-rc1 review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
 
-commit d2682118f4bb3ceb835f91c1a694407a31bb7378 upstream.
+commit c2ca0fcd202863b14bd041a7fece2e789926c225 upstream.
 
-The sys_vendor / product_name are somewhat generic unfortunately, so this
-may lead to some false positives. But nomux usually does no harm, where as
-not having it clearly is causing problems on the Avatar AVIU-145A6.
+This patch makes it possible to kill a process looping in
+cont_expand_zero. A process may spend a lot of time in this function, so
+it is desirable to be able to kill it.
 
-https://bugzilla.kernel.org/show_bug.cgi?id=77391
+It happened to me that I wanted to copy a piece data from the disk to a
+file. By mistake, I used the "seek" parameter to dd instead of "skip". Due
+to the "seek" parameter, dd attempted to extend the file and became stuck
+doing so - the only possibility was to reset the machine or wait many
+hours until the filesystem runs out of space and cont_expand_zero fails.
+We need this patch to be able to terminate the process.
 
-Reported-by: Hugo P <saurosii@gmail.com>
-Signed-off-by: Hans de Goede <hdegoede@redhat.com>
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
 Signed-off-by: Zefan Li <lizefan@huawei.com>
 ---
- drivers/input/serio/i8042-x86ia64io.h | 7 +++++++
- 1 file changed, 7 insertions(+)
+ fs/buffer.c | 5 +++++
+ 1 file changed, 5 insertions(+)
 
-diff --git a/drivers/input/serio/i8042-x86ia64io.h b/drivers/input/serio/i8042-x86ia64io.h
-index dc37b32..1291673 100644
---- a/drivers/input/serio/i8042-x86ia64io.h
-+++ b/drivers/input/serio/i8042-x86ia64io.h
-@@ -458,6 +458,13 @@ static const struct dmi_system_id __initconst i8042_dmi_nomux_table[] = {
- 			DMI_MATCH(DMI_PRODUCT_NAME, "HP Pavilion dv4 Notebook PC"),
- 		},
- 	},
-+	{
-+		/* Avatar AVIU-145A6 */
-+		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "Intel"),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "IC4I"),
-+		},
-+	},
- 	{ }
- };
+diff --git a/fs/buffer.c b/fs/buffer.c
+index f235e18..104425b 100644
+--- a/fs/buffer.c
++++ b/fs/buffer.c
+@@ -2221,6 +2221,11 @@ static int cont_expand_zero(struct file *file, struct address_space *mapping,
+ 		err = 0;
  
+ 		balance_dirty_pages_ratelimited(mapping);
++
++		if (unlikely(fatal_signal_pending(current))) {
++			err = -EINTR;
++			goto out;
++		}
+ 	}
+ 
+ 	/* page covers the boundary, find the boundary offset */
 -- 
 1.9.1
 
