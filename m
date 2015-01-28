@@ -1,101 +1,275 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757612AbbA1Ury (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 15:47:54 -0500
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:46227 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934276AbbA1Url (ORCPT
+	id S1759369AbbA1WJe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 17:09:34 -0500
+Received: from mail.sigma-star.at ([95.130.255.111]:14385 "EHLO
+	mail.sigma-star.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932679AbbA1USn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 15:47:41 -0500
-From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-To: Ulf Hansson <ulf.hansson@linaro.org>
-Cc: Kukjin Kim <kgene@kernel.org>, Doug Anderson <dianders@chromium.org>,
-        Olof Johansson <olof@lixom.net>, linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-mmc@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Subject: [PATCH 5/5] ARM: dts: exynos5250-snow: Enable wifi power-on
-Date: Wed, 28 Jan 2015 11:10:19 +0100
-Message-Id: <1422439819-29854-6-git-send-email-javier.martinez@collabora.co.uk>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <1422439819-29854-1-git-send-email-javier.martinez@collabora.co.uk>
-References: <1422439819-29854-1-git-send-email-javier.martinez@collabora.co.uk>
+	Wed, 28 Jan 2015 15:18:43 -0500
+From: david.oberhollenzer@sigma-star.at
+To: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: David Oberhollenzer <david.oberhollenzer@sigma-star.at>
+Subject: [PATCH] UBI: power cut emulation for testing
+Date: Wed, 28 Jan 2015 11:13:15 +0100
+Message-Id: <1422439995-25745-1-git-send-email-david.oberhollenzer@sigma-star.at>
+X-Mailer: git-send-email 2.2.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Snow board has a MMC/SDIO wifi chip that is always powered but it
-needs a power sequence involving a reset (active low) and an enable
-(active high) pins. Both pins are marked as active low since the MMC
-simple power sequence driver asserts the pins prior to the card power
-up procedure and de-asserts the pins after the card has been powered.
+From: David Oberhollenzer <david.oberhollenzer@sigma-star.at>
 
-So the reset line will be left de-asserted and the enable pin will be
-left asserted.
+Emulate random power cuts by switching device to ro after a number of
+writes to allow simple power cut testing with nand-sim.
 
-The chip also needs an external 32kHz reference clock to be operational
-that is by the MAX77686 PMIC clock.
+Maximum and minimum number of successful writes before power cut and
+what kind of writes (EC header, VID header or none) to interrupt
+configurable via debugfs.
 
-Add a simple MMC power sequence provider for the wifi MMC/SDIO slot.
-
-Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Signed-off-by: David Oberhollenzer <david.oberhollenzer@sigma-star.at>
 ---
- arch/arm/boot/dts/exynos5250-snow.dts | 25 ++++++++++++++++++++++++-
- 1 file changed, 24 insertions(+), 1 deletion(-)
+ drivers/mtd/ubi/debug.c | 93 +++++++++++++++++++++++++++++++++++++++++++++++--
+ drivers/mtd/ubi/debug.h |  2 ++
+ drivers/mtd/ubi/io.c    |  6 ++++
+ drivers/mtd/ubi/ubi.h   | 25 +++++++++++++
+ 4 files changed, 124 insertions(+), 2 deletions(-)
 
-diff --git a/arch/arm/boot/dts/exynos5250-snow.dts b/arch/arm/boot/dts/exynos5250-snow.dts
-index b9aeec430527..0f7971ba8238 100644
---- a/arch/arm/boot/dts/exynos5250-snow.dts
-+++ b/arch/arm/boot/dts/exynos5250-snow.dts
-@@ -229,6 +229,13 @@
- 		power-supply = <&fet6>;
- 		backlight = <&backlight>;
- 	};
+diff --git a/drivers/mtd/ubi/debug.c b/drivers/mtd/ubi/debug.c
+index 7335c9f..ad164cc 100644
+--- a/drivers/mtd/ubi/debug.c
++++ b/drivers/mtd/ubi/debug.c
+@@ -263,7 +263,7 @@ static ssize_t dfs_file_read(struct file *file, char __user *user_buf,
+ 	struct dentry *dent = file->f_path.dentry;
+ 	struct ubi_device *ubi;
+ 	struct ubi_debug_info *d;
+-	char buf[3];
++	char buf[8];
+ 	int val;
+ 
+ 	ubi = ubi_get_device(ubi_num);
+@@ -281,6 +281,22 @@ static ssize_t dfs_file_read(struct file *file, char __user *user_buf,
+ 		val = d->emulate_bitflips;
+ 	else if (dent == d->dfs_emulate_io_failures)
+ 		val = d->emulate_io_failures;
++	else if (dent == d->dfs_emulate_power_cut) {
++		snprintf(buf, sizeof(buf), "%u\n", d->emulate_power_cut);
++		count = simple_read_from_buffer(user_buf, count, ppos,
++						buf, strlen(buf));
++		goto out;
++	} else if (dent == d->dfs_power_cut_min) {
++		snprintf(buf, sizeof(buf), "%u\n", d->power_cut_min);
++		count = simple_read_from_buffer(user_buf, count, ppos,
++						buf, strlen(buf));
++		goto out;
++	} else if (dent == d->dfs_power_cut_max) {
++		snprintf(buf, sizeof(buf), "%u\n", d->power_cut_max);
++		count = simple_read_from_buffer(user_buf, count, ppos,
++						buf, strlen(buf));
++		goto out;
++	}
+ 	else {
+ 		count = -EINVAL;
+ 		goto out;
+@@ -309,7 +325,7 @@ static ssize_t dfs_file_write(struct file *file, const char __user *user_buf,
+ 	struct ubi_device *ubi;
+ 	struct ubi_debug_info *d;
+ 	size_t buf_size;
+-	char buf[8];
++	char buf[8]={0};
+ 	int val;
+ 
+ 	ubi = ubi_get_device(ubi_num);
+@@ -323,6 +339,21 @@ static ssize_t dfs_file_write(struct file *file, const char __user *user_buf,
+ 		goto out;
+ 	}
+ 
++	if (dent == d->dfs_power_cut_min) {
++		if (kstrtouint(buf, 0, &d->power_cut_min) != 0)
++			count = -EINVAL;
++		goto out;
++	} else if (dent == d->dfs_power_cut_max) {
++		if (kstrtouint(buf, 0, &d->power_cut_max) != 0)
++			count = -EINVAL;
++		goto out;
++	} else if (dent == d->dfs_emulate_power_cut) {
++		if (kstrtoint(buf, 0, &val) != 0)
++			count = -EINVAL;
++		d->emulate_power_cut = val;
++		goto out;
++	}
 +
-+	mmc3_pwrseq: mmc3_pwrseq {
-+		reset-gpios = <&gpx0 2 GPIO_ACTIVE_LOW>, /* WIFI_RSTn */
-+			      <&gpx0 1 GPIO_ACTIVE_LOW>; /* WIFI_EN */
-+		clocks = <&max77686 MAX77686_CLK_PMIC>;
-+		clock-names = "ext_clock";
-+	};
+ 	if (buf[0] == '1')
+ 		val = 1;
+ 	else if (buf[0] == '0')
+@@ -427,6 +458,27 @@ int ubi_debugfs_init_dev(struct ubi_device *ubi)
+ 		goto out_remove;
+ 	d->dfs_emulate_io_failures = dent;
+ 
++	fname = "tst_emulate_power_cut";
++	dent = debugfs_create_file(fname, S_IWUSR, d->dfs_dir, (void *)ubi_num,
++				   &dfs_fops);
++	if (IS_ERR_OR_NULL(dent))
++		goto out_remove;
++	d->dfs_emulate_power_cut = dent;
++
++	fname = "tst_emulate_power_cut_min";
++	dent = debugfs_create_file(fname, S_IWUSR, d->dfs_dir, (void *)ubi_num,
++				   &dfs_fops);
++	if (IS_ERR_OR_NULL(dent))
++		goto out_remove;
++	d->dfs_power_cut_min = dent;
++
++	fname = "tst_emulate_power_cut_max";
++	dent = debugfs_create_file(fname, S_IWUSR, d->dfs_dir, (void *)ubi_num,
++				   &dfs_fops);
++	if (IS_ERR_OR_NULL(dent))
++		goto out_remove;
++	d->dfs_power_cut_max = dent;
++
+ 	return 0;
+ 
+ out_remove:
+@@ -447,3 +499,40 @@ void ubi_debugfs_exit_dev(struct ubi_device *ubi)
+ 	if (IS_ENABLED(CONFIG_DEBUG_FS))
+ 		debugfs_remove_recursive(ubi->dbg.dfs_dir);
+ }
++
++/**
++ * ubi_dbg_power_cut - emulate a power cut if it is time to do so
++ * @ubi: UBI device description object
++ * @caller: Flags set to indicate from where the function is being called
++ *
++ * Returns non-zero if a power cut was emulated, zero if not.
++ */
++int ubi_dbg_power_cut(struct ubi_device *ubi, int caller)
++{
++	unsigned int range;
++
++	if (!ubi || ubi->dbg.power_cut_counter < 0)
++		return 0;
++
++	if ((ubi->dbg.emulate_power_cut & caller) == 0)
++		return 0;
++
++	if (ubi->dbg.power_cut_counter == 0) {
++		ubi->dbg.power_cut_counter = ubi->dbg.power_cut_min;
++
++		if (ubi->dbg.power_cut_max > ubi->dbg.power_cut_min) {
++			range = ubi->dbg.power_cut_max - ubi->dbg.power_cut_min;
++			ubi->dbg.power_cut_counter += prandom_u32() % range;
++		}
++		return 0;
++	}
++
++	ubi->dbg.power_cut_counter--;
++	if (ubi->dbg.power_cut_counter)
++		return 0;
++
++	ubi->dbg.power_cut_counter = -1;
++	ubi_msg(ubi,"XXXXXXXXXXXXXXXXX emulating a power cut XXXXXXXXXXXXXXXXXX");
++	ubi_ro_mode(ubi);
++	return 1;
++}
+diff --git a/drivers/mtd/ubi/debug.h b/drivers/mtd/ubi/debug.h
+index cba89fc..d74b339 100644
+--- a/drivers/mtd/ubi/debug.h
++++ b/drivers/mtd/ubi/debug.h
+@@ -127,4 +127,6 @@ static inline int ubi_dbg_chk_gen(const struct ubi_device *ubi)
+ {
+ 	return ubi->dbg.chk_gen;
+ }
++
++int ubi_dbg_power_cut(struct ubi_device *ubi, int caller);
+ #endif /* !__UBI_DEBUG_H__ */
+diff --git a/drivers/mtd/ubi/io.c b/drivers/mtd/ubi/io.c
+index 396aaa5..f77de8e 100644
+--- a/drivers/mtd/ubi/io.c
++++ b/drivers/mtd/ubi/io.c
+@@ -859,6 +859,9 @@ int ubi_io_write_ec_hdr(struct ubi_device *ubi, int pnum,
+ 	if (err)
+ 		return err;
+ 
++	if (ubi_dbg_power_cut(ubi, POWER_CUT_EC_WRITE))
++		return -EROFS;
++
+ 	err = ubi_io_write(ubi, ec_hdr, pnum, 0, ubi->ec_hdr_alsize);
+ 	return err;
+ }
+@@ -1106,6 +1109,9 @@ int ubi_io_write_vid_hdr(struct ubi_device *ubi, int pnum,
+ 	if (err)
+ 		return err;
+ 
++	if (ubi_dbg_power_cut(ubi, POWER_CUT_VID_WRITE))
++		return -EROFS;
++
+ 	p = (char *)vid_hdr - ubi->vid_hdr_shift;
+ 	err = ubi_io_write(ubi, p, pnum, ubi->vid_hdr_aloffset,
+ 			   ubi->vid_hdr_alsize);
+diff --git a/drivers/mtd/ubi/ubi.h b/drivers/mtd/ubi/ubi.h
+index f80ffab..3886fdc 100644
+--- a/drivers/mtd/ubi/ubi.h
++++ b/drivers/mtd/ubi/ubi.h
+@@ -151,6 +151,17 @@ enum {
+ 	UBI_BAD_FASTMAP,
  };
  
- &dp {
-@@ -531,17 +538,33 @@
- 	status = "okay";
- 	num-slots = <1>;
- 	broken-cd;
-+	cap-sdio-irq;
- 	card-detect-delay = <200>;
- 	samsung,dw-mshc-ciu-div = <3>;
- 	samsung,dw-mshc-sdr-timing = <2 3>;
- 	samsung,dw-mshc-ddr-timing = <1 2>;
- 	pinctrl-names = "default";
--	pinctrl-0 = <&sd3_clk &sd3_cmd &sd3_bus4>;
-+	pinctrl-0 = <&sd3_clk &sd3_cmd &sd3_bus4 &wifi_en &wifi_rst>;
- 	bus-width = <4>;
- 	cap-sd-highspeed;
-+	mmc-pwrseq = <&mmc3_pwrseq>;
++/*
++ * Flags for emulate_power_cut in ubi_debug_info
++ *
++ * POWER_CUT_EC_WRITE: Emulate a power cut when writing an EC header
++ * POWER_CUT_VID_WRITE: Emulate a power cut when writing a VID header
++ */
++enum {
++	POWER_CUT_EC_WRITE = 0x01,
++	POWER_CUT_VID_WRITE = 0x02,
++};
++
+ /**
+  * struct ubi_wl_entry - wear-leveling entry.
+  * @u.rb: link in the corresponding (free/used) RB-tree
+@@ -356,6 +367,10 @@ struct ubi_wl_entry;
+  * @disable_bgt: disable the background task for testing purposes
+  * @emulate_bitflips: emulate bit-flips for testing purposes
+  * @emulate_io_failures: emulate write/erase failures for testing purposes
++ * @emulate_power_cut: emulate power cut for testing purposes
++ * @power_cut_counter: count down for writes left until emulated power cut
++ * @power_cut_min: minimum number of writes before emulating a power cut
++ * @power_cut_max: maximum number of writes until emulating a power cut
+  * @dfs_dir_name: name of debugfs directory containing files of this UBI device
+  * @dfs_dir: direntry object of the UBI device debugfs directory
+  * @dfs_chk_gen: debugfs knob to enable UBI general extra checks
+@@ -363,6 +378,9 @@ struct ubi_wl_entry;
+  * @dfs_disable_bgt: debugfs knob to disable the background task
+  * @dfs_emulate_bitflips: debugfs knob to emulate bit-flips
+  * @dfs_emulate_io_failures: debugfs knob to emulate write/erase failures
++ * @dfs_emulate_power_cut: debugfs knob to emulate power cuts
++ * @dfs_power_cut_min: debugfs knob for minimum writes before power cut
++ * @dfs_power_cut_max: debugfs knob for maximum writes until power cut
+  */
+ struct ubi_debug_info {
+ 	unsigned int chk_gen:1;
+@@ -370,6 +388,10 @@ struct ubi_debug_info {
+ 	unsigned int disable_bgt:1;
+ 	unsigned int emulate_bitflips:1;
+ 	unsigned int emulate_io_failures:1;
++	unsigned int emulate_power_cut:2;
++	unsigned int power_cut_counter;
++	unsigned int power_cut_min;
++	unsigned int power_cut_max;
+ 	char dfs_dir_name[UBI_DFS_DIR_LEN + 1];
+ 	struct dentry *dfs_dir;
+ 	struct dentry *dfs_chk_gen;
+@@ -377,6 +399,9 @@ struct ubi_debug_info {
+ 	struct dentry *dfs_disable_bgt;
+ 	struct dentry *dfs_emulate_bitflips;
+ 	struct dentry *dfs_emulate_io_failures;
++	struct dentry *dfs_emulate_power_cut;
++	struct dentry *dfs_power_cut_min;
++	struct dentry *dfs_power_cut_max;
  };
  
- &pinctrl_0 {
-+	wifi_en: wifi-en {
-+		samsung,pins = "gpx0-1";
-+		samsung,pin-function = <1>;
-+		samsung,pin-pud = <0>;
-+		samsung,pin-drv = <0>;
-+	};
-+
-+	wifi_rst: wifi-rst {
-+		samsung,pins = "gpx0-2";
-+		samsung,pin-function = <1>;
-+		samsung,pin-pud = <0>;
-+		samsung,pin-drv = <0>;
-+	};
-+
- 	power_key_irq: power-key-irq {
- 		samsung,pins = "gpx1-3";
- 		samsung,pin-function = <0xf>;
+ /**
 -- 
-2.1.3
+2.2.2
 
