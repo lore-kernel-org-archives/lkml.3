@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760172AbbA1B2h (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 20:28:37 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41108 "EHLO
+	id S1760215AbbA1B2k (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 20:28:40 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41037 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759752AbbA1B2Q (ORCPT
+	with ESMTP id S1759759AbbA1B2Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 27 Jan 2015 20:28:16 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
@@ -13,9 +13,9 @@ Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Chris Wilson <chris@chris-wilson.co.uk>,
         Daniel Vetter <daniel.vetter@ffwll.ch>,
         Jani Nikula <jani.nikula@intel.com>
-Subject: [PATCH 3.18 13/61] drm/i915: Ban Haswell from using RCS flips
-Date: Tue, 27 Jan 2015 17:26:25 -0800
-Message-Id: <20150128012638.476143746@linuxfoundation.org>
+Subject: [PATCH 3.18 14/61] drm/i915: Fix mutex->owner inspection race under DEBUG_MUTEXES
+Date: Tue, 27 Jan 2015 17:26:26 -0800
+Message-Id: <20150128012638.626336549@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <20150128012636.936333725@linuxfoundation.org>
 References: <20150128012636.936333725@linuxfoundation.org>
@@ -32,40 +32,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Chris Wilson <chris@chris-wilson.co.uk>
 
-commit 48bf5b2d00bfeb681f6500c626189c7cd2c964d2 upstream.
+commit 226e5ae9e5f9108beb0bde4ac69f68fe6210fed9 upstream.
 
-Like Ivybridge, we have reports that we get random hangs when flipping
-with multiple pipes. Extend
+If CONFIG_DEBUG_MUTEXES is set, the mutex->owner field is only cleared
+if the mutex debugging is enabled which introduces a race in our
+mutex_is_locked_by() - i.e. we may inspect the old owner value before it
+is acquired by the new task.
 
-commit 2a92d5bca1999b69c78f3c3e97b5484985b094b9
-Author: Chris Wilson <chris@chris-wilson.co.uk>
-Date:   Tue Jul 8 10:40:29 2014 +0100
+This is the root cause of this error:
 
-    drm/i915: Disable RCS flips on Ivybridge
+# diff --git a/kernel/locking/mutex-debug.c b/kernel/locking/mutex-debug.c
+# index 5cf6731..3ef3736 100644
+# --- a/kernel/locking/mutex-debug.c
+# +++ b/kernel/locking/mutex-debug.c
+# @@ -80,13 +80,13 @@ void debug_mutex_unlock(struct mutex *lock)
+# 			DEBUG_LOCKS_WARN_ON(lock->owner != current);
+#
+# 		DEBUG_LOCKS_WARN_ON(!lock->wait_list.prev && !lock->wait_list.next);
+# -		mutex_clear_owner(lock);
+# 	}
+#
+# 	/*
+# 	 * __mutex_slowpath_needs_to_unlock() is explicitly 0 for debug
+# 	 * mutexes so that we can do it here after we've verified state.
+# 	 */
+# +	mutex_clear_owner(lock);
+# 	atomic_set(&lock->count, 1);
+#  }
 
-to also apply to Haswell.
-
-Reported-and-tested-by: Scott Tsai <scottt.tw@gmail.com>
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=87759
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=87955
 Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
 Reviewed-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Jani Nikula <jani.nikula@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/intel_display.c |    2 +-
+ drivers/gpu/drm/i915/i915_gem.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -10019,7 +10019,7 @@ static int intel_crtc_page_flip(struct d
- 		if (obj->tiling_mode != work->old_fb_obj->tiling_mode)
- 			/* vlv: DISPLAY_FLIP fails to change tiling */
- 			ring = NULL;
--	} else if (IS_IVYBRIDGE(dev)) {
-+	} else if (IS_IVYBRIDGE(dev) || IS_HASWELL(dev)) {
- 		ring = &dev_priv->ring[BCS];
- 	} else if (INTEL_INFO(dev)->gen >= 7) {
- 		ring = obj->ring;
+--- a/drivers/gpu/drm/i915/i915_gem.c
++++ b/drivers/gpu/drm/i915/i915_gem.c
+@@ -5144,7 +5144,7 @@ static bool mutex_is_locked_by(struct mu
+ 	if (!mutex_is_locked(mutex))
+ 		return false;
+ 
+-#if defined(CONFIG_SMP) || defined(CONFIG_DEBUG_MUTEXES)
++#if defined(CONFIG_SMP) && !defined(CONFIG_DEBUG_MUTEXES)
+ 	return mutex->owner == task;
+ #else
+ 	/* Since UP may be pre-empted, we cannot assume that we own the lock */
 
 
