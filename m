@@ -1,73 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761438AbbA1ESo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 23:18:44 -0500
-Received: from mail.kernel.org ([198.145.29.136]:38565 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761420AbbA1ESl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 23:18:41 -0500
-From: lizf@kernel.org
-To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, David Jander <david@protonic.nl>,
-        Marc Kleine-Budde <mkl@pengutronix.de>, Zefan Li <lizefan@huawei.com>
-Subject: [PATCH 3.4 55/91] can: flexcan: correctly initialize mailboxes
-Date: Wed, 28 Jan 2015 12:07:56 +0800
-Message-Id: <1422418236-12852-109-git-send-email-lizf@kernel.org>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1422418050-12581-1-git-send-email-lizf@kernel.org>
-References: <1422418050-12581-1-git-send-email-lizf@kernel.org>
+	id S1759627AbbA1EID (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 23:08:03 -0500
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:51758 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756372AbbA1EIA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 23:08:00 -0500
+Date: Wed, 28 Jan 2015 13:07:57 +0900
+From: Sergey Senozhatsky <sergey.senozhatsky.work@gmail.com>
+To: Sergey Senozhatsky <sergey.senozhatsky.work@gmail.com>
+Cc: Minchan Kim <minchan@kernel.org>,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Jerome Marchand <jmarchan@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Nitin Gupta <ngupta@vflare.org>
+Subject: Re: [PATCH 1/2] zram: free meta out of init_lock
+Message-ID: <20150128040757.GA577@swordfish>
+References: <20150126141709.GA985@swordfish>
+ <20150126160007.GC528@blaptop>
+ <20150127021704.GA665@swordfish>
+ <20150127031823.GA16797@blaptop>
+ <20150127040305.GB665@swordfish>
+ <20150128001526.GA25828@blaptop>
+ <20150128002203.GB25828@blaptop>
+ <20150128020759.GA343@swordfish>
+ <20150128025707.GB32712@blaptop>
+ <20150128035354.GA7790@swordfish>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150128035354.GA7790@swordfish>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Jander <david@protonic.nl>
+On (01/28/15 12:53), Sergey Senozhatsky wrote:
+> > So, I want to go with srcu. Do you agree? or another suggestion?
+> 
+> yes, I think we need to take a second look on srcu approach.
+> 
 
-3.4.105-rc1 review patch.  If anyone has any objections, please let me know.
+... or we can ask lockdep to stop false alarming us and leave it as is.
+I wouldn't say that ->init_lock is so hard to understand.
+just as an option.
 
-------------------
-
-
-commit fc05b884a31dbf259cc73cc856e634ec3acbebb6 upstream.
-
-Apparently mailboxes may contain random data at startup, causing some of them
-being prepared for message reception. This causes overruns being missed or even
-confusing the IRQ check for trasmitted messages, increasing the transmit
-counter instead of the error counter.
-
-This patch initializes all mailboxes after the FIFO as RX_INACTIVE.
-
-Signed-off-by: David Jander <david@protonic.nl>
-Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
-Signed-off-by: Zefan Li <lizefan@huawei.com>
----
- drivers/net/can/flexcan.c | 7 +++++++
- 1 file changed, 7 insertions(+)
-
-diff --git a/drivers/net/can/flexcan.c b/drivers/net/can/flexcan.c
-index 062bbe2..1331558 100644
---- a/drivers/net/can/flexcan.c
-+++ b/drivers/net/can/flexcan.c
-@@ -680,6 +680,7 @@ static int flexcan_chip_start(struct net_device *dev)
- 	struct flexcan_regs __iomem *regs = priv->base;
- 	int err;
- 	u32 reg_mcr, reg_ctrl;
-+	int i;
- 
- 	/* enable module */
- 	flexcan_chip_enable(priv);
-@@ -745,6 +746,12 @@ static int flexcan_chip_start(struct net_device *dev)
- 	netdev_dbg(dev, "%s: writing ctrl=0x%08x", __func__, reg_ctrl);
- 	flexcan_write(reg_ctrl, &regs->ctrl);
- 
-+	/* clear and invalidate all mailboxes first */
-+	for (i = FLEXCAN_TX_BUF_ID; i < ARRAY_SIZE(regs->cantxfg); i++) {
-+		flexcan_write(FLEXCAN_MB_CODE_RX_INACTIVE,
-+			      &regs->cantxfg[i].can_ctrl);
-+	}
-+
- 	/* mark TX mailbox as INACTIVE */
- 	flexcan_write(FLEXCAN_MB_CODE_TX_INACTIVE,
- 		      &regs->cantxfg[FLEXCAN_TX_BUF_ID].can_ctrl);
--- 
-1.9.1
-
+	-ss
