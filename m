@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964810AbbA1CLL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 21:11:11 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41186 "EHLO
+	id S933991AbbA1CA1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 21:00:27 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41424 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759606AbbA1B2W (ORCPT
+	with ESMTP id S933214AbbA1BiV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 20:28:22 -0500
+	Tue, 27 Jan 2015 20:38:21 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        John Stultz <john.stultz@linaro.org>
-Subject: [PATCH 3.18 31/61] time: adjtimex: Validate the ADJ_FREQUENCY values
-Date: Tue, 27 Jan 2015 17:26:43 -0800
-Message-Id: <20150128012640.263058861@linuxfoundation.org>
+        Matt Fleming <matt@console-pimps.org>,
+        John Paul Adrian Glaubitz <glaubitz@physik.fu-berlin.de>,
+        Michael Karcher <kernel@mkarcher.dialup.fu-berlin.de>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [PATCH 3.14 06/77] scripts/recordmcount.pl: There is no -m32 gcc option on Super-H anymore
+Date: Tue, 27 Jan 2015 17:26:44 -0800
+Message-Id: <20150128012746.163002138@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150128012636.936333725@linuxfoundation.org>
-References: <20150128012636.936333725@linuxfoundation.org>
+In-Reply-To: <20150128012745.971137091@linuxfoundation.org>
+References: <20150128012745.971137091@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -26,44 +27,48 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.18-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Sasha Levin <sasha.levin@oracle.com>
+From: Michael Karcher <kernel@mkarcher.dialup.fu-berlin.de>
 
-commit 5e5aeb4367b450a28f447f6d5ab57d8f2ab16a5f upstream.
+commit 1caf6aaaa47471831d77c75f094d4e00ad1ec808 upstream.
 
-Verify that the frequency value from userspace is valid and makes sense.
+Compiling SH with gcc-4.8 fails due to the -m32 option not being
+supported.
 
-Unverified values can cause overflows later on.
+>From http://buildd.debian-ports.org/status/fetch.php?pkg=linux&arch=sh4&ver=3.16.7-ckt4-1&stamp=1421425783
 
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@kernel.org>
-Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
-[jstultz: Fix up bug for negative values and drop redunent cap check]
-Signed-off-by: John Stultz <john.stultz@linaro.org>
+      CC      init/main.o
+    gcc-4.8: error: unrecognized command line option '-m32'
+    ld: cannot find init/.tmp_mc_main.o: No such file or directory
+    objcopy: 'init/.tmp_mx_main.o': No such file
+    rm: cannot remove 'init/.tmp_mx_main.o': No such file or directory
+    rm: cannot remove 'init/.tmp_mc_main.o': No such file or directory
+
+Link: http://lkml.kernel.org/r/1421537778-29001-1-git-send-email-kernel@mkarcher.dialup.fu-berlin.de
+Link: http://lkml.kernel.org/r/54BCBDD4.10102@physik.fu-berlin.de
+
+Cc: Matt Fleming <matt@console-pimps.org>
+Reported-by: John Paul Adrian Glaubitz <glaubitz@physik.fu-berlin.de>
+Signed-off-by: Michael Karcher <kernel@mkarcher.dialup.fu-berlin.de>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/time/ntp.c |    7 +++++++
- 1 file changed, 7 insertions(+)
+ scripts/recordmcount.pl |    1 -
+ 1 file changed, 1 deletion(-)
 
---- a/kernel/time/ntp.c
-+++ b/kernel/time/ntp.c
-@@ -633,6 +633,13 @@ int ntp_validate_timex(struct timex *txc
- 	if ((txc->modes & ADJ_SETOFFSET) && (!capable(CAP_SYS_TIME)))
- 		return -EPERM;
+--- a/scripts/recordmcount.pl
++++ b/scripts/recordmcount.pl
+@@ -262,7 +262,6 @@ if ($arch eq "x86_64") {
+     # force flags for this arch
+     $ld .= " -m shlelf_linux";
+     $objcopy .= " -O elf32-sh-linux";
+-    $cc .= " -m32";
  
-+	if (txc->modes & ADJ_FREQUENCY) {
-+		if (LONG_MIN / PPM_SCALE > txc->freq)
-+			return -EINVAL;
-+		if (LONG_MAX / PPM_SCALE < txc->freq)
-+			return -EINVAL;
-+	}
-+
- 	return 0;
- }
- 
+ } elsif ($arch eq "powerpc") {
+     $local_regex = "^[0-9a-fA-F]+\\s+t\\s+(\\.?\\S+)";
 
 
