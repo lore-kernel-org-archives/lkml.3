@@ -1,168 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753148AbbA1UMG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 15:12:06 -0500
-Received: from bombadil.infradead.org ([198.137.202.9]:37297 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753060AbbA1UMB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 15:12:01 -0500
-Date: Wed, 28 Jan 2015 15:08:03 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Luca Abeni <luca.abeni@unitn.it>
-Cc: Kirill Tkhai <tkhai@yandex.ru>, Juri Lelli <juri.lelli@arm.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "juri.lelli@gmail.com" <juri.lelli@gmail.com>
-Subject: Re: Another SCHED_DEADLINE bug (with bisection and possible fix)
-Message-ID: <20150128140803.GF23038@twins.programming.kicks-ass.net>
-References: <1420499241.3361.14.camel@yandex.ru>
- <20150107080155.1d42d123@luca-1225C>
- <1420633741.12772.10.camel@yandex.ru>
- <54B4D2DF.9010308@arm.com>
- <4500351421141200@web2m.yandex.ru>
- <20150113140436.GI25256@twins.programming.kicks-ass.net>
- <4632021421239387@web25g.yandex.ru>
- <54B7A33F.20904@unitn.it>
- <20150115122323.GU23965@worktop.programming.kicks-ass.net>
- <54B7C232.8060806@unitn.it>
+	id S1761525AbbA1Unz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 15:43:55 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:57296 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756354AbbA1Unx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jan 2015 15:43:53 -0500
+Date: Wed, 28 Jan 2015 08:08:32 -0600
+From: Felipe Balbi <balbi@ti.com>
+To: Robert Baldyga <r.baldyga@samsung.com>
+CC: <balbi@ti.com>, <paulz@synopsys.com>, <gregkh@linuxfoundation.org>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2] drivers: usb: dwc2: remove 'force' parameter from
+ kill_all_requests()
+Message-ID: <20150128140832.GE5608@saruman.tx.rr.com>
+Reply-To: <balbi@ti.com>
+References: <1420450295-25818-1-git-send-email-r.baldyga@samsung.com>
+ <1420450295-25818-3-git-send-email-r.baldyga@samsung.com>
+ <20150127154232.GE14623@saruman.tx.rr.com>
+ <54C88D46.5080803@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="k3qmt+ucFURmlhDS"
 Content-Disposition: inline
-In-Reply-To: <54B7C232.8060806@unitn.it>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <54C88D46.5080803@samsung.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 15, 2015 at 02:35:46PM +0100, Luca Abeni wrote:
+--k3qmt+ucFURmlhDS
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> >>From what I understand we should either modify the tasks run/sleep stats
-> >when we change its parameters or we should schedule a delayed release of
-> >the bandwidth delta (when it reaches its 0-lag point, if thats in the
-> >future).
+On Wed, Jan 28, 2015 at 08:18:30AM +0100, Robert Baldyga wrote:
+> On 01/27/2015 04:42 PM, Felipe Balbi wrote:
+> > On Mon, Jan 05, 2015 at 10:31:35AM +0100, Robert Baldyga wrote:
+> >> This patch fixes in simpler way the bug described in [1] and [2]. It
+> >> looks like DWC2 is the only UDC driver that doesn't force usb requests
+> >> to complete in ep_disable() function. This causes described problem,
+> >> because we have no guarantee that all requests will be completed before
+> >> unbind of usb function.
+> >>
+> >> To fix this problem we force all requests of disabled endpoint to comp=
+lete.
+> >> Also currently running request is not handled. This allowed to simplify
+> >> code of kill_all_requests() function, because 'force' parameter is alw=
+ays
+> >> set to true, so we don't need it anymore.
+> >>
+> >> In s3c_hsotg_rx_data() we change function used to print message when a=
+ctive
+> >> request is NULL from dev_warn() to dev_dbg(), because such situation is
+> >> harmless for driver and now it can take place during normal endpoint
+> >> disabling.
+> >>
+> >> [1] https://lkml.org/lkml/2014/12/9/283
+> >> [2] https://lkml.org/lkml/2014/12/12/360
+> >>
+> >> Signed-off-by: Robert Baldyga <r.baldyga@samsung.com>
+> >=20
+> > this fails to apply:
+> >=20
+> > checking file drivers/usb/dwc2/gadget.c
+> > Hunk #1 succeeded at 2602 (offset 35 lines).
+> > Hunk #2 FAILED at 2588.
+> > Hunk #3 succeeded at 2645 (offset 36 lines).
+> > Hunk #4 FAILED at 2924.
+> > 2 out of 4 hunks FAILED
+> >=20
+>=20
+> Isn't this patch already in linux-next? I see it's also in your 'next'
+> branch.
 
-> I suspect the correct behaviour can be difficult to implement:
-> - When a SCHED_DEADLINE task ends (or changes its scheduling policy to
->   something different), its bandwidth cannot be released immediately,
->   but should be released at the "0-lag time" (which reminds me about the
->   GRUB patches... I had to implement a similar behaviour in those patches :)
-> - The same applies when the task changes its scheduling parameters decreasing
->   its bandwidth. In this case, we also need to update the current runtime (if
->   it is larger than the new runtime, set it to the new maximum value - I think
->   this is the safest thing to do)
-> - When a task changes its parameters to increase its bandwidth, be do not
->   have such problems.
-> 
-> As far as I can see, if we apply the runtime / deadline changes starting from
-> the next reservation period we are safe (because the "0-lag time" is always
-> smaller than the current scheduling deadline).
-> This might cause some transient overloads (because if I change the parameters
-> of a task at time t, the update takes action a little bit later - at the next
-> scheduling deadline), but guarantees that a task never consumes more than
-> expected (for example: if a task continuously changes its bandwidth between
-> 0.4 and 0.3, it will never consume more than 0.4. I suspect that if we
-> immediately update dl_se->deadline and dl_se->runtime a task can arrive to
-> consume much more CPU time).
+if it's there, good.
 
+--=20
+balbi
 
-OK, how about something like this; it seems to survive your Bug-Test for
-at least 50 cycles.
+--k3qmt+ucFURmlhDS
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
----
- kernel/sched/core.c     | 33 ++++++++++++++++++++++++++++-----
- kernel/sched/deadline.c |  3 ++-
- 2 files changed, 30 insertions(+), 6 deletions(-)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index ade2958a9197..d787d6553d72 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -1816,6 +1816,10 @@ void __dl_clear_params(struct task_struct *p)
- 	dl_se->dl_period = 0;
- 	dl_se->flags = 0;
- 	dl_se->dl_bw = 0;
-+
-+	dl_se->dl_throttled = 0;
-+	dl_se->dl_new = 1;
-+	dl_se->dl_yielded = 0;
- }
- 
- /*
-@@ -1844,7 +1848,7 @@ static void __sched_fork(unsigned long clone_flags, struct task_struct *p)
- #endif
- 
- 	RB_CLEAR_NODE(&p->dl.rb_node);
--	hrtimer_init(&p->dl.dl_timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
-+	init_dl_task_timer(&p->dl);
- 	__dl_clear_params(p);
- 
- 	INIT_LIST_HEAD(&p->rt.run_list);
-@@ -2054,6 +2058,9 @@ static inline int dl_bw_cpus(int i)
-  * allocated bandwidth to reflect the new situation.
-  *
-  * This function is called while holding p's rq->lock.
-+ *
-+ * XXX we should delay bw change until the task's 0-lag point, see
-+ * __setparam_dl().
-  */
- static int dl_overflow(struct task_struct *p, int policy,
- 		       const struct sched_attr *attr)
-@@ -3258,15 +3265,31 @@ __setparam_dl(struct task_struct *p, const struct sched_attr *attr)
- {
- 	struct sched_dl_entity *dl_se = &p->dl;
- 
--	init_dl_task_timer(dl_se);
- 	dl_se->dl_runtime = attr->sched_runtime;
- 	dl_se->dl_deadline = attr->sched_deadline;
- 	dl_se->dl_period = attr->sched_period ?: dl_se->dl_deadline;
- 	dl_se->flags = attr->sched_flags;
- 	dl_se->dl_bw = to_ratio(dl_se->dl_period, dl_se->dl_runtime);
--	dl_se->dl_throttled = 0;
--	dl_se->dl_new = 1;
--	dl_se->dl_yielded = 0;
-+
-+	/*
-+	 * Changing the parameters of a task is 'tricky' and we're not doing
-+	 * the correct thing -- also see task_dead_dl() and switched_from_dl().
-+	 *
-+	 * What we SHOULD do is delay the bandwidth release until the 0-lag
-+	 * point. This would include retaining the task_struct until that time
-+	 * and change dl_overflow() to not immediately decrement the current
-+	 * amount.
-+	 *
-+	 * Instead we retain the current runtime/deadline and let the new
-+	 * parameters take effect after the current reservation period lapses.
-+	 * This is safe (albeit pessimistic) because the 0-lag point is always
-+	 * before the current scheduling deadline.
-+	 *
-+	 * We can still have temporary overloads because we do not delay the
-+	 * change in bandwidth until that time; so admission control is
-+	 * not on the safe side. It does however guarantee tasks will never
-+	 * consume more than promised.
-+	 */
- }
- 
- /*
-diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
-index b52092f2636d..726470d47f87 100644
---- a/kernel/sched/deadline.c
-+++ b/kernel/sched/deadline.c
-@@ -1094,6 +1094,7 @@ static void task_dead_dl(struct task_struct *p)
- 	 * Since we are TASK_DEAD we won't slip out of the domain!
- 	 */
- 	raw_spin_lock_irq(&dl_b->lock);
-+	/* XXX we should retain the bw until 0-lag */
- 	dl_b->total_bw -= p->dl.dl_bw;
- 	raw_spin_unlock_irq(&dl_b->lock);
- 
-@@ -1614,8 +1615,8 @@ static void cancel_dl_timer(struct rq *rq, struct task_struct *p)
- 
- static void switched_from_dl(struct rq *rq, struct task_struct *p)
- {
-+	/* XXX we should retain the bw until 0-lag */
- 	cancel_dl_timer(rq, p);
--
- 	__dl_clear_params(p);
- 
- 	/*
+iQIcBAEBAgAGBQJUyO1gAAoJEIaOsuA1yqREjXgP/jU1cK0WlEJiADerlAgxOsqb
+cz5kvcD0GFTZezDDZZoxmzAOs+MhlNsfS8nH9F4UClVBVFMRb3Z82YHlFpuMBSfj
+4TiAgw59aP8ENQDcwNIbDXoSFX+wA5QRe4Os+IKZQrPg6yuPvAeJjMkSKil4I5KV
+LtPIOlihh5fp3zaPfft/j869OZNHIt58LQRO0ZYGq+S+mbihj0HEKsXtD1ptlYM2
+uy0Wljc5wR92oLLFBBUDyOuYsax2DqWeHsedQZUj4ELDSkBOTcZHJVqQ0Iy4HOcp
+TzAPBSVoi5OKab7Mxp7XGhf2JX1GFiYC5TZTZJnEe0F/LhhDga9eXgKHKSkd5aOy
+MDi6GBGp5OJzJc5uMYimAh9P+aO0NOc8J2JW/pC9jTCMYSd+GG6N2OOoqzVYvOpL
+4dmWh3aqq+xYMxDpAvOSvdn5pSPJCUnKjZKGj5NJOZksaumRFg5ZqdDETjd1P1Y/
+t6dW3xLzZpvQG50cIhbud/Er3ZdHJ1XR1T30oYxadx+N5j+E2xMujPl99UnZh224
+9hgEUvWlQJPyBfH+RQkCML3952TvVhYhC7uaU1yCzQqwAYaLbc97TvF38bWh/dQr
+z79BNQiCIC9XPgLcLTfS7vcE63tq1R5PaTOsWVyfKB/H3UYx6WJIPLvuff5YP87m
+O87qQiNhfvlvhaU9rYxb
+=0gif
+-----END PGP SIGNATURE-----
+
+--k3qmt+ucFURmlhDS--
