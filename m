@@ -1,237 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933649AbbA1UiK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 15:38:10 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:45515 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933576AbbA1UiH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 15:38:07 -0500
-From: Javi Merino <javi.merino@arm.com>
-To: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: punit.agrawal@arm.com, broonie@kernel.org,
-        Javi Merino <javi.merino@arm.com>, Zhang Rui <rui.zhang@intel.com>,
-        Eduardo Valentin <edubezval@gmail.com>
-Subject: [PATCH v1 7/7] thermal: export thermal_zone_parameters to sysfs
-Date: Wed, 28 Jan 2015 17:00:38 +0000
-Message-Id: <1422464438-16761-8-git-send-email-javi.merino@arm.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1422464438-16761-1-git-send-email-javi.merino@arm.com>
-References: <1422464438-16761-1-git-send-email-javi.merino@arm.com>
+	id S1760650AbbA1VqF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 16:46:05 -0500
+Received: from mga03.intel.com ([134.134.136.65]:17025 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760684AbbA1UfY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jan 2015 15:35:24 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.09,481,1418112000"; 
+   d="scan'208";a="644021572"
+Message-ID: <1422464493.2399.68.camel@schen9-desk2.jf.intel.com>
+Subject: Re: [PATCH 4/6] locking/rwsem: Avoid deceiving lock spinners
+From: Tim Chen <tim.c.chen@linux.intel.com>
+To: Davidlohr Bueso <dave@stgolabs.net>
+Cc: Jason Low <jason.low2@hp.com>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Michel Lespinasse <walken@google.com>, linux-kernel@vger.kernel.org
+Date: Wed, 28 Jan 2015 09:01:33 -0800
+In-Reply-To: <1422417294.4604.15.camel@stgolabs.net>
+References: <1422257769-14083-1-git-send-email-dave@stgolabs.net>
+	 <1422257769-14083-5-git-send-email-dave@stgolabs.net>
+	 <1422379430.6710.6.camel@j-VirtualBox>
+	 <1422417294.4604.15.camel@stgolabs.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It's useful for tuning to be able to edit thermal_zone_parameters from
-userspace.  Export them to the thermal_zone sysfs so that they can be
-easily changed.
+On Tue, 2015-01-27 at 19:54 -0800, Davidlohr Bueso wrote:
+> On Tue, 2015-01-27 at 09:23 -0800, Jason Low wrote:
+> > On Sun, 2015-01-25 at 23:36 -0800, Davidlohr Bueso wrote:
+> > > When readers hold the semaphore, the ->owner is nil. As such,
+> > > and unlike mutexes, '!owner' does not necessarily imply that
+> > > the lock is free. This will cause writer spinners to potentially
+> > > spin excessively as they've been mislead to thinking they have
+> > > a chance of acquiring the lock, instead of blocking.
+> > > 
+> > > This patch therefore replaces this bogus check to solely rely on
+> > > the counter to know if the lock is available. Because we don't
+> > > hold the wait lock, we can obviously do this in an unqueued
+> > > manner.
+> > > 
+> > > Signed-off-by: Davidlohr Bueso <dbueso@suse.de>
+> > > ---
+> > >  kernel/locking/rwsem-xadd.c | 8 ++++++--
+> > >  1 file changed, 6 insertions(+), 2 deletions(-)
+> > > 
+> > > diff --git a/kernel/locking/rwsem-xadd.c b/kernel/locking/rwsem-xadd.c
+> > > index 5e425d8..18a50da 100644
+> > > --- a/kernel/locking/rwsem-xadd.c
+> > > +++ b/kernel/locking/rwsem-xadd.c
+> > > @@ -335,6 +335,8 @@ static inline bool owner_running(struct rw_semaphore *sem,
+> > >  static noinline
+> > >  bool rwsem_spin_on_owner(struct rw_semaphore *sem, struct task_struct *owner)
+> > >  {
+> > > +	long count;
+> > > +
+> > >  	rcu_read_lock();
+> > >  	while (owner_running(sem, owner)) {
+> > >  		if (need_resched())
+> > > @@ -347,9 +349,11 @@ bool rwsem_spin_on_owner(struct rw_semaphore *sem, struct task_struct *owner)
+> > >  	/*
+> > >  	 * We break out the loop above on need_resched() or when the
+> > >  	 * owner changed, which is a sign for heavy contention. Return
+> > > -	 * success only when sem->owner is NULL.
+> > > +	 * success only when the lock is available in order to attempt
+> > > +	 * another trylock.
+> > >  	 */
+> > > -	return sem->owner == NULL;
+> > > +	count = READ_ONCE(sem->count);
+> > > +	return count == 0 || count == RWSEM_WAITING_BIAS;
+> > 
+> > If we clear the owner field right before unlocking, would this cause
+> > some situations where we spin until the owner is cleared (about to
+> > release the lock), and then the spinner return false from
+> > rwsem_spin_on_owner?
+> 
+> I'm not sure I understand your concern ;) could you rephrase that? 
+> 
+> So I think you're referring to the window between when we 1) clear the
+> ->owner and 2) update the ->counter in the unlocking paths. That would
+> lead the function to break out of the loop ("owner changed") and return
+> a bogus "sem is locked, thus taken by a new owner now, continue
+> spinning" reason for it (counter !=0 yet, for example). 
+> 
+> And that's perfectly fine, really. We've never held a strict
+> owner-counter dependency, and the owner pointer is completely
+> unreliable. So all this would end up doing is causing us to perform an
+> extra iteration per race. This is a pretty good tradeoff for what the
+> patch addresses.
 
-Cc: Zhang Rui <rui.zhang@intel.com>
-Cc: Eduardo Valentin <edubezval@gmail.com>
-Signed-off-by: Javi Merino <javi.merino@arm.com>
----
- Documentation/thermal/sysfs-api.txt |  52 +++++++++++++++++
- drivers/thermal/thermal_core.c      | 110 ++++++++++++++++++++++++++++++++++++
- 2 files changed, 162 insertions(+)
+I agree.  The counter is a more accurate and immediate indicator
+of whether the lock is available, which is what we want to find out
+here.
 
-diff --git a/Documentation/thermal/sysfs-api.txt b/Documentation/thermal/sysfs-api.txt
-index 87519cb379ee..a95aabfad014 100644
---- a/Documentation/thermal/sysfs-api.txt
-+++ b/Documentation/thermal/sysfs-api.txt
-@@ -176,6 +176,12 @@ Thermal zone device sys I/F, created once it's registered:
-     |---trip_point_[0-*]_type:	Trip point type
-     |---trip_point_[0-*]_hyst:	Hysteresis value for this trip point
-     |---emul_temp:		Emulated temperature set node
-+    |---sustainable_power:      Sustainable dissipatable power
-+    |---k_po:                   Proportional term during temperature overshoot
-+    |---k_pu:                   Proportional term during temperature undershoot
-+    |---k_i:                    PID's integral term in the power allocator gov
-+    |---k_d:                    PID's derivative term in the power allocator
-+    |---integral_cutoff:        Offset above which errors are accumulated
- 
- Thermal cooling device sys I/F, created once it's registered:
- /sys/class/thermal/cooling_device[0-*]:
-@@ -289,6 +295,52 @@ emul_temp
- 	  because userland can easily disable the thermal policy by simply
- 	  flooding this sysfs node with low temperature values.
- 
-+sustainable_power
-+	An estimate of the sustained power that can be dissipated by
-+	the thermal zone. Used by the power allocator governor. For
-+	more information see Documentation/thermal/power_allocator.txt
-+	Unit: milliwatts
-+	RW, Optional
-+
-+k_po
-+	The proportional term of the power allocator governor's PID
-+	controller during temperature overshoot. Temperature overshoot
-+	is when the current temperature is above the "desired
-+	temperature" trip point. For more information see
-+	Documentation/thermal/power_allocator.txt
-+	RW, Optional
-+
-+k_pu
-+	The proportional term of the power allocator governor's PID
-+	controller during temperature undershoot. Temperature undershoot
-+	is when the current temperature is below the "desired
-+	temperature" trip point. For more information see
-+	Documentation/thermal/power_allocator.txt
-+	RW, Optional
-+
-+k_i
-+	The integral term of the power allocator governor's PID
-+	controller. This term allows the PID controller to compensate
-+	for long term drift. For more information see
-+	Documentation/thermal/power_allocator.txt
-+	RW, Optional
-+
-+k_d
-+	The derivative term of the power allocator governor's PID
-+	controller. For more information see
-+	Documentation/thermal/power_allocator.txt
-+	RW, Optional
-+
-+integral_cutoff
-+	Temperature offset from the desired temperature trip point
-+	above which the integral term of the power allocator
-+	governor's PID controller starts accumulating errors. For
-+	example, if integral_cutoff is 0, then the integral term only
-+	accumulates error when temperature is above the desired
-+	temperature trip point. For more information see
-+	Documentation/thermal/power_allocator.txt
-+	RW, Optional
-+
- *****************************
- * Cooling device attributes *
- *****************************
-diff --git a/drivers/thermal/thermal_core.c b/drivers/thermal/thermal_core.c
-index b77b5416929c..bde5e0442321 100644
---- a/drivers/thermal/thermal_core.c
-+++ b/drivers/thermal/thermal_core.c
-@@ -868,6 +868,111 @@ emul_temp_store(struct device *dev, struct device_attribute *attr,
- static DEVICE_ATTR(emul_temp, S_IWUSR, NULL, emul_temp_store);
- #endif/*CONFIG_THERMAL_EMULATION*/
- 
-+#ifdef CONFIG_THERMAL_GOV_POWER_ALLOCATOR
-+
-+static ssize_t
-+sustainable_power_show(struct device *dev, struct device_attribute *devattr,
-+		       char *buf)
-+{
-+	struct thermal_zone_device *tz = to_thermal_zone(dev);
-+
-+	if (tz->tzp)
-+		return sprintf(buf, "%u\n", tz->tzp->sustainable_power);
-+	else
-+		return -EIO;
-+}
-+
-+static ssize_t
-+sustainable_power_store(struct device *dev, struct device_attribute *devattr,
-+			const char *buf, size_t count)
-+{
-+	struct thermal_zone_device *tz = to_thermal_zone(dev);
-+	u32 sustainable_power;
-+
-+	if (!tz->tzp)
-+		return -EIO;
-+
-+	if (kstrtou32(buf, 10, &sustainable_power))
-+		return -EINVAL;
-+
-+	tz->tzp->sustainable_power = sustainable_power;
-+
-+	return count;
-+}
-+static DEVICE_ATTR(sustainable_power, S_IWUSR | S_IRUGO, sustainable_power_show,
-+		sustainable_power_store);
-+
-+#define create_s32_tzp_attr(name)					\
-+	static ssize_t							\
-+	name##_show(struct device *dev, struct device_attribute *devattr, \
-+		char *buf)						\
-+	{								\
-+	struct thermal_zone_device *tz = to_thermal_zone(dev);		\
-+									\
-+	if (tz->tzp)							\
-+		return sprintf(buf, "%u\n", tz->tzp->name);		\
-+	else								\
-+		return -EIO;						\
-+	}								\
-+									\
-+	static ssize_t							\
-+	name##_store(struct device *dev, struct device_attribute *devattr, \
-+		const char *buf, size_t count)				\
-+	{								\
-+		struct thermal_zone_device *tz = to_thermal_zone(dev);	\
-+		s32 value;						\
-+									\
-+		if (!tz->tzp)						\
-+			return -EIO;					\
-+									\
-+		if (kstrtos32(buf, 10, &value))				\
-+			return -EINVAL;					\
-+									\
-+		tz->tzp->name = value;					\
-+									\
-+		return count;						\
-+	}								\
-+	static DEVICE_ATTR(name, S_IWUSR | S_IRUGO, name##_show, name##_store)
-+
-+create_s32_tzp_attr(k_po);
-+create_s32_tzp_attr(k_pu);
-+create_s32_tzp_attr(k_i);
-+create_s32_tzp_attr(k_d);
-+create_s32_tzp_attr(integral_cutoff);
-+#undef create_s32_tzp_attr
-+
-+static struct device_attribute *dev_tzp_attrs[] = {
-+	&dev_attr_sustainable_power,
-+	&dev_attr_k_po,
-+	&dev_attr_k_pu,
-+	&dev_attr_k_i,
-+	&dev_attr_k_d,
-+	&dev_attr_integral_cutoff,
-+};
-+
-+static int create_power_allocator_tzp_attrs(struct device *dev)
-+{
-+	int i;
-+
-+	for (i = 0; i < ARRAY_SIZE(dev_tzp_attrs); i++) {
-+		int ret;
-+		struct device_attribute *dev_attr = dev_tzp_attrs[i];
-+
-+		ret = device_create_file(dev, dev_attr);
-+		if (ret)
-+			return ret;
-+	}
-+
-+	return 0;
-+}
-+
-+#else  /* !CONFIG_THERMAL_GOV_POWER_ALLOCATOR */
-+static int create_power_allocator_tzp_attrs(struct device *dev)
-+{
-+	return 0;
-+}
-+#endif
-+
- /**
-  * power_actor_get_max_power() - get the maximum power that a cdev can consume
-  * @cdev:	pointer to &thermal_cooling_device
-@@ -1662,6 +1767,11 @@ struct thermal_zone_device *thermal_zone_device_register(const char *type,
- 	if (result)
- 		goto unregister;
- 
-+	/* Add power_allocator specific thermal zone params */
-+	result = create_power_allocator_tzp_attrs(&tz->device);
-+	if (result)
-+		goto unregister;
-+
- 	/* Update 'this' zone's governor information */
- 	mutex_lock(&thermal_governor_lock);
- 
--- 
-1.9.1
+Tim
+
 
