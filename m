@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763663AbbA2DG6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 22:06:58 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:46994 "EHLO
+	id S1763601AbbA2DDD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 22:03:03 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:47006 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965200AbbA2ChW (ORCPT
+	with ESMTP id S1762276AbbA2Chk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 21:37:22 -0500
+	Wed, 28 Jan 2015 21:37:40 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
 Cc: Sakari Ailus <sakari.ailus@linux.intel.com>,
         Mauro Carvalho Chehab <mchehab@osg.samsung.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13.y-ckt 020/139] [media] smiapp: Take mutex during PLL update in sensor initialisation
-Date: Wed, 28 Jan 2015 14:19:23 -0800
-Message-Id: <1422483682-15393-21-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13.y-ckt 021/139] [media] smiapp-pll: Correct clock debug prints
+Date: Wed, 28 Jan 2015 14:19:24 -0800
+Message-Id: <1422483682-15393-22-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422483682-15393-1-git-send-email-kamal@canonical.com>
 References: <1422483682-15393-1-git-send-email-kamal@canonical.com>
@@ -30,33 +30,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Sakari Ailus <sakari.ailus@linux.intel.com>
 
-commit f85698cd296f08218a7750f321e94607da128600 upstream.
+commit bc47150ab93988714d1fab7bc82fe5f505a107ad upstream.
 
-The mutex does not serialise anything in this case but avoids a lockdep
-warning from the control framework.
+The PLL flags were not used correctly.
 
 Signed-off-by: Sakari Ailus <sakari.ailus@linux.intel.com>
 Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
 Signed-off-by: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/media/i2c/smiapp/smiapp-core.c | 2 ++
- 1 file changed, 2 insertions(+)
+ drivers/media/i2c/smiapp-pll.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/media/i2c/smiapp/smiapp-core.c b/drivers/media/i2c/smiapp/smiapp-core.c
-index 371ca22..4bfe83f 100644
---- a/drivers/media/i2c/smiapp/smiapp-core.c
-+++ b/drivers/media/i2c/smiapp/smiapp-core.c
-@@ -2625,7 +2625,9 @@ static int smiapp_registered(struct v4l2_subdev *subdev)
- 		pll->flags |= SMIAPP_PLL_FLAG_OP_PIX_CLOCK_PER_LANE;
- 	pll->scale_n = sensor->limits[SMIAPP_LIMIT_SCALER_N_MIN];
- 
-+	mutex_lock(&sensor->mutex);
- 	rval = smiapp_update_mode(sensor);
-+	mutex_unlock(&sensor->mutex);
- 	if (rval) {
- 		dev_err(&client->dev, "update mode failed\n");
- 		goto out_nvm_release;
+diff --git a/drivers/media/i2c/smiapp-pll.c b/drivers/media/i2c/smiapp-pll.c
+index 2335529..ab5d9a3 100644
+--- a/drivers/media/i2c/smiapp-pll.c
++++ b/drivers/media/i2c/smiapp-pll.c
+@@ -67,7 +67,7 @@ static void print_pll(struct device *dev, struct smiapp_pll *pll)
+ {
+ 	dev_dbg(dev, "pre_pll_clk_div\t%d\n",  pll->pre_pll_clk_div);
+ 	dev_dbg(dev, "pll_multiplier \t%d\n",  pll->pll_multiplier);
+-	if (pll->flags != SMIAPP_PLL_FLAG_NO_OP_CLOCKS) {
++	if (!(pll->flags & SMIAPP_PLL_FLAG_NO_OP_CLOCKS)) {
+ 		dev_dbg(dev, "op_sys_clk_div \t%d\n", pll->op_sys_clk_div);
+ 		dev_dbg(dev, "op_pix_clk_div \t%d\n", pll->op_pix_clk_div);
+ 	}
+@@ -77,7 +77,7 @@ static void print_pll(struct device *dev, struct smiapp_pll *pll)
+ 	dev_dbg(dev, "ext_clk_freq_hz \t%d\n", pll->ext_clk_freq_hz);
+ 	dev_dbg(dev, "pll_ip_clk_freq_hz \t%d\n", pll->pll_ip_clk_freq_hz);
+ 	dev_dbg(dev, "pll_op_clk_freq_hz \t%d\n", pll->pll_op_clk_freq_hz);
+-	if (pll->flags & SMIAPP_PLL_FLAG_NO_OP_CLOCKS) {
++	if (!(pll->flags & SMIAPP_PLL_FLAG_NO_OP_CLOCKS)) {
+ 		dev_dbg(dev, "op_sys_clk_freq_hz \t%d\n",
+ 			pll->op_sys_clk_freq_hz);
+ 		dev_dbg(dev, "op_pix_clk_freq_hz \t%d\n",
 -- 
 1.9.1
 
