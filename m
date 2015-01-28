@@ -1,18 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757006AbbA1ESU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 23:18:20 -0500
-Received: from mail.kernel.org ([198.145.29.136]:38361 "EHLO mail.kernel.org"
+	id S1761346AbbA1ES2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 23:18:28 -0500
+Received: from mail.kernel.org ([198.145.29.136]:38373 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756647AbbA1ESL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 23:18:11 -0500
+	id S1755667AbbA1ESP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 23:18:15 -0500
 From: lizf@kernel.org
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+Cc: linux-kernel@vger.kernel.org, Mike Christie <michaelc@cs.wisc.edu>,
+        Christoph Hellwig <hch@lst.de>,
+        James Bottomley <JBottomley@Parallels.com>,
         Zefan Li <lizefan@huawei.com>
-Subject: [PATCH 3.4 050/177] Input: synaptics - gate forcepad support by DMI check
-Date: Wed, 28 Jan 2015 12:07:46 +0800
-Message-Id: <1422418236-12852-99-git-send-email-lizf@kernel.org>
+Subject: [PATCH 3.4 50/91] libiscsi: fix potential buffer overrun in __iscsi_conn_send_pdu
+Date: Wed, 28 Jan 2015 12:07:47 +0800
+Message-Id: <1422418236-12852-100-git-send-email-lizf@kernel.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422418050-12581-1-git-send-email-lizf@kernel.org>
 References: <1422418050-12581-1-git-send-email-lizf@kernel.org>
@@ -20,108 +22,59 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+From: Mike Christie <michaelc@cs.wisc.edu>
 
-3.4.106-rc1 review patch.  If anyone has any objections, please let me know.
+3.4.105-rc1 review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
 
-commit aa972409951e0675e07918620427517cad5090e0 upstream.
+commit db9bfd64b14a3a8f1868d2164518fdeab1b26ad1 upstream.
 
-Unfortunately, ForcePad capability is not actually exported over PS/2, so
-we have to resort to DMI checks.
+This patches fixes a potential buffer overrun in __iscsi_conn_send_pdu.
+This function is used by iscsi drivers and userspace to send iscsi PDUs/
+commands. For login commands, we have a set buffer size. For all other
+commands we do not support data buffers.
 
-Reported-by: Nicole Faerber <nicole.faerber@kernelconcepts.de>
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-[lizf: Backported to 3.4: adjust context]
+This was reported by Dan Carpenter here:
+http://www.spinics.net/lists/linux-scsi/msg66838.html
+
+Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Mike Christie <michaelc@cs.wisc.edu>
+Reviewed-by: Sagi Grimberg <sagig@mellanox.com>
+Signed-off-by: Christoph Hellwig <hch@lst.de>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Zefan Li <lizefan@huawei.com>
 ---
- drivers/input/mouse/synaptics.c | 22 +++++++++++++++++++++-
- drivers/input/mouse/synaptics.h |  8 ++------
- 2 files changed, 23 insertions(+), 7 deletions(-)
+ drivers/scsi/libiscsi.c | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
-diff --git a/drivers/input/mouse/synaptics.c b/drivers/input/mouse/synaptics.c
-index 32b1363..97e5f6f 100644
---- a/drivers/input/mouse/synaptics.c
-+++ b/drivers/input/mouse/synaptics.c
-@@ -506,6 +506,8 @@ static void synaptics_parse_agm(const unsigned char buf[],
- 	priv->agm_pending = true;
- }
+diff --git a/drivers/scsi/libiscsi.c b/drivers/scsi/libiscsi.c
+index 82c3fd4..1243d2f 100644
+--- a/drivers/scsi/libiscsi.c
++++ b/drivers/scsi/libiscsi.c
+@@ -718,11 +718,21 @@ __iscsi_conn_send_pdu(struct iscsi_conn *conn, struct iscsi_hdr *hdr,
+ 			return NULL;
+ 		}
  
-+static bool is_forcepad;
++		if (data_size > ISCSI_DEF_MAX_RECV_SEG_LEN) {
++			iscsi_conn_printk(KERN_ERR, conn, "Invalid buffer len of %u for login task. Max len is %u\n", data_size, ISCSI_DEF_MAX_RECV_SEG_LEN);
++			return NULL;
++		}
 +
- static int synaptics_parse_hw_state(const unsigned char buf[],
- 				    struct synaptics_data *priv,
- 				    struct synaptics_hw_state *hw)
-@@ -535,7 +537,7 @@ static int synaptics_parse_hw_state(const unsigned char buf[],
- 		hw->left  = (buf[0] & 0x01) ? 1 : 0;
- 		hw->right = (buf[0] & 0x02) ? 1 : 0;
+ 		task = conn->login_task;
+ 	} else {
+ 		if (session->state != ISCSI_STATE_LOGGED_IN)
+ 			return NULL;
  
--		if (SYN_CAP_FORCEPAD(priv->ext_cap_0c)) {
-+		if (is_forcepad) {
- 			/*
- 			 * ForcePads, like Clickpads, use middle button
- 			 * bits to report primary button clicks.
-@@ -1512,6 +1514,18 @@ static const struct dmi_system_id min_max_dmi_table[] __initconst = {
- 	{ }
- };
- 
-+static const struct dmi_system_id forcepad_dmi_table[] __initconst = {
-+#if defined(CONFIG_DMI) && defined(CONFIG_X86)
-+	{
-+		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "Hewlett-Packard"),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "HP EliteBook Folio 1040 G1"),
-+		},
-+	},
-+#endif
-+	{ }
-+};
++		if (data_size != 0) {
++			iscsi_conn_printk(KERN_ERR, conn, "Can not send data buffer of len %u for op 0x%x\n", data_size, opcode);
++			return NULL;
++		}
 +
- void __init synaptics_module_init(void)
- {
- 	const struct dmi_system_id *min_max_dmi;
-@@ -1522,6 +1536,12 @@ void __init synaptics_module_init(void)
- 	min_max_dmi = dmi_first_match(min_max_dmi_table);
- 	if (min_max_dmi)
- 		quirk_min_max = min_max_dmi->driver_data;
-+
-+	/*
-+	 * Unfortunately ForcePad capability is not exported over PS/2,
-+	 * so we have to resort to checking DMI.
-+	 */
-+	is_forcepad = dmi_check_system(forcepad_dmi_table);
- }
+ 		BUG_ON(conn->c_stage == ISCSI_CONN_INITIAL_STAGE);
+ 		BUG_ON(conn->c_stage == ISCSI_CONN_STOPPED);
  
- static int __synaptics_init(struct psmouse *psmouse, bool absolute_mode)
-diff --git a/drivers/input/mouse/synaptics.h b/drivers/input/mouse/synaptics.h
-index ac1b773..20d861b 100644
---- a/drivers/input/mouse/synaptics.h
-+++ b/drivers/input/mouse/synaptics.h
-@@ -76,12 +76,9 @@
-  *					for noise.
-  * 2	0x08	image sensor		image sensor tracks 5 fingers, but only
-  *					reports 2.
-+ * 2	0x01	uniform clickpad	whole clickpad moves instead of being
-+ *					hinged at the top.
-  * 2	0x20	report min		query 0x0f gives min coord reported
-- * 2	0x80	forcepad		forcepad is a variant of clickpad that
-- *					does not have physical buttons but rather
-- *					uses pressure above certain threshold to
-- *					report primary clicks. Forcepads also have
-- *					clickpad bit set.
-  */
- #define SYN_CAP_CLICKPAD(ex0c)		((ex0c) & 0x100000) /* 1-button ClickPad */
- #define SYN_CAP_CLICKPAD2BTN(ex0c)	((ex0c) & 0x000100) /* 2-button ClickPad */
-@@ -90,7 +87,6 @@
- #define SYN_CAP_ADV_GESTURE(ex0c)	((ex0c) & 0x080000)
- #define SYN_CAP_REDUCED_FILTERING(ex0c)	((ex0c) & 0x000400)
- #define SYN_CAP_IMAGE_SENSOR(ex0c)	((ex0c) & 0x000800)
--#define SYN_CAP_FORCEPAD(ex0c)		((ex0c) & 0x008000)
- 
- /* synaptics modes query bits */
- #define SYN_MODE_ABSOLUTE(m)		((m) & (1 << 7))
 -- 
 1.9.1
 
