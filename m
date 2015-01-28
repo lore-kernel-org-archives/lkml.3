@@ -1,46 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753522AbbA1UMo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 15:12:44 -0500
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:46177 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753457AbbA1UMl (ORCPT
+	id S1753827AbbA1Uyn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 15:54:43 -0500
+Received: from resqmta-po-04v.sys.comcast.net ([96.114.154.163]:38798 "EHLO
+	resqmta-po-04v.sys.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753743AbbA1Uyk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 15:12:41 -0500
-Message-ID: <54C90FD7.40601@collabora.co.uk>
-Date: Wed, 28 Jan 2015 17:35:35 +0100
-From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
-MIME-Version: 1.0
-To: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>,
-        Ulf Hansson <ulf.hansson@linaro.org>
-CC: devicetree@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        linux-mmc@vger.kernel.org, Doug Anderson <dianders@chromium.org>,
-        linux-kernel@vger.kernel.org, Kukjin Kim <kgene@kernel.org>,
-        Olof Johansson <olof@lixom.net>, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 1/5] mmc: pwrseq: Document that simple sequence support
- more than one GPIO
-References: <1422439819-29854-1-git-send-email-javier.martinez@collabora.co.uk> <1422439819-29854-2-git-send-email-javier.martinez@collabora.co.uk> <54C90F89.1040500@linaro.org>
-In-Reply-To: <54C90F89.1040500@linaro.org>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+	Wed, 28 Jan 2015 15:54:40 -0500
+Date: Wed, 28 Jan 2015 10:37:09 -0600 (CST)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Vladimir Davydov <vdavydov@parallels.com>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -mm v2 1/3] slub: never fail to shrink cache
+In-Reply-To: <012683fc3a0f9fb20a288986fd63fe9f6d25e8ee.1422461573.git.vdavydov@parallels.com>
+Message-ID: <alpine.DEB.2.11.1501281034290.32147@gentwo.org>
+References: <cover.1422461573.git.vdavydov@parallels.com> <012683fc3a0f9fb20a288986fd63fe9f6d25e8ee.1422461573.git.vdavydov@parallels.com>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Srinivas,
+On Wed, 28 Jan 2015, Vladimir Davydov wrote:
 
-On 01/28/2015 05:34 PM, Srinivas Kandagatla wrote:
->> -- reset-gpios : contains a GPIO specifier. The reset GPIO is asserted at
->> -	initialization and prior we start the power up procedure of the card. It
->> -	will be de-asserted right after the power has been provided to the card.
->> +- reset-gpios : contains a list of GPIO specifiers. The reset GPIOs are asserted
->> +	at initialization and prior we start the power up procedure of the card.
->> +	Will be de-asserted right after the power has been provided to the card.
-> Makes sense if you add "They" before last sentence.
+> +			/* We do not keep full slabs on the list */
+> +			BUG_ON(free <= 0);
 
-Thanks, I'll change it.
-
-Best regards,
-Javier
+Well sorry we do actually keep a number of empty slabs on the partial
+lists. See the min_partial field in struct kmem_cache.
 
