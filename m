@@ -1,59 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964874AbbA1UtD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 15:49:03 -0500
-Received: from smtprelay0194.hostedemail.com ([216.40.44.194]:46510 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S964828AbbA1Us5 (ORCPT
+	id S1754386AbbA2Ewi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 23:52:38 -0500
+Received: from mout.kundenserver.de ([212.227.126.131]:61062 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752290AbbA2Ewh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 15:48:57 -0500
-X-Session-Marker: 6E657665747340676F6F646D69732E6F7267
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,rostedt@goodmis.org,:::::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1260:1277:1311:1313:1314:1345:1359:1431:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2553:2559:2562:2693:2912:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3868:3870:3871:3872:5007:6261:7514:7875:7903:10004:10400:10848:10967:11026:11232:11658:11914:12296:12438:12517:12519:12740:13069:13095:13311:13357:14096:14097:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: trees29_78cef088c710b
-X-Filterd-Recvd-Size: 1898
-Date: Wed, 28 Jan 2015 09:53:49 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Tina Ruchandani <ruchandani.tina@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCH v4] trace: Use 64-bit timekeeping
-Message-ID: <20150128095349.6a3537a2@gandalf.local.home>
-In-Reply-To: <20150128141611.GA2701@tinar>
-References: <20150128141611.GA2701@tinar>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
+	Wed, 28 Jan 2015 23:52:37 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Jaroslav Kysela <perex@perex.cz>
+Cc: Takashi Iwai <tiwai@suse.de>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: [PATCH] sound: sscape: add missing include of asm/io.h
+Date: Wed, 28 Jan 2015 15:54:04 +0100
+Message-ID: <7794866.XZSLAdxcrb@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V03:K0:uM3Iclk2mUq80w6e3Th2nakszcvTe3lTHsSmllHaFP4BQyn8nUq
+ dm06e4F7tItlea+EdJM2OvNDQOitubFRnqLSPg/kKLfy26JTztRcuj2zPMEY3nHtnxU+S11
+ gHLBX0iI9YE15odZ4UQEqAux8KplCWeKE7YFcXLwB8IyjJYl8Lw30ANsAQGOU+6kkiR7DhZ
+ guSaRBoTwvP3h9xrvpwXg==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 28 Jan 2015 19:46:11 +0530
-Tina Ruchandani <ruchandani.tina@gmail.com> wrote:
+The soundscape driver uses the ISA inb/outb functions declared
+in asm/io.h, so it needs to include this header to avoid
+a build error:
 
-> The ring_buffer_producer uses 'struct timeval' to measure
-> its start and end times. 'struct timeval' on 32-bit systems
-> will have its tv_sec value overflow in year 2038 and beyond.
-> This patch replaces struct timeval with 'ktime_t' which uses
-> 64-bit representation for nanoseconds.
-> 
-> Suggested-by: Arnd Bergmann <arnd@arndb.de>
-> Suggested-by: Steven Rostedt <rostedt@goodmis.org>
-> Signed-off-by: Tina Ruchandani <ruchandani.tina@gmail.com>
-> ---
-> Changes in v4:
-> 	- Fix typo in commit message.
-> 	- Avoid typecast to 'long long' by defining RUN_TIME as '10ULL'
-> 	  instead of '10'.
+sscape.c: In function 'sscape_write_unsafe':
+sscape.c:203:2: error: implicit declaration of function 'outb' [-Werror=implicit-function-declaration]
 
-Although I have not tested this, this patch looks fine to me. Is this
-going to go through some cleanup tree or should I just pull it?
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
 
--- Steve
+diff --git a/sound/isa/sscape.c b/sound/isa/sscape.c
+index 018ab140c2be..7b248cdf06e2 100644
+--- a/sound/isa/sscape.c
++++ b/sound/isa/sscape.c
+@@ -23,6 +23,7 @@
+ 
+ #include <linux/init.h>
+ #include <linux/err.h>
++#include <linux/io.h>
+ #include <linux/isa.h>
+ #include <linux/delay.h>
+ #include <linux/firmware.h>
 
-
-> Changes in v3:
-> 	- Use a more efficient way to compute condition for exiting loop.
-> 	- Fix variable naming - all caps is only for macros.
-> Changes in v2:
-> 	- Use ktime_t instead of timespec64 for efficiency reasons.
