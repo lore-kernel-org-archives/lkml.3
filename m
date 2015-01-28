@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761308AbbA1CUu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 21:20:50 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41081 "EHLO
+	id S933199AbbA1BiI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 20:38:08 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41199 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752222AbbA1B2K (ORCPT
+	with ESMTP id S1760012AbbA1B2a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 20:28:10 -0500
+	Tue, 27 Jan 2015 20:28:30 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Kees Cook <keescook@chromium.org>,
-        Mathias Krause <minipli@googlemail.com>,
-        Herbert Xu <herbert@gondor.apana.org.au>
-Subject: [PATCH 3.10 29/32] crypto: add missing crypto module aliases
-Date: Tue, 27 Jan 2015 17:26:59 -0800
-Message-Id: <20150128012631.108784171@linuxfoundation.org>
+        Suman Tripathi <stripathi@apm.com>, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 3.18 48/61] ahci_xgene: Fix the endianess issue in APM X-Gene SoC AHCI SATA controller driver.
+Date: Tue, 27 Jan 2015 17:27:00 -0800
+Message-Id: <20150128012642.139650472@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150128012627.081285723@linuxfoundation.org>
-References: <20150128012627.081285723@linuxfoundation.org>
+In-Reply-To: <20150128012636.936333725@linuxfoundation.org>
+References: <20150128012636.936333725@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -26,214 +24,35 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.18-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Mathias Krause <minipli@googlemail.com>
+From: Suman Tripathi <stripathi@apm.com>
 
-commit 3e14dcf7cb80b34a1f38b55bc96f02d23fdaaaaf upstream.
+commit 5c0b8e0de76a86edb99e46612fd9d341b4c4fa0a upstream.
 
-Commit 5d26a105b5a7 ("crypto: prefix module autoloading with "crypto-"")
-changed the automatic module loading when requesting crypto algorithms
-to prefix all module requests with "crypto-". This requires all crypto
-modules to have a crypto specific module alias even if their file name
-would otherwise match the requested crypto algorithm.
+This patch fixes the big endian mode issue with function
+xgene_ahci_read_id.
 
-Even though commit 5d26a105b5a7 added those aliases for a vast amount of
-modules, it was missing a few. Add the required MODULE_ALIAS_CRYPTO
-annotations to those files to make them get loaded automatically, again.
-This fixes, e.g., requesting 'ecb(blowfish-generic)', which used to work
-with kernels v3.18 and below.
-
-Also change MODULE_ALIAS() lines to MODULE_ALIAS_CRYPTO(). The former
-won't work for crypto modules any more.
-
-Fixes: 5d26a105b5a7 ("crypto: prefix module autoloading with "crypto-"")
-Cc: Kees Cook <keescook@chromium.org>
-Signed-off-by: Mathias Krause <minipli@googlemail.com>
-Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
+Signed-off-by: Suman Tripathi <stripathi@apm.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/crypto/sha1.c |    1 +
- crypto/aes_generic.c       |    1 +
- crypto/ansi_cprng.c        |    1 +
- crypto/blowfish_generic.c  |    1 +
- crypto/camellia_generic.c  |    1 +
- crypto/cast5_generic.c     |    1 +
- crypto/cast6_generic.c     |    1 +
- crypto/des_generic.c       |    5 +++--
- crypto/ghash-generic.c     |    1 +
- crypto/krng.c              |    1 +
- crypto/salsa20_generic.c   |    1 +
- crypto/serpent_generic.c   |    1 +
- crypto/sha1_generic.c      |    1 +
- crypto/sha256_generic.c    |    2 ++
- crypto/sha512_generic.c    |    2 ++
- crypto/tea.c               |    1 +
- crypto/tgr192.c            |    1 +
- crypto/twofish_generic.c   |    1 +
- crypto/wp512.c             |    1 +
- 19 files changed, 23 insertions(+), 2 deletions(-)
+ drivers/ata/ahci_xgene.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/powerpc/crypto/sha1.c
-+++ b/arch/powerpc/crypto/sha1.c
-@@ -154,4 +154,5 @@ module_exit(sha1_powerpc_mod_fini);
- MODULE_LICENSE("GPL");
- MODULE_DESCRIPTION("SHA1 Secure Hash Algorithm");
+--- a/drivers/ata/ahci_xgene.c
++++ b/drivers/ata/ahci_xgene.c
+@@ -188,7 +188,7 @@ static unsigned int xgene_ahci_read_id(s
+ 	 *
+ 	 * Clear reserved bit 8 (DEVSLP bit) as we don't support DEVSLP
+ 	 */
+-	id[ATA_ID_FEATURE_SUPP] &= ~(1 << 8);
++	id[ATA_ID_FEATURE_SUPP] &= cpu_to_le16(~(1 << 8));
  
-+MODULE_ALIAS_CRYPTO("sha1");
- MODULE_ALIAS_CRYPTO("sha1-powerpc");
---- a/crypto/aes_generic.c
-+++ b/crypto/aes_generic.c
-@@ -1475,3 +1475,4 @@ module_exit(aes_fini);
- MODULE_DESCRIPTION("Rijndael (AES) Cipher Algorithm");
- MODULE_LICENSE("Dual BSD/GPL");
- MODULE_ALIAS_CRYPTO("aes");
-+MODULE_ALIAS_CRYPTO("aes-generic");
---- a/crypto/ansi_cprng.c
-+++ b/crypto/ansi_cprng.c
-@@ -477,3 +477,4 @@ MODULE_PARM_DESC(dbg, "Boolean to enable
- module_init(prng_mod_init);
- module_exit(prng_mod_fini);
- MODULE_ALIAS_CRYPTO("stdrng");
-+MODULE_ALIAS_CRYPTO("ansi_cprng");
---- a/crypto/blowfish_generic.c
-+++ b/crypto/blowfish_generic.c
-@@ -139,3 +139,4 @@ module_exit(blowfish_mod_fini);
- MODULE_LICENSE("GPL");
- MODULE_DESCRIPTION("Blowfish Cipher Algorithm");
- MODULE_ALIAS_CRYPTO("blowfish");
-+MODULE_ALIAS_CRYPTO("blowfish-generic");
---- a/crypto/camellia_generic.c
-+++ b/crypto/camellia_generic.c
-@@ -1099,3 +1099,4 @@ module_exit(camellia_fini);
- MODULE_DESCRIPTION("Camellia Cipher Algorithm");
- MODULE_LICENSE("GPL");
- MODULE_ALIAS_CRYPTO("camellia");
-+MODULE_ALIAS_CRYPTO("camellia-generic");
---- a/crypto/cast5_generic.c
-+++ b/crypto/cast5_generic.c
-@@ -550,3 +550,4 @@ module_exit(cast5_mod_fini);
- MODULE_LICENSE("GPL");
- MODULE_DESCRIPTION("Cast5 Cipher Algorithm");
- MODULE_ALIAS_CRYPTO("cast5");
-+MODULE_ALIAS_CRYPTO("cast5-generic");
---- a/crypto/cast6_generic.c
-+++ b/crypto/cast6_generic.c
-@@ -292,3 +292,4 @@ module_exit(cast6_mod_fini);
- MODULE_LICENSE("GPL");
- MODULE_DESCRIPTION("Cast6 Cipher Algorithm");
- MODULE_ALIAS_CRYPTO("cast6");
-+MODULE_ALIAS_CRYPTO("cast6-generic");
---- a/crypto/des_generic.c
-+++ b/crypto/des_generic.c
-@@ -971,8 +971,6 @@ static struct crypto_alg des_algs[2] = {
- 	.cia_decrypt		=	des3_ede_decrypt } }
- } };
- 
--MODULE_ALIAS_CRYPTO("des3_ede");
--
- static int __init des_generic_mod_init(void)
- {
- 	return crypto_register_algs(des_algs, ARRAY_SIZE(des_algs));
-@@ -990,3 +988,6 @@ MODULE_LICENSE("GPL");
- MODULE_DESCRIPTION("DES & Triple DES EDE Cipher Algorithms");
- MODULE_AUTHOR("Dag Arne Osvik <da@osvik.no>");
- MODULE_ALIAS_CRYPTO("des");
-+MODULE_ALIAS_CRYPTO("des-generic");
-+MODULE_ALIAS_CRYPTO("des3_ede");
-+MODULE_ALIAS_CRYPTO("des3_ede-generic");
---- a/crypto/ghash-generic.c
-+++ b/crypto/ghash-generic.c
-@@ -173,3 +173,4 @@ module_exit(ghash_mod_exit);
- MODULE_LICENSE("GPL");
- MODULE_DESCRIPTION("GHASH Message Digest Algorithm");
- MODULE_ALIAS_CRYPTO("ghash");
-+MODULE_ALIAS_CRYPTO("ghash-generic");
---- a/crypto/krng.c
-+++ b/crypto/krng.c
-@@ -63,3 +63,4 @@ module_exit(krng_mod_fini);
- MODULE_LICENSE("GPL");
- MODULE_DESCRIPTION("Kernel Random Number Generator");
- MODULE_ALIAS_CRYPTO("stdrng");
-+MODULE_ALIAS_CRYPTO("krng");
---- a/crypto/salsa20_generic.c
-+++ b/crypto/salsa20_generic.c
-@@ -249,3 +249,4 @@ module_exit(salsa20_generic_mod_fini);
- MODULE_LICENSE("GPL");
- MODULE_DESCRIPTION ("Salsa20 stream cipher algorithm");
- MODULE_ALIAS_CRYPTO("salsa20");
-+MODULE_ALIAS_CRYPTO("salsa20-generic");
---- a/crypto/serpent_generic.c
-+++ b/crypto/serpent_generic.c
-@@ -667,3 +667,4 @@ MODULE_DESCRIPTION("Serpent and tnepres
- MODULE_AUTHOR("Dag Arne Osvik <osvik@ii.uib.no>");
- MODULE_ALIAS_CRYPTO("tnepres");
- MODULE_ALIAS_CRYPTO("serpent");
-+MODULE_ALIAS_CRYPTO("serpent-generic");
---- a/crypto/sha1_generic.c
-+++ b/crypto/sha1_generic.c
-@@ -154,3 +154,4 @@ MODULE_LICENSE("GPL");
- MODULE_DESCRIPTION("SHA1 Secure Hash Algorithm");
- 
- MODULE_ALIAS_CRYPTO("sha1");
-+MODULE_ALIAS_CRYPTO("sha1-generic");
---- a/crypto/sha256_generic.c
-+++ b/crypto/sha256_generic.c
-@@ -385,4 +385,6 @@ MODULE_LICENSE("GPL");
- MODULE_DESCRIPTION("SHA-224 and SHA-256 Secure Hash Algorithm");
- 
- MODULE_ALIAS_CRYPTO("sha224");
-+MODULE_ALIAS_CRYPTO("sha224-generic");
- MODULE_ALIAS_CRYPTO("sha256");
-+MODULE_ALIAS_CRYPTO("sha256-generic");
---- a/crypto/sha512_generic.c
-+++ b/crypto/sha512_generic.c
-@@ -286,4 +286,6 @@ MODULE_LICENSE("GPL");
- MODULE_DESCRIPTION("SHA-512 and SHA-384 Secure Hash Algorithms");
- 
- MODULE_ALIAS_CRYPTO("sha384");
-+MODULE_ALIAS_CRYPTO("sha384-generic");
- MODULE_ALIAS_CRYPTO("sha512");
-+MODULE_ALIAS_CRYPTO("sha512-generic");
---- a/crypto/tea.c
-+++ b/crypto/tea.c
-@@ -270,6 +270,7 @@ static void __exit tea_mod_fini(void)
- 	crypto_unregister_algs(tea_algs, ARRAY_SIZE(tea_algs));
+ 	return 0;
  }
- 
-+MODULE_ALIAS_CRYPTO("tea");
- MODULE_ALIAS_CRYPTO("xtea");
- MODULE_ALIAS_CRYPTO("xeta");
- 
---- a/crypto/tgr192.c
-+++ b/crypto/tgr192.c
-@@ -676,6 +676,7 @@ static void __exit tgr192_mod_fini(void)
- 	crypto_unregister_shashes(tgr_algs, ARRAY_SIZE(tgr_algs));
- }
- 
-+MODULE_ALIAS_CRYPTO("tgr192");
- MODULE_ALIAS_CRYPTO("tgr160");
- MODULE_ALIAS_CRYPTO("tgr128");
- 
---- a/crypto/twofish_generic.c
-+++ b/crypto/twofish_generic.c
-@@ -212,3 +212,4 @@ module_exit(twofish_mod_fini);
- MODULE_LICENSE("GPL");
- MODULE_DESCRIPTION ("Twofish Cipher Algorithm");
- MODULE_ALIAS_CRYPTO("twofish");
-+MODULE_ALIAS_CRYPTO("twofish-generic");
---- a/crypto/wp512.c
-+++ b/crypto/wp512.c
-@@ -1167,6 +1167,7 @@ static void __exit wp512_mod_fini(void)
- 	crypto_unregister_shashes(wp_algs, ARRAY_SIZE(wp_algs));
- }
- 
-+MODULE_ALIAS_CRYPTO("wp512");
- MODULE_ALIAS_CRYPTO("wp384");
- MODULE_ALIAS_CRYPTO("wp256");
- 
 
 
