@@ -1,25 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760547AbbA1CQm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 21:16:42 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41037 "EHLO
+	id S1759926AbbA1Bfg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 20:35:36 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41396 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759125AbbA1B2N (ORCPT
+	with ESMTP id S1755104AbbA1BfH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 20:28:13 -0500
+	Tue, 27 Jan 2015 20:35:07 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andy Lutomirski <luto@amacapital.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
-        Ben Hutchings <ben@decadent.org.uk>
-Subject: [PATCH 3.10 21/32] x86/asm/traps: Disable tracing and kprobes in fixup_bad_iret and sync_regs
-Date: Tue, 27 Jan 2015 17:26:51 -0800
-Message-Id: <20150128012630.184699546@linuxfoundation.org>
+        Joe Thornber <ejt@redhat.com>, Mike Snitzer <snitzer@redhat.com>
+Subject: [PATCH 3.14 14/77] dm cache: share cache-metadata object across inactive and active DM tables
+Date: Tue, 27 Jan 2015 17:26:52 -0800
+Message-Id: <20150128012746.395067013@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150128012627.081285723@linuxfoundation.org>
-References: <20150128012627.081285723@linuxfoundation.org>
+In-Reply-To: <20150128012745.971137091@linuxfoundation.org>
+References: <20150128012745.971137091@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -27,52 +24,164 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Andy Lutomirski <luto@amacapital.net>
+From: Joe Thornber <ejt@redhat.com>
 
-commit 7ddc6a2199f1da405a2fb68c40db8899b1a8cd87 upstream.
+commit 9b1cc9f251affdd27f29fe46d0989ba76c33faf6 upstream.
 
-These functions can be executed on the int3 stack, so kprobes
-are dangerous. Tracing is probably a bad idea, too.
+If a DM table is reloaded with an inactive table when the device is not
+suspended (normal procedure for LVM2), then there will be two dm-bufio
+objects that can diverge.  This can lead to a situation where the
+inactive table uses bufio to read metadata at the same time the active
+table writes metadata -- resulting in the inactive table having stale
+metadata buffers once it is promoted to the active table slot.
 
-Fixes: b645af2d5905 ("x86_64, traps: Rework bad_iret")
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Link: http://lkml.kernel.org/r/50e33d26adca60816f3ba968875801652507d0c4.1416870125.git.luto@amacapital.net
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
-[bwh: Backported to 3.10:
- - Use __kprobes instead of NOKPROBE_SYMBOL()
- - Adjust context]
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Fix this by using reference counting and a global list of cache metadata
+objects to ensure there is only one metadata object per metadata device.
+
+Signed-off-by: Joe Thornber <ejt@redhat.com>
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/traps.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/md/dm-cache-metadata.c |  101 ++++++++++++++++++++++++++++++++++++++---
+ 1 file changed, 95 insertions(+), 6 deletions(-)
 
---- a/arch/x86/kernel/traps.c
-+++ b/arch/x86/kernel/traps.c
-@@ -362,7 +362,7 @@ exit:
-  * for scheduling or signal handling. The actual stack switch is done in
-  * entry.S
-  */
--asmlinkage __kprobes struct pt_regs *sync_regs(struct pt_regs *eregs)
-+asmlinkage notrace __kprobes struct pt_regs *sync_regs(struct pt_regs *eregs)
- {
- 	struct pt_regs *regs = eregs;
- 	/* Did already sync */
-@@ -387,7 +387,7 @@ struct bad_iret_stack {
- 	struct pt_regs regs;
- };
+--- a/drivers/md/dm-cache-metadata.c
++++ b/drivers/md/dm-cache-metadata.c
+@@ -94,6 +94,9 @@ struct cache_disk_superblock {
+ } __packed;
  
--asmlinkage __visible
-+asmlinkage __visible notrace __kprobes
- struct bad_iret_stack *fixup_bad_iret(struct bad_iret_stack *s)
+ struct dm_cache_metadata {
++	atomic_t ref_count;
++	struct list_head list;
++
+ 	struct block_device *bdev;
+ 	struct dm_block_manager *bm;
+ 	struct dm_space_map *metadata_sm;
+@@ -669,10 +672,10 @@ static void unpack_value(__le64 value_le
+ 
+ /*----------------------------------------------------------------*/
+ 
+-struct dm_cache_metadata *dm_cache_metadata_open(struct block_device *bdev,
+-						 sector_t data_block_size,
+-						 bool may_format_device,
+-						 size_t policy_hint_size)
++static struct dm_cache_metadata *metadata_open(struct block_device *bdev,
++					       sector_t data_block_size,
++					       bool may_format_device,
++					       size_t policy_hint_size)
  {
- 	/*
+ 	int r;
+ 	struct dm_cache_metadata *cmd;
+@@ -683,6 +686,7 @@ struct dm_cache_metadata *dm_cache_metad
+ 		return NULL;
+ 	}
+ 
++	atomic_set(&cmd->ref_count, 1);
+ 	init_rwsem(&cmd->root_lock);
+ 	cmd->bdev = bdev;
+ 	cmd->data_block_size = data_block_size;
+@@ -705,10 +709,95 @@ struct dm_cache_metadata *dm_cache_metad
+ 	return cmd;
+ }
+ 
++/*
++ * We keep a little list of ref counted metadata objects to prevent two
++ * different target instances creating separate bufio instances.  This is
++ * an issue if a table is reloaded before the suspend.
++ */
++static DEFINE_MUTEX(table_lock);
++static LIST_HEAD(table);
++
++static struct dm_cache_metadata *lookup(struct block_device *bdev)
++{
++	struct dm_cache_metadata *cmd;
++
++	list_for_each_entry(cmd, &table, list)
++		if (cmd->bdev == bdev) {
++			atomic_inc(&cmd->ref_count);
++			return cmd;
++		}
++
++	return NULL;
++}
++
++static struct dm_cache_metadata *lookup_or_open(struct block_device *bdev,
++						sector_t data_block_size,
++						bool may_format_device,
++						size_t policy_hint_size)
++{
++	struct dm_cache_metadata *cmd, *cmd2;
++
++	mutex_lock(&table_lock);
++	cmd = lookup(bdev);
++	mutex_unlock(&table_lock);
++
++	if (cmd)
++		return cmd;
++
++	cmd = metadata_open(bdev, data_block_size, may_format_device, policy_hint_size);
++	if (cmd) {
++		mutex_lock(&table_lock);
++		cmd2 = lookup(bdev);
++		if (cmd2) {
++			mutex_unlock(&table_lock);
++			__destroy_persistent_data_objects(cmd);
++			kfree(cmd);
++			return cmd2;
++		}
++		list_add(&cmd->list, &table);
++		mutex_unlock(&table_lock);
++	}
++
++	return cmd;
++}
++
++static bool same_params(struct dm_cache_metadata *cmd, sector_t data_block_size)
++{
++	if (cmd->data_block_size != data_block_size) {
++		DMERR("data_block_size (%llu) different from that in metadata (%llu)\n",
++		      (unsigned long long) data_block_size,
++		      (unsigned long long) cmd->data_block_size);
++		return false;
++	}
++
++	return true;
++}
++
++struct dm_cache_metadata *dm_cache_metadata_open(struct block_device *bdev,
++						 sector_t data_block_size,
++						 bool may_format_device,
++						 size_t policy_hint_size)
++{
++	struct dm_cache_metadata *cmd = lookup_or_open(bdev, data_block_size,
++						       may_format_device, policy_hint_size);
++	if (cmd && !same_params(cmd, data_block_size)) {
++		dm_cache_metadata_close(cmd);
++		return NULL;
++	}
++
++	return cmd;
++}
++
+ void dm_cache_metadata_close(struct dm_cache_metadata *cmd)
+ {
+-	__destroy_persistent_data_objects(cmd);
+-	kfree(cmd);
++	if (atomic_dec_and_test(&cmd->ref_count)) {
++		mutex_lock(&table_lock);
++		list_del(&cmd->list);
++		mutex_unlock(&table_lock);
++
++		__destroy_persistent_data_objects(cmd);
++		kfree(cmd);
++	}
+ }
+ 
+ /*
 
 
