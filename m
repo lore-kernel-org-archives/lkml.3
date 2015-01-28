@@ -1,27 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933774AbbA1Bpk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 20:45:40 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41746 "EHLO
+	id S933756AbbA1Bo2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 20:44:28 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41752 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933365AbbA1Bih (ORCPT
+	with ESMTP id S933366AbbA1Bii (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 20:38:37 -0500
+	Tue, 27 Jan 2015 20:38:38 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Jerome Marchand <jmarchan@redhat.com>,
         David Rientjes <rientjes@google.com>,
-        Dave Hansen <dave.hansen@intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Vlastimil Babka <vbabka@suse.cz>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Bob Liu <bob.liu@oracle.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.14 66/77] mm, thp: only collapse hugepages to nodes with affinity for zone_reclaim_mode
-Date: Tue, 27 Jan 2015 17:27:44 -0800
-Message-Id: <20150128012747.947520308@linuxfoundation.org>
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>
+Subject: [PATCH 3.14 67/77] mm: make copy_pte_range static again
+Date: Tue, 27 Jan 2015 17:27:45 -0800
+Message-Id: <20150128012747.976302843@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <20150128012745.971137091@linuxfoundation.org>
 References: <20150128012745.971137091@linuxfoundation.org>
@@ -36,87 +32,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Rientjes <rientjes@google.com>
+From: Jerome Marchand <jmarchan@redhat.com>
 
-commit 14a4e2141e24304fff2c697be6382ffb83888185 upstream.
+commit 21bda264f4243f61dfcc485174055f12ad0530b4 upstream.
 
-Commit 9f1b868a13ac ("mm: thp: khugepaged: add policy for finding target
-node") improved the previous khugepaged logic which allocated a
-transparent hugepages from the node of the first page being collapsed.
+Commit 71e3aac0724f ("thp: transparent hugepage core") adds
+copy_pte_range prototype to huge_mm.h.  I'm not sure why (or if) this
+function have been used outside of memory.c, but it currently isn't.
+This patch makes copy_pte_range() static again.
 
-However, it is still possible to collapse pages to remote memory which
-may suffer from additional access latency.  With the current policy, it
-is possible that 255 pages (with PAGE_SHIFT == 12) will be collapsed
-remotely if the majority are allocated from that node.
-
-When zone_reclaim_mode is enabled, it means the VM should make every
-attempt to allocate locally to prevent NUMA performance degradation.  In
-this case, we do not want to collapse hugepages to remote nodes that
-would suffer from increased access latency.  Thus, when
-zone_reclaim_mode is enabled, only allow collapsing to nodes with
-RECLAIM_DISTANCE or less.
-
-There is no functional change for systems that disable
-zone_reclaim_mode.
-
-Signed-off-by: David Rientjes <rientjes@google.com>
-Cc: Dave Hansen <dave.hansen@intel.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>
-Acked-by: Vlastimil Babka <vbabka@suse.cz>
-Acked-by: Mel Gorman <mgorman@suse.de>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Cc: Bob Liu <bob.liu@oracle.com>
+Signed-off-by: Jerome Marchand <jmarchan@redhat.com>
+Acked-by: David Rientjes <rientjes@google.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/huge_memory.c |   26 ++++++++++++++++++++++++++
- 1 file changed, 26 insertions(+)
+ include/linux/huge_mm.h |    4 ----
+ mm/memory.c             |    2 +-
+ 2 files changed, 1 insertion(+), 5 deletions(-)
 
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -2273,6 +2273,30 @@ static void khugepaged_alloc_sleep(void)
+--- a/include/linux/huge_mm.h
++++ b/include/linux/huge_mm.h
+@@ -93,10 +93,6 @@ extern bool is_vma_temporary_stack(struc
+ #endif /* CONFIG_DEBUG_VM */
  
- static int khugepaged_node_load[MAX_NUMNODES];
- 
-+static bool khugepaged_scan_abort(int nid)
-+{
-+	int i;
-+
-+	/*
-+	 * If zone_reclaim_mode is disabled, then no extra effort is made to
-+	 * allocate memory locally.
-+	 */
-+	if (!zone_reclaim_mode)
-+		return false;
-+
-+	/* If there is a count for this node already, it must be acceptable */
-+	if (khugepaged_node_load[nid])
-+		return false;
-+
-+	for (i = 0; i < MAX_NUMNODES; i++) {
-+		if (!khugepaged_node_load[i])
-+			continue;
-+		if (node_distance(nid, i) > RECLAIM_DISTANCE)
-+			return true;
-+	}
-+	return false;
-+}
-+
- #ifdef CONFIG_NUMA
- static int khugepaged_find_target_node(void)
+ extern unsigned long transparent_hugepage_flags;
+-extern int copy_pte_range(struct mm_struct *dst_mm, struct mm_struct *src_mm,
+-			  pmd_t *dst_pmd, pmd_t *src_pmd,
+-			  struct vm_area_struct *vma,
+-			  unsigned long addr, unsigned long end);
+ extern int split_huge_page_to_list(struct page *page, struct list_head *list);
+ static inline int split_huge_page(struct page *page)
  {
-@@ -2589,6 +2613,8 @@ static int khugepaged_scan_pmd(struct mm
- 		 * hit record.
- 		 */
- 		node = page_to_nid(page);
-+		if (khugepaged_scan_abort(node))
-+			goto out_unmap;
- 		khugepaged_node_load[node]++;
- 		VM_BUG_ON_PAGE(PageCompound(page), page);
- 		if (!PageLRU(page) || PageLocked(page) || !PageAnon(page))
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -878,7 +878,7 @@ out_set_pte:
+ 	return 0;
+ }
+ 
+-int copy_pte_range(struct mm_struct *dst_mm, struct mm_struct *src_mm,
++static int copy_pte_range(struct mm_struct *dst_mm, struct mm_struct *src_mm,
+ 		   pmd_t *dst_pmd, pmd_t *src_pmd, struct vm_area_struct *vma,
+ 		   unsigned long addr, unsigned long end)
+ {
 
 
