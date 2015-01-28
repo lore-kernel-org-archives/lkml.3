@@ -1,50 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934099AbbA1FnQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 00:43:16 -0500
-Received: from e28smtp09.in.ibm.com ([122.248.162.9]:47662 "EHLO
-	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751030AbbA1FnP (ORCPT
+	id S1753267AbbA1FuK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 00:50:10 -0500
+Received: from smtp89.ord1c.emailsrvr.com ([108.166.43.89]:58259 "EHLO
+	smtp89.ord1c.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750869AbbA1FuI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 00:43:15 -0500
-Date: Wed, 28 Jan 2015 11:12:45 +0530
-From: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
-To: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        acme@kernel.org, mpe@ellerman.id.au
-Cc: ananth@in.ibm.com
-Subject: Re: [PATCHv2 0/8] Fix perf probe issues on powerpc
-Message-ID: <20150128054245.GA2078@naverao1-tp.in.ibm.com>
-References: <cover.1418654435.git.naveen.n.rao@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <cover.1418654435.git.naveen.n.rao@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 15012805-0033-0000-0000-000004161C81
+	Wed, 28 Jan 2015 00:50:08 -0500
+X-Sender-Id: pramod.gurav@smartplayin.com
+From: Pramod Gurav <pramod.gurav@smartplayin.com>
+To: Kalle Valo <kvalo@codeaurora.org>, John Linville <linville@tuxdriver.com>,
+        Michael Buesch <m@bues.ch>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-wireless@vger.kernel.org,
+        Pramod Gurav <pramod.gurav@smartplayin.com>
+Subject: [PATCH RESEND] ssb: Fix Sparse error in main
+Date: Wed, 28 Jan 2015 11:19:47 +0530
+Message-Id: <1422424187-19059-1-git-send-email-pramod.gurav@smartplayin.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/12/15 08:20PM, Naveen N Rao wrote:
-> This patchset fixes various issues with perf probe on powerpc across ABIv1 and
-> ABIv2:
-> - in the presence of DWARF debug-info,
-> - in the absence of DWARF, but with the symbol table, and
-> - in the absence of debug-info, but with kallsyms.
-> 
-> Applies cleanly on -tip. Tested on ppc64 BE and LE.
-> 
-> Changes from previous version:
-> Addressed various review comments from Mike Ellerman largely to generalize
-> changes. Some of the simpler patches have been retained in their previous form
-> to limit code churn, while others have been generalized by introducing arch
-> helpers. Individual patches have more details.
+This change fixes below sparse error:
+drivers/ssb/main.c:94:16: warning: symbol 'ssb_sdio_func_to_bus'
+was not declared. Should it be static?
 
-Michael,
-Can you please take a quick look at this?
+Acked-by: Michael Buesch <m@bues.ch>
+Signed-off-by: Pramod Gurav <pramod.gurav@smartplayin.com>
+---
+ drivers/ssb/main.c |   19 -------------------
+ 1 file changed, 19 deletions(-)
 
-- Naveen
+diff --git a/drivers/ssb/main.c b/drivers/ssb/main.c
+index 2fead38..1e180c4 100644
+--- a/drivers/ssb/main.c
++++ b/drivers/ssb/main.c
+@@ -90,25 +90,6 @@ found:
+ }
+ #endif /* CONFIG_SSB_PCMCIAHOST */
  
+-#ifdef CONFIG_SSB_SDIOHOST
+-struct ssb_bus *ssb_sdio_func_to_bus(struct sdio_func *func)
+-{
+-	struct ssb_bus *bus;
+-
+-	ssb_buses_lock();
+-	list_for_each_entry(bus, &buses, list) {
+-		if (bus->bustype == SSB_BUSTYPE_SDIO &&
+-		    bus->host_sdio == func)
+-			goto found;
+-	}
+-	bus = NULL;
+-found:
+-	ssb_buses_unlock();
+-
+-	return bus;
+-}
+-#endif /* CONFIG_SSB_SDIOHOST */
+-
+ int ssb_for_each_bus_call(unsigned long data,
+ 			  int (*func)(struct ssb_bus *bus, unsigned long data))
+ {
+-- 
+1.7.9.5
 
