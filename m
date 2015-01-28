@@ -1,20 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760929AbbA1CDr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 21:03:47 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41191 "EHLO
+	id S1760897AbbA1CDo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 21:03:44 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41026 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932770AbbA1B22 (ORCPT
+	with ESMTP id S932817AbbA1B23 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 20:28:28 -0500
+	Tue, 27 Jan 2015 20:28:29 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>, Ronny Hegewald <Ronny.Hegewald@online.de>,
-        Dan Williams <dan.j.williams@intel.com>
-Subject: [PATCH 3.18 08/61] libata: allow sata_sil24 to opt-out of tag ordered submission
-Date: Tue, 27 Jan 2015 17:26:20 -0800
-Message-Id: <20150128012637.840594053@linuxfoundation.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org
+Subject: [PATCH 3.18 09/61] libata: prevent HSM state change race between ISR and PIO
+Date: Tue, 27 Jan 2015 17:26:21 -0800
+Message-Id: <20150128012637.960179244@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <20150128012636.936333725@linuxfoundation.org>
 References: <20150128012636.936333725@linuxfoundation.org>
@@ -29,68 +27,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Williams <dan.j.williams@intel.com>
+From: David Jeffery <djeffery@redhat.com>
 
-commit 72dd299d5039a336493993dcc63413cf31d0e662 upstream.
+commit ce7514526742c0898b837d4395f515b79dfb5a12 upstream.
 
-Ronny reports: https://bugzilla.kernel.org/show_bug.cgi?id=87101
-    "Since commit 8a4aeec8d "libata/ahci: accommodate tag ordered
-    controllers" the access to the harddisk on the first SATA-port is
-    failing on its first access. The access to the harddisk on the
-    second port is working normal.
+It is possible for ata_sff_flush_pio_task() to set ap->hsm_task_state to
+HSM_ST_IDLE in between the time __ata_sff_port_intr() checks for HSM_ST_IDLE
+and before it calls ata_sff_hsm_move() causing ata_sff_hsm_move() to BUG().
 
-    When reverting the above commit, access to both harddisks is working
-    fine again."
+This problem is hard to reproduce making this patch hard to verify, but this
+fix will prevent the race.
 
-Maintain tag ordered submission as the default, but allow sata_sil24 to
-continue with the old behavior.
+I have not been able to reproduce the problem, but here is a crash dump from
+a 2.6.32 kernel.
 
-Cc: Tejun Heo <tj@kernel.org>
-Reported-by: Ronny Hegewald <Ronny.Hegewald@online.de>
-Signed-off-by: Dan Williams <dan.j.williams@intel.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+On examining the ata port's state, its hsm_task_state field has a value of HSM_ST_IDLE:
 
+crash> struct ata_port.hsm_task_state ffff881c1121c000
+  hsm_task_state = 0
+
+Normally, this should not be possible as ata_sff_hsm_move() was called from ata_sff_host_intr(),
+which checks hsm_task_state and won't call ata_sff_hsm_move() if it has a HSM_ST_IDLE value.
+
+PID: 11053  TASK: ffff8816e846cae0  CPU: 0   COMMAND: "sshd"
+ #0 [ffff88008ba03960] machine_kexec at ffffffff81038f3b
+ #1 [ffff88008ba039c0] crash_kexec at ffffffff810c5d92
+ #2 [ffff88008ba03a90] oops_end at ffffffff8152b510
+ #3 [ffff88008ba03ac0] die at ffffffff81010e0b
+ #4 [ffff88008ba03af0] do_trap at ffffffff8152ad74
+ #5 [ffff88008ba03b50] do_invalid_op at ffffffff8100cf95
+ #6 [ffff88008ba03bf0] invalid_op at ffffffff8100bf9b
+    [exception RIP: ata_sff_hsm_move+317]
+    RIP: ffffffff813a77ad  RSP: ffff88008ba03ca0  RFLAGS: 00010097
+    RAX: 0000000000000000  RBX: ffff881c1121dc60  RCX: 0000000000000000
+    RDX: ffff881c1121dd10  RSI: ffff881c1121dc60  RDI: ffff881c1121c000
+    RBP: ffff88008ba03d00   R8: 0000000000000000   R9: 000000000000002e
+    R10: 000000000001003f  R11: 000000000000009b  R12: ffff881c1121c000
+    R13: 0000000000000000  R14: 0000000000000050  R15: ffff881c1121dd78
+    ORIG_RAX: ffffffffffffffff  CS: 0010  SS: 0018
+ #7 [ffff88008ba03d08] ata_sff_host_intr at ffffffff813a7fbd
+ #8 [ffff88008ba03d38] ata_sff_interrupt at ffffffff813a821e
+ #9 [ffff88008ba03d78] handle_IRQ_event at ffffffff810e6ec0
 ---
- drivers/ata/libata-core.c |    5 ++++-
- drivers/ata/sata_sil24.c  |    2 +-
- include/linux/libata.h    |    1 +
- 3 files changed, 6 insertions(+), 2 deletions(-)
+ drivers/ata/libata-sff.c |   12 ++++++++++++
+ 1 file changed, 12 insertions(+)
 
---- a/drivers/ata/libata-core.c
-+++ b/drivers/ata/libata-core.c
-@@ -4740,7 +4740,10 @@ static struct ata_queued_cmd *ata_qc_new
- 		return NULL;
+--- a/drivers/ata/libata-sff.c
++++ b/drivers/ata/libata-sff.c
+@@ -1333,7 +1333,19 @@ void ata_sff_flush_pio_task(struct ata_p
+ 	DPRINTK("ENTER\n");
  
- 	for (i = 0, tag = ap->last_tag + 1; i < max_queue; i++, tag++) {
--		tag = tag < max_queue ? tag : 0;
-+		if (ap->flags & ATA_FLAG_LOWTAG)
-+			tag = i;
-+		else
-+			tag = tag < max_queue ? tag : 0;
+ 	cancel_delayed_work_sync(&ap->sff_pio_task);
++
++	/*
++	 * We wanna reset the HSM state to IDLE.  If we do so without
++	 * grabbing the port lock, critical sections protected by it which
++	 * expect the HSM state to stay stable may get surprised.  For
++	 * example, we may set IDLE in between the time
++	 * __ata_sff_port_intr() checks for HSM_ST_IDLE and before it calls
++	 * ata_sff_hsm_move() causing ata_sff_hsm_move() to BUG().
++	 */
++	spin_lock_irq(ap->lock);
+ 	ap->hsm_task_state = HSM_ST_IDLE;
++	spin_unlock_irq(ap->lock);
++
+ 	ap->sff_pio_task_link = NULL;
  
- 		/* the last tag is reserved for internal command. */
- 		if (tag == ATA_TAG_INTERNAL)
---- a/drivers/ata/sata_sil24.c
-+++ b/drivers/ata/sata_sil24.c
-@@ -246,7 +246,7 @@ enum {
- 	/* host flags */
- 	SIL24_COMMON_FLAGS	= ATA_FLAG_SATA | ATA_FLAG_PIO_DMA |
- 				  ATA_FLAG_NCQ | ATA_FLAG_ACPI_SATA |
--				  ATA_FLAG_AN | ATA_FLAG_PMP,
-+				  ATA_FLAG_AN | ATA_FLAG_PMP | ATA_FLAG_LOWTAG,
- 	SIL24_FLAG_PCIX_IRQ_WOC	= (1 << 24), /* IRQ loss errata on PCI-X */
- 
- 	IRQ_STAT_4PORTS		= 0xf,
---- a/include/linux/libata.h
-+++ b/include/linux/libata.h
-@@ -230,6 +230,7 @@ enum {
- 	ATA_FLAG_SW_ACTIVITY	= (1 << 22), /* driver supports sw activity
- 					      * led */
- 	ATA_FLAG_NO_DIPM	= (1 << 23), /* host not happy with DIPM */
-+	ATA_FLAG_LOWTAG		= (1 << 24), /* host wants lowest available tag */
- 
- 	/* bits 24:31 of ap->flags are reserved for LLD specific flags */
- 
+ 	if (ata_msg_ctl(ap))
 
 
