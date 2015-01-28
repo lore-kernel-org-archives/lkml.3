@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933989AbbA1B76 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 20:59:58 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41426 "EHLO
+	id S934032AbbA1CKP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 21:10:15 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41202 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933219AbbA1BiW (ORCPT
+	with ESMTP id S1759895AbbA1B2X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 20:38:22 -0500
+	Tue, 27 Jan 2015 20:28:23 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Jani Nikula <jani.nikula@intel.com>
-Subject: [PATCH 3.14 07/77] drm/i915: Fix mutex->owner inspection race under DEBUG_MUTEXES
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Andrew Lunn <andrew@lunn.ch>
+Subject: [PATCH 3.18 33/61] ARM: mvebu: completely disable hardware I/O coherency
 Date: Tue, 27 Jan 2015 17:26:45 -0800
-Message-Id: <20150128012746.192009633@linuxfoundation.org>
+Message-Id: <20150128012640.523026252@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150128012745.971137091@linuxfoundation.org>
-References: <20150128012745.971137091@linuxfoundation.org>
+In-Reply-To: <20150128012636.936333725@linuxfoundation.org>
+References: <20150128012636.936333725@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -26,60 +25,48 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.18-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Chris Wilson <chris@chris-wilson.co.uk>
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
 
-commit 226e5ae9e5f9108beb0bde4ac69f68fe6210fed9 upstream.
+commit 8f1e8ee28660018a935c7576b9af8ffe1feab54c upstream.
 
-If CONFIG_DEBUG_MUTEXES is set, the mutex->owner field is only cleared
-if the mutex debugging is enabled which introduces a race in our
-mutex_is_locked_by() - i.e. we may inspect the old owner value before it
-is acquired by the new task.
+The current hardware I/O coherency is known to cause problems with DMA
+coherent buffers, as it still requires explicit I/O synchronization
+barriers, which is not compatible with the semantics expected by the
+Linux DMA coherent buffers API.
 
-This is the root cause of this error:
+So, in order to have enough time to validate a new solution based on
+automatic I/O synchronization barriers, this commit disables hardware
+I/O coherency entirely. Future patches will re-enable it.
 
-# diff --git a/kernel/locking/mutex-debug.c b/kernel/locking/mutex-debug.c
-# index 5cf6731..3ef3736 100644
-# --- a/kernel/locking/mutex-debug.c
-# +++ b/kernel/locking/mutex-debug.c
-# @@ -80,13 +80,13 @@ void debug_mutex_unlock(struct mutex *lock)
-# 			DEBUG_LOCKS_WARN_ON(lock->owner != current);
-#
-# 		DEBUG_LOCKS_WARN_ON(!lock->wait_list.prev && !lock->wait_list.next);
-# -		mutex_clear_owner(lock);
-# 	}
-#
-# 	/*
-# 	 * __mutex_slowpath_needs_to_unlock() is explicitly 0 for debug
-# 	 * mutexes so that we can do it here after we've verified state.
-# 	 */
-# +	mutex_clear_owner(lock);
-# 	atomic_set(&lock->count, 1);
-#  }
-
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=87955
-Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-Reviewed-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-Signed-off-by: Jani Nikula <jani.nikula@intel.com>
+Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Signed-off-by: Andrew Lunn <andrew@lunn.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/i915_gem.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/arm/mach-mvebu/coherency.c |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/i915/i915_gem.c
-+++ b/drivers/gpu/drm/i915/i915_gem.c
-@@ -4978,7 +4978,7 @@ static bool mutex_is_locked_by(struct mu
- 	if (!mutex_is_locked(mutex))
- 		return false;
+--- a/arch/arm/mach-mvebu/coherency.c
++++ b/arch/arm/mach-mvebu/coherency.c
+@@ -398,9 +398,14 @@ static int coherency_type(void)
+ 	return type;
+ }
  
--#if defined(CONFIG_SMP) || defined(CONFIG_DEBUG_MUTEXES)
-+#if defined(CONFIG_SMP) && !defined(CONFIG_DEBUG_MUTEXES)
- 	return mutex->owner == task;
- #else
- 	/* Since UP may be pre-empted, we cannot assume that we own the lock */
++/*
++ * As a precaution, we currently completely disable hardware I/O
++ * coherency, until enough testing is done with automatic I/O
++ * synchronization barriers to validate that it is a proper solution.
++ */
+ int coherency_available(void)
+ {
+-	return coherency_type() != COHERENCY_FABRIC_TYPE_NONE;
++	return false;
+ }
+ 
+ int __init coherency_init(void)
 
 
