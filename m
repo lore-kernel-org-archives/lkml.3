@@ -1,95 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761323AbbA1UjP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 15:39:15 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:56980 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755703AbbA1UjI (ORCPT
+	id S1760567AbbA1Voz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 16:44:55 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:45185 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760917AbbA1Ugr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 15:39:08 -0500
-Date: Wed, 28 Jan 2015 08:42:54 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Tina Ruchandani <ruchandani.tina@gmail.com>
-Cc: Linux PM List <linux-pm@vger.kernel.org>, Arnd Bergmann <arnd@arndb.de>,
-        Len Brown <len.brown@intel.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] PM: Use 64-bit timekeeping
-Message-ID: <20150128074254.GA31048@amd>
-References: <20150128043836.GA4112@tinar>
+	Wed, 28 Jan 2015 15:36:47 -0500
+Date: Wed, 28 Jan 2015 08:48:38 +0100
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Hongzhou Yang <hongzhou.yang@mediatek.com>
+Cc: Rob Herring <robh+dt@kernel.org>, Linus Walleij <linus.walleij@linaro.org>,
+        Matthias Brugger <matthias.bgg@gmail.com>,
+        Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org,
+        Vladimir Murzin <vladimir.murzin@arm.com>,
+        Russell King <linux@arm.linux.org.uk>, Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Catalin Marinas <catalin.marinas@arm.com>, eddie.huang@mediatek.com,
+        linux-kernel@vger.kernel.org, alan.cheng@mediatek.com,
+        maoguang.meng@mediatek.com,
+        Ashwin Chaugule <ashwin.chaugule@linaro.org>, toby.liu@mediatek.com,
+        Sascha Hauer <kernel@pengutronix.de>,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        "Joe.C" <yingjoe.chen@mediatek.com>, dandan.he@mediatek.com,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrsoft.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v5 2/5] dt-bindings: Add pinctrl bindings for
+ mt65xx/mt81xx.
+Message-ID: <20150128074838.GX12209@pengutronix.de>
+References: <1421818097-9281-1-git-send-email-hongzhou.yang@mediatek.com>
+ <1421818097-9281-3-git-send-email-hongzhou.yang@mediatek.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20150128043836.GA4112@tinar>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1421818097-9281-3-git-send-email-hongzhou.yang@mediatek.com>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 08:46:40 up 104 days, 19:00, 130 users,  load average: 0.10, 0.10,
+ 0.10
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:67c:670:100:1d::c0
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 2015-01-28 10:08:37, Tina Ruchandani wrote:
-> The freezer try_to_freeze_tasks uses 'struct timeval' for start
-> and end times, tracking time taken to freeze tasks. 'struct timeval'
-> on 32-bit systems will have its tv_sec overflow in year 2038 and
-> beyond. This patches uses 'ktime_t' (which has 64 bit values
-> for seconds) for start and end time.
+On Wed, Jan 21, 2015 at 01:28:14PM +0800, Hongzhou Yang wrote:
+> From: Hongzhou Yang <hongzhou.yang@mediatek.com>
 > 
-> Suggested-by: Arnd Bergmann <arnd@arndb.de>
-> Signed-off-by: Tina Ruchandani <ruchandani.tina@gmail.com>
-
-Nicer code, and without the overflow. Thanks!
-
-Acked-by: Pavel Machek <pavel@ucw.cz>
-
-
-> ---
-> Changes in v2:
-> 	- Use ktime_t to be able to use ktime_ms_delta
-> 	  which is more efficient than timespec64 based methods.
-> ---
->  kernel/power/process.c | 12 +++++-------
->  1 file changed, 5 insertions(+), 7 deletions(-)
+> Add devicetree bindings for Mediatek SoC pinctrl driver.
 > 
-> diff --git a/kernel/power/process.c b/kernel/power/process.c
-> index 5a6ec86..52414dd 100644
-> --- a/kernel/power/process.c
-> +++ b/kernel/power/process.c
-> @@ -17,6 +17,7 @@
->  #include <linux/delay.h>
->  #include <linux/workqueue.h>
->  #include <linux/kmod.h>
-> +#include <linux/ktime.h>
->  #include <trace/events/power.h>
-x>  
->  /* 
-> @@ -30,13 +31,12 @@ static int try_to_freeze_tasks(bool user_only)
->  	unsigned long end_time;
->  	unsigned int todo;
->  	bool wq_busy = false;
-> -	struct timeval start, end;
-> -	u64 elapsed_msecs64;
-> +	ktime_t start, end;
->  	unsigned int elapsed_msecs;
->  	bool wakeup = false;
->  	int sleep_usecs = USEC_PER_MSEC;
->  
-> -	do_gettimeofday(&start);
-> +	start = ktime_get();
->  
->  	end_time = jiffies + msecs_to_jiffies(freeze_timeout_msecs);
->  
-> @@ -78,10 +78,8 @@ static int try_to_freeze_tasks(bool user_only)
->  			sleep_usecs *= 2;
->  	}
->  
-> -	do_gettimeofday(&end);
-> -	elapsed_msecs64 = timeval_to_ns(&end) - timeval_to_ns(&start);
-> -	do_div(elapsed_msecs64, NSEC_PER_MSEC);
-> -	elapsed_msecs = elapsed_msecs64;
-> +	end = ktime_get();
-> +	elapsed_msecs = (unsigned int) ktime_ms_delta(end, start);
->  
->  	if (todo) {
->  		printk("\n");
+> Signed-off-by: Hongzhou Yang <hongzhou.yang@mediatek.com>
+
+This basically follows the pinmux binding I suggested as generic pinmux
+binding for per-pin type controllers, so:
+
+Acked-by: Sascha Hauer <s.hauer@pengutronix.de>
+
+Sascha
+
 
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
