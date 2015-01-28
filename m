@@ -1,127 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762520AbbA2Cja (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 21:39:30 -0500
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:42599 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762479AbbA2CjF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 21:39:05 -0500
-MIME-Version: 1.0
-In-Reply-To: <54C91791.9030508@linaro.org>
-References: <1422422306-27473-1-git-send-email-behanw@converseincode.com>
-	<CAKv+Gu_NCgMmX_LQqi7vtjtP4ofrW+kx8FPgRd4-LWwK=73-xg@mail.gmail.com>
-	<54C8EE04.6060809@linaro.org>
-	<CAKv+Gu8CrMqwqBOF8rYa3RP1=gfCthwP=1k9kQ73v6+Sxwah4A@mail.gmail.com>
-	<54C91791.9030508@linaro.org>
-Date: Wed, 28 Jan 2015 17:20:54 +0000
-Message-ID: <CAKv+Gu8P8eC+bmerCpbSX=USODqE=U7WnLeiCfhHJ8SSVAzPDw@mail.gmail.com>
-Subject: Re: [PATCH] bcm: address clang inline asm incompatibility
-From: Ard Biesheuvel <ard.biesheuvel@linaro.org>
-To: Alex Elder <elder@linaro.org>
-Cc: Behan Webster <behanw@converseincode.com>, bcm@fixthebug.org,
-        Florian Fainelli <f.fainelli@gmail.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Matt Porter <mporter@linaro.org>,
-        bcm-kernel-feedback-list@broadcom.com,
+	id S1752061AbbA1VBk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 16:01:40 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:35325 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756586AbbA1VAg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jan 2015 16:00:36 -0500
+Date: Wed, 28 Jan 2015 18:21:27 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: "Elliott, Robert (Server Storage)" <Elliott@hp.com>
+Cc: Ross Zwisler <ross.zwisler@linux.intel.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+        H Peter Anvin <h.peter.anvin@intel.com>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        "Kani, Toshimitsu" <toshi.kani@hp.com>,
+        "Knippers, Linda" <linda.knippers@hp.com>
+Subject: Re: [PATCH v3 1/2] x86: Add support for the pcommit instruction
+Message-ID: <20150128172127.GF7569@pd.tnic>
+References: <1422377631-8986-1-git-send-email-ross.zwisler@linux.intel.com>
+ <1422377631-8986-2-git-send-email-ross.zwisler@linux.intel.com>
+ <94D0CD8314A33A4D9D801C0FE68B40295A75C517@G9W0745.americas.hpqcorp.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <94D0CD8314A33A4D9D801C0FE68B40295A75C517@G9W0745.americas.hpqcorp.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 28 January 2015 at 17:08, Alex Elder <elder@linaro.org> wrote:
-> On 01/28/2015 10:17 AM, Ard Biesheuvel wrote:
->> On 28 January 2015 at 14:11, Alex Elder <elder@linaro.org> wrote:
->>> On 01/28/2015 05:15 AM, Ard Biesheuvel wrote:
->>>> On 28 January 2015 at 05:18, Behan Webster <behanw@converseincode.com> wrote:
->>>>> From: Alex Elder <elder@linaro.org>
->>>>>
->>>>> My GCC-based build environment likes to call register r12 by the
->>>>> name "ip" in inline asm.  Behan Webster informed me that his Clang-
->>>>> based build environment likes "r12" instead.
->>>>>
->>>>> Try to make them both happy.
->>>>>
->>>>> Signed-off-by: Alex Elder <elder@linaro.org>
->>>>> Signed-off-by: Behan Webster <behanw@converseincode.com>
->>>>> ---
->>>>>  arch/arm/mach-bcm/bcm_kona_smc.c | 9 +++++++--
->>>>>  1 file changed, 7 insertions(+), 2 deletions(-)
->>>>>
->>>>> diff --git a/arch/arm/mach-bcm/bcm_kona_smc.c b/arch/arm/mach-bcm/bcm_kona_smc.c
->>>>> index a55a7ec..3937bd5 100644
->>>>> --- a/arch/arm/mach-bcm/bcm_kona_smc.c
->>>>> +++ b/arch/arm/mach-bcm/bcm_kona_smc.c
->>>>> @@ -106,9 +106,14 @@ int __init bcm_kona_smc_init(void)
->>>>>   * request result appropriately.  This result value is found in r0
->>>>>   * when the "smc" request completes.
->>>>>   */
->>>>> +#ifdef __clang__
->>>>> +#define R12    "r12"
->>>>> +#else  /* !__clang__ */
->>>>> +#define R12    "ip"    /* gcc calls r12 "ip" */
->>>>> +#endif /* !__clang__ */
->>>>
->>>> Why not just use r12 for both?
->>>
->>> Yes, that would have been an obvious fix.  But the
->>> assembler (in the GCC environment) doesn't accept that.
->>>
->>
->> Mine has no problems with it at all
->>
->> $ echo 'mov r12, #0' | arm-linux-gnueabihf-gcc -c -x assembler-with-cpp -
->>
->> and grepping for r12 under arch/arm suggests the same
->
-> The use of "r12" is fine.  But it's not just the assembler,
-> I believe it also involves gcc.
->
-> The problem is with the use of the __asmeq(x, y) macro.
->
+On Wed, Jan 28, 2015 at 05:10:46PM +0000, Elliott, Robert (Server Storage) wrote:
+> Should this patch series also add defines for the virtual 
+> machine control data structure changes?
+> 
+> 1. Add the new VM-Execution Controls bit 21 as
+>     SECONDARY_EXEC_PCOMMIT_EXITING 0x00200000
+> to arch/x86/include/asm/vmx.h.
+> 
+> 2. Add the new exit reason of 64 (0x41) as
+> 	EXIT_REASON_PCOMMIT  64
+> to arch/x86/include/uapi/asm/vmx.h and (with a
+> VMX_EXIT_REASONS string) to usr/include/asm/vmx.h.
+> 
+> 3. Add a kvm_vmx_exit_handler to arch/x86/kvm/vmx.c.
 
-Ah right. Apologies for assuming that you had missed something obvious here.
-But __asmeq is not the toolchain, it is a local construct #define'd in
-compiler.h
-
-> If I assign the "ip" variable with "r12":
->         register u32 ip asm("r12");     /* Also called ip */
->
-> Then that's fine.  However, this line then causes an error:
->                 __asmeq("%0", "r12")
->
-> Apparently gcc uses register "ip" when it sees asm("r12").  So
-> attempting to verify the desired register got used with __asmeq()
-> causes a string mismatch--"ip" is not equal to "r12".
->
-> So I could use:
->
->         register u32 ip asm("r12");     /* Also called ip */
->                 ...
->                 __asmeq("%0", "ip")
->
-> And that will build.  But it's a little non-intuitive, and
-> I suspect that clang might (rightfully) have a failure in
-> this __asmeq() call.
->
-
-In that case, I would strongly suggest fixing the __asmeq () macro
-instead, and teach it that ("r12","ip") and ("ip","r12") are fine too.
-
-The thing is, inline asm is a dodgy area to begin with in terms of
-clang-to-gcc compatibility. On arm64, we have been seeing issues where
-the width of the register -which is fixed on gcc- is selected based on
-the size of that variable, i.e., an int32 gets a w# register and int64
-gets a x# register. Imagine debugging that, e.g., a str %0, [xx] that
-writes 8 bytes on GCC suddenly only writing 4 bytes when built with
-clang.
-
-If we also start using the preprocessor to conditionalise what is
-emitted by inline asm, the waters get even murkier and it becomes even
-harder to claim parity between the two.
+These look like a separate patchset for kvm enablement to me.
 
 -- 
-Ard.
+Regards/Gruss,
+    Boris.
+
+ECO tip #101: Trim your mails when you reply.
+--
