@@ -1,160 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759964AbbA1UcK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 15:32:10 -0500
-Received: from mail.kmu-office.ch ([178.209.48.109]:34662 "EHLO
-	mail.kmu-office.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759901AbbA1UcB (ORCPT
+	id S932401AbbA2CQ3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 21:16:29 -0500
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:41067 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753777AbbA2CQ0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 15:32:01 -0500
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-Date: Wed, 28 Jan 2015 10:55:23 +0100
-From: Stefan Agner <stefan@agner.ch>
-To: Bhuvanchandra DV <bhuvanchandra.dv@toradex.com>
-Cc: mark.rutland@arm.com, shawn.guo@linaro.org, robh+dt@kernel.org,
-        pawel.moll@arm.com, ijc+devicetree@hellion.org.uk,
-        galak@codeaurora.org, linux@arm.linux.org.uk, broonie@kernel.org,
-        B44548@freescale.com, Li.Xiubo@freescale.com,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-spi@vger.kernel.org
-Subject: Re: [PATCH 2/7] ARM: vf-colibri: add SPI support and enable MCP2515
- CAN
-In-Reply-To: <1422356244-15629-3-git-send-email-bhuvanchandra.dv@toradex.com>
-References: <1422356244-15629-1-git-send-email-bhuvanchandra.dv@toradex.com>
- <1422356244-15629-3-git-send-email-bhuvanchandra.dv@toradex.com>
-Message-ID: <47943ef82a880a0c681ccd0b9fd22eda@agner.ch>
-User-Agent: Roundcube Webmail/1.0.3
+	Wed, 28 Jan 2015 21:16:26 -0500
+From: Karl Beldan <karl.beldan@gmail.com>
+X-Google-Original-From: Karl Beldan <karl.beldan@rivierawaves.com>
+Cc: Karl Beldan <karl.beldan@gmail.com>,
+        Karl Beldan <karl.beldan@rivierawaves.com>,
+        Al Viro <viro@ZenIV.linux.org.uk>,
+        Eric Dumazet <eric.dumazet@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
+        Mike Frysinger <vapier@gentoo.org>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Subject: [PATCH v2] lib/checksum.c: fix carry in csum_tcpudp_nofold
+Date: Wed, 28 Jan 2015 10:58:11 +0100
+Message-Id: <1422439091-31413-1-git-send-email-karl.beldan@rivierawaves.com>
+X-Mailer: git-send-email 2.0.1
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2015-01-27 11:57, Bhuvanchandra DV wrote:
-> MCP2515 CAN controller is available on Colibri Evaluation board.
-> Hence enable MCP2515 CAN.
-> 
-> Signed-off-by: Bhuvanchandra DV <bhuvanchandra.dv@toradex.com>
-> ---
->  arch/arm/boot/dts/vf-colibri-eval-v3.dtsi | 31 +++++++++++++++++++++++++++++++
->  arch/arm/boot/dts/vf-colibri.dtsi         | 15 +++++++++++++++
->  2 files changed, 46 insertions(+)
-> 
-> diff --git a/arch/arm/boot/dts/vf-colibri-eval-v3.dtsi
-> b/arch/arm/boot/dts/vf-colibri-eval-v3.dtsi
-> index 36cafbf..69364b0 100644
-> --- a/arch/arm/boot/dts/vf-colibri-eval-v3.dtsi
-> +++ b/arch/arm/boot/dts/vf-colibri-eval-v3.dtsi
-> @@ -12,6 +12,12 @@
->  		bootargs = "console=ttyLP0,115200";
->  	};
->  
-> +	clk16m: clk16m {
-> +		compatible = "fixed-clock";
-> +		#clock-cells = <0>;
-> +		clock-frequency = <16000000>;
-> +	};
-> +
->  	regulators {
->  		compatible = "simple-bus";
->  		#address-cells = <1>;
-> @@ -47,6 +53,21 @@
->  	status  = "okay";
->  };
->  
-> +&dspi1 {
-> +	status = "okay";
-> +
-> +	can2: mcp2515@0 {
+The carry from the 64->32bits folding was dropped, e.g with:
+saddr=0xFFFFFFFF daddr=0xFF0000FF len=0xFFFF proto=0 sum=1,
+csum_tcpudp_nofold returned 0 instead of 1.
 
+Signed-off-by: Karl Beldan <karl.beldan@rivierawaves.com>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: Mike Frysinger <vapier@gentoo.org>
+Cc: netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Cc: stable@vger.kernel.org
+---
+ lib/checksum.c | 12 ++++++++++--
+ 1 file changed, 10 insertions(+), 2 deletions(-)
 
-The device tree usage website states (devicetree.org): "nodes are named
-according to what kind of device it represents"...
+diff --git a/lib/checksum.c b/lib/checksum.c
+index 129775e..fcf3894 100644
+--- a/lib/checksum.c
++++ b/lib/checksum.c
+@@ -47,6 +47,15 @@ static inline unsigned short from32to16(unsigned int x)
+ 	return x;
+ }
+ 
++static inline u32 from64to32(u64 x)
++{
++	/* add up 32-bit and 32-bit for 32+c bit */
++	x = (x & 0xffffffff) + (x >> 32);
++	/* add up carry.. */
++	x = (x & 0xffffffff) + (x >> 32);
++	return (u32)x;
++}
++
+ static unsigned int do_csum(const unsigned char *buff, int len)
+ {
+ 	int odd;
+@@ -195,8 +204,7 @@ __wsum csum_tcpudp_nofold(__be32 saddr, __be32 daddr,
+ #else
+ 	s += (proto + len) << 8;
+ #endif
+-	s += (s >> 32);
+-	return (__force __wsum)s;
++	return (__force __wsum)from64to32(s);
+ }
+ EXPORT_SYMBOL(csum_tcpudp_nofold);
+ #endif
+-- 
+2.0.1
 
-You can use the label to specify the type, e.g. I would suggest to use
-something like:
-
-
-	mcp2515can: can@0 {
-...
-
-
-
-
-> +		compatible = "microchip,mcp2515";
-> +		pinctrl-names = "default";
-> +		pinctrl-0 = <&pinctrl_can_int>;
-> +		reg = <0>;
-> +		clocks = <&clk16m>;
-> +		spi-max-frequency = <10000000>;
-> +		interrupt-parent = <&gpio2>;
-
-The interrupt line of the MCP2515 is connected to SODIMM 73, which is
-PORT1[11] on Vybrid. My recent renaming of the GPIO's has been merged
-already:
-https://lkml.org/lkml/2015/1/16/419
-
-Hence, this should be updated to gpio1.
-
-
-> +		interrupts = <11 GPIO_ACTIVE_LOW>;
-> +	};
-> +};
-> +
->  &esdhc1 {
->  	pinctrl-names = "default";
->  	pinctrl-0 = <&pinctrl_esdhc1>;
-> @@ -94,3 +115,13 @@
->  &usbh1 {
->  	vbus-supply = <&usbh_vbus_reg>;
->  };
-> +
-> +&iomuxc {
-> +	vf610-colibri {
-> +		pinctrl_can_int: can_int {
-> +			fsl,pins = <
-> +				VF610_PAD_PTB21__GPIO_43	0x22ed
-> +			>;
-> +		};
-> +	};
-> +};
-> diff --git a/arch/arm/boot/dts/vf-colibri.dtsi
-> b/arch/arm/boot/dts/vf-colibri.dtsi
-> index 5c2b732..fbef082 100644
-> --- a/arch/arm/boot/dts/vf-colibri.dtsi
-> +++ b/arch/arm/boot/dts/vf-colibri.dtsi
-> @@ -23,6 +23,12 @@
->  	status = "okay";
->  };
->  
-> +&dspi1 {
-> +	bus-num = <1>;
-> +	pinctrl-names = "default";
-> +	pinctrl-0 = <&pinctrl_dspi1>;
-> +};
-> +
->  &edma0 {
->  	status = "okay";
->  };
-> @@ -107,6 +113,15 @@
->  			>;
->  		};
->  
-> +		pinctrl_dspi1: dspi1grp {
-> +			fsl,pins = <
-> +				VF610_PAD_PTD5__DSPI1_CS0		0x33e2
-> +				VF610_PAD_PTD6__DSPI1_SIN		0x33e1
-> +				VF610_PAD_PTD7__DSPI1_SOUT		0x33e2
-> +				VF610_PAD_PTD8__DSPI1_SCK		0x33e2
-> +			>;
-> +		};
-> +
->  		pinctrl_esdhc1: esdhc1grp {
->  			fsl,pins = <
->  				VF610_PAD_PTA24__ESDHC1_CLK	0x31ef
-
-
-The rest looks good, thx.
-
---
-Stefan
