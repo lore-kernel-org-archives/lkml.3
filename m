@@ -1,125 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757165AbbA1UYZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 15:24:25 -0500
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:49257 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757117AbbA1UYR (ORCPT
+	id S1751439AbbA2BGc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 20:06:32 -0500
+Received: from mail-ie0-f173.google.com ([209.85.223.173]:63628 "EHLO
+	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751265AbbA2BGa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 15:24:17 -0500
+	Wed, 28 Jan 2015 20:06:30 -0500
 MIME-Version: 1.0
-In-Reply-To: <54C8C017.4050202@linaro.org>
-References: <1422441574-24005-1-git-send-email-kiran.kumar@linaro.org>
-	<54C8C017.4050202@linaro.org>
-Date: Wed, 28 Jan 2015 16:45:04 +0530
-Message-ID: <CA+RfmHbsqgX4iUH=P6xy9=z7FJBkEt2dZjAUXnCvHHDCixAYeQ@mail.gmail.com>
-Subject: Re: [Kgdb-bugreport] [RFC v5 - RESEND] debug: prevent entering debug
- mode on panic/exception.
-From: Kiran Raparthy <kiran.kumar@linaro.org>
-To: Daniel Thompson <daniel.thompson@linaro.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, kgdb-bugreport@lists.sourceforge.net,
-        Colin Cross <ccross@android.com>, John Stultz <john.stultz@linaro.org>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Android Kernel Team <kernel-team@android.com>,
-        Sumit Semwal <sumit.semwal@linaro.org>
+In-Reply-To: <1422422306-27473-1-git-send-email-behanw@converseincode.com>
+References: <1422422306-27473-1-git-send-email-behanw@converseincode.com>
+Date: Wed, 28 Jan 2015 11:15:53 +0000
+Message-ID: <CAKv+Gu_NCgMmX_LQqi7vtjtP4ofrW+kx8FPgRd4-LWwK=73-xg@mail.gmail.com>
+Subject: Re: [PATCH] bcm: address clang inline asm incompatibility
+From: Ard Biesheuvel <ard.biesheuvel@linaro.org>
+To: Behan Webster <behanw@converseincode.com>
+Cc: bcm@fixthebug.org, f.fainelli@gmail.com,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>, mporter@linaro.org,
+        bcm-kernel-feedback-list@broadcom.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Alex Elder <elder@linaro.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 28 January 2015 at 16:25, Daniel Thompson <daniel.thompson@linaro.org> wrote:
-> On 28/01/15 10:39, Kiran Raparthy wrote:
->> From: Colin Cross <ccross@android.com>
->>
->> debug: prevent entering debug mode on panic/exception.
->>
->> On non-developer devices, kgdb prevents the device from rebooting
->> after a panic.
->>
->> Incase of panics and exceptions, to allow the device to reboot, prevent entering
->> debug mode to avoid getting stuck waiting for the user to interact with debugger.
->>
->> To avoid entering the debugger on panic/exception without any extra configuration,
->> panic_timeout is being used which can be set via /proc/sys/kernel/panic at run time
->> and CONFIG_PANIC_TIMEOUT sets the default value.
->>
->> Setting panic_timeout indicates that the user requested machine to perform
->> unattended reboot after panic. We dont want to get stuck waiting for the user
->> input incase of panic.
+On 28 January 2015 at 05:18, Behan Webster <behanw@converseincode.com> wrote:
+> From: Alex Elder <elder@linaro.org>
 >
-> Some kind of changelog between the versions would have been nice. I
-> *think* the difference between v4 and v5 was just the addition paragraph
-> above but I had to put in extra work to check that and I'm still not
-> 100% sure that's the only change.
-Since the change was related to only commit message on all the earlier
-patches,i didn't update the history.
-Anyways i'll ensure to include the history going forward.
+> My GCC-based build environment likes to call register r12 by the
+> name "ip" in inline asm.  Behan Webster informed me that his Clang-
+> based build environment likes "r12" instead.
 >
-> Also you could start billing this as a PATCH rather than an RFC.
-Since i didn't get any acknowledgement,i didn't upgrade it to PATCH.
-Anyways,i'll update and resend the patch,Thanks for the inputs.
+> Try to make them both happy.
+>
+> Signed-off-by: Alex Elder <elder@linaro.org>
+> Signed-off-by: Behan Webster <behanw@converseincode.com>
+> ---
+>  arch/arm/mach-bcm/bcm_kona_smc.c | 9 +++++++--
+>  1 file changed, 7 insertions(+), 2 deletions(-)
+>
+> diff --git a/arch/arm/mach-bcm/bcm_kona_smc.c b/arch/arm/mach-bcm/bcm_kona_smc.c
+> index a55a7ec..3937bd5 100644
+> --- a/arch/arm/mach-bcm/bcm_kona_smc.c
+> +++ b/arch/arm/mach-bcm/bcm_kona_smc.c
+> @@ -106,9 +106,14 @@ int __init bcm_kona_smc_init(void)
+>   * request result appropriately.  This result value is found in r0
+>   * when the "smc" request completes.
+>   */
+> +#ifdef __clang__
+> +#define R12    "r12"
+> +#else  /* !__clang__ */
+> +#define R12    "ip"    /* gcc calls r12 "ip" */
+> +#endif /* !__clang__ */
 
->
->
-> Daniel.
->
->
->> Cc: Jason Wessel <jason.wessel@windriver.com>
->> Cc: Andrew Morton <akpm@linux-foundation.org>
->> Cc: kgdb-bugreport@lists.sourceforge.net
->> Cc: linux-kernel@vger.kernel.org
->> Cc: Android Kernel Team <kernel-team@android.com>
->> Cc: John Stultz <john.stultz@linaro.org>
->> Cc: Sumit Semwal <sumit.semwal@linaro.org>
->> Signed-off-by: Colin Cross <ccross@android.com>
->> [Kiran: Added context to commit message.
->> panic_timeout is used instead of break_on_panic and
->> break_on_exception to honor CONFIG_PANIC_TIMEOUT
->> Modified the commit as per community feedback]
->> Signed-off-by: Kiran Raparthy <kiran.kumar@linaro.org>
->> Reviewed-by: Daniel Thompson <daniel.thompson@linaro.org>
->> ---
->>  kernel/debug/debug_core.c | 17 +++++++++++++++++
->>  1 file changed, 17 insertions(+)
->>
->> diff --git a/kernel/debug/debug_core.c b/kernel/debug/debug_core.c
->> index 1adf62b..0012a1f 100644
->> --- a/kernel/debug/debug_core.c
->> +++ b/kernel/debug/debug_core.c
->> @@ -689,6 +689,14 @@ kgdb_handle_exception(int evector, int signo, int ecode, struct pt_regs *regs)
->>
->>       if (arch_kgdb_ops.enable_nmi)
->>               arch_kgdb_ops.enable_nmi(0);
->> +     /*
->> +      * Avoid entering the debugger if we were triggered due to an oops
->> +      * but panic_timeout indicates the system should automatically
->> +      * reboot on panic. We don't want to get stuck waiting for input
->> +      * on such systems, especially if its "just" an oops.
->> +      */
->> +     if (signo != SIGTRAP && panic_timeout)
->> +             return 1;
->>
->>       memset(ks, 0, sizeof(struct kgdb_state));
->>       ks->cpu                 = raw_smp_processor_id();
->> @@ -821,6 +829,15 @@ static int kgdb_panic_event(struct notifier_block *self,
->>                           unsigned long val,
->>                           void *data)
->>  {
->> +     /*
->> +      * Avoid entering the debugger if we were triggered due to a panic
->> +      * We don't want to get stuck waiting for input from user in such case.
->> +      * panic_timeout indicates the system should automatically
->> +      * reboot on panic.
->> +      */
->> +     if (panic_timeout)
->> +             return NOTIFY_DONE;
->> +
->>       if (dbg_kdb_mode)
->>               kdb_printf("PANIC: %s\n", (char *)data);
->>       kgdb_breakpoint();
->>
->
+Why not just use r12 for both?
 
-Regards,
-Kiran
+>  static int bcm_kona_do_smc(u32 service_id, u32 buffer_phys)
+>  {
+> -       register u32 ip asm("ip");      /* Also called r12 */
+> +       register u32 ip asm(R12);       /* Also called r12 */
+>         register u32 r0 asm("r0");
+>         register u32 r4 asm("r4");
+>         register u32 r5 asm("r5");
+> @@ -120,7 +125,7 @@ static int bcm_kona_do_smc(u32 service_id, u32 buffer_phys)
+>
+>         asm volatile (
+>                 /* Make sure we got the registers we want */
+> -               __asmeq("%0", "ip")
+> +               __asmeq("%0", R12)
+>                 __asmeq("%1", "r0")
+>                 __asmeq("%2", "r4")
+>                 __asmeq("%3", "r5")
+> --
+> 1.9.1
+>
+>
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
