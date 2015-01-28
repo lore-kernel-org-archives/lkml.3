@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761455AbbA1ESs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 23:18:48 -0500
-Received: from mail.kernel.org ([198.145.29.136]:38599 "EHLO mail.kernel.org"
+	id S1762045AbbA1FIL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 00:08:11 -0500
+Received: from mail.kernel.org ([198.145.29.136]:38614 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761436AbbA1ESo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 23:18:44 -0500
+	id S1761441AbbA1ESr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 23:18:47 -0500
 From: lizf@kernel.org
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, "Michael S. Tsirkin" <mst@redhat.com>,
-        Amit Shah <amit.shah@redhat.com>,
-        Rusty Russell <rusty@rustcorp.com.au>, Zefan Li <lizefan@huawei.com>
-Subject: [PATCH 3.4 055/177] virtio_pci: fix virtio spec compliance on restore
-Date: Wed, 28 Jan 2015 12:07:57 +0800
-Message-Id: <1422418236-12852-110-git-send-email-lizf@kernel.org>
+Cc: linux-kernel@vger.kernel.org, David Jander <david@protonic.nl>,
+        Marc Kleine-Budde <mkl@pengutronix.de>, Zefan Li <lizefan@huawei.com>
+Subject: [PATCH 3.4 56/91] can: flexcan: implement workaround for errata ERR005829
+Date: Wed, 28 Jan 2015 12:07:58 +0800
+Message-Id: <1422418236-12852-111-git-send-email-lizf@kernel.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422418050-12581-1-git-send-email-lizf@kernel.org>
 References: <1422418050-12581-1-git-send-email-lizf@kernel.org>
@@ -21,95 +20,78 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Michael S. Tsirkin" <mst@redhat.com>
+From: David Jander <david@protonic.nl>
 
-3.4.106-rc1 review patch.  If anyone has any objections, please let me know.
+3.4.105-rc1 review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
 
-commit 6fbc198cf623944ab60a1db6d306a4d55cdd820d upstream.
+commit 25e924450fcb23c11c07c95ea8964dd9f174652e upstream.
 
-On restore, virtio pci does the following:
-+ set features
-+ init vqs etc - device can be used at this point!
-+ set ACKNOWLEDGE,DRIVER and DRIVER_OK status bits
+This patch implements the workaround mentioned in ERR005829:
 
-This is in violation of the virtio spec, which
-requires the following order:
-- ACKNOWLEDGE
-- DRIVER
-- init vqs
-- DRIVER_OK
+    ERR005829: FlexCAN: FlexCAN does not transmit a message that is enabled to
+    be transmitted in a specific moment during the arbitration process.
 
-This behaviour will break with hypervisors that assume spec compliant
-behaviour.  It seems like a good idea to have this patch applied to
-stable branches to reduce the support butden for the hypervisors.
+Workaround: The workaround consists of two extra steps after setting up a
+message for transmission:
 
-Cc: Amit Shah <amit.shah@redhat.com>
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+Step 8: Reserve the first valid mailbox as an inactive mailbox (CODE=0b1000).
+If RX FIFO is disabled, this mailbox must be message buffer 0. Otherwise, the
+first valid mailbox can be found using the "RX FIFO filters" table in the
+FlexCAN chapter of the chip reference manual.
+
+Step 9: Write twice INACTIVE code (0b1000) into the first valid mailbox.
+
+Signed-off-by: David Jander <david@protonic.nl>
+Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
 Signed-off-by: Zefan Li <lizefan@huawei.com>
 ---
- drivers/virtio/virtio_pci.c | 33 ++++++++++++++++++++++++++++++---
- 1 file changed, 30 insertions(+), 3 deletions(-)
+ drivers/net/can/flexcan.c | 16 +++++++++++++++-
+ 1 file changed, 15 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/virtio/virtio_pci.c b/drivers/virtio/virtio_pci.c
-index 2e03d41..a41f264 100644
---- a/drivers/virtio/virtio_pci.c
-+++ b/drivers/virtio/virtio_pci.c
-@@ -745,6 +745,7 @@ static int virtio_pci_restore(struct device *dev)
- 	struct pci_dev *pci_dev = to_pci_dev(dev);
- 	struct virtio_pci_device *vp_dev = pci_get_drvdata(pci_dev);
- 	struct virtio_driver *drv;
-+	unsigned status = 0;
- 	int ret;
+diff --git a/drivers/net/can/flexcan.c b/drivers/net/can/flexcan.c
+index 1331558..681fb9c 100644
+--- a/drivers/net/can/flexcan.c
++++ b/drivers/net/can/flexcan.c
+@@ -123,7 +123,9 @@
+ 	 FLEXCAN_ESR_BOFF_INT | FLEXCAN_ESR_ERR_INT)
  
- 	drv = container_of(vp_dev->vdev.dev.driver,
-@@ -755,14 +756,40 @@ static int virtio_pci_restore(struct device *dev)
- 		return ret;
+ /* FLEXCAN interrupt flag register (IFLAG) bits */
+-#define FLEXCAN_TX_BUF_ID		8
++/* Errata ERR005829 step7: Reserve first valid MB */
++#define FLEXCAN_TX_BUF_RESERVED		8
++#define FLEXCAN_TX_BUF_ID		9
+ #define FLEXCAN_IFLAG_BUF(x)		BIT(x)
+ #define FLEXCAN_IFLAG_RX_FIFO_OVERFLOW	BIT(7)
+ #define FLEXCAN_IFLAG_RX_FIFO_WARN	BIT(6)
+@@ -317,6 +319,14 @@ static int flexcan_start_xmit(struct sk_buff *skb, struct net_device *dev)
+ 	flexcan_write(can_id, &regs->cantxfg[FLEXCAN_TX_BUF_ID].can_id);
+ 	flexcan_write(ctrl, &regs->cantxfg[FLEXCAN_TX_BUF_ID].can_ctrl);
  
- 	pci_set_master(pci_dev);
-+	/* We always start by resetting the device, in case a previous
-+	 * driver messed it up. */
-+	vp_reset(&vp_dev->vdev);
++	/* Errata ERR005829 step8:
++	 * Write twice INACTIVE(0x8) code to first MB.
++	 */
++	flexcan_write(FLEXCAN_MB_CODE_TX_INACTIVE,
++		      &regs->cantxfg[FLEXCAN_TX_BUF_RESERVED].can_ctrl);
++	flexcan_write(FLEXCAN_MB_CODE_TX_INACTIVE,
++		      &regs->cantxfg[FLEXCAN_TX_BUF_RESERVED].can_ctrl);
 +
-+	/* Acknowledge that we've seen the device. */
-+	status |= VIRTIO_CONFIG_S_ACKNOWLEDGE;
-+	vp_set_status(&vp_dev->vdev, status);
-+
-+	/* Maybe driver failed before freeze.
-+	 * Restore the failed status, for debugging. */
-+	status |= vp_dev->saved_status & VIRTIO_CONFIG_S_FAILED;
-+	vp_set_status(&vp_dev->vdev, status);
-+
-+	if (!drv)
-+		return 0;
-+
-+	/* We have a driver! */
-+	status |= VIRTIO_CONFIG_S_DRIVER;
-+	vp_set_status(&vp_dev->vdev, status);
-+
- 	vp_finalize_features(&vp_dev->vdev);
- 
--	if (drv && drv->restore)
-+	if (drv->restore) {
- 		ret = drv->restore(&vp_dev->vdev);
-+		if (ret) {
-+			status |= VIRTIO_CONFIG_S_FAILED;
-+			vp_set_status(&vp_dev->vdev, status);
-+			return ret;
-+		}
-+	}
- 
- 	/* Finally, tell the device we're all set */
--	if (!ret)
--		vp_set_status(&vp_dev->vdev, vp_dev->saved_status);
-+	status |= VIRTIO_CONFIG_S_DRIVER_OK;
-+	vp_set_status(&vp_dev->vdev, status);
- 
- 	return ret;
+ 	return NETDEV_TX_OK;
  }
+ 
+@@ -752,6 +762,10 @@ static int flexcan_chip_start(struct net_device *dev)
+ 			      &regs->cantxfg[i].can_ctrl);
+ 	}
+ 
++	/* Errata ERR005829: mark first TX mailbox as INACTIVE */
++	flexcan_write(FLEXCAN_MB_CODE_TX_INACTIVE,
++		      &regs->cantxfg[FLEXCAN_TX_BUF_RESERVED].can_ctrl);
++
+ 	/* mark TX mailbox as INACTIVE */
+ 	flexcan_write(FLEXCAN_MB_CODE_TX_INACTIVE,
+ 		      &regs->cantxfg[FLEXCAN_TX_BUF_ID].can_ctrl);
 -- 
 1.9.1
 
