@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762721AbbA2KhY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 05:37:24 -0500
+	id S1755493AbbA2JAQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 04:00:16 -0500
 Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:44737 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755584AbbA2JAU (ORCPT
+	by vger.kernel.org with ESMTP id S1754970AbbA2JAG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 04:00:20 -0500
+	Thu, 29 Jan 2015 04:00:06 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Sasha Levin <sasha.levin@oracle.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        John Stultz <john.stultz@linaro.org>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 151/176] time: adjtimex: Validate the ADJ_FREQUENCY values
-Date: Wed, 28 Jan 2015 15:29:41 +0100
-Message-Id: <64678c15381f8efa6beeb565ada1021e45f50c7a.1422455352.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Fabio Estevam <fabio.estevam@freescale.com>,
+        Shawn Guo <shawn.guo@linaro.org>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 152/176] ARM: dts: imx25: Fix PWM "per" clocks
+Date: Wed, 28 Jan 2015 15:29:42 +0100
+Message-Id: <b9b27df6e95bfe205a5fca8956d18e590686c424.1422455352.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <ce4a451f616a1e7ab58cfeceea5e49c8b1c68c81.1422455352.git.jslaby@suse.cz>
 References: <ce4a451f616a1e7ab58cfeceea5e49c8b1c68c81.1422455352.git.jslaby@suse.cz>
@@ -24,46 +23,72 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sasha Levin <sasha.levin@oracle.com>
+From: Fabio Estevam <fabio.estevam@freescale.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 5e5aeb4367b450a28f447f6d5ab57d8f2ab16a5f upstream.
+commit 7ecd0bde5bfea524a843ad8fa8cb66ccbce68779 upstream.
 
-Verify that the frequency value from userspace is valid and makes sense.
+Currently PWM functionality is broken on mx25 due to the wrong assignment of the
+PWM "per" clock.
 
-Unverified values can cause overflows later on.
+According to Documentation/devicetree/bindings/clock/imx25-clock.txt:
+	pwm_ipg_per		52
 
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@kernel.org>
-Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
-[jstultz: Fix up bug for negative values and drop redunent cap check]
-Signed-off-by: John Stultz <john.stultz@linaro.org>
+,so update the pwm "per" to use 'pwm_ipg_per' instead of 'per10' clock.
+
+With this change PWM can work fine on mx25.
+
+Reported-by: Carlos Soto <csotoalonso@gmail.com>
+Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
+Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- kernel/time/ntp.c | 7 +++++++
- 1 file changed, 7 insertions(+)
+ arch/arm/boot/dts/imx25.dtsi | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/kernel/time/ntp.c b/kernel/time/ntp.c
-index af8d1d4f3d55..28db9bedc857 100644
---- a/kernel/time/ntp.c
-+++ b/kernel/time/ntp.c
-@@ -631,6 +631,13 @@ int ntp_validate_timex(struct timex *txc)
- 	if ((txc->modes & ADJ_SETOFFSET) && (!capable(CAP_SYS_TIME)))
- 		return -EPERM;
- 
-+	if (txc->modes & ADJ_FREQUENCY) {
-+		if (LONG_MIN / PPM_SCALE > txc->freq)
-+			return -EINVAL;
-+		if (LONG_MAX / PPM_SCALE < txc->freq)
-+			return -EINVAL;
-+	}
-+
- 	return 0;
- }
- 
+diff --git a/arch/arm/boot/dts/imx25.dtsi b/arch/arm/boot/dts/imx25.dtsi
+index 6a26e79f0ef4..cf3300a3071d 100644
+--- a/arch/arm/boot/dts/imx25.dtsi
++++ b/arch/arm/boot/dts/imx25.dtsi
+@@ -352,7 +352,7 @@
+ 				compatible = "fsl,imx25-pwm", "fsl,imx27-pwm";
+ 				#pwm-cells = <2>;
+ 				reg = <0x53fa0000 0x4000>;
+-				clocks = <&clks 106>, <&clks 36>;
++				clocks = <&clks 106>, <&clks 52>;
+ 				clock-names = "ipg", "per";
+ 				interrupts = <36>;
+ 			};
+@@ -371,7 +371,7 @@
+ 				compatible = "fsl,imx25-pwm", "fsl,imx27-pwm";
+ 				#pwm-cells = <2>;
+ 				reg = <0x53fa8000 0x4000>;
+-				clocks = <&clks 107>, <&clks 36>;
++				clocks = <&clks 107>, <&clks 52>;
+ 				clock-names = "ipg", "per";
+ 				interrupts = <41>;
+ 			};
+@@ -412,7 +412,7 @@
+ 			pwm4: pwm@53fc8000 {
+ 				compatible = "fsl,imx25-pwm", "fsl,imx27-pwm";
+ 				reg = <0x53fc8000 0x4000>;
+-				clocks = <&clks 108>, <&clks 36>;
++				clocks = <&clks 108>, <&clks 52>;
+ 				clock-names = "ipg", "per";
+ 				interrupts = <42>;
+ 			};
+@@ -458,7 +458,7 @@
+ 				compatible = "fsl,imx25-pwm", "fsl,imx27-pwm";
+ 				#pwm-cells = <2>;
+ 				reg = <0x53fe0000 0x4000>;
+-				clocks = <&clks 105>, <&clks 36>;
++				clocks = <&clks 105>, <&clks 52>;
+ 				clock-names = "ipg", "per";
+ 				interrupts = <26>;
+ 			};
 -- 
 2.2.2
 
