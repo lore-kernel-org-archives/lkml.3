@@ -1,286 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755271AbbA1UQF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 15:16:05 -0500
-Received: from blu004-omc2s5.hotmail.com ([65.55.111.80]:59067 "EHLO
-	BLU004-OMC2S5.hotmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755155AbbA1UQB convert rfc822-to-8bit (ORCPT
+	id S1755207AbbA1U5W (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 15:57:22 -0500
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:57654 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755167AbbA1U5S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 15:16:01 -0500
-X-Greylist: delayed 300 seconds by postgrey-1.27 at vger.kernel.org; Wed, 28 Jan 2015 15:16:00 EST
-X-TMN: [TMc8uw1ERhNFrr7XwOD2zalNfyqDnh9n]
-X-Originating-Email: [zhangyanfei.ok@hotmail.com]
-Message-ID: <BLU436-SMTP153779ECFE274421F0F82DF83330@phx.gbl>
-Date: Wed, 28 Jan 2015 21:57:40 +0800
-From: Zhang Yanfei <zhangyanfei.ok@hotmail.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.3; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
+	Wed, 28 Jan 2015 15:57:18 -0500
+From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
+To: Tony Lindgren <tony@atomide.com>
+Subject: Re: [PATCH] ARM: /proc/atags: Export also for DT
+Date: Wed, 28 Jan 2015 14:58:22 +0100
+User-Agent: KMail/1.13.7 (Linux/3.13.0-44-generic; KDE/4.14.2; x86_64; ; )
+Cc: "Russell King - ARM Linux" <linux@arm.linux.org.uk>,
+        Rob Herring <robherring2@gmail.com>, Pavel Machek <pavel@ucw.cz>,
+        Will Deacon <will.deacon@arm.com>,
+        Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>,
+        Sebastian Reichel <sre@debian.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+References: <1403110464-29646-1-git-send-email-pali.rohar@gmail.com> <20150127174818.GM26493@n2100.arm.linux.org.uk> <20150128005032.GK28663@atomide.com>
+In-Reply-To: <20150128005032.GK28663@atomide.com>
 MIME-Version: 1.0
-To: Ebru Akagunduz <ebru.akagunduz@gmail.com>, linux-mm@kvack.org
-CC: akpm@linux-foundation.org, kirill@shutemov.name, mhocko@suse.cz,
-        mgorman@suse.de, rientjes@google.com, sasha.levin@oracle.com,
-        hughd@google.com, hannes@cmpxchg.org, vbabka@suse.cz,
-        linux-kernel@vger.kernel.org, riel@redhat.com, aarcange@redhat.com,
-        zhangyanfei.linux@aliyun.com
-Subject: Re: [PATCH v3] mm: incorporate read-only pages into transparent huge
- pages
-References: <1422380353-4407-1-git-send-email-ebru.akagunduz@gmail.com>
-In-Reply-To: <1422380353-4407-1-git-send-email-ebru.akagunduz@gmail.com>
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-X-OriginalArrivalTime: 28 Jan 2015 13:57:54.0543 (UTC) FILETIME=[69D737F0:01D03B02]
+Content-Type: multipart/signed;
+  boundary="nextPart1645923.dkCdYib5XP";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201501281458.22088@pali>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello
+--nextPart1645923.dkCdYib5XP
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
 
-在 2015/1/28 1:39, Ebru Akagunduz 写道:
-> This patch aims to improve THP collapse rates, by allowing
-> THP collapse in the presence of read-only ptes, like those
-> left in place by do_swap_page after a read fault.
->
-> Currently THP can collapse 4kB pages into a THP when
-> there are up to khugepaged_max_ptes_none pte_none ptes
-> in a 2MB range. This patch applies the same limit for
-> read-only ptes.
->
-> The patch was tested with a test program that allocates
-> 800MB of memory, writes to it, and then sleeps. I force
-> the system to swap out all but 190MB of the program by
-> touching other memory. Afterwards, the test program does
-> a mix of reads and writes to its memory, and the memory
-> gets swapped back in.
->
-> Without the patch, only the memory that did not get
-> swapped out remained in THPs, which corresponds to 24% of
-> the memory of the program. The percentage did not increase
-> over time.
->
-> With this patch, after 5 minutes of waiting khugepaged had
-> collapsed 50% of the program's memory back into THPs.
->
-> Signed-off-by: Ebru Akagunduz <ebru.akagunduz@gmail.com>
-> Reviewed-by: Rik van Riel <riel@redhat.com>
-> Acked-by: Vlastimil Babka <vbabka@suse.cz>
+On Wednesday 28 January 2015 01:50:33 Tony Lindgren wrote:
+> * Russell King - ARM Linux <linux@arm.linux.org.uk> [150127=20
+09:51]:
+> > We _could_ (and have in the past) turned round and refused
+> > to support these kinds of hacks - which IMHO is quite a
+> > reasonable stance to take: the message we should be sending
+> > is "if you wish to design new methods without discussing it
+> > with us, we reserve the right not to support them in
+> > mainline kernels; please discuss with us your
+> > requirements."
+> >=20
+> > Each time that we accept one of these hacks, we're sending a
+> > message that says "it's okay to work in this crappy way".
+> >=20
+> > Yes, I realise that the N900 has little in the way of
+> > support, and we can't exert that kind of back pressure
+> > (since there's no one to direct that onto to effect any
+> > change) so I guess we just have to live with it.
+>=20
+> I believe after N900 Nokia dropped the custom ATAGs and used
+> the kernel cmdline instead. And most of the n900 custom ATAGs
+> are not even needed any longer.
+>=20
 
-Please feel free to add:
+Yes, almost all N900 ATAGs are static and are already hardcoded=20
+into kernel or DT file.
 
-Acked-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+Basically there are 4 non static values which are used:
 
-> ---
-> Changes in v2:
->  - Remove extra code indent (Vlastimil Babka)
->  - Add comment line for check condition of page_count() (Vlastimil Babka)
->  - Add fast path optimistic check to
->    __collapse_huge_page_isolate() (Andrea Arcangeli)
->  - Move check condition of page_count() below to trylock_page() (Andrea Arcangeli)
->
-> Changes in v3:
->  - Add a at-least-one-writable-pte check (Zhang Yanfei)
->  - Debug page count (Vlastimil Babka, Andrea Arcangeli)
->  - Increase read-only pte counter if pte is none (Andrea Arcangeli)
->
-> I've written down test results:
-> With the patch:
-> After swapped out:
-> cat /proc/pid/smaps:
-> Anonymous:      100464 kB
-> AnonHugePages:  100352 kB
-> Swap:           699540 kB
-> Fraction:       99,88
->
-> cat /proc/meminfo:
-> AnonPages:      1754448 kB
-> AnonHugePages:  1716224 kB
-> Fraction:       97,82
->
-> After swapped in:
-> In a few seconds:
-> cat /proc/pid/smaps:
-> Anonymous:      800004 kB
-> AnonHugePages:  145408 kB
-> Swap:           0 kB
-> Fraction:       18,17
->
-> cat /proc/meminfo:
-> AnonPages:      2455016 kB
-> AnonHugePages:  1761280 kB
-> Fraction:       71,74
->
-> In 5 minutes:
-> cat /proc/pid/smaps
-> Anonymous:      800004 kB
-> AnonHugePages:  407552 kB
-> Swap:           0 kB
-> Fraction:       50,94
->
-> cat /proc/meminfo:
-> AnonPages:      2456872 kB
-> AnonHugePages:  2023424 kB
-> Fraction:       82,35
->
-> Without the patch:
-> After swapped out:
-> cat /proc/pid/smaps:
-> Anonymous:      190660 kB
-> AnonHugePages:  190464 kB
-> Swap:           609344 kB
-> Fraction:       99,89
->
-> cat /proc/meminfo:
-> AnonPages:      1740456 kB
-> AnonHugePages:  1667072 kB
-> Fraction:       95,78
->
-> After swapped in:
-> cat /proc/pid/smaps:
-> Anonymous:      800004 kB
-> AnonHugePages:  190464 kB
-> Swap:           0 kB
-> Fraction:       23,80
->
-> cat /proc/meminfo:
-> AnonPages:      2350032 kB
-> AnonHugePages:  1667072 kB
-> Fraction:       70,93
->
-> I waited 10 minutes the fractions
-> did not change without the patch.
->
->  mm/huge_memory.c | 60 +++++++++++++++++++++++++++++++++++++++++++++-----------
->  1 file changed, 49 insertions(+), 11 deletions(-)
->
-> diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-> index 817a875..17d6e59 100644
-> --- a/mm/huge_memory.c
-> +++ b/mm/huge_memory.c
-> @@ -2148,17 +2148,18 @@ static int __collapse_huge_page_isolate(struct vm_area_struct *vma,
->  {
->  	struct page *page;
->  	pte_t *_pte;
-> -	int referenced = 0, none = 0;
-> +	int referenced = 0, none = 0, ro = 0, writable = 0;
->  	for (_pte = pte; _pte < pte+HPAGE_PMD_NR;
->  	     _pte++, address += PAGE_SIZE) {
->  		pte_t pteval = *_pte;
->  		if (pte_none(pteval)) {
-> +			ro++;
->  			if (++none <= khugepaged_max_ptes_none)
->  				continue;
->  			else
->  				goto out;
->  		}
-> -		if (!pte_present(pteval) || !pte_write(pteval))
-> +		if (!pte_present(pteval))
->  			goto out;
->  		page = vm_normal_page(vma, address, pteval);
->  		if (unlikely(!page))
-> @@ -2168,9 +2169,6 @@ static int __collapse_huge_page_isolate(struct vm_area_struct *vma,
->  		VM_BUG_ON_PAGE(!PageAnon(page), page);
->  		VM_BUG_ON_PAGE(!PageSwapBacked(page), page);
->  
-> -		/* cannot use mapcount: can't collapse if there's a gup pin */
-> -		if (page_count(page) != 1)
-> -			goto out;
->  		/*
->  		 * We can do it before isolate_lru_page because the
->  		 * page can't be freed from under us. NOTE: PG_lock
-> @@ -2179,6 +2177,34 @@ static int __collapse_huge_page_isolate(struct vm_area_struct *vma,
->  		 */
->  		if (!trylock_page(page))
->  			goto out;
-> +
-> +		/*
-> +		 * cannot use mapcount: can't collapse if there's a gup pin.
-> +		 * The page must only be referenced by the scanned process
-> +		 * and page swap cache.
-> +		 */
-> +		if (page_count(page) != 1 + !!PageSwapCache(page)) {
-> +			unlock_page(page);
-> +			goto out;
-> +		}
-> +		if (!pte_write(pteval)) {
-> +			if (++ro > khugepaged_max_ptes_none) {
-> +				unlock_page(page);
-> +				goto out;
-> +			}
-> +			if (PageSwapCache(page) && !reuse_swap_page(page)) {
-> +				unlock_page(page);
-> +				goto out;
-> +			}
-> +			/*
-> +			 * Page is not in the swap cache, and page count is
-> +			 * one (see above). It can be collapsed into a THP.
-> +			 */
-> +			VM_BUG_ON(page_count(page) != 1);
-> +		} else {
-> +			writable = 1;
-> +		}
-> +
->  		/*
->  		 * Isolate the page to avoid collapsing an hugepage
->  		 * currently in use by the VM.
-> @@ -2197,7 +2223,7 @@ static int __collapse_huge_page_isolate(struct vm_area_struct *vma,
->  		    mmu_notifier_test_young(vma->vm_mm, address))
->  			referenced = 1;
->  	}
-> -	if (likely(referenced))
-> +	if (likely(referenced && writable))
->  		return 1;
->  out:
->  	release_pte_pages(pte, _pte);
-> @@ -2550,7 +2576,7 @@ static int khugepaged_scan_pmd(struct mm_struct *mm,
->  {
->  	pmd_t *pmd;
->  	pte_t *pte, *_pte;
-> -	int ret = 0, referenced = 0, none = 0;
-> +	int ret = 0, referenced = 0, none = 0, ro = 0, writable = 0;
->  	struct page *page;
->  	unsigned long _address;
->  	spinlock_t *ptl;
-> @@ -2568,13 +2594,21 @@ static int khugepaged_scan_pmd(struct mm_struct *mm,
->  	     _pte++, _address += PAGE_SIZE) {
->  		pte_t pteval = *_pte;
->  		if (pte_none(pteval)) {
-> +			ro++;
->  			if (++none <= khugepaged_max_ptes_none)
->  				continue;
->  			else
->  				goto out_unmap;
->  		}
-> -		if (!pte_present(pteval) || !pte_write(pteval))
-> +		if (!pte_present(pteval))
->  			goto out_unmap;
-> +		if (!pte_write(pteval)) {
-> +			if (++ro > khugepaged_max_ptes_none)
-> +				goto out_unmap;
-> +		} else {
-> +			writable = 1;
-> +		}
-> +
->  		page = vm_normal_page(vma, _address, pteval);
->  		if (unlikely(!page))
->  			goto out_unmap;
-> @@ -2591,14 +2625,18 @@ static int khugepaged_scan_pmd(struct mm_struct *mm,
->  		VM_BUG_ON_PAGE(PageCompound(page), page);
->  		if (!PageLRU(page) || PageLocked(page) || !PageAnon(page))
->  			goto out_unmap;
-> -		/* cannot use mapcount: can't collapse if there's a gup pin */
-> -		if (page_count(page) != 1)
-> +		/*
-> +		 * cannot use mapcount: can't collapse if there's a gup pin.
-> +		 * The page must only be referenced by the scanned process
-> +		 * and page swap cache.
-> +		 */
-> +		if (page_count(page) != 1 + !!PageSwapCache(page))
->  			goto out_unmap;
->  		if (pte_young(pteval) || PageReferenced(page) ||
->  		    mmu_notifier_test_young(vma->vm_mm, address))
->  			referenced = 1;
->  	}
-> -	if (referenced)
-> +	if (referenced && writable)
->  		ret = 1;
->  out_unmap:
->  	pte_unmap_unlock(pte, ptl);
+1. ATAG_REVISION
 
+2. ATAG_OMAP
+2.1 OMAP_TAG_BOOT_REASON --> boot reason
+2.2 OMAP_TAG_VERSION ("nolo") --> for bootloader version
+2.3 OMAP_TAG_VERSION ("boot-mode") --> "normal" or "update"
+
+ATAG_OMAP is non standard and contains sub-atags.
+
+bootloader version is static now (as Nokia does not develop it=20
+anymore), but boot reason and boot mode are set by bootloader and=20
+are needed for userspace. boot mode tells init system/userspace=20
+if to start normal OS or only small subset for flashing.
+
+> The ATAG_REVISION is a standard feature that we should support
+> naturally. I don't think we should add any custom ATAGs,
+> except maybe for the bootreason.
+>=20
+> > > I think this kind of information (how was board/computer
+> > > started) can be useful also for other architectures. E.g.
+> > > on laptop you would like to know if if was started by
+> > > RTC, power button, WakeOnLan, another ACPI event,
+> > > rebooted machine, watchdog, etc... And scripts can act
+> > > depending on this event (when by RTC, you need to run
+> > > some planned job, when by watchdog reset you should check
+> > > what caused that reason...).
+> >=20
+> > There is a standard way to get the boot information already:
+> > look at the watchdog API:
+> >=20
+> > #define WDIOC_GETBOOTSTATUS     _IOR(WATCHDOG_IOCTL_BASE, 2,
+> > int)
+> >=20
+> > which uses the WDIOF_* flags to indicate the last boot
+> > reason.  It probably isn't as flexible as some may desire,
+> > but it should provide at least the "watchdog rebooted us"
+> > vs "over temperature" vs some other boot reason.
+> >=20
+> > The other thing to consider is whether we have a way to know
+> > what the boot reason was, and what we should do if we do
+> > not have a way of supporting some of the boot reasons.  For
+> > example, if we have support for RTC alarm based booting,
+> > but no way to actually tell if the boot was caused by the
+> > RTC alarm triggering.
+>=20
+> On omaps, the bootrom passes the bootreason in r1 to the
+> bootloader that can do whatever it wants with it. We could
+> maybe pass it in the kernel cmdline to the watchdog driver
+> for user space?
+>=20
+
+Not truth for N900. Bootreason depends on PRM_RSTST omap=20
+register, state of vbat charger pins, time how long was power key=20
+pressed, R&D data stored in CAL partition and other undocumented=20
+registers for omap HS devices. I already tried to implement at=20
+least some subset of it in userspace (or kernel), but it is=20
+impossible because NOLO bootloader clear status of PRM_RSTST=20
+register.
+
+There is also copy of PRM_RSTST register stored at address=20
+0x4020FFB8 (tracing data) but that address is rewritten (probably=20
+by kernel), so we really cannot implement reading bootreason in=20
+kernel.
+
+But in early stage in uboot it is possible to read 0x4020FFB8=20
+address and get some part of bootreason. But still PRM_RSTST is=20
+not enough!
+
+I would be happy if DT kernel can export /proc/atags file with=20
+ATAGs passed by bootloader. It would be enough for me. In=20
+userspace I can parse content and do what is needed.
+
+In non DT kernel file /proc/atags is always exported.
+
+> Of course the problem is that the signed bootloader on n900
+> cannot be modified so the pass through u-boot would have to
+> translate the custom ATAG for bootreason into a kernel
+> cmdline..
+>=20
+> But it may actually make sense to add the bootreason ATAGs, it
+> seems quite generic to me.
+>=20
+
+Which bootreason atag? Invent new? Or use above big ATAG_OMAP=20
+structure? Inventing new does not solve anything because all=20
+developers does not boot kernel for debugging from uboot -- but=20
+directly.
+
+> AFAIK, the other n900 ATAGs can be just ignored.
+>=20
+> Regards,
+>=20
+> Tony
+
+=2D-=20
+Pali Roh=C3=A1r
+pali.rohar@gmail.com
+
+--nextPart1645923.dkCdYib5XP
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEABECAAYFAlTI6v4ACgkQi/DJPQPkQ1KbmwCcCJO+NR4xe7DnXNHxunIuWsfa
+e24AnA0IJHhPyl7F6hscPn5+Ew95q2zr
+=GY7m
+-----END PGP SIGNATURE-----
+
+--nextPart1645923.dkCdYib5XP--
