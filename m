@@ -1,59 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755674AbbA1UTK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 15:19:10 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:54755 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753453AbbA1UTH (ORCPT
+	id S1760305AbbA1V3r (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 16:29:47 -0500
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:62914 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934396AbbA1Urw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 15:19:07 -0500
-Date: Wed, 28 Jan 2015 08:19:51 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-Cc: Nicolas Pitre <nico@fluxnic.net>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>,
-        Tony Lindgren <tony@atomide.com>, Sebastian Reichel <sre@debian.org>,
-        Will Deacon <will.deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] ARM: /proc/atags: Export also for DT
-Message-ID: <20150128071950.GB29927@amd>
-References: <20150127132127.GA869@amd>
- <CAL_JsqKM+2PtX_EpWXyOQHVXwf=jqVj8SroUGPO1Y2=Zj8_kMg@mail.gmail.com>
- <201501271532.25540@pali>
- <20150127174818.GM26493@n2100.arm.linux.org.uk>
- <alpine.LFD.2.11.1501271446330.1322@knanqh.ubzr>
- <20150127210943.GN26493@n2100.arm.linux.org.uk>
- <alpine.LFD.2.11.1501271614280.1322@knanqh.ubzr>
- <20150127223331.GP26493@n2100.arm.linux.org.uk>
- <alpine.LFD.2.11.1501272027390.1322@knanqh.ubzr>
- <1FECE32B-0D63-4696-BED7-74FE5845C260@jcrosoft.com>
+	Wed, 28 Jan 2015 15:47:52 -0500
+Message-ID: <54C89044.2090104@redhat.com>
+Date: Wed, 28 Jan 2015 08:31:16 +0100
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
 MIME-Version: 1.0
+To: Wincy Van <fanwenyi0529@gmail.com>
+CC: "gleb@kernel.org" <gleb@kernel.org>,
+        "Zhang, Yang Z" <yang.z.zhang@intel.com>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Wanpeng Li <wanpeng.li@linux.intel.com>,
+        Jan Kiszka <jan.kiszka@web.de>
+Subject: Re: [PATCH v3 2/6] KVM: nVMX: Enable nested virtualize x2apic mode.
+References: <CACzj_yXLgAKaRzXx4Y=ZQN=QXK8EnX4fvcSTJmKSXSywN2Kb8Q@mail.gmail.com> <54C804FD.6060108@redhat.com> <CACzj_yUdLy5QjpNTqesWbvR6ytTixszJNNOZvH=bw-SOhrjapw@mail.gmail.com>
+In-Reply-To: <CACzj_yUdLy5QjpNTqesWbvR6ytTixszJNNOZvH=bw-SOhrjapw@mail.gmail.com>
 Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1FECE32B-0D63-4696-BED7-74FE5845C260@jcrosoft.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
 
-> > In other words, what prevents someone from creating, say, a custom 
-> > minimal Barebox version that sits on top of the existing N900 
-> > bootloader?  Wouldn't that provide a much better user experience?
-> 
-> I do agree with Nicolas
-> 
-> If I can get my hand on a phone I’ll put barebox on it
 
-Grab it in the nearest "second hand cellphones" shop, and have fun! It
-should be less than $70.
-									Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+On 28/01/2015 07:19, Wincy Van wrote:
+>> >
+>> > No need for this function and nested_cpu_has_virt_x2apic_mode.  Just
+>> > inline them in their caller(s).  Same for other cases throughout the series.
+>> >
+> Do you mean that we should also inline the same functions in the other
+> patches of this patch set?
+> I think these functions will keep the code tidy, just like the
+> functions as nested_cpu_has_preemption_timer, nested_cpu_has_ept, etc.
+
+Most of the functions are just used once.  If you want to keep them,
+please place them all close to the existing ones.
+
+Paolo
