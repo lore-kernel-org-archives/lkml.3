@@ -1,206 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753289AbbA2BNK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 20:13:10 -0500
-Received: from mail-ie0-f172.google.com ([209.85.223.172]:59633 "EHLO
-	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752222AbbA2BND (ORCPT
+	id S1754932AbbA1U4k (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 15:56:40 -0500
+Received: from service88.mimecast.com ([195.130.217.12]:34044 "EHLO
+	service88.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754761AbbA1U42 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 20:13:03 -0500
+	Wed, 28 Jan 2015 15:56:28 -0500
+Message-ID: <54C9068D.8050701@arm.com>
+Date: Wed, 28 Jan 2015 15:55:57 +0000
+From: Robin Murphy <robin.murphy@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
 MIME-Version: 1.0
-From: Wincy Van <fanwenyi0529@gmail.com>
-Date: Wed, 28 Jan 2015 23:54:05 +0800
-Message-ID: <CACzj_yXDJ_dY_xa2QDDPPk_d-qPmLJE5QkQVZ7YsaPPydR1stQ@mail.gmail.com>
-Subject: [PATCH v4 1/6] KVM: nVMX: Use hardware MSR bitmap
-To: Paolo Bonzini <pbonzini@redhat.com>, "gleb@kernel.org" <gleb@kernel.org>,
-        "Zhang, Yang Z" <yang.z.zhang@intel.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        Wanpeng Li <wanpeng.li@linux.intel.com>,
-        Jan Kiszka <jan.kiszka@web.de>,
-        =?UTF-8?B?6IyD5paH5LiA?= <fanwenyi0529@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+To: Catalin Marinas <catalin.marinas@arm.com>,
+        Murali Karicheri <m-karicheri2@ti.com>
+CC: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Joerg Roedel <joro@8bytes.org>, Will Deacon <Will.Deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        "suravee.suthikulpanit@amd.com" <suravee.suthikulpanit@amd.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v4 3/6] of: fix size when dma-range is not used
+References: <1422052359-12384-1-git-send-email-m-karicheri2@ti.com> <1422052359-12384-4-git-send-email-m-karicheri2@ti.com> <54C77616.80301@arm.com> <54C7DF13.20402@ti.com> <20150128110523.GC6646@e104818-lin.cambridge.arm.com>
+In-Reply-To: <20150128110523.GC6646@e104818-lin.cambridge.arm.com>
+X-OriginalArrivalTime: 28 Jan 2015 15:55:57.0868 (UTC) FILETIME=[E7D4D6C0:01D03B12]
+X-MC-Unique: 115012815560001101
+Content-Type: text/plain; charset=WINDOWS-1252; format=flowed
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, if L1 enables MSR_BITMAP, we will emulate this feature,
-all of L2's msr access is intercepted by L0. Since many features
-like virtualize x2apic mode has a complicated logic and it is
-difficult for us to emulate, we should use hardware and merge
-the bitmap.
+On 28/01/15 11:05, Catalin Marinas wrote:
+> On Tue, Jan 27, 2015 at 06:55:15PM +0000, Murali Karicheri wrote:
+>> On 01/27/2015 06:27 AM, Robin Murphy wrote:
+>>> On 23/01/15 22:32, Murali Karicheri wrote:
+>>>> Fix the dma-range size when the DT attribute is missing. i.e set size to
+>>>> dev->coherent_dma_mask + 1 instead of dev->coherent_dma_mask. To detect
+>>>> overflow when mask is set to max of u64, add a check, log error and
+>>>> return.
+>>>> Some platform use mask format for size in DTS. So add a work around to
+>>>> catch this and fix.
+>>>>
+>>>> Cc: Joerg Roedel <joro@8bytes.org>
+>>>> Cc: Grant Likely <grant.likely@linaro.org>
+>>>> Cc: Rob Herring <robh+dt@kernel.org>
+>>>> Cc: Bjorn Helgaas <bhelgaas@google.com>
+>>>> Cc: Will Deacon <will.deacon@arm.com>
+>>>> Cc: Russell King <linux@arm.linux.org.uk>
+>>>> Cc: Arnd Bergmann <arnd@arndb.de>
+>>>> Cc: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
+>>>>
+>>>> Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
+>>>> ---
+>>>> drivers/of/device.c | 14 +++++++++++++-
+>>>> 1 file changed, 13 insertions(+), 1 deletion(-)
+>>>>
+>>>> diff --git a/drivers/of/device.c b/drivers/of/device.c
+>>>> index 2de320d..0a5ff54 100644
+>>>> --- a/drivers/of/device.c
+>>>> +++ b/drivers/of/device.c
+>>>> @@ -105,12 +105,24 @@ void of_dma_configure(struct device *dev, struct
+>>>> device_node *np)
+>>>> ret = of_dma_get_range(np, &dma_addr, &paddr, &size);
+>>>> if (ret < 0) {
+>>>> dma_addr = offset = 0;
+>>>> - size = dev->coherent_dma_mask;
+>>>> + size = dev->coherent_dma_mask + 1;
+>>>> } else {
+>>>> offset = PFN_DOWN(paddr - dma_addr);
+>>>> + /*
+>>>> + * Add a work around to treat the size as mask + 1 in case
+>>>> + * it is defined in DT as a mask.
+>>>> + */
+>>>> + if (size & 1)
+>>>> + size = size + 1;
+>>>> dev_dbg(dev, "dma_pfn_offset(%#08lx)\n", offset);
+>>>> }
+>>>>
+>>>> + /* if size is 0, we have an overflow of u64 */
+>>>> + if (!size) {
+>>>> + dev_err(dev, "invalid size\n");
+>>>> + return;
+>>>> + }
+>>>> +
+>>>
+>>> This seems potentially fragile to dodgy DTs given that we might also be
+>>> using size to make a mask later. Would it make sense to double-up a
+>>> sanity check as mask-format detection? Something like:
+>>>
+>>> if is_power_of_2(size)
+>>> // use size
+>>> else if is_power_of_2(size + 1)
+>>> // use size + 1
+>>> else
+>>> // cry
+>>
+>> How about having the logic like this?
+>>
+>> 	ret = of_dma_get_range(np, &dma_addr, &paddr, &size);
+>> 	if (ret < 0) {
+>> 		dma_addr = offset = 0;
+>> 		size = dev->coherent_dma_mask + 1;
+>> 	} else {
+>> 		offset = PFN_DOWN(paddr - dma_addr);
+>> 		dev_dbg(dev, "dma_pfn_offset(%#08lx)\n", offset);
+>> 	}
+>>
+>> 	if (is_power_of_2(size + 1))
+>> 		size = size + 1;
+>> 	else if (!is_power_of_2(size))
+>> 	{
+>> 		dev_err(dev, "invalid size\n");
+>> 		return;
+>> 	}
+>
+> In of_dma_configure(), we currently assume that the default coherent
+> mask is 32-bit. In this thread:
+>
+> http://article.gmane.org/gmane.linux.kernel/1835096
+>
+> we talked about setting the coherent mask based on size automatically.
+> I'm not sure about the size but I think we can assume is 32-bit mask + 1
+> if it is not specified in the DT. Instead of just assuming a default
+> mask, let's assume a default size and create the mask based on this
+> (untested):
+>
+> diff --git a/drivers/of/platform.c b/drivers/of/platform.c
+> index 5b33c6a21807..9ff8d1286b44 100644
+> --- a/drivers/of/platform.c
+> +++ b/drivers/of/platform.c
+> @@ -170,10 +170,10 @@ static void of_dma_configure(struct device *dev)
+>   	struct iommu_ops *iommu;
+>
+>   	/*
+> -	 * Set default dma-mask to 32 bit. Drivers are expected to setup
+> -	 * the correct supported dma_mask.
+> +	 * Set default size to cover the 32-bit. Drivers are expected to setup
+> +	 * the correct size and dma_mask.
+>   	 */
+> -	dev->coherent_dma_mask = DMA_BIT_MASK(32);
+> +	size = 1ULL << 32;
+>
+>   	/*
+>   	 * Set it to coherent_dma_mask by default if the architecture
+> @@ -185,13 +185,24 @@ static void of_dma_configure(struct device *dev)
+>   	ret = of_dma_get_range(dev->of_node, &dma_addr, &paddr, &size);
+>   	if (ret < 0) {
+>   		dma_addr = offset = 0;
+> -		size = dev->coherent_dma_mask;
+>   	} else {
+>   		offset = PFN_DOWN(paddr - dma_addr);
+>   		dev_dbg(dev, "dma_pfn_offset(%#08lx)\n", dev->dma_pfn_offset);
+>   	}
+>   	dev->dma_pfn_offset = offset;
+>
+> +	/*
+> +	 * Workaround for DTs setting the size to a mask or 0.
+> +	 */
+> +	if (is_power_of_2(size + 1))
+> +		size += 1;
 
-This patch introduces nested_vmx_merge_msr_bitmap for future use.
+In fact, since the ilog2 below ends up effectively rounding down, we 
+might as well do away with this check as well and just add 1 
+unconditionally. The only time it makes any difference is when we want 
+it to anyway!
 
-Signed-off-by: Wincy Van <fanwenyi0529@gmail.com>
----
- arch/x86/kvm/vmx.c |   77 ++++++++++++++++++++++++++++++++++++++++++++-------
- 1 files changed, 66 insertions(+), 11 deletions(-)
+I like this approach, it ends up looking a lot neater.
 
-diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
-index c987374..787f886 100644
---- a/arch/x86/kvm/vmx.c
-+++ b/arch/x86/kvm/vmx.c
-@@ -798,6 +798,7 @@ static unsigned long *vmx_msr_bitmap_legacy;
- static unsigned long *vmx_msr_bitmap_longmode;
- static unsigned long *vmx_msr_bitmap_legacy_x2apic;
- static unsigned long *vmx_msr_bitmap_longmode_x2apic;
-+static unsigned long *vmx_msr_bitmap_nested;
- static unsigned long *vmx_vmread_bitmap;
- static unsigned long *vmx_vmwrite_bitmap;
+Robin.
 
-@@ -5812,13 +5813,21 @@ static __init int hardware_setup(void)
-                                (unsigned long *)__get_free_page(GFP_KERNEL);
-        if (!vmx_msr_bitmap_longmode_x2apic)
-                goto out4;
-+
-+       if (nested) {
-+               vmx_msr_bitmap_nested =
-+                       (unsigned long *)__get_free_page(GFP_KERNEL);
-+               if (!vmx_msr_bitmap_nested)
-+                       goto out5;
-+       }
-+
-        vmx_vmread_bitmap = (unsigned long *)__get_free_page(GFP_KERNEL);
-        if (!vmx_vmread_bitmap)
--               goto out5;
-+               goto out6;
+> +
+> +	/*
+> +	 * Coherent DMA masks larger than 32-bit must be explicitly set by the
+> +	 * driver.
+> +	 */
+> +	dev->coherent_dma_mask = min(DMA_BIT_MASK(32), DMA_BIT_MASK(ilog2(size)));
+> +
+>   	coherent = of_dma_is_coherent(dev->of_node);
+>   	dev_dbg(dev, "device is%sdma coherent\n",
+>   		coherent ? " " : " not ");
+>
 
-        vmx_vmwrite_bitmap = (unsigned long *)__get_free_page(GFP_KERNEL);
-        if (!vmx_vmwrite_bitmap)
--               goto out6;
-+               goto out7;
 
-        memset(vmx_vmread_bitmap, 0xff, PAGE_SIZE);
-        memset(vmx_vmwrite_bitmap, 0xff, PAGE_SIZE);
-@@ -5834,10 +5843,12 @@ static __init int hardware_setup(void)
-
-        memset(vmx_msr_bitmap_legacy, 0xff, PAGE_SIZE);
-        memset(vmx_msr_bitmap_longmode, 0xff, PAGE_SIZE);
-+       if (nested)
-+               memset(vmx_msr_bitmap_nested, 0xff, PAGE_SIZE);
-
-        if (setup_vmcs_config(&vmcs_config) < 0) {
-                r = -EIO;
--               goto out7;
-+               goto out8;
-        }
-
-        if (boot_cpu_has(X86_FEATURE_NX))
-@@ -5944,10 +5955,13 @@ static __init int hardware_setup(void)
-
-        return alloc_kvm_area();
-
--out7:
-+out8:
-        free_page((unsigned long)vmx_vmwrite_bitmap);
--out6:
-+out7:
-        free_page((unsigned long)vmx_vmread_bitmap);
-+out6:
-+       if (nested)
-+               free_page((unsigned long)vmx_msr_bitmap_nested);
- out5:
-        free_page((unsigned long)vmx_msr_bitmap_longmode_x2apic);
- out4:
-@@ -5974,6 +5988,8 @@ static __exit void hardware_unsetup(void)
-        free_page((unsigned long)vmx_io_bitmap_a);
-        free_page((unsigned long)vmx_vmwrite_bitmap);
-        free_page((unsigned long)vmx_vmread_bitmap);
-+       if (nested)
-+               free_page((unsigned long)vmx_msr_bitmap_nested);
-
-        free_kvm_area();
- }
-@@ -8305,6 +8321,38 @@ static void vmx_start_preemption_timer(struct
-kvm_vcpu *vcpu)
-                      ns_to_ktime(preemption_timeout), HRTIMER_MODE_REL);
- }
-
-+static int nested_vmx_check_msr_bitmap_controls(struct kvm_vcpu *vcpu,
-+                                               struct vmcs12 *vmcs12)
-+{
-+       int maxphyaddr;
-+       u64 addr;
-+
-+       if (!nested_cpu_has(vmcs12, CPU_BASED_USE_MSR_BITMAPS))
-+               return 0;
-+
-+       if (vmcs12_read_any(vcpu, MSR_BITMAP, &addr)) {
-+               WARN_ON(1);
-+               return -EINVAL;
-+       }
-+       maxphyaddr = cpuid_maxphyaddr(vcpu);
-+
-+       if (!PAGE_ALIGNED(vmcs12->msr_bitmap) ||
-+          ((addr + PAGE_SIZE) >> maxphyaddr))
-+               return -EINVAL;
-+
-+       return 0;
-+}
-+
-+/*
-+ * Merge L0's and L1's MSR bitmap, return false to indicate that
-+ * we do not use the hardware.
-+ */
-+static inline bool nested_vmx_merge_msr_bitmap(struct kvm_vcpu *vcpu,
-+                                              struct vmcs12 *vmcs12)
-+{
-+       return false;
-+}
-+
- static int nested_vmx_check_msr_switch(struct kvm_vcpu *vcpu,
-                                       unsigned long count_field,
-                                       unsigned long addr_field,
-@@ -8637,11 +8685,17 @@ static void prepare_vmcs02(struct kvm_vcpu
-*vcpu, struct vmcs12 *vmcs12)
-                vmcs_write32(TPR_THRESHOLD, vmcs12->tpr_threshold);
-        }
-
-+       if (cpu_has_vmx_msr_bitmap() &&
-+           exec_control & CPU_BASED_USE_MSR_BITMAPS &&
-+           nested_vmx_merge_msr_bitmap(vcpu, vmcs12)) {
-+               vmcs_write64(MSR_BITMAP, __pa(vmx_msr_bitmap_nested));
-+       } else
-+               exec_control &= ~CPU_BASED_USE_MSR_BITMAPS;
-+
-        /*
--        * Merging of IO and MSR bitmaps not currently supported.
-+        * Merging of IO bitmap not currently supported.
-         * Rather, exit every time.
-         */
--       exec_control &= ~CPU_BASED_USE_MSR_BITMAPS;
-        exec_control &= ~CPU_BASED_USE_IO_BITMAPS;
-        exec_control |= CPU_BASED_UNCOND_IO_EXITING;
-
-@@ -8792,15 +8846,13 @@ static int nested_vmx_run(struct kvm_vcpu
-*vcpu, bool launch)
-                return 1;
-        }
-
--       if ((vmcs12->cpu_based_vm_exec_control & CPU_BASED_USE_MSR_BITMAPS) &&
--                       !PAGE_ALIGNED(vmcs12->msr_bitmap)) {
-+       if (!nested_get_vmcs12_pages(vcpu, vmcs12)) {
-                /*TODO: Also verify bits beyond physical address width are 0*/
-                nested_vmx_failValid(vcpu, VMXERR_ENTRY_INVALID_CONTROL_FIELD);
-                return 1;
-        }
-
--       if (!nested_get_vmcs12_pages(vcpu, vmcs12)) {
--               /*TODO: Also verify bits beyond physical address width are 0*/
-+       if (nested_vmx_check_msr_bitmap_controls(vcpu, vmcs12)) {
-                nested_vmx_failValid(vcpu, VMXERR_ENTRY_INVALID_CONTROL_FIELD);
-                return 1;
-        }
-@@ -9356,6 +9408,9 @@ static void load_vmcs12_host_state(struct kvm_vcpu *vcpu,
-        kvm_set_dr(vcpu, 7, 0x400);
-        vmcs_write64(GUEST_IA32_DEBUGCTL, 0);
-
-+       if (cpu_has_vmx_msr_bitmap())
-+               vmx_set_msr_bitmap(vcpu);
-+
-        if (nested_vmx_load_msr(vcpu, vmcs12->vm_exit_msr_load_addr,
-                                vmcs12->vm_exit_msr_load_count))
-                nested_vmx_abort(vcpu, VMX_ABORT_LOAD_HOST_MSR_FAIL);
---
-1.7.1
