@@ -1,74 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933173AbbA2Bw1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 20:52:27 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46063 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755553AbbA2BwV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 20:52:21 -0500
-Date: Wed, 28 Jan 2015 13:06:23 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] drivers/base/node: Use device_create_files() and
- device_remove_files()
-Message-ID: <20150128210623.GB18649@kroah.com>
-References: <1422477974-8369-1-git-send-email-tiwai@suse.de>
- <1422477974-8369-3-git-send-email-tiwai@suse.de>
+	id S1753890AbbA2BRb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 20:17:31 -0500
+Received: from skprod2.natinst.com ([130.164.80.23]:51811 "EHLO ni.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753830AbbA2BR2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jan 2015 20:17:28 -0500
+Message-ID: <54C94F73.3010006@ni.com>
+Date: Wed, 28 Jan 2015 15:06:59 -0600
+From: Xander Huff <xander.huff@ni.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1422477974-8369-3-git-send-email-tiwai@suse.de>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: mingo@redhat.com, peterz@infradead.org, rostedt@goodmis.org
+CC: linux-rt-users@vger.kernel.org, josh.cartwright@ni.com,
+        gratian.crisan@ni.com, linux-kernel@vger.kernel.org,
+        jaeden.amero@ni.com, ben.shelton@ni.com, brad.mouring@ni.com,
+        rich.tollerton@ni.com
+Subject: Re: [PATCH -rt] lockdep: selftest: fix warnings due to missing PREEMPT_RT
+ conditionals
+References: <1422472125-21979-1-git-send-email-xander.huff@ni.com>
+In-Reply-To: <1422472125-21979-1-git-send-email-xander.huff@ni.com>
+X-MIMETrack: Itemize by SMTP Server on US-AUS-MGWOut2/AUS/H/NIC(Release 8.5.3FP6|November
+ 21, 2013) at 01/28/2015 03:06:59 PM,
+	Serialize by Router on US-AUS-MGWOut2/AUS/H/NIC(Release 8.5.3FP6|November
+ 21, 2013) at 01/28/2015 03:06:59 PM,
+	Serialize complete at 01/28/2015 03:06:59 PM
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=windows-1252; format=flowed
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.33,0.0.0000
+ definitions=2015-01-28_02:2015-01-28,2015-01-28,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 28, 2015 at 09:46:14PM +0100, Takashi Iwai wrote:
-> Use the new helper functions to simplify the code.
-> 
-> Signed-off-by: Takashi Iwai <tiwai@suse.de>
-> ---
->  drivers/base/node.c | 24 ++++++++++++------------
->  1 file changed, 12 insertions(+), 12 deletions(-)
-> 
-> diff --git a/drivers/base/node.c b/drivers/base/node.c
-> index a3b82e9c7f20..e567e7bde333 100644
-> --- a/drivers/base/node.c
-> +++ b/drivers/base/node.c
-> @@ -200,6 +200,16 @@ static ssize_t node_read_distance(struct device *dev,
->  }
->  static DEVICE_ATTR(distance, S_IRUGO, node_read_distance, NULL);
->  
-> +static const struct device_attribute *node_dev_attrs[] = {
-> +	&dev_attr_cpumap,
-> +	&dev_attr_cpulist,
-> +	&dev_attr_meminfo,
-> +	&dev_attr_numastat,
-> +	&dev_attr_distance,
-> +	&dev_attr_vmstat,
-> +	NULL
-> +};
-> +
->  #ifdef CONFIG_HUGETLBFS
->  /*
->   * hugetlbfs per node attributes registration interface:
-> @@ -276,12 +286,7 @@ static int register_node(struct node *node, int num, struct node *parent)
->  	error = device_register(&node->dev);
->  
->  	if (!error){
-> -		device_create_file(&node->dev, &dev_attr_cpumap);
-> -		device_create_file(&node->dev, &dev_attr_cpulist);
-> -		device_create_file(&node->dev, &dev_attr_meminfo);
-> -		device_create_file(&node->dev, &dev_attr_numastat);
-> -		device_create_file(&node->dev, &dev_attr_distance);
-> -		device_create_file(&node->dev, &dev_attr_vmstat);
-> +		device_create_files(&node->dev, node_dev_attrs);
+On 1/28/2015 1:08 PM, Xander Huff wrote:
+> From: Josh Cartwright <josh.cartwright@ni.com>
+>
+> "lockdep: Selftest: Only do hardirq context test for raw spinlock"
+> disabled the execution of certain tests with PREEMPT_RT_FULL, but did
+> not prevent the tests from still being defined.  This leads to warnings
+> like:
+>
+>    ./linux/lib/locking-selftest.c:574:1: warning: 'irqsafe1_hard_rlock_12' defined but not used [-Wunused-function]
+>    ./linux/lib/locking-selftest.c:574:1: warning: 'irqsafe1_hard_rlock_21' defined but not used [-Wunused-function]
+>    ./linux/lib/locking-selftest.c:577:1: warning: 'irqsafe1_hard_wlock_12' defined but not used [-Wunused-function]
+>    ./linux/lib/locking-selftest.c:577:1: warning: 'irqsafe1_hard_wlock_21' defined but not used [-Wunused-function]
+>    ./linux/lib/locking-selftest.c:580:1: warning: 'irqsafe1_soft_spin_12' defined but not used [-Wunused-function]
+>    ...
+>
+> Fixed by wrapping the test definitions in #ifndef CONFIG_PREEMPT_RT_FULL
+> conditionals.
+>
+> Signed-off-by: Josh Cartwright <josh.cartwright@ni.com>
+> Signed-off-by: Xander Huff <xander.huff@ni.com>
+> Acked-by: Gratian Crisan <gratian.crisan@ni.com>
 
-This should just be using an attribute group instead of these files all
-being created at once, care to switch the code to use that instead?
+FYI: To be clearer, this should apply to all stable RT releases 3.4 and later.
 
-thanks,
-
-greg k-h
+-- 
+Xander Huff
+Staff Software Engineer
+National Instruments
