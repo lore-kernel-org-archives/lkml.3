@@ -1,95 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933844AbbA1UlR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 15:41:17 -0500
-Received: from mail-yk0-f176.google.com ([209.85.160.176]:33543 "EHLO
-	mail-yk0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933059AbbA1UlN (ORCPT
+	id S1756472AbbA1V0h (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 16:26:37 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:40980 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762057AbbA1Utm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 15:41:13 -0500
+	Wed, 28 Jan 2015 15:49:42 -0500
+Date: Wed, 28 Jan 2015 07:10:18 -0800
+From: tip-bot for Rasmus Villemoes <tipbot@zytor.com>
+Message-ID: <tip-605a3069161dd966d6cea795133c673fb6706e52@git.kernel.org>
+Cc: tglx@linutronix.de, linux-kernel@vger.kernel.org, hpa@zytor.com,
+        a.p.zijlstra@chello.nl, acme@redhat.com, linux@rasmusvillemoes.dk,
+        mingo@kernel.org, paulus@samba.org
+Reply-To: paulus@samba.org, mingo@kernel.org, a.p.zijlstra@chello.nl,
+        linux-kernel@vger.kernel.org, tglx@linutronix.de, hpa@zytor.com,
+        acme@redhat.com, linux@rasmusvillemoes.dk
+In-Reply-To: <1421946083-29863-1-git-send-email-linux@rasmusvillemoes.dk>
+References: <1421946083-29863-1-git-send-email-linux@rasmusvillemoes.dk>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf tests: Fix typo in sample-parsing.c
+Git-Commit-ID: 605a3069161dd966d6cea795133c673fb6706e52
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-In-Reply-To: <1422457242-18095-3-git-send-email-pure.logic@nexus-software.ie>
-References: <1422457242-18095-1-git-send-email-pure.logic@nexus-software.ie>
-	<1422457242-18095-3-git-send-email-pure.logic@nexus-software.ie>
-Date: Wed, 28 Jan 2015 17:10:12 +0200
-Message-ID: <CAHp75VfR=5YUfOHprX55U+QiGVZ293p7YPu0mK2m6qdVsxmL+g@mail.gmail.com>
-Subject: Re: [PATCH v5 2/2] x86, quark: Add Intel Quark platform support
-From: Andy Shevchenko <andy.shevchenko@gmail.com>
-To: "Bryan O'Donoghue" <pure.logic@nexus-software.ie>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>,
-        "dvhart@infradead.org" <dvhart@infradead.org>,
-        "Ong, Boon Leong" <boon.leong.ong@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 28, 2015 at 5:00 PM, Bryan O'Donoghue
-<pure.logic@nexus-software.ie> wrote:
-> Add Intel Quark platform support. Quark needs to pull down all unlocked IMRs
-> to ensure agreement with the EFI memory map post boot.
->
-> This patch adds an entry in Kconfig for Quark as a platform and makes IMR
-> support mandatory if selected.
+Commit-ID:  605a3069161dd966d6cea795133c673fb6706e52
+Gitweb:     http://git.kernel.org/tip/605a3069161dd966d6cea795133c673fb6706e52
+Author:     Rasmus Villemoes <linux@rasmusvillemoes.dk>
+AuthorDate: Thu, 22 Jan 2015 18:01:23 +0100
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Thu, 22 Jan 2015 17:03:01 -0300
 
-Looks good for me.
+perf tests: Fix typo in sample-parsing.c
 
->
-> Signed-off-by: Bryan O'Donoghue <pure.logic@nexus-software.ie>
-> Suggested-by: Thomas Gleixner <tglx@linutronix.de>
-> Suggested-by: Andy Shevchenko <andy.shevchenko@gmail.com>
-> ---
->  arch/x86/Kconfig           | 16 ++++++++++++++++
->  arch/x86/platform/Makefile |  1 +
->  2 files changed, 17 insertions(+)
->
-> diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-> index 0dc9d01..36d50cd 100644
-> --- a/arch/x86/Kconfig
-> +++ b/arch/x86/Kconfig
-> @@ -485,6 +485,22 @@ config X86_INTEL_MID
->           Intel MID platforms are based on an Intel processor and chipset which
->           consume less power than most of the x86 derivatives.
->
-> +config X86_INTEL_QUARK
-> +       bool "Intel Quark platform support"
-> +       depends on X86_32
-> +       depends on X86_EXTENDED_PLATFORM
-> +       depends on X86_PLATFORM_DEVICES
-> +       depends on X86_TSC
-> +       depends on PCI
-> +       depends on PCI_GOANY
-> +       depends on X86_IO_APIC
-> +       select IOSF_MBI
-> +       select INTEL_IMR
-> +       ---help---
-> +         Select to include support for Quark X1000 SoC.
-> +         Say Y here if you have a Quark based system such as the Arduino
-> +         compatible Intel Galileo.
-> +
->  config X86_INTEL_LPSS
->         bool "Intel Low Power Subsystem Support"
->         depends on ACPI
-> diff --git a/arch/x86/platform/Makefile b/arch/x86/platform/Makefile
-> index 85afde1..a62e0be 100644
-> --- a/arch/x86/platform/Makefile
-> +++ b/arch/x86/platform/Makefile
-> @@ -5,6 +5,7 @@ obj-y   += geode/
->  obj-y  += goldfish/
->  obj-y  += iris/
->  obj-y  += intel-mid/
-> +obj-y  += intel-quark/
->  obj-y  += olpc/
->  obj-y  += scx200/
->  obj-y  += sfi/
-> --
-> 1.9.1
->
+It was testing the same buffer for differences:
 
+   memcmp(s1->user_stack.data, s1->user_stack.data, s1->user_stack.size)
 
+I'm pretty sure this wasn't supposed to be dead code.
 
--- 
-With Best Regards,
-Andy Shevchenko
+Signed-off-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1421946083-29863-1-git-send-email-linux@rasmusvillemoes.dk
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/tests/sample-parsing.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/tools/perf/tests/sample-parsing.c b/tools/perf/tests/sample-parsing.c
+index 4908c64..30c0218 100644
+--- a/tools/perf/tests/sample-parsing.c
++++ b/tools/perf/tests/sample-parsing.c
+@@ -110,7 +110,7 @@ static bool samples_same(const struct perf_sample *s1,
+ 
+ 	if (type & PERF_SAMPLE_STACK_USER) {
+ 		COMP(user_stack.size);
+-		if (memcmp(s1->user_stack.data, s1->user_stack.data,
++		if (memcmp(s1->user_stack.data, s2->user_stack.data,
+ 			   s1->user_stack.size)) {
+ 			pr_debug("Samples differ at 'user_stack'\n");
+ 			return false;
