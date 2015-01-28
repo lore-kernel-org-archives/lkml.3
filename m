@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762912AbbA2CsD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 21:48:03 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:47047 "EHLO
+	id S1762612AbbA2ClR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 21:41:17 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:47066 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762318AbbA2Cie (ORCPT
+	with ESMTP id S1762435AbbA2Cix (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 21:38:34 -0500
+	Wed, 28 Jan 2015 21:38:53 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
+Cc: Sagi Grimberg <sagig@mellanox.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13.y-ckt 118/139] tracing/sched: Check preempt_count() for current when reading task->state
-Date: Wed, 28 Jan 2015 14:21:01 -0800
-Message-Id: <1422483682-15393-119-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13.y-ckt 119/139] iscsi,iser-target: Initiate termination only once
+Date: Wed, 28 Jan 2015 14:21:02 -0800
+Message-Id: <1422483682-15393-120-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422483682-15393-1-git-send-email-kamal@canonical.com>
 References: <1422483682-15393-1-git-send-email-kamal@canonical.com>
@@ -28,66 +28,222 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+From: Sagi Grimberg <sagig@mellanox.com>
 
-commit aee4e5f3d3abb7a2239dd02f6d8fb173413fd02f upstream.
+commit 954f23722b5753305be490330cf2680b7a25f4a3 upstream.
 
-When recording the state of a task for the sched_switch tracepoint a check of
-task_preempt_count() is performed to see if PREEMPT_ACTIVE is set. This is
-because, technically, a task being preempted is really in the TASK_RUNNING
-state, and that is what should be recorded when tracing a sched_switch,
-even if the task put itself into another state (it hasn't scheduled out
-in that state yet).
+Since commit 0fc4ea701fcf ("Target/iser: Don't put isert_conn inside
+disconnected handler") we put the conn kref in isert_wait_conn, so we
+need .wait_conn to be invoked also in the error path.
 
-But with the change to use per_cpu preempt counts, the
-task_thread_info(p)->preempt_count is no longer used, and instead
-task_preempt_count(p) is used.
+Introduce call to isert_conn_terminate (called under lock)
+which transitions the connection state to TERMINATING and calls
+rdma_disconnect. If the state is already teminating, just bail
+out back (temination started).
 
-The problem is that this does not use the current preempt count but a stale
-one from a previous sched_switch. The task_preempt_count(p) uses
-saved_preempt_count and not preempt_count(). But for tracing sched_switch,
-if p is current, we really want preempt_count().
+Also, make sure to destroy the connection when getting a connect
+error event if didn't get to connected (state UP). Same for the
+handling of REJECTED and UNREACHABLE cma events.
 
-I hit this bug when I was tracing sleep and the call from do_nanosleep()
-scheduled out in the "RUNNING" state.
+Squashed:
 
-           sleep-4290  [000] 537272.259992: sched_switch:         sleep:4290 [120] R ==> swapper/0:0 [120]
-           sleep-4290  [000] 537272.260015: kernel_stack:         <stack trace>
-=> __schedule (ffffffff8150864a)
-=> schedule (ffffffff815089f8)
-=> do_nanosleep (ffffffff8150b76c)
-=> hrtimer_nanosleep (ffffffff8108d66b)
-=> SyS_nanosleep (ffffffff8108d750)
-=> return_to_handler (ffffffff8150e8e5)
-=> tracesys_phase2 (ffffffff8150c844)
+iscsi-target: Add call to wait_conn in establishment error flow
 
-After a bit of hair pulling, I found that the state was really
-TASK_INTERRUPTIBLE, but the saved_preempt_count had an old PREEMPT_ACTIVE
-set and caused the sched_switch tracepoint to show it as RUNNING.
-
-Link: http://lkml.kernel.org/r/20141210174428.3cb7542a@gandalf.local.home
-
-Acked-by: Ingo Molnar <mingo@kernel.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Fixes: 01028747559a "sched: Create more preempt_count accessors"
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Reported-by: Slava Shwartsman <valyushash@gmail.com>
+Signed-off-by: Sagi Grimberg <sagig@mellanox.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- include/trace/events/sched.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/infiniband/ulp/isert/ib_isert.c   | 84 +++++++++++++++++++------------
+ drivers/infiniband/ulp/isert/ib_isert.h   |  1 -
+ drivers/target/iscsi/iscsi_target_login.c |  3 ++
+ 3 files changed, 54 insertions(+), 34 deletions(-)
 
-diff --git a/include/trace/events/sched.h b/include/trace/events/sched.h
-index 04c3084..0a32fd6 100644
---- a/include/trace/events/sched.h
-+++ b/include/trace/events/sched.h
-@@ -100,7 +100,7 @@ static inline long __trace_sched_switch_state(struct task_struct *p)
+diff --git a/drivers/infiniband/ulp/isert/ib_isert.c b/drivers/infiniband/ulp/isert/ib_isert.c
+index 5502c7f..4dbf5e0 100644
+--- a/drivers/infiniband/ulp/isert/ib_isert.c
++++ b/drivers/infiniband/ulp/isert/ib_isert.c
+@@ -671,6 +671,33 @@ isert_put_conn(struct isert_conn *isert_conn)
+ 	kref_put(&isert_conn->conn_kref, isert_release_conn_kref);
+ }
+ 
++/**
++ * isert_conn_terminate() - Initiate connection termination
++ * @isert_conn: isert connection struct
++ *
++ * Notes:
++ * In case the connection state is UP, move state
++ * to TEMINATING and start teardown sequence (rdma_disconnect).
++ *
++ * This routine must be called with conn_mutex held. Thus it is
++ * safe to call multiple times.
++ */
++static void
++isert_conn_terminate(struct isert_conn *isert_conn)
++{
++	int err;
++
++	if (isert_conn->state == ISER_CONN_UP) {
++		isert_conn->state = ISER_CONN_TERMINATING;
++		pr_info("Terminating conn %p state %d\n",
++			   isert_conn, isert_conn->state);
++		err = rdma_disconnect(isert_conn->conn_cm_id);
++		if (err)
++			pr_warn("Failed rdma_disconnect isert_conn %p\n",
++				   isert_conn);
++	}
++}
++
+ static void
+ isert_disconnect_work(struct work_struct *work)
+ {
+@@ -679,33 +706,15 @@ isert_disconnect_work(struct work_struct *work)
+ 
+ 	pr_debug("isert_disconnect_work(): >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n");
+ 	mutex_lock(&isert_conn->conn_mutex);
+-	if (isert_conn->state == ISER_CONN_UP)
+-		isert_conn->state = ISER_CONN_TERMINATING;
+-
+-	if (isert_conn->post_recv_buf_count == 0 &&
+-	    atomic_read(&isert_conn->post_send_buf_count) == 0) {
+-		mutex_unlock(&isert_conn->conn_mutex);
+-		goto wake_up;
+-	}
+-	if (!isert_conn->conn_cm_id) {
+-		mutex_unlock(&isert_conn->conn_mutex);
+-		isert_put_conn(isert_conn);
+-		return;
+-	}
+-
+-	if (isert_conn->disconnect) {
+-		/* Send DREQ/DREP towards our initiator */
+-		rdma_disconnect(isert_conn->conn_cm_id);
+-	}
+-
++	isert_conn_terminate(isert_conn);
+ 	mutex_unlock(&isert_conn->conn_mutex);
+ 
+-wake_up:
++	pr_info("conn %p completing conn_wait\n", isert_conn);
+ 	complete(&isert_conn->conn_wait);
+ }
+ 
+ static int
+-isert_disconnected_handler(struct rdma_cm_id *cma_id, bool disconnect)
++isert_disconnected_handler(struct rdma_cm_id *cma_id)
+ {
+ 	struct isert_conn *isert_conn;
+ 
+@@ -718,18 +727,24 @@ isert_disconnected_handler(struct rdma_cm_id *cma_id, bool disconnect)
+ 
+ 	isert_conn = (struct isert_conn *)cma_id->context;
+ 
+-	isert_conn->disconnect = disconnect;
+ 	INIT_WORK(&isert_conn->conn_logout_work, isert_disconnect_work);
+ 	schedule_work(&isert_conn->conn_logout_work);
+ 
+ 	return 0;
+ }
+ 
++static void
++isert_connect_error(struct rdma_cm_id *cma_id)
++{
++	struct isert_conn *isert_conn = (struct isert_conn *)cma_id->context;
++
++	isert_put_conn(isert_conn);
++}
++
+ static int
+ isert_cma_handler(struct rdma_cm_id *cma_id, struct rdma_cm_event *event)
+ {
+ 	int ret = 0;
+-	bool disconnect = false;
+ 
+ 	pr_debug("isert_cma_handler: event %d status %d conn %p id %p\n",
+ 		 event->event, event->status, cma_id->context, cma_id);
+@@ -747,11 +762,14 @@ isert_cma_handler(struct rdma_cm_id *cma_id, struct rdma_cm_event *event)
+ 	case RDMA_CM_EVENT_ADDR_CHANGE:    /* FALLTHRU */
+ 	case RDMA_CM_EVENT_DISCONNECTED:   /* FALLTHRU */
+ 	case RDMA_CM_EVENT_DEVICE_REMOVAL: /* FALLTHRU */
+-		disconnect = true;
+ 	case RDMA_CM_EVENT_TIMEWAIT_EXIT:  /* FALLTHRU */
+-		ret = isert_disconnected_handler(cma_id, disconnect);
++		ret = isert_disconnected_handler(cma_id);
+ 		break;
++	case RDMA_CM_EVENT_REJECTED:       /* FALLTHRU */
++	case RDMA_CM_EVENT_UNREACHABLE:    /* FALLTHRU */
+ 	case RDMA_CM_EVENT_CONNECT_ERROR:
++		isert_connect_error(cma_id);
++		break;
+ 	default:
+ 		pr_err("Unhandled RDMA CMA event: %d\n", event->event);
+ 		break;
+@@ -1770,7 +1788,7 @@ isert_cq_rx_comp_err(struct isert_conn *isert_conn)
+ 		msleep(3000);
+ 
+ 	mutex_lock(&isert_conn->conn_mutex);
+-	isert_conn->state = ISER_CONN_DOWN;
++	isert_conn_terminate(isert_conn);
+ 	mutex_unlock(&isert_conn->conn_mutex);
+ 
+ 	iscsit_cause_connection_reinstatement(isert_conn->conn, 0);
+@@ -2773,10 +2791,6 @@ static void isert_wait_conn(struct iscsi_conn *conn)
+ 	pr_debug("isert_wait_conn: Starting \n");
+ 
+ 	mutex_lock(&isert_conn->conn_mutex);
+-	if (isert_conn->conn_cm_id) {
+-		pr_debug("Calling rdma_disconnect from isert_wait_conn\n");
+-		rdma_disconnect(isert_conn->conn_cm_id);
+-	}
  	/*
- 	 * For all intents and purposes a preempted task is a running task.
- 	 */
--	if (task_preempt_count(p) & PREEMPT_ACTIVE)
-+	if (preempt_count() & PREEMPT_ACTIVE)
- 		state = TASK_RUNNING | TASK_STATE_MAX;
- #endif
+ 	 * Only wait for conn_wait_comp_err if the isert_conn made it
+ 	 * into full feature phase..
+@@ -2785,13 +2799,17 @@ static void isert_wait_conn(struct iscsi_conn *conn)
+ 		mutex_unlock(&isert_conn->conn_mutex);
+ 		return;
+ 	}
+-	if (isert_conn->state == ISER_CONN_UP)
+-		isert_conn->state = ISER_CONN_TERMINATING;
++	isert_conn_terminate(isert_conn);
+ 	mutex_unlock(&isert_conn->conn_mutex);
+ 
+ 	wait_for_completion(&isert_conn->conn_wait_comp_err);
+-
+ 	wait_for_completion(&isert_conn->conn_wait);
++
++	mutex_lock(&isert_conn->conn_mutex);
++	isert_conn->state = ISER_CONN_DOWN;
++	mutex_unlock(&isert_conn->conn_mutex);
++
++	pr_info("Destroying conn %p\n", isert_conn);
+ 	isert_put_conn(isert_conn);
+ }
+ 
+diff --git a/drivers/infiniband/ulp/isert/ib_isert.h b/drivers/infiniband/ulp/isert/ib_isert.h
+index 2b126e0..abbc331 100644
+--- a/drivers/infiniband/ulp/isert/ib_isert.h
++++ b/drivers/infiniband/ulp/isert/ib_isert.h
+@@ -127,7 +127,6 @@ struct isert_conn {
+ #define ISERT_COMP_BATCH_COUNT	8
+ 	int			conn_comp_batch;
+ 	struct llist_head	conn_comp_llist;
+-	bool                    disconnect;
+ };
+ 
+ #define ISERT_MAX_CQ 64
+diff --git a/drivers/target/iscsi/iscsi_target_login.c b/drivers/target/iscsi/iscsi_target_login.c
+index 1b2db7a..439c534 100644
+--- a/drivers/target/iscsi/iscsi_target_login.c
++++ b/drivers/target/iscsi/iscsi_target_login.c
+@@ -1185,6 +1185,9 @@ old_sess_out:
+ 		conn->sock = NULL;
+ 	}
+ 
++	if (conn->conn_transport->iscsit_wait_conn)
++		conn->conn_transport->iscsit_wait_conn(conn);
++
+ 	if (conn->conn_transport->iscsit_free_conn)
+ 		conn->conn_transport->iscsit_free_conn(conn);
  
 -- 
 1.9.1
