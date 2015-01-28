@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752927AbbA2JAp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 04:00:45 -0500
+	id S932248AbbA2K3w (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 05:29:52 -0500
 Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:44737 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756097AbbA2JAj (ORCPT
+	by vger.kernel.org with ESMTP id S1756178AbbA2JAe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 04:00:39 -0500
+	Thu, 29 Jan 2015 04:00:34 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Jim Lin <jilin@nvidia.com>,
-        Linus Walleij <linus.walleij@linaro.org>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 141/176] pinctrl: Fix two deadlocks
-Date: Wed, 28 Jan 2015 15:29:31 +0100
-Message-Id: <ded7a6cf7db0671259f479a48f51748473647361.1422455352.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, David Jeffery <djeffery@redhat.com>
+Subject: [PATCH 3.12 142/176] libata: prevent HSM state change race between ISR and PIO
+Date: Wed, 28 Jan 2015 15:29:32 +0100
+Message-Id: <52711216cd8337c65b6823d19496e3671b1a214a.1422455352.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <ce4a451f616a1e7ab58cfeceea5e49c8b1c68c81.1422455352.git.jslaby@suse.cz>
 References: <ce4a451f616a1e7ab58cfeceea5e49c8b1c68c81.1422455352.git.jslaby@suse.cz>
@@ -23,86 +22,79 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jim Lin <jilin@nvidia.com>
+From: David Jeffery <djeffery@redhat.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit db93facfb0ef542aa5d8079e47580b3e669a4d82 upstream.
+commit ce7514526742c0898b837d4395f515b79dfb5a12 upstream.
 
-This patch is to fix two deadlock cases.
-Deadlock 1:
-CPU #1
- pinctrl_register-> pinctrl_get ->
- create_pinctrl
- (Holding lock pinctrl_maps_mutex)
- -> get_pinctrl_dev_from_devname
- (Trying to acquire lock pinctrldev_list_mutex)
-CPU #0
- pinctrl_unregister
- (Holding lock pinctrldev_list_mutex)
- -> pinctrl_put ->> pinctrl_free ->
- pinctrl_dt_free_maps -> pinctrl_unregister_map
- (Trying to acquire lock pinctrl_maps_mutex)
+It is possible for ata_sff_flush_pio_task() to set ap->hsm_task_state to
+HSM_ST_IDLE in between the time __ata_sff_port_intr() checks for HSM_ST_IDLE
+and before it calls ata_sff_hsm_move() causing ata_sff_hsm_move() to BUG().
 
-Simply to say
-CPU#1 is holding lock A and trying to acquire lock B,
-CPU#0 is holding lock B and trying to acquire lock A.
+This problem is hard to reproduce making this patch hard to verify, but this
+fix will prevent the race.
 
-Deadlock 2:
-CPU #3
- pinctrl_register-> pinctrl_get ->
- create_pinctrl
- (Holding lock pinctrl_maps_mutex)
- -> get_pinctrl_dev_from_devname
- (Trying to acquire lock pinctrldev_list_mutex)
-CPU #2
- pinctrl_unregister
- (Holding lock pctldev->mutex)
- -> pinctrl_put ->> pinctrl_free ->
- pinctrl_dt_free_maps -> pinctrl_unregister_map
- (Trying to acquire lock pinctrl_maps_mutex)
-CPU #0
- tegra_gpio_request
- (Holding lock pinctrldev_list_mutex)
- -> pinctrl_get_device_gpio_range
- (Trying to acquire lock pctldev->mutex)
+I have not been able to reproduce the problem, but here is a crash dump from
+a 2.6.32 kernel.
 
-Simply to say
-CPU#3 is holding lock A and trying to acquire lock D,
-CPU#2 is holding lock B and trying to acquire lock A,
-CPU#0 is holding lock D and trying to acquire lock B.
+On examining the ata port's state, its hsm_task_state field has a value of HSM_ST_IDLE:
 
-Signed-off-by: Jim Lin <jilin@nvidia.com>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+crash> struct ata_port.hsm_task_state ffff881c1121c000
+  hsm_task_state = 0
+
+Normally, this should not be possible as ata_sff_hsm_move() was called from ata_sff_host_intr(),
+which checks hsm_task_state and won't call ata_sff_hsm_move() if it has a HSM_ST_IDLE value.
+
+PID: 11053  TASK: ffff8816e846cae0  CPU: 0   COMMAND: "sshd"
+ #0 [ffff88008ba03960] machine_kexec at ffffffff81038f3b
+ #1 [ffff88008ba039c0] crash_kexec at ffffffff810c5d92
+ #2 [ffff88008ba03a90] oops_end at ffffffff8152b510
+ #3 [ffff88008ba03ac0] die at ffffffff81010e0b
+ #4 [ffff88008ba03af0] do_trap at ffffffff8152ad74
+ #5 [ffff88008ba03b50] do_invalid_op at ffffffff8100cf95
+ #6 [ffff88008ba03bf0] invalid_op at ffffffff8100bf9b
+    [exception RIP: ata_sff_hsm_move+317]
+    RIP: ffffffff813a77ad  RSP: ffff88008ba03ca0  RFLAGS: 00010097
+    RAX: 0000000000000000  RBX: ffff881c1121dc60  RCX: 0000000000000000
+    RDX: ffff881c1121dd10  RSI: ffff881c1121dc60  RDI: ffff881c1121c000
+    RBP: ffff88008ba03d00   R8: 0000000000000000   R9: 000000000000002e
+    R10: 000000000001003f  R11: 000000000000009b  R12: ffff881c1121c000
+    R13: 0000000000000000  R14: 0000000000000050  R15: ffff881c1121dd78
+    ORIG_RAX: ffffffffffffffff  CS: 0010  SS: 0018
+ #7 [ffff88008ba03d08] ata_sff_host_intr at ffffffff813a7fbd
+ #8 [ffff88008ba03d38] ata_sff_interrupt at ffffffff813a821e
+ #9 [ffff88008ba03d78] handle_IRQ_event at ffffffff810e6ec0
 ---
- drivers/pinctrl/core.c | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ drivers/ata/libata-sff.c | 12 ++++++++++++
+ 1 file changed, 12 insertions(+)
 
-diff --git a/drivers/pinctrl/core.c b/drivers/pinctrl/core.c
-index a1ffae4c3770..260a2551d612 100644
---- a/drivers/pinctrl/core.c
-+++ b/drivers/pinctrl/core.c
-@@ -1796,14 +1796,15 @@ void pinctrl_unregister(struct pinctrl_dev *pctldev)
- 	if (pctldev == NULL)
- 		return;
+diff --git a/drivers/ata/libata-sff.c b/drivers/ata/libata-sff.c
+index 37acda6fa7e4..136803c47cdb 100644
+--- a/drivers/ata/libata-sff.c
++++ b/drivers/ata/libata-sff.c
+@@ -1333,7 +1333,19 @@ void ata_sff_flush_pio_task(struct ata_port *ap)
+ 	DPRINTK("ENTER\n");
  
--	mutex_lock(&pinctrldev_list_mutex);
- 	mutex_lock(&pctldev->mutex);
--
- 	pinctrl_remove_device_debugfs(pctldev);
-+	mutex_unlock(&pctldev->mutex);
+ 	cancel_delayed_work_sync(&ap->sff_pio_task);
++
++	/*
++	 * We wanna reset the HSM state to IDLE.  If we do so without
++	 * grabbing the port lock, critical sections protected by it which
++	 * expect the HSM state to stay stable may get surprised.  For
++	 * example, we may set IDLE in between the time
++	 * __ata_sff_port_intr() checks for HSM_ST_IDLE and before it calls
++	 * ata_sff_hsm_move() causing ata_sff_hsm_move() to BUG().
++	 */
++	spin_lock_irq(ap->lock);
+ 	ap->hsm_task_state = HSM_ST_IDLE;
++	spin_unlock_irq(ap->lock);
++
+ 	ap->sff_pio_task_link = NULL;
  
- 	if (!IS_ERR(pctldev->p))
- 		pinctrl_put(pctldev->p);
- 
-+	mutex_lock(&pinctrldev_list_mutex);
-+	mutex_lock(&pctldev->mutex);
- 	/* TODO: check that no pinmuxes are still active? */
- 	list_del(&pctldev->node);
- 	/* Destroy descriptor tree */
+ 	if (ata_msg_ctl(ap))
 -- 
 2.2.2
 
