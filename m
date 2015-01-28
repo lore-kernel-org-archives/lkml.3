@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932775AbbA2Kpm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 05:45:42 -0500
+	id S1754085AbbA2I7j (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 03:59:39 -0500
 Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:44737 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754375AbbA2I7r (ORCPT
+	by vger.kernel.org with ESMTP id S1753840AbbA2I7e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 03:59:47 -0500
+	Thu, 29 Jan 2015 03:59:34 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Dan Carpenter <dan.carpenter@oracle.com>,
-        Simon Horman <horms@verge.net.au>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 165/176] ipvs: uninitialized data with IP_VS_IPV6
-Date: Wed, 28 Jan 2015 15:29:55 +0100
-Message-Id: <40d4cb9082b333d247c1ebff9bb1bcf84b137f53.1422455352.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Kees Cook <keescook@chromium.org>,
+        Herbert Xu <herbert@gondor.apana.org.au>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 167/176] crypto: prefix module autoloading with "crypto-"
+Date: Wed, 28 Jan 2015 15:29:57 +0100
+Message-Id: <88d4867061e1f5ee447f89e1e973829156dc511a.1422455352.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <ce4a451f616a1e7ab58cfeceea5e49c8b1c68c81.1422455352.git.jslaby@suse.cz>
 References: <ce4a451f616a1e7ab58cfeceea5e49c8b1c68c81.1422455352.git.jslaby@suse.cz>
@@ -23,70 +23,1150 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Kees Cook <keescook@chromium.org>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 3b05ac3824ed9648c0d9c02d51d9b54e4e7e874f upstream.
+commit 5d26a105b5a73e5635eae0629b42fa0a90e07b7b upstream.
 
-The app_tcp_pkt_out() function expects "*diff" to be set and ends up
-using uninitialized data if CONFIG_IP_VS_IPV6 is turned on.
+This prefixes all crypto module loading with "crypto-" so we never run
+the risk of exposing module auto-loading to userspace via a crypto API,
+as demonstrated by Mathias Krause:
 
-The same issue is there in app_tcp_pkt_in().  Thanks to Julian Anastasov
-for noticing that.
+https://lkml.org/lkml/2013/3/4/70
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Acked-by: Julian Anastasov <ja@ssi.bg>
-Signed-off-by: Simon Horman <horms@verge.net.au>
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- net/netfilter/ipvs/ip_vs_ftp.c | 10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+ arch/arm/crypto/aes_glue.c                 |  4 ++--
+ arch/arm/crypto/sha1_glue.c                |  2 +-
+ arch/powerpc/crypto/sha1.c                 |  2 +-
+ arch/s390/crypto/aes_s390.c                |  2 +-
+ arch/s390/crypto/des_s390.c                |  4 ++--
+ arch/s390/crypto/ghash_s390.c              |  2 +-
+ arch/s390/crypto/sha1_s390.c               |  2 +-
+ arch/s390/crypto/sha256_s390.c             |  4 ++--
+ arch/s390/crypto/sha512_s390.c             |  4 ++--
+ arch/sparc/crypto/aes_glue.c               |  2 +-
+ arch/sparc/crypto/camellia_glue.c          |  2 +-
+ arch/sparc/crypto/crc32c_glue.c            |  2 +-
+ arch/sparc/crypto/des_glue.c               |  2 +-
+ arch/sparc/crypto/md5_glue.c               |  2 +-
+ arch/sparc/crypto/sha1_glue.c              |  2 +-
+ arch/sparc/crypto/sha256_glue.c            |  4 ++--
+ arch/sparc/crypto/sha512_glue.c            |  4 ++--
+ arch/x86/crypto/aes_glue.c                 |  4 ++--
+ arch/x86/crypto/aesni-intel_glue.c         |  2 +-
+ arch/x86/crypto/blowfish_glue.c            |  4 ++--
+ arch/x86/crypto/camellia_aesni_avx2_glue.c |  4 ++--
+ arch/x86/crypto/camellia_aesni_avx_glue.c  |  4 ++--
+ arch/x86/crypto/camellia_glue.c            |  4 ++--
+ arch/x86/crypto/cast5_avx_glue.c           |  2 +-
+ arch/x86/crypto/cast6_avx_glue.c           |  2 +-
+ arch/x86/crypto/crc32-pclmul_glue.c        |  4 ++--
+ arch/x86/crypto/crc32c-intel_glue.c        |  4 ++--
+ arch/x86/crypto/crct10dif-pclmul_glue.c    |  4 ++--
+ arch/x86/crypto/ghash-clmulni-intel_glue.c |  2 +-
+ arch/x86/crypto/salsa20_glue.c             |  4 ++--
+ arch/x86/crypto/serpent_avx2_glue.c        |  4 ++--
+ arch/x86/crypto/serpent_avx_glue.c         |  2 +-
+ arch/x86/crypto/serpent_sse2_glue.c        |  2 +-
+ arch/x86/crypto/sha1_ssse3_glue.c          |  2 +-
+ arch/x86/crypto/sha256_ssse3_glue.c        |  4 ++--
+ arch/x86/crypto/sha512_ssse3_glue.c        |  4 ++--
+ arch/x86/crypto/twofish_avx_glue.c         |  2 +-
+ arch/x86/crypto/twofish_glue.c             |  4 ++--
+ arch/x86/crypto/twofish_glue_3way.c        |  4 ++--
+ crypto/842.c                               |  1 +
+ crypto/aes_generic.c                       |  2 +-
+ crypto/ansi_cprng.c                        |  2 +-
+ crypto/anubis.c                            |  1 +
+ crypto/api.c                               |  4 ++--
+ crypto/arc4.c                              |  1 +
+ crypto/blowfish_generic.c                  |  2 +-
+ crypto/camellia_generic.c                  |  2 +-
+ crypto/cast5_generic.c                     |  2 +-
+ crypto/cast6_generic.c                     |  2 +-
+ crypto/ccm.c                               |  4 ++--
+ crypto/crc32.c                             |  1 +
+ crypto/crct10dif_generic.c                 |  2 +-
+ crypto/crypto_null.c                       |  6 +++---
+ crypto/ctr.c                               |  2 +-
+ crypto/deflate.c                           |  2 +-
+ crypto/des_generic.c                       |  4 ++--
+ crypto/fcrypt.c                            |  1 +
+ crypto/gcm.c                               |  6 +++---
+ crypto/ghash-generic.c                     |  2 +-
+ crypto/khazad.c                            |  1 +
+ crypto/krng.c                              |  2 +-
+ crypto/lz4.c                               |  1 +
+ crypto/lz4hc.c                             |  1 +
+ crypto/lzo.c                               |  1 +
+ crypto/md4.c                               |  2 +-
+ crypto/md5.c                               |  1 +
+ crypto/michael_mic.c                       |  1 +
+ crypto/rmd128.c                            |  1 +
+ crypto/rmd160.c                            |  1 +
+ crypto/rmd256.c                            |  1 +
+ crypto/rmd320.c                            |  1 +
+ crypto/salsa20_generic.c                   |  2 +-
+ crypto/seed.c                              |  1 +
+ crypto/serpent_generic.c                   |  4 ++--
+ crypto/sha1_generic.c                      |  2 +-
+ crypto/sha256_generic.c                    |  4 ++--
+ crypto/sha512_generic.c                    |  4 ++--
+ crypto/tea.c                               |  4 ++--
+ crypto/tgr192.c                            |  4 ++--
+ crypto/twofish_generic.c                   |  2 +-
+ crypto/wp512.c                             |  4 ++--
+ crypto/zlib.c                              |  1 +
+ drivers/crypto/padlock-aes.c               |  2 +-
+ drivers/crypto/padlock-sha.c               |  8 ++++----
+ drivers/crypto/ux500/cryp/cryp_core.c      |  4 ++--
+ drivers/crypto/ux500/hash/hash_core.c      |  8 ++++----
+ drivers/s390/crypto/ap_bus.c               |  3 ++-
+ include/linux/crypto.h                     | 13 +++++++++++++
+ 88 files changed, 141 insertions(+), 110 deletions(-)
 
-diff --git a/net/netfilter/ipvs/ip_vs_ftp.c b/net/netfilter/ipvs/ip_vs_ftp.c
-index 77c173282f38..4a662f15eaee 100644
---- a/net/netfilter/ipvs/ip_vs_ftp.c
-+++ b/net/netfilter/ipvs/ip_vs_ftp.c
-@@ -183,6 +183,8 @@ static int ip_vs_ftp_out(struct ip_vs_app *app, struct ip_vs_conn *cp,
- 	struct nf_conn *ct;
- 	struct net *net;
+diff --git a/arch/arm/crypto/aes_glue.c b/arch/arm/crypto/aes_glue.c
+index 59f7877ead6a..e73ec2ab1316 100644
+--- a/arch/arm/crypto/aes_glue.c
++++ b/arch/arm/crypto/aes_glue.c
+@@ -103,6 +103,6 @@ module_exit(aes_fini);
  
-+	*diff = 0;
-+
- #ifdef CONFIG_IP_VS_IPV6
- 	/* This application helper doesn't work with IPv6 yet,
- 	 * so turn this into a no-op for IPv6 packets
-@@ -191,8 +193,6 @@ static int ip_vs_ftp_out(struct ip_vs_app *app, struct ip_vs_conn *cp,
- 		return 1;
- #endif
+ MODULE_DESCRIPTION("Rijndael (AES) Cipher Algorithm (ASM)");
+ MODULE_LICENSE("GPL");
+-MODULE_ALIAS("aes");
+-MODULE_ALIAS("aes-asm");
++MODULE_ALIAS_CRYPTO("aes");
++MODULE_ALIAS_CRYPTO("aes-asm");
+ MODULE_AUTHOR("David McCullough <ucdevel@gmail.com>");
+diff --git a/arch/arm/crypto/sha1_glue.c b/arch/arm/crypto/sha1_glue.c
+index 76cd976230bc..ace4cd67464c 100644
+--- a/arch/arm/crypto/sha1_glue.c
++++ b/arch/arm/crypto/sha1_glue.c
+@@ -175,5 +175,5 @@ module_exit(sha1_mod_fini);
  
--	*diff = 0;
+ MODULE_LICENSE("GPL");
+ MODULE_DESCRIPTION("SHA1 Secure Hash Algorithm (ARM)");
+-MODULE_ALIAS("sha1");
++MODULE_ALIAS_CRYPTO("sha1");
+ MODULE_AUTHOR("David McCullough <ucdevel@gmail.com>");
+diff --git a/arch/powerpc/crypto/sha1.c b/arch/powerpc/crypto/sha1.c
+index f9e8b9491efc..0f88c7b41119 100644
+--- a/arch/powerpc/crypto/sha1.c
++++ b/arch/powerpc/crypto/sha1.c
+@@ -154,4 +154,4 @@ module_exit(sha1_powerpc_mod_fini);
+ MODULE_LICENSE("GPL");
+ MODULE_DESCRIPTION("SHA1 Secure Hash Algorithm");
+ 
+-MODULE_ALIAS("sha1-powerpc");
++MODULE_ALIAS_CRYPTO("sha1-powerpc");
+diff --git a/arch/s390/crypto/aes_s390.c b/arch/s390/crypto/aes_s390.c
+index 2a245b55bb71..f8d9cb14adce 100644
+--- a/arch/s390/crypto/aes_s390.c
++++ b/arch/s390/crypto/aes_s390.c
+@@ -967,7 +967,7 @@ static void __exit aes_s390_fini(void)
+ module_init(aes_s390_init);
+ module_exit(aes_s390_fini);
+ 
+-MODULE_ALIAS("aes-all");
++MODULE_ALIAS_CRYPTO("aes-all");
+ 
+ MODULE_DESCRIPTION("Rijndael (AES) Cipher Algorithm");
+ MODULE_LICENSE("GPL");
+diff --git a/arch/s390/crypto/des_s390.c b/arch/s390/crypto/des_s390.c
+index 2d96e68febb2..a3e24d4d2530 100644
+--- a/arch/s390/crypto/des_s390.c
++++ b/arch/s390/crypto/des_s390.c
+@@ -616,8 +616,8 @@ static void __exit des_s390_exit(void)
+ module_init(des_s390_init);
+ module_exit(des_s390_exit);
+ 
+-MODULE_ALIAS("des");
+-MODULE_ALIAS("des3_ede");
++MODULE_ALIAS_CRYPTO("des");
++MODULE_ALIAS_CRYPTO("des3_ede");
+ 
+ MODULE_LICENSE("GPL");
+ MODULE_DESCRIPTION("DES & Triple DES EDE Cipher Algorithms");
+diff --git a/arch/s390/crypto/ghash_s390.c b/arch/s390/crypto/ghash_s390.c
+index d43485d142e9..7940dc90e80b 100644
+--- a/arch/s390/crypto/ghash_s390.c
++++ b/arch/s390/crypto/ghash_s390.c
+@@ -160,7 +160,7 @@ static void __exit ghash_mod_exit(void)
+ module_init(ghash_mod_init);
+ module_exit(ghash_mod_exit);
+ 
+-MODULE_ALIAS("ghash");
++MODULE_ALIAS_CRYPTO("ghash");
+ 
+ MODULE_LICENSE("GPL");
+ MODULE_DESCRIPTION("GHASH Message Digest Algorithm, s390 implementation");
+diff --git a/arch/s390/crypto/sha1_s390.c b/arch/s390/crypto/sha1_s390.c
+index a1b3a9dc9d8a..5b2bee323694 100644
+--- a/arch/s390/crypto/sha1_s390.c
++++ b/arch/s390/crypto/sha1_s390.c
+@@ -103,6 +103,6 @@ static void __exit sha1_s390_fini(void)
+ module_init(sha1_s390_init);
+ module_exit(sha1_s390_fini);
+ 
+-MODULE_ALIAS("sha1");
++MODULE_ALIAS_CRYPTO("sha1");
+ MODULE_LICENSE("GPL");
+ MODULE_DESCRIPTION("SHA1 Secure Hash Algorithm");
+diff --git a/arch/s390/crypto/sha256_s390.c b/arch/s390/crypto/sha256_s390.c
+index 9b853809a492..b74ff158108c 100644
+--- a/arch/s390/crypto/sha256_s390.c
++++ b/arch/s390/crypto/sha256_s390.c
+@@ -143,7 +143,7 @@ static void __exit sha256_s390_fini(void)
+ module_init(sha256_s390_init);
+ module_exit(sha256_s390_fini);
+ 
+-MODULE_ALIAS("sha256");
+-MODULE_ALIAS("sha224");
++MODULE_ALIAS_CRYPTO("sha256");
++MODULE_ALIAS_CRYPTO("sha224");
+ MODULE_LICENSE("GPL");
+ MODULE_DESCRIPTION("SHA256 and SHA224 Secure Hash Algorithm");
+diff --git a/arch/s390/crypto/sha512_s390.c b/arch/s390/crypto/sha512_s390.c
+index 32a81383b69c..0c36989ba182 100644
+--- a/arch/s390/crypto/sha512_s390.c
++++ b/arch/s390/crypto/sha512_s390.c
+@@ -86,7 +86,7 @@ static struct shash_alg sha512_alg = {
+ 	}
+ };
+ 
+-MODULE_ALIAS("sha512");
++MODULE_ALIAS_CRYPTO("sha512");
+ 
+ static int sha384_init(struct shash_desc *desc)
+ {
+@@ -126,7 +126,7 @@ static struct shash_alg sha384_alg = {
+ 	}
+ };
+ 
+-MODULE_ALIAS("sha384");
++MODULE_ALIAS_CRYPTO("sha384");
+ 
+ static int __init init(void)
+ {
+diff --git a/arch/sparc/crypto/aes_glue.c b/arch/sparc/crypto/aes_glue.c
+index 503e6d96ad4e..ded4cee35318 100644
+--- a/arch/sparc/crypto/aes_glue.c
++++ b/arch/sparc/crypto/aes_glue.c
+@@ -499,6 +499,6 @@ module_exit(aes_sparc64_mod_fini);
+ MODULE_LICENSE("GPL");
+ MODULE_DESCRIPTION("AES Secure Hash Algorithm, sparc64 aes opcode accelerated");
+ 
+-MODULE_ALIAS("aes");
++MODULE_ALIAS_CRYPTO("aes");
+ 
+ #include "crop_devid.c"
+diff --git a/arch/sparc/crypto/camellia_glue.c b/arch/sparc/crypto/camellia_glue.c
+index 888f6260b4ec..641f55cb61c3 100644
+--- a/arch/sparc/crypto/camellia_glue.c
++++ b/arch/sparc/crypto/camellia_glue.c
+@@ -322,6 +322,6 @@ module_exit(camellia_sparc64_mod_fini);
+ MODULE_LICENSE("GPL");
+ MODULE_DESCRIPTION("Camellia Cipher Algorithm, sparc64 camellia opcode accelerated");
+ 
+-MODULE_ALIAS("aes");
++MODULE_ALIAS_CRYPTO("aes");
+ 
+ #include "crop_devid.c"
+diff --git a/arch/sparc/crypto/crc32c_glue.c b/arch/sparc/crypto/crc32c_glue.c
+index 5162fad912ce..d1064e46efe8 100644
+--- a/arch/sparc/crypto/crc32c_glue.c
++++ b/arch/sparc/crypto/crc32c_glue.c
+@@ -176,6 +176,6 @@ module_exit(crc32c_sparc64_mod_fini);
+ MODULE_LICENSE("GPL");
+ MODULE_DESCRIPTION("CRC32c (Castagnoli), sparc64 crc32c opcode accelerated");
+ 
+-MODULE_ALIAS("crc32c");
++MODULE_ALIAS_CRYPTO("crc32c");
+ 
+ #include "crop_devid.c"
+diff --git a/arch/sparc/crypto/des_glue.c b/arch/sparc/crypto/des_glue.c
+index 3065bc61f9d3..d11500972994 100644
+--- a/arch/sparc/crypto/des_glue.c
++++ b/arch/sparc/crypto/des_glue.c
+@@ -532,6 +532,6 @@ module_exit(des_sparc64_mod_fini);
+ MODULE_LICENSE("GPL");
+ MODULE_DESCRIPTION("DES & Triple DES EDE Cipher Algorithms, sparc64 des opcode accelerated");
+ 
+-MODULE_ALIAS("des");
++MODULE_ALIAS_CRYPTO("des");
+ 
+ #include "crop_devid.c"
+diff --git a/arch/sparc/crypto/md5_glue.c b/arch/sparc/crypto/md5_glue.c
+index 09a9ea1dfb69..64c7ff5f72a9 100644
+--- a/arch/sparc/crypto/md5_glue.c
++++ b/arch/sparc/crypto/md5_glue.c
+@@ -185,6 +185,6 @@ module_exit(md5_sparc64_mod_fini);
+ MODULE_LICENSE("GPL");
+ MODULE_DESCRIPTION("MD5 Secure Hash Algorithm, sparc64 md5 opcode accelerated");
+ 
+-MODULE_ALIAS("md5");
++MODULE_ALIAS_CRYPTO("md5");
+ 
+ #include "crop_devid.c"
+diff --git a/arch/sparc/crypto/sha1_glue.c b/arch/sparc/crypto/sha1_glue.c
+index 6cd5f29e1e0d..1b3e47accc74 100644
+--- a/arch/sparc/crypto/sha1_glue.c
++++ b/arch/sparc/crypto/sha1_glue.c
+@@ -180,6 +180,6 @@ module_exit(sha1_sparc64_mod_fini);
+ MODULE_LICENSE("GPL");
+ MODULE_DESCRIPTION("SHA1 Secure Hash Algorithm, sparc64 sha1 opcode accelerated");
+ 
+-MODULE_ALIAS("sha1");
++MODULE_ALIAS_CRYPTO("sha1");
+ 
+ #include "crop_devid.c"
+diff --git a/arch/sparc/crypto/sha256_glue.c b/arch/sparc/crypto/sha256_glue.c
+index 04f555ab2680..41f27cca2a22 100644
+--- a/arch/sparc/crypto/sha256_glue.c
++++ b/arch/sparc/crypto/sha256_glue.c
+@@ -237,7 +237,7 @@ module_exit(sha256_sparc64_mod_fini);
+ MODULE_LICENSE("GPL");
+ MODULE_DESCRIPTION("SHA-224 and SHA-256 Secure Hash Algorithm, sparc64 sha256 opcode accelerated");
+ 
+-MODULE_ALIAS("sha224");
+-MODULE_ALIAS("sha256");
++MODULE_ALIAS_CRYPTO("sha224");
++MODULE_ALIAS_CRYPTO("sha256");
+ 
+ #include "crop_devid.c"
+diff --git a/arch/sparc/crypto/sha512_glue.c b/arch/sparc/crypto/sha512_glue.c
+index f04d1994d19a..9fff88541b8c 100644
+--- a/arch/sparc/crypto/sha512_glue.c
++++ b/arch/sparc/crypto/sha512_glue.c
+@@ -222,7 +222,7 @@ module_exit(sha512_sparc64_mod_fini);
+ MODULE_LICENSE("GPL");
+ MODULE_DESCRIPTION("SHA-384 and SHA-512 Secure Hash Algorithm, sparc64 sha512 opcode accelerated");
+ 
+-MODULE_ALIAS("sha384");
+-MODULE_ALIAS("sha512");
++MODULE_ALIAS_CRYPTO("sha384");
++MODULE_ALIAS_CRYPTO("sha512");
+ 
+ #include "crop_devid.c"
+diff --git a/arch/x86/crypto/aes_glue.c b/arch/x86/crypto/aes_glue.c
+index aafe8ce0d65d..e26984f7ab8d 100644
+--- a/arch/x86/crypto/aes_glue.c
++++ b/arch/x86/crypto/aes_glue.c
+@@ -66,5 +66,5 @@ module_exit(aes_fini);
+ 
+ MODULE_DESCRIPTION("Rijndael (AES) Cipher Algorithm, asm optimized");
+ MODULE_LICENSE("GPL");
+-MODULE_ALIAS("aes");
+-MODULE_ALIAS("aes-asm");
++MODULE_ALIAS_CRYPTO("aes");
++MODULE_ALIAS_CRYPTO("aes-asm");
+diff --git a/arch/x86/crypto/aesni-intel_glue.c b/arch/x86/crypto/aesni-intel_glue.c
+index f80e668785c0..f89e7490d303 100644
+--- a/arch/x86/crypto/aesni-intel_glue.c
++++ b/arch/x86/crypto/aesni-intel_glue.c
+@@ -1373,4 +1373,4 @@ module_exit(aesni_exit);
+ 
+ MODULE_DESCRIPTION("Rijndael (AES) Cipher Algorithm, Intel AES-NI instructions optimized");
+ MODULE_LICENSE("GPL");
+-MODULE_ALIAS("aes");
++MODULE_ALIAS_CRYPTO("aes");
+diff --git a/arch/x86/crypto/blowfish_glue.c b/arch/x86/crypto/blowfish_glue.c
+index 50ec333b70e6..1477cfcdbf6b 100644
+--- a/arch/x86/crypto/blowfish_glue.c
++++ b/arch/x86/crypto/blowfish_glue.c
+@@ -481,5 +481,5 @@ module_exit(fini);
+ 
+ MODULE_LICENSE("GPL");
+ MODULE_DESCRIPTION("Blowfish Cipher Algorithm, asm optimized");
+-MODULE_ALIAS("blowfish");
+-MODULE_ALIAS("blowfish-asm");
++MODULE_ALIAS_CRYPTO("blowfish");
++MODULE_ALIAS_CRYPTO("blowfish-asm");
+diff --git a/arch/x86/crypto/camellia_aesni_avx2_glue.c b/arch/x86/crypto/camellia_aesni_avx2_glue.c
+index 414fe5d7946b..da710fcf8631 100644
+--- a/arch/x86/crypto/camellia_aesni_avx2_glue.c
++++ b/arch/x86/crypto/camellia_aesni_avx2_glue.c
+@@ -582,5 +582,5 @@ module_exit(camellia_aesni_fini);
+ 
+ MODULE_LICENSE("GPL");
+ MODULE_DESCRIPTION("Camellia Cipher Algorithm, AES-NI/AVX2 optimized");
+-MODULE_ALIAS("camellia");
+-MODULE_ALIAS("camellia-asm");
++MODULE_ALIAS_CRYPTO("camellia");
++MODULE_ALIAS_CRYPTO("camellia-asm");
+diff --git a/arch/x86/crypto/camellia_aesni_avx_glue.c b/arch/x86/crypto/camellia_aesni_avx_glue.c
+index 37fd0c0a81ea..883e1af10dc5 100644
+--- a/arch/x86/crypto/camellia_aesni_avx_glue.c
++++ b/arch/x86/crypto/camellia_aesni_avx_glue.c
+@@ -574,5 +574,5 @@ module_exit(camellia_aesni_fini);
+ 
+ MODULE_LICENSE("GPL");
+ MODULE_DESCRIPTION("Camellia Cipher Algorithm, AES-NI/AVX optimized");
+-MODULE_ALIAS("camellia");
+-MODULE_ALIAS("camellia-asm");
++MODULE_ALIAS_CRYPTO("camellia");
++MODULE_ALIAS_CRYPTO("camellia-asm");
+diff --git a/arch/x86/crypto/camellia_glue.c b/arch/x86/crypto/camellia_glue.c
+index c171dcbf192d..5c8b6266a394 100644
+--- a/arch/x86/crypto/camellia_glue.c
++++ b/arch/x86/crypto/camellia_glue.c
+@@ -1725,5 +1725,5 @@ module_exit(fini);
+ 
+ MODULE_LICENSE("GPL");
+ MODULE_DESCRIPTION("Camellia Cipher Algorithm, asm optimized");
+-MODULE_ALIAS("camellia");
+-MODULE_ALIAS("camellia-asm");
++MODULE_ALIAS_CRYPTO("camellia");
++MODULE_ALIAS_CRYPTO("camellia-asm");
+diff --git a/arch/x86/crypto/cast5_avx_glue.c b/arch/x86/crypto/cast5_avx_glue.c
+index c6631813dc11..d416069e3184 100644
+--- a/arch/x86/crypto/cast5_avx_glue.c
++++ b/arch/x86/crypto/cast5_avx_glue.c
+@@ -494,4 +494,4 @@ module_exit(cast5_exit);
+ 
+ MODULE_DESCRIPTION("Cast5 Cipher Algorithm, AVX optimized");
+ MODULE_LICENSE("GPL");
+-MODULE_ALIAS("cast5");
++MODULE_ALIAS_CRYPTO("cast5");
+diff --git a/arch/x86/crypto/cast6_avx_glue.c b/arch/x86/crypto/cast6_avx_glue.c
+index 8d0dfb86a559..c19756265d4e 100644
+--- a/arch/x86/crypto/cast6_avx_glue.c
++++ b/arch/x86/crypto/cast6_avx_glue.c
+@@ -611,4 +611,4 @@ module_exit(cast6_exit);
+ 
+ MODULE_DESCRIPTION("Cast6 Cipher Algorithm, AVX optimized");
+ MODULE_LICENSE("GPL");
+-MODULE_ALIAS("cast6");
++MODULE_ALIAS_CRYPTO("cast6");
+diff --git a/arch/x86/crypto/crc32-pclmul_glue.c b/arch/x86/crypto/crc32-pclmul_glue.c
+index 9d014a74ef96..1937fc1d8763 100644
+--- a/arch/x86/crypto/crc32-pclmul_glue.c
++++ b/arch/x86/crypto/crc32-pclmul_glue.c
+@@ -197,5 +197,5 @@ module_exit(crc32_pclmul_mod_fini);
+ MODULE_AUTHOR("Alexander Boyko <alexander_boyko@xyratex.com>");
+ MODULE_LICENSE("GPL");
+ 
+-MODULE_ALIAS("crc32");
+-MODULE_ALIAS("crc32-pclmul");
++MODULE_ALIAS_CRYPTO("crc32");
++MODULE_ALIAS_CRYPTO("crc32-pclmul");
+diff --git a/arch/x86/crypto/crc32c-intel_glue.c b/arch/x86/crypto/crc32c-intel_glue.c
+index 6812ad98355c..28640c3d6af7 100644
+--- a/arch/x86/crypto/crc32c-intel_glue.c
++++ b/arch/x86/crypto/crc32c-intel_glue.c
+@@ -280,5 +280,5 @@ MODULE_AUTHOR("Austin Zhang <austin.zhang@intel.com>, Kent Liu <kent.liu@intel.c
+ MODULE_DESCRIPTION("CRC32c (Castagnoli) optimization using Intel Hardware.");
+ MODULE_LICENSE("GPL");
+ 
+-MODULE_ALIAS("crc32c");
+-MODULE_ALIAS("crc32c-intel");
++MODULE_ALIAS_CRYPTO("crc32c");
++MODULE_ALIAS_CRYPTO("crc32c-intel");
+diff --git a/arch/x86/crypto/crct10dif-pclmul_glue.c b/arch/x86/crypto/crct10dif-pclmul_glue.c
+index 7845d7fd54c0..b6c67bf30fdf 100644
+--- a/arch/x86/crypto/crct10dif-pclmul_glue.c
++++ b/arch/x86/crypto/crct10dif-pclmul_glue.c
+@@ -147,5 +147,5 @@ MODULE_AUTHOR("Tim Chen <tim.c.chen@linux.intel.com>");
+ MODULE_DESCRIPTION("T10 DIF CRC calculation accelerated with PCLMULQDQ.");
+ MODULE_LICENSE("GPL");
+ 
+-MODULE_ALIAS("crct10dif");
+-MODULE_ALIAS("crct10dif-pclmul");
++MODULE_ALIAS_CRYPTO("crct10dif");
++MODULE_ALIAS_CRYPTO("crct10dif-pclmul");
+diff --git a/arch/x86/crypto/ghash-clmulni-intel_glue.c b/arch/x86/crypto/ghash-clmulni-intel_glue.c
+index d785cf2c529c..a8d6f69f92a3 100644
+--- a/arch/x86/crypto/ghash-clmulni-intel_glue.c
++++ b/arch/x86/crypto/ghash-clmulni-intel_glue.c
+@@ -341,4 +341,4 @@ module_exit(ghash_pclmulqdqni_mod_exit);
+ MODULE_LICENSE("GPL");
+ MODULE_DESCRIPTION("GHASH Message Digest Algorithm, "
+ 		   "acclerated by PCLMULQDQ-NI");
+-MODULE_ALIAS("ghash");
++MODULE_ALIAS_CRYPTO("ghash");
+diff --git a/arch/x86/crypto/salsa20_glue.c b/arch/x86/crypto/salsa20_glue.c
+index 5e8e67739bb5..399a29d067d6 100644
+--- a/arch/x86/crypto/salsa20_glue.c
++++ b/arch/x86/crypto/salsa20_glue.c
+@@ -119,5 +119,5 @@ module_exit(fini);
+ 
+ MODULE_LICENSE("GPL");
+ MODULE_DESCRIPTION ("Salsa20 stream cipher algorithm (optimized assembly version)");
+-MODULE_ALIAS("salsa20");
+-MODULE_ALIAS("salsa20-asm");
++MODULE_ALIAS_CRYPTO("salsa20");
++MODULE_ALIAS_CRYPTO("salsa20-asm");
+diff --git a/arch/x86/crypto/serpent_avx2_glue.c b/arch/x86/crypto/serpent_avx2_glue.c
+index 23aabc6c20a5..cb57caf13ef7 100644
+--- a/arch/x86/crypto/serpent_avx2_glue.c
++++ b/arch/x86/crypto/serpent_avx2_glue.c
+@@ -558,5 +558,5 @@ module_exit(fini);
+ 
+ MODULE_LICENSE("GPL");
+ MODULE_DESCRIPTION("Serpent Cipher Algorithm, AVX2 optimized");
+-MODULE_ALIAS("serpent");
+-MODULE_ALIAS("serpent-asm");
++MODULE_ALIAS_CRYPTO("serpent");
++MODULE_ALIAS_CRYPTO("serpent-asm");
+diff --git a/arch/x86/crypto/serpent_avx_glue.c b/arch/x86/crypto/serpent_avx_glue.c
+index 9ae83cf8d21e..0a86e8b65e60 100644
+--- a/arch/x86/crypto/serpent_avx_glue.c
++++ b/arch/x86/crypto/serpent_avx_glue.c
+@@ -617,4 +617,4 @@ module_exit(serpent_exit);
+ 
+ MODULE_DESCRIPTION("Serpent Cipher Algorithm, AVX optimized");
+ MODULE_LICENSE("GPL");
+-MODULE_ALIAS("serpent");
++MODULE_ALIAS_CRYPTO("serpent");
+diff --git a/arch/x86/crypto/serpent_sse2_glue.c b/arch/x86/crypto/serpent_sse2_glue.c
+index 97a356ece24d..279f3899c779 100644
+--- a/arch/x86/crypto/serpent_sse2_glue.c
++++ b/arch/x86/crypto/serpent_sse2_glue.c
+@@ -618,4 +618,4 @@ module_exit(serpent_sse2_exit);
+ 
+ MODULE_DESCRIPTION("Serpent Cipher Algorithm, SSE2 optimized");
+ MODULE_LICENSE("GPL");
+-MODULE_ALIAS("serpent");
++MODULE_ALIAS_CRYPTO("serpent");
+diff --git a/arch/x86/crypto/sha1_ssse3_glue.c b/arch/x86/crypto/sha1_ssse3_glue.c
+index 4a11a9d72451..29e1060e9001 100644
+--- a/arch/x86/crypto/sha1_ssse3_glue.c
++++ b/arch/x86/crypto/sha1_ssse3_glue.c
+@@ -237,4 +237,4 @@ module_exit(sha1_ssse3_mod_fini);
+ MODULE_LICENSE("GPL");
+ MODULE_DESCRIPTION("SHA1 Secure Hash Algorithm, Supplemental SSE3 accelerated");
+ 
+-MODULE_ALIAS("sha1");
++MODULE_ALIAS_CRYPTO("sha1");
+diff --git a/arch/x86/crypto/sha256_ssse3_glue.c b/arch/x86/crypto/sha256_ssse3_glue.c
+index f248546da1ca..4dc100d82902 100644
+--- a/arch/x86/crypto/sha256_ssse3_glue.c
++++ b/arch/x86/crypto/sha256_ssse3_glue.c
+@@ -318,5 +318,5 @@ module_exit(sha256_ssse3_mod_fini);
+ MODULE_LICENSE("GPL");
+ MODULE_DESCRIPTION("SHA256 Secure Hash Algorithm, Supplemental SSE3 accelerated");
+ 
+-MODULE_ALIAS("sha256");
+-MODULE_ALIAS("sha224");
++MODULE_ALIAS_CRYPTO("sha256");
++MODULE_ALIAS_CRYPTO("sha224");
+diff --git a/arch/x86/crypto/sha512_ssse3_glue.c b/arch/x86/crypto/sha512_ssse3_glue.c
+index 8626b03e83b7..26a5898a6f26 100644
+--- a/arch/x86/crypto/sha512_ssse3_glue.c
++++ b/arch/x86/crypto/sha512_ssse3_glue.c
+@@ -326,5 +326,5 @@ module_exit(sha512_ssse3_mod_fini);
+ MODULE_LICENSE("GPL");
+ MODULE_DESCRIPTION("SHA512 Secure Hash Algorithm, Supplemental SSE3 accelerated");
+ 
+-MODULE_ALIAS("sha512");
+-MODULE_ALIAS("sha384");
++MODULE_ALIAS_CRYPTO("sha512");
++MODULE_ALIAS_CRYPTO("sha384");
+diff --git a/arch/x86/crypto/twofish_avx_glue.c b/arch/x86/crypto/twofish_avx_glue.c
+index a62ba541884e..c8c12c13d105 100644
+--- a/arch/x86/crypto/twofish_avx_glue.c
++++ b/arch/x86/crypto/twofish_avx_glue.c
+@@ -579,4 +579,4 @@ module_exit(twofish_exit);
+ 
+ MODULE_DESCRIPTION("Twofish Cipher Algorithm, AVX optimized");
+ MODULE_LICENSE("GPL");
+-MODULE_ALIAS("twofish");
++MODULE_ALIAS_CRYPTO("twofish");
+diff --git a/arch/x86/crypto/twofish_glue.c b/arch/x86/crypto/twofish_glue.c
+index 0a5202303501..77e06c2da83d 100644
+--- a/arch/x86/crypto/twofish_glue.c
++++ b/arch/x86/crypto/twofish_glue.c
+@@ -96,5 +96,5 @@ module_exit(fini);
+ 
+ MODULE_LICENSE("GPL");
+ MODULE_DESCRIPTION ("Twofish Cipher Algorithm, asm optimized");
+-MODULE_ALIAS("twofish");
+-MODULE_ALIAS("twofish-asm");
++MODULE_ALIAS_CRYPTO("twofish");
++MODULE_ALIAS_CRYPTO("twofish-asm");
+diff --git a/arch/x86/crypto/twofish_glue_3way.c b/arch/x86/crypto/twofish_glue_3way.c
+index 13e63b3e1dfb..56d8a08ee479 100644
+--- a/arch/x86/crypto/twofish_glue_3way.c
++++ b/arch/x86/crypto/twofish_glue_3way.c
+@@ -495,5 +495,5 @@ module_exit(fini);
+ 
+ MODULE_LICENSE("GPL");
+ MODULE_DESCRIPTION("Twofish Cipher Algorithm, 3-way parallel asm optimized");
+-MODULE_ALIAS("twofish");
+-MODULE_ALIAS("twofish-asm");
++MODULE_ALIAS_CRYPTO("twofish");
++MODULE_ALIAS_CRYPTO("twofish-asm");
+diff --git a/crypto/842.c b/crypto/842.c
+index 65c7a89cfa09..b48f4f108c47 100644
+--- a/crypto/842.c
++++ b/crypto/842.c
+@@ -180,3 +180,4 @@ module_exit(nx842_mod_exit);
+ 
+ MODULE_LICENSE("GPL");
+ MODULE_DESCRIPTION("842 Compression Algorithm");
++MODULE_ALIAS_CRYPTO("842");
+diff --git a/crypto/aes_generic.c b/crypto/aes_generic.c
+index fd0d6b454975..9b3c54c1cbe8 100644
+--- a/crypto/aes_generic.c
++++ b/crypto/aes_generic.c
+@@ -1474,4 +1474,4 @@ module_exit(aes_fini);
+ 
+ MODULE_DESCRIPTION("Rijndael (AES) Cipher Algorithm");
+ MODULE_LICENSE("Dual BSD/GPL");
+-MODULE_ALIAS("aes");
++MODULE_ALIAS_CRYPTO("aes");
+diff --git a/crypto/ansi_cprng.c b/crypto/ansi_cprng.c
+index 666f1962a160..b4485a108389 100644
+--- a/crypto/ansi_cprng.c
++++ b/crypto/ansi_cprng.c
+@@ -476,4 +476,4 @@ module_param(dbg, int, 0);
+ MODULE_PARM_DESC(dbg, "Boolean to enable debugging (0/1 == off/on)");
+ module_init(prng_mod_init);
+ module_exit(prng_mod_fini);
+-MODULE_ALIAS("stdrng");
++MODULE_ALIAS_CRYPTO("stdrng");
+diff --git a/crypto/anubis.c b/crypto/anubis.c
+index 008c8a4fb67c..4bb187c2a902 100644
+--- a/crypto/anubis.c
++++ b/crypto/anubis.c
+@@ -704,3 +704,4 @@ module_exit(anubis_mod_fini);
+ 
+ MODULE_LICENSE("GPL");
+ MODULE_DESCRIPTION("Anubis Cryptographic Algorithm");
++MODULE_ALIAS_CRYPTO("anubis");
+diff --git a/crypto/api.c b/crypto/api.c
+index a2b39c5f3649..2a81e98a0021 100644
+--- a/crypto/api.c
++++ b/crypto/api.c
+@@ -216,11 +216,11 @@ struct crypto_alg *crypto_larval_lookup(const char *name, u32 type, u32 mask)
+ 
+ 	alg = crypto_alg_lookup(name, type, mask);
+ 	if (!alg) {
+-		request_module("%s", name);
++		request_module("crypto-%s", name);
+ 
+ 		if (!((type ^ CRYPTO_ALG_NEED_FALLBACK) & mask &
+ 		      CRYPTO_ALG_NEED_FALLBACK))
+-			request_module("%s-all", name);
++			request_module("crypto-%s-all", name);
+ 
+ 		alg = crypto_alg_lookup(name, type, mask);
+ 	}
+diff --git a/crypto/arc4.c b/crypto/arc4.c
+index 5a772c3657d5..f1a81925558f 100644
+--- a/crypto/arc4.c
++++ b/crypto/arc4.c
+@@ -166,3 +166,4 @@ module_exit(arc4_exit);
+ MODULE_LICENSE("GPL");
+ MODULE_DESCRIPTION("ARC4 Cipher Algorithm");
+ MODULE_AUTHOR("Jon Oberheide <jon@oberheide.org>");
++MODULE_ALIAS_CRYPTO("arc4");
+diff --git a/crypto/blowfish_generic.c b/crypto/blowfish_generic.c
+index 8baf5447d35b..7bd71f02d0dd 100644
+--- a/crypto/blowfish_generic.c
++++ b/crypto/blowfish_generic.c
+@@ -138,4 +138,4 @@ module_exit(blowfish_mod_fini);
+ 
+ MODULE_LICENSE("GPL");
+ MODULE_DESCRIPTION("Blowfish Cipher Algorithm");
+-MODULE_ALIAS("blowfish");
++MODULE_ALIAS_CRYPTO("blowfish");
+diff --git a/crypto/camellia_generic.c b/crypto/camellia_generic.c
+index 26bcd7a2d6b4..1b74c5a3e891 100644
+--- a/crypto/camellia_generic.c
++++ b/crypto/camellia_generic.c
+@@ -1098,4 +1098,4 @@ module_exit(camellia_fini);
+ 
+ MODULE_DESCRIPTION("Camellia Cipher Algorithm");
+ MODULE_LICENSE("GPL");
+-MODULE_ALIAS("camellia");
++MODULE_ALIAS_CRYPTO("camellia");
+diff --git a/crypto/cast5_generic.c b/crypto/cast5_generic.c
+index 5558f630a0eb..84c86db67ec7 100644
+--- a/crypto/cast5_generic.c
++++ b/crypto/cast5_generic.c
+@@ -549,4 +549,4 @@ module_exit(cast5_mod_fini);
+ 
+ MODULE_LICENSE("GPL");
+ MODULE_DESCRIPTION("Cast5 Cipher Algorithm");
+-MODULE_ALIAS("cast5");
++MODULE_ALIAS_CRYPTO("cast5");
+diff --git a/crypto/cast6_generic.c b/crypto/cast6_generic.c
+index de732528a430..f408f0bd8de2 100644
+--- a/crypto/cast6_generic.c
++++ b/crypto/cast6_generic.c
+@@ -291,4 +291,4 @@ module_exit(cast6_mod_fini);
+ 
+ MODULE_LICENSE("GPL");
+ MODULE_DESCRIPTION("Cast6 Cipher Algorithm");
+-MODULE_ALIAS("cast6");
++MODULE_ALIAS_CRYPTO("cast6");
+diff --git a/crypto/ccm.c b/crypto/ccm.c
+index ed009b77e67d..389670d4ab75 100644
+--- a/crypto/ccm.c
++++ b/crypto/ccm.c
+@@ -879,5 +879,5 @@ module_exit(crypto_ccm_module_exit);
+ 
+ MODULE_LICENSE("GPL");
+ MODULE_DESCRIPTION("Counter with CBC MAC");
+-MODULE_ALIAS("ccm_base");
+-MODULE_ALIAS("rfc4309");
++MODULE_ALIAS_CRYPTO("ccm_base");
++MODULE_ALIAS_CRYPTO("rfc4309");
+diff --git a/crypto/crc32.c b/crypto/crc32.c
+index 9d1c41569898..187ded28cb0b 100644
+--- a/crypto/crc32.c
++++ b/crypto/crc32.c
+@@ -156,3 +156,4 @@ module_exit(crc32_mod_fini);
+ MODULE_AUTHOR("Alexander Boyko <alexander_boyko@xyratex.com>");
+ MODULE_DESCRIPTION("CRC32 calculations wrapper for lib/crc32");
+ MODULE_LICENSE("GPL");
++MODULE_ALIAS_CRYPTO("crc32");
+diff --git a/crypto/crct10dif_generic.c b/crypto/crct10dif_generic.c
+index 877e7114ec5c..08bb4f504520 100644
+--- a/crypto/crct10dif_generic.c
++++ b/crypto/crct10dif_generic.c
+@@ -124,4 +124,4 @@ module_exit(crct10dif_mod_fini);
+ MODULE_AUTHOR("Tim Chen <tim.c.chen@linux.intel.com>");
+ MODULE_DESCRIPTION("T10 DIF CRC calculation.");
+ MODULE_LICENSE("GPL");
+-MODULE_ALIAS("crct10dif");
++MODULE_ALIAS_CRYPTO("crct10dif");
+diff --git a/crypto/crypto_null.c b/crypto/crypto_null.c
+index fee7265cd35d..7b39fa3deac2 100644
+--- a/crypto/crypto_null.c
++++ b/crypto/crypto_null.c
+@@ -149,9 +149,9 @@ static struct crypto_alg null_algs[3] = { {
+ 	.coa_decompress		=	null_compress } }
+ } };
+ 
+-MODULE_ALIAS("compress_null");
+-MODULE_ALIAS("digest_null");
+-MODULE_ALIAS("cipher_null");
++MODULE_ALIAS_CRYPTO("compress_null");
++MODULE_ALIAS_CRYPTO("digest_null");
++MODULE_ALIAS_CRYPTO("cipher_null");
+ 
+ static int __init crypto_null_mod_init(void)
+ {
+diff --git a/crypto/ctr.c b/crypto/ctr.c
+index f2b94f27bb2c..3d81ff7e6b48 100644
+--- a/crypto/ctr.c
++++ b/crypto/ctr.c
+@@ -466,4 +466,4 @@ module_exit(crypto_ctr_module_exit);
+ 
+ MODULE_LICENSE("GPL");
+ MODULE_DESCRIPTION("CTR Counter block mode");
+-MODULE_ALIAS("rfc3686");
++MODULE_ALIAS_CRYPTO("rfc3686");
+diff --git a/crypto/deflate.c b/crypto/deflate.c
+index b57d70eb156b..95d8d37c5021 100644
+--- a/crypto/deflate.c
++++ b/crypto/deflate.c
+@@ -222,4 +222,4 @@ module_exit(deflate_mod_fini);
+ MODULE_LICENSE("GPL");
+ MODULE_DESCRIPTION("Deflate Compression Algorithm for IPCOMP");
+ MODULE_AUTHOR("James Morris <jmorris@intercode.com.au>");
 -
- 	/* Only useful for established sessions */
- 	if (cp->state != IP_VS_TCP_S_ESTABLISHED)
- 		return 1;
-@@ -321,6 +321,9 @@ static int ip_vs_ftp_in(struct ip_vs_app *app, struct ip_vs_conn *cp,
- 	struct ip_vs_conn *n_cp;
- 	struct net *net;
++MODULE_ALIAS_CRYPTO("deflate");
+diff --git a/crypto/des_generic.c b/crypto/des_generic.c
+index f6cf63f88468..5ec5ed544149 100644
+--- a/crypto/des_generic.c
++++ b/crypto/des_generic.c
+@@ -971,7 +971,7 @@ static struct crypto_alg des_algs[2] = { {
+ 	.cia_decrypt		=	des3_ede_decrypt } }
+ } };
  
-+	/* no diff required for incoming packets */
-+	*diff = 0;
-+
- #ifdef CONFIG_IP_VS_IPV6
- 	/* This application helper doesn't work with IPv6 yet,
- 	 * so turn this into a no-op for IPv6 packets
-@@ -329,9 +332,6 @@ static int ip_vs_ftp_in(struct ip_vs_app *app, struct ip_vs_conn *cp,
- 		return 1;
- #endif
+-MODULE_ALIAS("des3_ede");
++MODULE_ALIAS_CRYPTO("des3_ede");
  
--	/* no diff required for incoming packets */
--	*diff = 0;
+ static int __init des_generic_mod_init(void)
+ {
+@@ -989,4 +989,4 @@ module_exit(des_generic_mod_fini);
+ MODULE_LICENSE("GPL");
+ MODULE_DESCRIPTION("DES & Triple DES EDE Cipher Algorithms");
+ MODULE_AUTHOR("Dag Arne Osvik <da@osvik.no>");
+-MODULE_ALIAS("des");
++MODULE_ALIAS_CRYPTO("des");
+diff --git a/crypto/fcrypt.c b/crypto/fcrypt.c
+index 021d7fec6bc8..77286ea28865 100644
+--- a/crypto/fcrypt.c
++++ b/crypto/fcrypt.c
+@@ -420,3 +420,4 @@ module_exit(fcrypt_mod_fini);
+ MODULE_LICENSE("Dual BSD/GPL");
+ MODULE_DESCRIPTION("FCrypt Cipher Algorithm");
+ MODULE_AUTHOR("David Howells <dhowells@redhat.com>");
++MODULE_ALIAS_CRYPTO("fcrypt");
+diff --git a/crypto/gcm.c b/crypto/gcm.c
+index 43e1fb05ea54..8dbd80f5fb0c 100644
+--- a/crypto/gcm.c
++++ b/crypto/gcm.c
+@@ -1441,6 +1441,6 @@ module_exit(crypto_gcm_module_exit);
+ MODULE_LICENSE("GPL");
+ MODULE_DESCRIPTION("Galois/Counter Mode");
+ MODULE_AUTHOR("Mikko Herranen <mh1@iki.fi>");
+-MODULE_ALIAS("gcm_base");
+-MODULE_ALIAS("rfc4106");
+-MODULE_ALIAS("rfc4543");
++MODULE_ALIAS_CRYPTO("gcm_base");
++MODULE_ALIAS_CRYPTO("rfc4106");
++MODULE_ALIAS_CRYPTO("rfc4543");
+diff --git a/crypto/ghash-generic.c b/crypto/ghash-generic.c
+index 9d3f0c69a86f..4e97fae9666f 100644
+--- a/crypto/ghash-generic.c
++++ b/crypto/ghash-generic.c
+@@ -172,4 +172,4 @@ module_exit(ghash_mod_exit);
+ 
+ MODULE_LICENSE("GPL");
+ MODULE_DESCRIPTION("GHASH Message Digest Algorithm");
+-MODULE_ALIAS("ghash");
++MODULE_ALIAS_CRYPTO("ghash");
+diff --git a/crypto/khazad.c b/crypto/khazad.c
+index 60e7cd66facc..873eb5ded6d7 100644
+--- a/crypto/khazad.c
++++ b/crypto/khazad.c
+@@ -880,3 +880,4 @@ module_exit(khazad_mod_fini);
+ 
+ MODULE_LICENSE("GPL");
+ MODULE_DESCRIPTION("Khazad Cryptographic Algorithm");
++MODULE_ALIAS_CRYPTO("khazad");
+diff --git a/crypto/krng.c b/crypto/krng.c
+index a2d2b72fc135..67c88b331210 100644
+--- a/crypto/krng.c
++++ b/crypto/krng.c
+@@ -62,4 +62,4 @@ module_exit(krng_mod_fini);
+ 
+ MODULE_LICENSE("GPL");
+ MODULE_DESCRIPTION("Kernel Random Number Generator");
+-MODULE_ALIAS("stdrng");
++MODULE_ALIAS_CRYPTO("stdrng");
+diff --git a/crypto/lz4.c b/crypto/lz4.c
+index 4586dd15b0d8..53279ab8c3a6 100644
+--- a/crypto/lz4.c
++++ b/crypto/lz4.c
+@@ -104,3 +104,4 @@ module_exit(lz4_mod_fini);
+ 
+ MODULE_LICENSE("GPL");
+ MODULE_DESCRIPTION("LZ4 Compression Algorithm");
++MODULE_ALIAS_CRYPTO("lz4");
+diff --git a/crypto/lz4hc.c b/crypto/lz4hc.c
+index 151ba31d34e3..eaec5fa3debf 100644
+--- a/crypto/lz4hc.c
++++ b/crypto/lz4hc.c
+@@ -104,3 +104,4 @@ module_exit(lz4hc_mod_fini);
+ 
+ MODULE_LICENSE("GPL");
+ MODULE_DESCRIPTION("LZ4HC Compression Algorithm");
++MODULE_ALIAS_CRYPTO("lz4hc");
+diff --git a/crypto/lzo.c b/crypto/lzo.c
+index 1c2aa69c54b8..d1ff69404353 100644
+--- a/crypto/lzo.c
++++ b/crypto/lzo.c
+@@ -103,3 +103,4 @@ module_exit(lzo_mod_fini);
+ 
+ MODULE_LICENSE("GPL");
+ MODULE_DESCRIPTION("LZO Compression Algorithm");
++MODULE_ALIAS_CRYPTO("lzo");
+diff --git a/crypto/md4.c b/crypto/md4.c
+index 0477a6a01d58..3515af425cc9 100644
+--- a/crypto/md4.c
++++ b/crypto/md4.c
+@@ -255,4 +255,4 @@ module_exit(md4_mod_fini);
+ 
+ MODULE_LICENSE("GPL");
+ MODULE_DESCRIPTION("MD4 Message Digest Algorithm");
 -
- 	/* Only useful for established sessions */
- 	if (cp->state != IP_VS_TCP_S_ESTABLISHED)
- 		return 1;
++MODULE_ALIAS_CRYPTO("md4");
+diff --git a/crypto/md5.c b/crypto/md5.c
+index 7febeaab923b..36f5e5b103f3 100644
+--- a/crypto/md5.c
++++ b/crypto/md5.c
+@@ -168,3 +168,4 @@ module_exit(md5_mod_fini);
+ 
+ MODULE_LICENSE("GPL");
+ MODULE_DESCRIPTION("MD5 Message Digest Algorithm");
++MODULE_ALIAS_CRYPTO("md5");
+diff --git a/crypto/michael_mic.c b/crypto/michael_mic.c
+index 079b761bc70d..46195e0d0f4d 100644
+--- a/crypto/michael_mic.c
++++ b/crypto/michael_mic.c
+@@ -184,3 +184,4 @@ module_exit(michael_mic_exit);
+ MODULE_LICENSE("GPL v2");
+ MODULE_DESCRIPTION("Michael MIC");
+ MODULE_AUTHOR("Jouni Malinen <j@w1.fi>");
++MODULE_ALIAS_CRYPTO("michael_mic");
+diff --git a/crypto/rmd128.c b/crypto/rmd128.c
+index 8a0f68b7f257..049486ede938 100644
+--- a/crypto/rmd128.c
++++ b/crypto/rmd128.c
+@@ -327,3 +327,4 @@ module_exit(rmd128_mod_fini);
+ MODULE_LICENSE("GPL");
+ MODULE_AUTHOR("Adrian-Ken Rueegsegger <ken@codelabs.ch>");
+ MODULE_DESCRIPTION("RIPEMD-128 Message Digest");
++MODULE_ALIAS_CRYPTO("rmd128");
+diff --git a/crypto/rmd160.c b/crypto/rmd160.c
+index 525d7bb752cf..de585e51d455 100644
+--- a/crypto/rmd160.c
++++ b/crypto/rmd160.c
+@@ -371,3 +371,4 @@ module_exit(rmd160_mod_fini);
+ MODULE_LICENSE("GPL");
+ MODULE_AUTHOR("Adrian-Ken Rueegsegger <ken@codelabs.ch>");
+ MODULE_DESCRIPTION("RIPEMD-160 Message Digest");
++MODULE_ALIAS_CRYPTO("rmd160");
+diff --git a/crypto/rmd256.c b/crypto/rmd256.c
+index 69293d9b56e0..4ec02a754e09 100644
+--- a/crypto/rmd256.c
++++ b/crypto/rmd256.c
+@@ -346,3 +346,4 @@ module_exit(rmd256_mod_fini);
+ MODULE_LICENSE("GPL");
+ MODULE_AUTHOR("Adrian-Ken Rueegsegger <ken@codelabs.ch>");
+ MODULE_DESCRIPTION("RIPEMD-256 Message Digest");
++MODULE_ALIAS_CRYPTO("rmd256");
+diff --git a/crypto/rmd320.c b/crypto/rmd320.c
+index 09f97dfdfbba..770f2cb369f8 100644
+--- a/crypto/rmd320.c
++++ b/crypto/rmd320.c
+@@ -395,3 +395,4 @@ module_exit(rmd320_mod_fini);
+ MODULE_LICENSE("GPL");
+ MODULE_AUTHOR("Adrian-Ken Rueegsegger <ken@codelabs.ch>");
+ MODULE_DESCRIPTION("RIPEMD-320 Message Digest");
++MODULE_ALIAS_CRYPTO("rmd320");
+diff --git a/crypto/salsa20_generic.c b/crypto/salsa20_generic.c
+index 9a4770c02284..3d0f9df30ac9 100644
+--- a/crypto/salsa20_generic.c
++++ b/crypto/salsa20_generic.c
+@@ -248,4 +248,4 @@ module_exit(salsa20_generic_mod_fini);
+ 
+ MODULE_LICENSE("GPL");
+ MODULE_DESCRIPTION ("Salsa20 stream cipher algorithm");
+-MODULE_ALIAS("salsa20");
++MODULE_ALIAS_CRYPTO("salsa20");
+diff --git a/crypto/seed.c b/crypto/seed.c
+index 9c904d6d2151..c6ba8438be43 100644
+--- a/crypto/seed.c
++++ b/crypto/seed.c
+@@ -476,3 +476,4 @@ module_exit(seed_fini);
+ MODULE_DESCRIPTION("SEED Cipher Algorithm");
+ MODULE_LICENSE("GPL");
+ MODULE_AUTHOR("Hye-Shik Chang <perky@FreeBSD.org>, Kim Hyun <hkim@kisa.or.kr>");
++MODULE_ALIAS_CRYPTO("seed");
+diff --git a/crypto/serpent_generic.c b/crypto/serpent_generic.c
+index 7ddbd7e88859..a53b5e2af335 100644
+--- a/crypto/serpent_generic.c
++++ b/crypto/serpent_generic.c
+@@ -665,5 +665,5 @@ module_exit(serpent_mod_fini);
+ MODULE_LICENSE("GPL");
+ MODULE_DESCRIPTION("Serpent and tnepres (kerneli compatible serpent reversed) Cipher Algorithm");
+ MODULE_AUTHOR("Dag Arne Osvik <osvik@ii.uib.no>");
+-MODULE_ALIAS("tnepres");
+-MODULE_ALIAS("serpent");
++MODULE_ALIAS_CRYPTO("tnepres");
++MODULE_ALIAS_CRYPTO("serpent");
+diff --git a/crypto/sha1_generic.c b/crypto/sha1_generic.c
+index 42794803c480..76d300fe968f 100644
+--- a/crypto/sha1_generic.c
++++ b/crypto/sha1_generic.c
+@@ -153,4 +153,4 @@ module_exit(sha1_generic_mod_fini);
+ MODULE_LICENSE("GPL");
+ MODULE_DESCRIPTION("SHA1 Secure Hash Algorithm");
+ 
+-MODULE_ALIAS("sha1");
++MODULE_ALIAS_CRYPTO("sha1");
+diff --git a/crypto/sha256_generic.c b/crypto/sha256_generic.c
+index 543366779524..8d7811a0031c 100644
+--- a/crypto/sha256_generic.c
++++ b/crypto/sha256_generic.c
+@@ -384,5 +384,5 @@ module_exit(sha256_generic_mod_fini);
+ MODULE_LICENSE("GPL");
+ MODULE_DESCRIPTION("SHA-224 and SHA-256 Secure Hash Algorithm");
+ 
+-MODULE_ALIAS("sha224");
+-MODULE_ALIAS("sha256");
++MODULE_ALIAS_CRYPTO("sha224");
++MODULE_ALIAS_CRYPTO("sha256");
+diff --git a/crypto/sha512_generic.c b/crypto/sha512_generic.c
+index 6ed124f3ea0f..5479f302b757 100644
+--- a/crypto/sha512_generic.c
++++ b/crypto/sha512_generic.c
+@@ -287,5 +287,5 @@ module_exit(sha512_generic_mod_fini);
+ MODULE_LICENSE("GPL");
+ MODULE_DESCRIPTION("SHA-512 and SHA-384 Secure Hash Algorithms");
+ 
+-MODULE_ALIAS("sha384");
+-MODULE_ALIAS("sha512");
++MODULE_ALIAS_CRYPTO("sha384");
++MODULE_ALIAS_CRYPTO("sha512");
+diff --git a/crypto/tea.c b/crypto/tea.c
+index 0a572323ee4a..495be2d0077d 100644
+--- a/crypto/tea.c
++++ b/crypto/tea.c
+@@ -270,8 +270,8 @@ static void __exit tea_mod_fini(void)
+ 	crypto_unregister_algs(tea_algs, ARRAY_SIZE(tea_algs));
+ }
+ 
+-MODULE_ALIAS("xtea");
+-MODULE_ALIAS("xeta");
++MODULE_ALIAS_CRYPTO("xtea");
++MODULE_ALIAS_CRYPTO("xeta");
+ 
+ module_init(tea_mod_init);
+ module_exit(tea_mod_fini);
+diff --git a/crypto/tgr192.c b/crypto/tgr192.c
+index 87403556fd0b..5a5333f166ea 100644
+--- a/crypto/tgr192.c
++++ b/crypto/tgr192.c
+@@ -676,8 +676,8 @@ static void __exit tgr192_mod_fini(void)
+ 	crypto_unregister_shashes(tgr_algs, ARRAY_SIZE(tgr_algs));
+ }
+ 
+-MODULE_ALIAS("tgr160");
+-MODULE_ALIAS("tgr128");
++MODULE_ALIAS_CRYPTO("tgr160");
++MODULE_ALIAS_CRYPTO("tgr128");
+ 
+ module_init(tgr192_mod_init);
+ module_exit(tgr192_mod_fini);
+diff --git a/crypto/twofish_generic.c b/crypto/twofish_generic.c
+index 2d5000552d0f..523ad8c4e359 100644
+--- a/crypto/twofish_generic.c
++++ b/crypto/twofish_generic.c
+@@ -211,4 +211,4 @@ module_exit(twofish_mod_fini);
+ 
+ MODULE_LICENSE("GPL");
+ MODULE_DESCRIPTION ("Twofish Cipher Algorithm");
+-MODULE_ALIAS("twofish");
++MODULE_ALIAS_CRYPTO("twofish");
+diff --git a/crypto/wp512.c b/crypto/wp512.c
+index 180f1d6e03f4..8d4076417e87 100644
+--- a/crypto/wp512.c
++++ b/crypto/wp512.c
+@@ -1167,8 +1167,8 @@ static void __exit wp512_mod_fini(void)
+ 	crypto_unregister_shashes(wp_algs, ARRAY_SIZE(wp_algs));
+ }
+ 
+-MODULE_ALIAS("wp384");
+-MODULE_ALIAS("wp256");
++MODULE_ALIAS_CRYPTO("wp384");
++MODULE_ALIAS_CRYPTO("wp256");
+ 
+ module_init(wp512_mod_init);
+ module_exit(wp512_mod_fini);
+diff --git a/crypto/zlib.c b/crypto/zlib.c
+index 06b62e5cdcc7..d98078835281 100644
+--- a/crypto/zlib.c
++++ b/crypto/zlib.c
+@@ -378,3 +378,4 @@ module_exit(zlib_mod_fini);
+ MODULE_LICENSE("GPL");
+ MODULE_DESCRIPTION("Zlib Compression Algorithm");
+ MODULE_AUTHOR("Sony Corporation");
++MODULE_ALIAS_CRYPTO("zlib");
+diff --git a/drivers/crypto/padlock-aes.c b/drivers/crypto/padlock-aes.c
+index 633ba945e153..c178ed8c3908 100644
+--- a/drivers/crypto/padlock-aes.c
++++ b/drivers/crypto/padlock-aes.c
+@@ -563,4 +563,4 @@ MODULE_DESCRIPTION("VIA PadLock AES algorithm support");
+ MODULE_LICENSE("GPL");
+ MODULE_AUTHOR("Michal Ludvig");
+ 
+-MODULE_ALIAS("aes");
++MODULE_ALIAS_CRYPTO("aes");
+diff --git a/drivers/crypto/padlock-sha.c b/drivers/crypto/padlock-sha.c
+index 9266c0e25492..93d7753ab38a 100644
+--- a/drivers/crypto/padlock-sha.c
++++ b/drivers/crypto/padlock-sha.c
+@@ -593,7 +593,7 @@ MODULE_DESCRIPTION("VIA PadLock SHA1/SHA256 algorithms support.");
+ MODULE_LICENSE("GPL");
+ MODULE_AUTHOR("Michal Ludvig");
+ 
+-MODULE_ALIAS("sha1-all");
+-MODULE_ALIAS("sha256-all");
+-MODULE_ALIAS("sha1-padlock");
+-MODULE_ALIAS("sha256-padlock");
++MODULE_ALIAS_CRYPTO("sha1-all");
++MODULE_ALIAS_CRYPTO("sha256-all");
++MODULE_ALIAS_CRYPTO("sha1-padlock");
++MODULE_ALIAS_CRYPTO("sha256-padlock");
+diff --git a/drivers/crypto/ux500/cryp/cryp_core.c b/drivers/crypto/ux500/cryp/cryp_core.c
+index 92105f3dc8e0..e4cea7c45142 100644
+--- a/drivers/crypto/ux500/cryp/cryp_core.c
++++ b/drivers/crypto/ux500/cryp/cryp_core.c
+@@ -1810,7 +1810,7 @@ module_exit(ux500_cryp_mod_fini);
+ module_param(cryp_mode, int, 0);
+ 
+ MODULE_DESCRIPTION("Driver for ST-Ericsson UX500 CRYP crypto engine.");
+-MODULE_ALIAS("aes-all");
+-MODULE_ALIAS("des-all");
++MODULE_ALIAS_CRYPTO("aes-all");
++MODULE_ALIAS_CRYPTO("des-all");
+ 
+ MODULE_LICENSE("GPL");
+diff --git a/drivers/crypto/ux500/hash/hash_core.c b/drivers/crypto/ux500/hash/hash_core.c
+index 1c73f4fbc252..8e5e0187506f 100644
+--- a/drivers/crypto/ux500/hash/hash_core.c
++++ b/drivers/crypto/ux500/hash/hash_core.c
+@@ -1995,7 +1995,7 @@ module_exit(ux500_hash_mod_fini);
+ MODULE_DESCRIPTION("Driver for ST-Ericsson UX500 HASH engine.");
+ MODULE_LICENSE("GPL");
+ 
+-MODULE_ALIAS("sha1-all");
+-MODULE_ALIAS("sha256-all");
+-MODULE_ALIAS("hmac-sha1-all");
+-MODULE_ALIAS("hmac-sha256-all");
++MODULE_ALIAS_CRYPTO("sha1-all");
++MODULE_ALIAS_CRYPTO("sha256-all");
++MODULE_ALIAS_CRYPTO("hmac-sha1-all");
++MODULE_ALIAS_CRYPTO("hmac-sha256-all");
+diff --git a/drivers/s390/crypto/ap_bus.c b/drivers/s390/crypto/ap_bus.c
+index 02300dcfac91..2efa66c6914e 100644
+--- a/drivers/s390/crypto/ap_bus.c
++++ b/drivers/s390/crypto/ap_bus.c
+@@ -44,6 +44,7 @@
+ #include <linux/hrtimer.h>
+ #include <linux/ktime.h>
+ #include <asm/facility.h>
++#include <linux/crypto.h>
+ 
+ #include "ap_bus.h"
+ 
+@@ -71,7 +72,7 @@ MODULE_AUTHOR("IBM Corporation");
+ MODULE_DESCRIPTION("Adjunct Processor Bus driver, " \
+ 		   "Copyright IBM Corp. 2006, 2012");
+ MODULE_LICENSE("GPL");
+-MODULE_ALIAS("z90crypt");
++MODULE_ALIAS_CRYPTO("z90crypt");
+ 
+ /*
+  * Module parameter
+diff --git a/include/linux/crypto.h b/include/linux/crypto.h
+index b92eadf92d72..2b00d92a6e6f 100644
+--- a/include/linux/crypto.h
++++ b/include/linux/crypto.h
+@@ -26,6 +26,19 @@
+ #include <linux/uaccess.h>
+ 
+ /*
++ * Autoloaded crypto modules should only use a prefixed name to avoid allowing
++ * arbitrary modules to be loaded. Loading from userspace may still need the
++ * unprefixed names, so retains those aliases as well.
++ * This uses __MODULE_INFO directly instead of MODULE_ALIAS because pre-4.3
++ * gcc (e.g. avr32 toolchain) uses __LINE__ for uniqueness, and this macro
++ * expands twice on the same line. Instead, use a separate base name for the
++ * alias.
++ */
++#define MODULE_ALIAS_CRYPTO(name)	\
++		__MODULE_INFO(alias, alias_userspace, name);	\
++		__MODULE_INFO(alias, alias_crypto, "crypto-" name)
++
++/*
+  * Algorithm masks and types.
+  */
+ #define CRYPTO_ALG_TYPE_MASK		0x0000000f
 -- 
 2.2.2
 
