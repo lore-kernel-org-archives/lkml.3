@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932167AbbA2JE3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 04:04:29 -0500
-Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:44818 "EHLO
+	id S932931AbbA2Jxu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 04:53:50 -0500
+Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:44798 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932133AbbA2JEW (ORCPT
+	by vger.kernel.org with ESMTP id S1759007AbbA2JDd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 04:04:22 -0500
+	Thu, 29 Jan 2015 04:03:33 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Herbert Xu <herbert@gondor.apana.org.au>,
+Cc: linux-kernel@vger.kernel.org, Eric Dumazet <edumazet@google.com>,
         "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 063/176] tcp: Do not apply TSO segment limit to non-TSO packets
-Date: Wed, 28 Jan 2015 15:28:13 +0100
-Message-Id: <dc5e8861c1ab671c1fd3908d63a03fe5f2f4fb11.1422455352.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 064/176] alx: fix alx_poll()
+Date: Wed, 28 Jan 2015 15:28:14 +0100
+Message-Id: <cbac92132ff61018792166045ce2c362cd7f48e0.1422455352.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <ce4a451f616a1e7ab58cfeceea5e49c8b1c68c81.1422455352.git.jslaby@suse.cz>
 References: <ce4a451f616a1e7ab58cfeceea5e49c8b1c68c81.1422455352.git.jslaby@suse.cz>
@@ -23,61 +23,117 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Herbert Xu <herbert@gondor.apana.org.au>
+From: Eric Dumazet <edumazet@google.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-[ Upstream commit 843925f33fcc293d80acf2c5c8a78adf3344d49b ]
+[ Upstream commit 7a05dc64e2e4c611d89007b125b20c0d2a4d31a5 ]
 
-Thomas Jarosch reported IPsec TCP stalls when a PMTU event occurs.
+Commit d75b1ade567f ("net: less interrupt masking in NAPI") uncovered
+wrong alx_poll() behavior.
 
-In fact the problem was completely unrelated to IPsec.  The bug is
-also reproducible if you just disable TSO/GSO.
+A NAPI poll() handler is supposed to return exactly the budget when/if
+napi_complete() has not been called.
 
-The problem is that when the MSS goes down, existing queued packet
-on the TX queue that have not been transmitted yet all look like
-TSO packets and get treated as such.
+It is also supposed to return number of frames that were received, so
+that netdev_budget can have a meaning.
 
-This then triggers a bug where tcp_mss_split_point tells us to
-generate a zero-sized packet on the TX queue.  Once that happens
-we're screwed because the zero-sized packet can never be removed
-by ACKs.
+Also, in case of TX pressure, we still have to dequeue received
+packets : alx_clean_rx_irq() has to be called even if
+alx_clean_tx_irq(alx) returns false, otherwise device is half duplex.
 
-Fixes: 1485348d242 ("tcp: Apply device TSO segment limit earlier")
-Reported-by: Thomas Jarosch <thomas.jarosch@intra2net.com>
-Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
-
-Cheers,
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Fixes: d75b1ade567f ("net: less interrupt masking in NAPI")
+Reported-by: Oded Gabbay <oded.gabbay@amd.com>
+Bisected-by: Oded Gabbay <oded.gabbay@amd.com>
+Tested-by: Oded Gabbay <oded.gabbay@amd.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- net/ipv4/tcp_output.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/net/ethernet/atheros/alx/main.c | 24 +++++++++++++-----------
+ 1 file changed, 13 insertions(+), 11 deletions(-)
 
-diff --git a/net/ipv4/tcp_output.c b/net/ipv4/tcp_output.c
-index 4c0e55f14f2e..b4435ae4c485 100644
---- a/net/ipv4/tcp_output.c
-+++ b/net/ipv4/tcp_output.c
-@@ -1871,7 +1871,7 @@ static bool tcp_write_xmit(struct sock *sk, unsigned int mss_now, int nonagle,
- 		if (unlikely(!tcp_snd_wnd_test(tp, skb, mss_now)))
- 			break;
+diff --git a/drivers/net/ethernet/atheros/alx/main.c b/drivers/net/ethernet/atheros/alx/main.c
+index 6305a5d29db2..754ac8ef2484 100644
+--- a/drivers/net/ethernet/atheros/alx/main.c
++++ b/drivers/net/ethernet/atheros/alx/main.c
+@@ -184,15 +184,16 @@ static void alx_schedule_reset(struct alx_priv *alx)
+ 	schedule_work(&alx->reset_wk);
+ }
  
--		if (tso_segs == 1) {
-+		if (tso_segs == 1 || !sk->sk_gso_max_segs) {
- 			if (unlikely(!tcp_nagle_test(tp, skb, mss_now,
- 						     (tcp_skb_is_last(sk, skb) ?
- 						      nonagle : TCP_NAGLE_PUSH))))
-@@ -1908,7 +1908,7 @@ static bool tcp_write_xmit(struct sock *sk, unsigned int mss_now, int nonagle,
+-static bool alx_clean_rx_irq(struct alx_priv *alx, int budget)
++static int alx_clean_rx_irq(struct alx_priv *alx, int budget)
+ {
+ 	struct alx_rx_queue *rxq = &alx->rxq;
+ 	struct alx_rrd *rrd;
+ 	struct alx_buffer *rxb;
+ 	struct sk_buff *skb;
+ 	u16 length, rfd_cleaned = 0;
++	int work = 0;
+ 
+-	while (budget > 0) {
++	while (work < budget) {
+ 		rrd = &rxq->rrd[rxq->rrd_read_idx];
+ 		if (!(rrd->word3 & cpu_to_le32(1 << RRD_UPDATED_SHIFT)))
+ 			break;
+@@ -203,7 +204,7 @@ static bool alx_clean_rx_irq(struct alx_priv *alx, int budget)
+ 		    ALX_GET_FIELD(le32_to_cpu(rrd->word0),
+ 				  RRD_NOR) != 1) {
+ 			alx_schedule_reset(alx);
+-			return 0;
++			return work;
  		}
  
- 		limit = mss_now;
--		if (tso_segs > 1 && !tcp_urg_mode(tp))
-+		if (tso_segs > 1 && sk->sk_gso_max_segs && !tcp_urg_mode(tp))
- 			limit = tcp_mss_split_point(sk, skb, mss_now,
- 						    min_t(unsigned int,
- 							  cwnd_quota,
+ 		rxb = &rxq->bufs[rxq->read_idx];
+@@ -243,7 +244,7 @@ static bool alx_clean_rx_irq(struct alx_priv *alx, int budget)
+ 		}
+ 
+ 		napi_gro_receive(&alx->napi, skb);
+-		budget--;
++		work++;
+ 
+ next_pkt:
+ 		if (++rxq->read_idx == alx->rx_ringsz)
+@@ -258,21 +259,22 @@ next_pkt:
+ 	if (rfd_cleaned)
+ 		alx_refill_rx_ring(alx, GFP_ATOMIC);
+ 
+-	return budget > 0;
++	return work;
+ }
+ 
+ static int alx_poll(struct napi_struct *napi, int budget)
+ {
+ 	struct alx_priv *alx = container_of(napi, struct alx_priv, napi);
+ 	struct alx_hw *hw = &alx->hw;
+-	bool complete = true;
+ 	unsigned long flags;
++	bool tx_complete;
++	int work;
+ 
+-	complete = alx_clean_tx_irq(alx) &&
+-		   alx_clean_rx_irq(alx, budget);
++	tx_complete = alx_clean_tx_irq(alx);
++	work = alx_clean_rx_irq(alx, budget);
+ 
+-	if (!complete)
+-		return 1;
++	if (!tx_complete || work == budget)
++		return budget;
+ 
+ 	napi_complete(&alx->napi);
+ 
+@@ -284,7 +286,7 @@ static int alx_poll(struct napi_struct *napi, int budget)
+ 
+ 	alx_post_write(hw);
+ 
+-	return 0;
++	return work;
+ }
+ 
+ static irqreturn_t alx_intr_handle(struct alx_priv *alx, u32 intr)
 -- 
 2.2.2
 
