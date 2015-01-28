@@ -1,236 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1764701AbbA2Dsl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 22:48:41 -0500
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:33401 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753370AbbA2BZL (ORCPT
+	id S933373AbbA2CKU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 21:10:20 -0500
+Received: from mout.kundenserver.de ([212.227.126.187]:56608 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752321AbbA2CKR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 20:25:11 -0500
-Message-ID: <1422481550.2086.16.camel@HansenPartnership.com>
-Subject: Re: module: fix module_refcount() return when running in a module
- exit routine
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Bart Van Assche <bart.vanassche@sandisk.com>
-Cc: Christoph Hellwig <hch@infradead.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>
-Date: Wed, 28 Jan 2015 13:45:50 -0800
-In-Reply-To: <54C8AAA9.7060300@sandisk.com>
-References: <1421600146.2080.8.camel@HansenPartnership.com>
-	 <54BC93C3.7010808@hitachi.com> <878ugzco8c.fsf@rustcorp.com.au>
-	 <1421683701.2080.25.camel@HansenPartnership.com>
-	 <871tmqcmau.fsf@rustcorp.com.au>
-	 <1421774615.2080.88.camel@HansenPartnership.com>
-	 <20150122165018.GA27377@infradead.org>
-	 <1421946175.2093.1.camel@HansenPartnership.com>
-	 <87iofyurzc.fsf@rustcorp.com.au> <20150123131758.GC8045@infradead.org>
-	 <1422038567.2126.14.camel@HansenPartnership.com>
-	 <54C8AAA9.7060300@sandisk.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.7 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 28 Jan 2015 21:10:17 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: gregkh@linuxfoundation.org
+Cc: linux-usb@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Felipe Balbi <balbi@ti.com>,
+        Yoshihiro Shimoda <yoshihiro.shimoda.uh@renesas.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] usb: renesas: fix extcon dependency
+Date: Wed, 28 Jan 2015 22:47:18 +0100
+Message-ID: <2167400.bYh9r60XLF@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V03:K0:PusqTmWVXVrlUJxwq79IeNVXaSWkeRTRaR66wKbEDg2kn0Vg2vf
+ W07xz1FlX8F4Q0Cdp10YkMbC5mzjFU22YDcuJMEAzgya2PafgVDA/YByVXkBXbvwcrlKKfx
+ xYI9yTFOTs2TGXldXY2aUesMICi1tpinXRgCshMqt8Pe8aCnpLa3LWexSxaMwO0K7E+3Ze+
+ NX5upWE8Usg6zShge6UbQ==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2015-01-28 at 10:23 +0100, Bart Van Assche wrote:
-> On 01/23/15 19:42, James Bottomley wrote:
-> > diff --git a/drivers/scsi/scsi.c b/drivers/scsi/scsi.c
-> > index 08c90a7..31ba254 100644
-> > --- a/drivers/scsi/scsi.c
-> > +++ b/drivers/scsi/scsi.c
-> > @@ -965,6 +965,15 @@ int scsi_report_opcode(struct scsi_device *sdev, unsigned char *buffer,
-> >  }
-> >  EXPORT_SYMBOL(scsi_report_opcode);
-> >  
-> > +static int __scsi_device_get_common(struct scsi_device *sdev)
-> > +{
-> > +	if (sdev->sdev_state == SDEV_DEL)
-> > +		return -ENXIO;
-> > +	if (!get_device(&sdev->sdev_gendev))
-> > +		return -ENXIO;
-> > +	return 0;
-> > +}
-> > +
-> >  /**
-> >   * scsi_device_get  -  get an additional reference to a scsi_device
-> >   * @sdev:	device to get a reference to
-> > @@ -975,19 +984,45 @@ EXPORT_SYMBOL(scsi_report_opcode);
-> >   */
-> >  int scsi_device_get(struct scsi_device *sdev)
-> >  {
-> > -	if (sdev->sdev_state == SDEV_DEL)
-> > -		return -ENXIO;
-> > -	if (!get_device(&sdev->sdev_gendev))
-> > -		return -ENXIO;
-> > -	/* We can fail this if we're doing SCSI operations
-> > -	 * from module exit (like cache flush) */
-> > -	try_module_get(sdev->host->hostt->module);
-> > +	int ret;
-> >  
-> > -	return 0;
-> > +	ret = __scsi_device_get_common(sdev);
-> > +	if (ret)
-> > +		return ret;
-> > +
-> > +	ret = try_module_get(sdev->host->hostt->module);
-> > +
-> > +	if (ret)
-> > +		put_device(&sdev->sdev_gendev);
-> > +
-> > +	return ret;
-> >  }
-> >  EXPORT_SYMBOL(scsi_device_get);
-> >  
-> >  /**
-> > + * scsi_device_get_in_module_exit() - get an additional reference to a scsi_device
-> > + * @sdev:	device to get a reference to
-> > + *
-> > + * Functions identically to scsi_device_get() except that it unconditionally
-> > + * gets the module reference.  This allows it to be called from module exit
-> > + * routines where scsi_device_get() will fail.  This routine is still paired
-> > + * with scsi_device_put().
-> > + */
-> > +int scsi_device_get_in_module_exit(struct scsi_device *sdev)
-> > +{
-> > +	int ret;
-> > +
-> > +	ret = __scsi_device_get_common(sdev);
-> > +	if (ret)
-> > +		return ret;
-> > +
-> > +	__module_get(sdev->host->hostt->module);
-> > +
-> > +	return 0;
-> > +}
-> > +EXPORT_SYMBOL(scsi_device_get_in_module_exit);
-> > +
-> > +/**
-> >   * scsi_device_put  -  release a reference to a scsi_device
-> >   * @sdev:	device to release a reference on.
-> >   *
-> > diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
-> > index ebf35cb6..057604e 100644
-> > --- a/drivers/scsi/sd.c
-> > +++ b/drivers/scsi/sd.c
-> > @@ -564,16 +564,22 @@ static int sd_major(int major_idx)
-> >  	}
-> >  }
-> >  
-> > -static struct scsi_disk *__scsi_disk_get(struct gendisk *disk)
-> > +static struct scsi_disk *__scsi_disk_get(struct gendisk *disk, int in_exit)
-> >  {
-> >  	struct scsi_disk *sdkp = NULL;
-> >  
-> >  	if (disk->private_data) {
-> > +		int ret;
-> > +
-> >  		sdkp = scsi_disk(disk);
-> > -		if (scsi_device_get(sdkp->device) == 0)
-> > -			get_device(&sdkp->dev);
-> > +		if (in_exit)
-> > +			ret = scsi_device_get_in_module_exit(sdkp->device);
-> >  		else
-> > +			ret = scsi_device_get(sdkp->device);
-> > +		if (unlikely(ret))
-> >  			sdkp = NULL;
-> > +		else
-> > +			get_device(&sdkp->dev);
-> >  	}
-> >  	return sdkp;
-> >  }
-> > @@ -583,19 +589,19 @@ static struct scsi_disk *scsi_disk_get(struct gendisk *disk)
-> >  	struct scsi_disk *sdkp;
-> >  
-> >  	mutex_lock(&sd_ref_mutex);
-> > -	sdkp = __scsi_disk_get(disk);
-> > +	sdkp = __scsi_disk_get(disk, 0);
-> >  	mutex_unlock(&sd_ref_mutex);
-> >  	return sdkp;
-> >  }
-> >  
-> > -static struct scsi_disk *scsi_disk_get_from_dev(struct device *dev)
-> > +static struct scsi_disk *scsi_disk_get_from_dev(struct device *dev, int in_exit)
-> >  {
-> >  	struct scsi_disk *sdkp;
-> >  
-> >  	mutex_lock(&sd_ref_mutex);
-> >  	sdkp = dev_get_drvdata(dev);
-> >  	if (sdkp)
-> > -		sdkp = __scsi_disk_get(sdkp->disk);
-> > +		sdkp = __scsi_disk_get(sdkp->disk, in_exit);
-> >  	mutex_unlock(&sd_ref_mutex);
-> >  	return sdkp;
-> >  }
-> > @@ -1525,7 +1531,7 @@ static int sd_sync_cache(struct scsi_disk *sdkp)
-> >  
-> >  static void sd_rescan(struct device *dev)
-> >  {
-> > -	struct scsi_disk *sdkp = scsi_disk_get_from_dev(dev);
-> > +	struct scsi_disk *sdkp = scsi_disk_get_from_dev(dev, 0);
-> >  
-> >  	if (sdkp) {
-> >  		revalidate_disk(sdkp->disk);
-> > @@ -3147,7 +3153,7 @@ static int sd_start_stop_device(struct scsi_disk *sdkp, int start)
-> >   */
-> >  static void sd_shutdown(struct device *dev)
-> >  {
-> > -	struct scsi_disk *sdkp = scsi_disk_get_from_dev(dev);
-> > +	struct scsi_disk *sdkp = scsi_disk_get_from_dev(dev, 1);
-> >  
-> >  	if (!sdkp)
-> >  		return;         /* this can happen */
-> > @@ -3171,7 +3177,7 @@ exit:
-> >  
-> >  static int sd_suspend_common(struct device *dev, bool ignore_stop_errors)
-> >  {
-> > -	struct scsi_disk *sdkp = scsi_disk_get_from_dev(dev);
-> > +	struct scsi_disk *sdkp = scsi_disk_get_from_dev(dev, 0);
-> >  	int ret = 0;
-> >  
-> >  	if (!sdkp)
-> > @@ -3213,7 +3219,7 @@ static int sd_suspend_runtime(struct device *dev)
-> >  
-> >  static int sd_resume(struct device *dev)
-> >  {
-> > -	struct scsi_disk *sdkp = scsi_disk_get_from_dev(dev);
-> > +	struct scsi_disk *sdkp = scsi_disk_get_from_dev(dev, 0);
-> >  	int ret = 0;
-> >  
-> >  	if (!sdkp->device->manage_start_stop)
-> > diff --git a/include/scsi/scsi_device.h b/include/scsi/scsi_device.h
-> > index 2e0281e..0bad37c 100644
-> > --- a/include/scsi/scsi_device.h
-> > +++ b/include/scsi/scsi_device.h
-> > @@ -327,6 +327,7 @@ extern int scsi_unregister_device_handler(struct scsi_device_handler *scsi_dh);
-> >  void scsi_attach_vpd(struct scsi_device *sdev);
-> >  
-> >  extern int scsi_device_get(struct scsi_device *);
-> > +extern int scsi_device_get_in_module_exit(struct scsi_device *);
-> >  extern void scsi_device_put(struct scsi_device *);
-> >  extern struct scsi_device *scsi_device_lookup(struct Scsi_Host *,
-> >  					      uint, uint, u64);
-> 
-> Hello James,
-> 
-> Is this the latest version of this patch that is available ? I have
-> tried to test the above patch. However, I couldn't test the impact of
-> this patch on the SRP initiator driver since my test system didn't boot
-> anymore with the above patch applied. That test system boots from an ATA
-> disk managed by the SCSI subsystem:
-> $ lsscsi | head -n1
-> [0:0:0:0]    disk    ATA      KINGSTON SH103S3 BBF0  /dev/sda
+The renesas usbhs driver calls extcon_get_edev_by_phandle(), which
+is defined in drivers/extcon/extcon-class.c, and that can be a
+loadable module. If the extcon-class support is disabled, usbhs
+will work correctly for all devices that do not need extcon.
 
-Not yet, since I knew it would need a bit of testing to identify all the
-potential in_exit acquisitions.  However, you could help me by
-diagnosing the current failure.
+However, if extcon-class is a loadable module, and usbhs is
+built-in, the kernel fails to link. In order to solve that,
+we need a Kconfig dependency that allows extcon to be disabled
+but does not allow usbhs built-in if extcon is a module.
 
-Thanks,
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
 
-James
-
+diff --git a/drivers/usb/renesas_usbhs/Kconfig b/drivers/usb/renesas_usbhs/Kconfig
+index de83b9d0cd5c..0ea9040b9f10 100644
+--- a/drivers/usb/renesas_usbhs/Kconfig
++++ b/drivers/usb/renesas_usbhs/Kconfig
+@@ -6,6 +6,7 @@ config USB_RENESAS_USBHS
+ 	tristate 'Renesas USBHS controller'
+ 	depends on USB_GADGET
+ 	depends on ARCH_SHMOBILE || SUPERH || COMPILE_TEST
++	depends on EXTCON || !EXTCON # for module build if extcon is
+ 	default n
+ 	help
+ 	  Renesas USBHS is a discrete USB host and peripheral controller chip
 
