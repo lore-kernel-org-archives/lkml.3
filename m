@@ -1,113 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933902AbbA2Dzm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 22:55:42 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:59068 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752769AbbA2BKx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 20:10:53 -0500
-From: Murali Karicheri <m-karicheri2@ti.com>
-To: <ssantosh@kernel.org>, <arnd@arndb.de>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-CC: Murali Karicheri <m-karicheri2@ti.com>
-Subject: [PATCH] soc: ti: knav_qmss_queue: export API calls for use by user driver
-Date: Wed, 28 Jan 2015 18:00:21 -0500
-Message-ID: <1422486021-23874-1-git-send-email-m-karicheri2@ti.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1756174AbbA2Bhu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 20:37:50 -0500
+Received: from mail-bn1bon0130.outbound.protection.outlook.com ([157.56.111.130]:57792
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1756148AbbA2Bhr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jan 2015 20:37:47 -0500
+Message-ID: <1422486205.10544.99.camel@freescale.com>
+Subject: Re: [PATCH v2] powerpc/mpic: Add DT option to skip readback after
+ EOI
+From: Scott Wood <scottwood@freescale.com>
+To: Segher Boessenkool <segher@kernel.crashing.org>
+CC: Bogdan Purcareata <bogdan.purcareata@freescale.com>,
+        <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>
+Date: Wed, 28 Jan 2015 17:03:25 -0600
+In-Reply-To: <20150128201533.GA10436@gate.crashing.org>
+References: <1422371952-1126-1-git-send-email-bogdan.purcareata@freescale.com>
+	 <1422395873.10544.61.camel@freescale.com>
+	 <20150128201533.GA10436@gate.crashing.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.7-0ubuntu1 
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [2601:2:5800:3f7:12bf:48ff:fe84:c9a0]
+X-ClientProxiedBy: CO2PR11CA0008.namprd11.prod.outlook.com (10.141.242.146) To
+ BN1PR0301MB0723.namprd03.prod.outlook.com (25.160.78.142)
+Authentication-Results: kernel.crashing.org; dkim=none (message not signed)
+ header.d=none;kernel.crashing.org; dmarc=none action=none
+ header.from=freescale.com;
+X-DmarcAction-Test: None
+X-Microsoft-Antispam: UriScan:;UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:(3005004);SRVR:BN1PR0301MB0723;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:BN1PR0301MB0723;
+X-Forefront-PRVS: 047001DADA
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10019020)(6009001)(51704005)(377424004)(24454002)(33646002)(42186005)(103116003)(50466002)(40100003)(122386002)(36756003)(47776003)(50226001)(23676002)(46102003)(87976001)(2950100001)(62966003)(110136001)(77156002)(92566002)(50986999)(76176999)(86362001);DIR:OUT;SFP:1102;SCL:1;SRVR:BN1PR0301MB0723;H:[IPv6:2601:2:5800:3f7:12bf:48ff:fe84:c9a0];FPR:;SPF:None;MLV:sfv;LANG:en;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BN1PR0301MB0723;
+X-MS-Exchange-CrossTenant-OriginalArrivalTime: 28 Jan 2015 23:03:33.3795
+ (UTC)
+X-MS-Exchange-CrossTenant-FromEntityHeader: Hosted
+X-MS-Exchange-Transport-CrossTenantHeadersStamped: BN1PR0301MB0723
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1PR0301MB0707;
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently only few of the API calls are exported. This creates problem
-when the knav* modules are built as modules and another user module
-such as netcp_core try to use these API calls and they are also built
-as module. This patch export these APIs to address the issue.
+On Wed, 2015-01-28 at 14:15 -0600, Segher Boessenkool wrote:
+> On Tue, Jan 27, 2015 at 03:57:53PM -0600, Scott Wood wrote:
+> > At this point, given the previous discussion, does anyone object to
+> > removing the readback entirely?  Do we have any evidence that reading
+> > WHOAMI is effective at addressing whatever problem reading EOI made go
+> > away on the relevant platform?
+> 
+> What platforms were those?  Just test there!
 
-This is needed to support allmodconfig for ARM
+Ben said "some macs".  The only Mac I have is packed away and may not be
+the one Ben had in mind, so I can't "test there".
 
-Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
----
- drivers/soc/ti/knav_qmss_queue.c |    9 +++++++++
- 1 file changed, 9 insertions(+)
+> If no one remembers, they can not (any longer) be important platforms ;-)
+> Just remove the code, and if in twelve months finally someone reports a
+> failure we will at least know what platform it was.
 
-diff --git a/drivers/soc/ti/knav_qmss_queue.c b/drivers/soc/ti/knav_qmss_queue.c
-index 8e6a95d..6d8646d 100644
---- a/drivers/soc/ti/knav_qmss_queue.c
-+++ b/drivers/soc/ti/knav_qmss_queue.c
-@@ -626,6 +626,7 @@ int knav_queue_push(void *qhandle, dma_addr_t dma,
- 	atomic_inc(&qh->stats.pushes);
- 	return 0;
- }
-+EXPORT_SYMBOL_GPL(knav_queue_push);
- 
- /**
-  * knav_queue_pop()	- pop data (or descriptor) from the head of a queue
-@@ -663,6 +664,7 @@ dma_addr_t knav_queue_pop(void *qhandle, unsigned *size)
- 	atomic_inc(&qh->stats.pops);
- 	return dma;
- }
-+EXPORT_SYMBOL_GPL(knav_queue_pop);
- 
- /* carve out descriptors and push into queue */
- static void kdesc_fill_pool(struct knav_pool *pool)
-@@ -717,12 +719,14 @@ dma_addr_t knav_pool_desc_virt_to_dma(void *ph, void *virt)
- 	struct knav_pool *pool = ph;
- 	return pool->region->dma_start + (virt - pool->region->virt_start);
- }
-+EXPORT_SYMBOL_GPL(knav_pool_desc_virt_to_dma);
- 
- void *knav_pool_desc_dma_to_virt(void *ph, dma_addr_t dma)
- {
- 	struct knav_pool *pool = ph;
- 	return pool->region->virt_start + (dma - pool->region->dma_start);
- }
-+EXPORT_SYMBOL_GPL(knav_pool_desc_dma_to_virt);
- 
- /**
-  * knav_pool_create()	- Create a pool of descriptors
-@@ -878,6 +882,7 @@ void *knav_pool_desc_get(void *ph)
- 	data = knav_pool_desc_dma_to_virt(pool, dma);
- 	return data;
- }
-+EXPORT_SYMBOL_GPL(knav_pool_desc_get);
- 
- /**
-  * knav_pool_desc_put()	- return a descriptor to the pool
-@@ -890,6 +895,7 @@ void knav_pool_desc_put(void *ph, void *desc)
- 	dma = knav_pool_desc_virt_to_dma(pool, desc);
- 	knav_queue_push(pool->queue, dma, pool->region->desc_size, 0);
- }
-+EXPORT_SYMBOL_GPL(knav_pool_desc_put);
- 
- /**
-  * knav_pool_desc_map()	- Map descriptor for DMA transfer
-@@ -916,6 +922,7 @@ int knav_pool_desc_map(void *ph, void *desc, unsigned size,
- 
- 	return 0;
- }
-+EXPORT_SYMBOL_GPL(knav_pool_desc_map);
- 
- /**
-  * knav_pool_desc_unmap()	- Unmap descriptor after DMA transfer
-@@ -938,6 +945,7 @@ void *knav_pool_desc_unmap(void *ph, dma_addr_t dma, unsigned dma_sz)
- 	prefetch(desc);
- 	return desc;
- }
-+EXPORT_SYMBOL_GPL(knav_pool_desc_unmap);
- 
- /**
-  * knav_pool_count()	- Get the number of descriptors in pool.
-@@ -949,6 +957,7 @@ int knav_pool_count(void *ph)
- 	struct knav_pool *pool = ph;
- 	return knav_queue_get_count(pool->queue);
- }
-+EXPORT_SYMBOL_GPL(knav_pool_count);
- 
- static void knav_queue_setup_region(struct knav_device *kdev,
- 					struct knav_region *region)
--- 
-1.7.9.5
+This is what I was trying to encourage. :-)
+
+-Scott
+
 
