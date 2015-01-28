@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932445AbbA2Jee (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 04:34:34 -0500
-Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:44863 "EHLO
+	id S1759584AbbA2JEw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 04:04:52 -0500
+Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:44824 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1760187AbbA2JGQ (ORCPT
+	by vger.kernel.org with ESMTP id S1759503AbbA2JEp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 04:06:16 -0500
+	Thu, 29 Jan 2015 04:04:45 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Vitaly Kuznetsov <vkuznets@redhat.com>,
-        "K. Y. Srinivasan" <kys@microsoft.com>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 039/176] Drivers: hv: vmbus: Fix a race condition when unregistering a device
-Date: Wed, 28 Jan 2015 15:27:49 +0100
-Message-Id: <5ea7d58ceb75a5902252eca83df628b63fb913f6.1422455352.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Rasmus Villemoes <linux@rasmusvillemoes.dk>,
+        "J. Bruce Fields" <bfields@redhat.com>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 040/176] fs: nfsd: Fix signedness bug in compare_blob
+Date: Wed, 28 Jan 2015 15:27:50 +0100
+Message-Id: <b2abe3c2f4217e3df748a348d2536bae103afc9e.1422455352.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <ce4a451f616a1e7ab58cfeceea5e49c8b1c68c81.1422455352.git.jslaby@suse.cz>
 References: <ce4a451f616a1e7ab58cfeceea5e49c8b1c68c81.1422455352.git.jslaby@suse.cz>
@@ -23,62 +23,74 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Vitaly Kuznetsov <vkuznets@redhat.com>
+From: Rasmus Villemoes <linux@rasmusvillemoes.dk>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 04a258c162a85c0f4ae56be67634dc43c9a4fa9b upstream.
+commit ef17af2a817db97d42dd2ec0a425231748e23dbc upstream.
 
-When build with Debug the following crash is sometimes observed:
-Call Trace:
- [<ffffffff812b9600>] string+0x40/0x100
- [<ffffffff812bb038>] vsnprintf+0x218/0x5e0
- [<ffffffff810baf7d>] ? trace_hardirqs_off+0xd/0x10
- [<ffffffff812bb4c1>] vscnprintf+0x11/0x30
- [<ffffffff8107a2f0>] vprintk+0xd0/0x5c0
- [<ffffffffa0051ea0>] ? vmbus_process_rescind_offer+0x0/0x110 [hv_vmbus]
- [<ffffffff8155c71c>] printk+0x41/0x45
- [<ffffffffa004ebac>] vmbus_device_unregister+0x2c/0x40 [hv_vmbus]
- [<ffffffffa0051ecb>] vmbus_process_rescind_offer+0x2b/0x110 [hv_vmbus]
-...
+Bugs similar to the one in acbbe6fbb240 (kcmp: fix standard comparison
+bug) are in rich supply.
 
-This happens due to the following race: between 'if (channel->device_obj)' check
-in vmbus_process_rescind_offer() and pr_debug() in vmbus_device_unregister() the
-device can disappear. Fix the issue by taking an additional reference to the
-device before proceeding to vmbus_device_unregister().
+In this variant, the problem is that struct xdr_netobj::len has type
+unsigned int, so the expression o1->len - o2->len _also_ has type
+unsigned int; it has completely well-defined semantics, and the result
+is some non-negative integer, which is always representable in a long
+long. But this means that if the conditional triggers, we are
+guaranteed to return a positive value from compare_blob.
 
-Signed-off-by: Vitaly Kuznetsov <vkuznets@redhat.com>
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+In this case it could be fixed by
+
+-       res = o1->len - o2->len;
++       res = (long long)o1->len - (long long)o2->len;
+
+but I'd rather eliminate the usually broken 'return a - b;' idiom.
+
+Reviewed-by: Jeff Layton <jlayton@primarydata.com>
+Signed-off-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/hv/channel_mgmt.c | 11 +++++++++--
- 1 file changed, 9 insertions(+), 2 deletions(-)
+ fs/nfsd/nfs4state.c | 15 +++++++--------
+ 1 file changed, 7 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/hv/channel_mgmt.c b/drivers/hv/channel_mgmt.c
-index fa920469bf10..505fe29c75b0 100644
---- a/drivers/hv/channel_mgmt.c
-+++ b/drivers/hv/channel_mgmt.c
-@@ -202,9 +202,16 @@ static void vmbus_process_rescind_offer(struct work_struct *work)
- 	unsigned long flags;
- 	struct vmbus_channel *primary_channel;
- 	struct vmbus_channel_relid_released msg;
-+	struct device *dev;
-+
-+	if (channel->device_obj) {
-+		dev = get_device(&channel->device_obj->device);
-+		if (dev) {
-+			vmbus_device_unregister(channel->device_obj);
-+			put_device(dev);
-+		}
-+	}
+diff --git a/fs/nfsd/nfs4state.c b/fs/nfsd/nfs4state.c
+index 5ae1dd340073..0a138e4fc2e0 100644
+--- a/fs/nfsd/nfs4state.c
++++ b/fs/nfsd/nfs4state.c
+@@ -1197,15 +1197,14 @@ static int copy_cred(struct svc_cred *target, struct svc_cred *source)
+ 	return 0;
+ }
  
--	if (channel->device_obj)
--		vmbus_device_unregister(channel->device_obj);
- 	memset(&msg, 0, sizeof(struct vmbus_channel_relid_released));
- 	msg.child_relid = channel->offermsg.child_relid;
- 	msg.header.msgtype = CHANNELMSG_RELID_RELEASED;
+-static long long
++static int
+ compare_blob(const struct xdr_netobj *o1, const struct xdr_netobj *o2)
+ {
+-	long long res;
+-
+-	res = o1->len - o2->len;
+-	if (res)
+-		return res;
+-	return (long long)memcmp(o1->data, o2->data, o1->len);
++	if (o1->len < o2->len)
++		return -1;
++	if (o1->len > o2->len)
++		return 1;
++	return memcmp(o1->data, o2->data, o1->len);
+ }
+ 
+ static int same_name(const char *n1, const char *n2)
+@@ -1389,7 +1388,7 @@ add_clp_to_name_tree(struct nfs4_client *new_clp, struct rb_root *root)
+ static struct nfs4_client *
+ find_clp_in_name_tree(struct xdr_netobj *name, struct rb_root *root)
+ {
+-	long long cmp;
++	int cmp;
+ 	struct rb_node *node = root->rb_node;
+ 	struct nfs4_client *clp;
+ 
 -- 
 2.2.2
 
