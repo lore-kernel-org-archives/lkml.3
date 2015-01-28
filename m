@@ -1,30 +1,215 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756930AbbA1UXp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 15:23:45 -0500
-Received: from mail-qg0-f42.google.com ([209.85.192.42]:64026 "EHLO
-	mail-qg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756871AbbA1UXm convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 15:23:42 -0500
-From: Travis James <tjames6858@gmail.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
-Subject: lkml mbox archive?
-Message-Id: <822C082B-5C2E-45A2-8140-2EE4A7CFED4B@gmail.com>
-Date: Wed, 28 Jan 2015 12:33:22 -0500
-To: linux-kernel@vger.kernel.org
-Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
-X-Mailer: Apple Mail (2.1878.6)
+	id S1759409AbbA1WPi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 17:15:38 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:56136 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754773AbbA1UPB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jan 2015 15:15:01 -0500
+Message-ID: <54C91DC3.4020101@ti.com>
+Date: Wed, 28 Jan 2015 12:34:59 -0500
+From: Murali Karicheri <m-karicheri2@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Rob Herring <robherring2@gmail.com>
+CC: Catalin Marinas <catalin.marinas@arm.com>,
+        Robin Murphy <Robin.Murphy@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Joerg Roedel <joro@8bytes.org>, Will Deacon <Will.Deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        "suravee.suthikulpanit@amd.com" <suravee.suthikulpanit@amd.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v4 3/6] of: fix size when dma-range is not used
+References: <1422052359-12384-1-git-send-email-m-karicheri2@ti.com> <1422052359-12384-4-git-send-email-m-karicheri2@ti.com> <54C77616.80301@arm.com> <54C7DF13.20402@ti.com> <20150128110523.GC6646@e104818-lin.cambridge.arm.com> <CAL_JsqJiCKW0ny=_ueq=A7RH3octpEhN+KZuLZhbNEHusyjcig@mail.gmail.com>
+In-Reply-To: <CAL_JsqJiCKW0ny=_ueq=A7RH3octpEhN+KZuLZhbNEHusyjcig@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I was wondering if there are any downloadable mbox archives available for the linux-kernel and related mailing lists?
-There are a ton of great web interfaces for the linux kernel archives, but they all seem to
-not have any download links for an actual usable archive of the lists. the closest I’ve been able
-to find is gmane.org’s nntp interface, or its mbox export option which is highly rate limited and
-carries modifications to many of the headers. My google-fu is failing me on this endeavor, I was
-wondering if anybody here could shed light on the matter?
+On 01/28/2015 10:45 AM, Rob Herring wrote:
+> On Wed, Jan 28, 2015 at 5:05 AM, Catalin Marinas
+> <catalin.marinas@arm.com>  wrote:
+>> On Tue, Jan 27, 2015 at 06:55:15PM +0000, Murali Karicheri wrote:
+>>> On 01/27/2015 06:27 AM, Robin Murphy wrote:
+>>>> On 23/01/15 22:32, Murali Karicheri wrote:
+>>>>> Fix the dma-range size when the DT attribute is missing. i.e set size to
+>>>>> dev->coherent_dma_mask + 1 instead of dev->coherent_dma_mask. To detect
+>>>>> overflow when mask is set to max of u64, add a check, log error and
+>>>>> return.
+>>>>> Some platform use mask format for size in DTS. So add a work around to
+>>>>> catch this and fix.
+>>>>>
+>>>>> Cc: Joerg Roedel<joro@8bytes.org>
+>>>>> Cc: Grant Likely<grant.likely@linaro.org>
+>>>>> Cc: Rob Herring<robh+dt@kernel.org>
+>>>>> Cc: Bjorn Helgaas<bhelgaas@google.com>
+>>>>> Cc: Will Deacon<will.deacon@arm.com>
+>>>>> Cc: Russell King<linux@arm.linux.org.uk>
+>>>>> Cc: Arnd Bergmann<arnd@arndb.de>
+>>>>> Cc: Suravee Suthikulpanit<Suravee.Suthikulpanit@amd.com>
+>>>>>
+>>>>> Signed-off-by: Murali Karicheri<m-karicheri2@ti.com>
+>>>>> ---
+>>>>> drivers/of/device.c | 14 +++++++++++++-
+>>>>> 1 file changed, 13 insertions(+), 1 deletion(-)
+>>>>>
+>>>>> diff --git a/drivers/of/device.c b/drivers/of/device.c
+>>>>> index 2de320d..0a5ff54 100644
+>>>>> --- a/drivers/of/device.c
+>>>>> +++ b/drivers/of/device.c
+>>>>> @@ -105,12 +105,24 @@ void of_dma_configure(struct device *dev, struct
+>>>>> device_node *np)
+>>>>> ret = of_dma_get_range(np,&dma_addr,&paddr,&size);
+>>>>> if (ret<  0) {
+>>>>> dma_addr = offset = 0;
+>>>>> - size = dev->coherent_dma_mask;
+>>>>> + size = dev->coherent_dma_mask + 1;
+>>>>> } else {
+>>>>> offset = PFN_DOWN(paddr - dma_addr);
+>>>>> + /*
+>>>>> + * Add a work around to treat the size as mask + 1 in case
+>>>>> + * it is defined in DT as a mask.
+>>>>> + */
+>>>>> + if (size&  1)
+>>>>> + size = size + 1;
+>>>>> dev_dbg(dev, "dma_pfn_offset(%#08lx)\n", offset);
+>>>>> }
+>>>>>
+>>>>> + /* if size is 0, we have an overflow of u64 */
+>>>>> + if (!size) {
+>>>>> + dev_err(dev, "invalid size\n");
+>>>>> + return;
+>>>>> + }
+>>>>> +
+>>>>
+>>>> This seems potentially fragile to dodgy DTs given that we might also be
+>>>> using size to make a mask later. Would it make sense to double-up a
+>>>> sanity check as mask-format detection? Something like:
+>>>>
+>>>> if is_power_of_2(size)
+>>>> // use size
+>>>> else if is_power_of_2(size + 1)
+>>>> // use size + 1
+>>>> else
+>>>> // cry
+>>>
+>>> How about having the logic like this?
+>>>
+>>>        ret = of_dma_get_range(np,&dma_addr,&paddr,&size);
+>>>        if (ret<  0) {
+>>>                dma_addr = offset = 0;
+>>>                size = dev->coherent_dma_mask + 1;
+>>>        } else {
+>>>                offset = PFN_DOWN(paddr - dma_addr);
+>>>                dev_dbg(dev, "dma_pfn_offset(%#08lx)\n", offset);
+>>>        }
+>>>
+>>>        if (is_power_of_2(size + 1))
+>>>                size = size + 1;
+>>>        else if (!is_power_of_2(size))
+>>>        {
+>>>                dev_err(dev, "invalid size\n");
+>>>                return;
+>>>        }
+>>
+>> In of_dma_configure(), we currently assume that the default coherent
+>> mask is 32-bit. In this thread:
+>>
+>> http://article.gmane.org/gmane.linux.kernel/1835096
+>>
+>> we talked about setting the coherent mask based on size automatically.
+>> I'm not sure about the size but I think we can assume is 32-bit mask + 1
+>> if it is not specified in the DT. Instead of just assuming a default
+>> mask, let's assume a default size and create the mask based on this
+>> (untested):
+>>
+>> diff --git a/drivers/of/platform.c b/drivers/of/platform.c
+>> index 5b33c6a21807..9ff8d1286b44 100644
+>> --- a/drivers/of/platform.c
+>> +++ b/drivers/of/platform.c
+>> @@ -170,10 +170,10 @@ static void of_dma_configure(struct device *dev)
+>>          struct iommu_ops *iommu;
+>>
+>>          /*
+>> -        * Set default dma-mask to 32 bit. Drivers are expected to setup
+>> -        * the correct supported dma_mask.
+>> +        * Set default size to cover the 32-bit. Drivers are expected to setup
+>> +        * the correct size and dma_mask.
+>>           */
+>> -       dev->coherent_dma_mask = DMA_BIT_MASK(32);
+>> +       size = 1ULL<<  32;
+>>
+>>          /*
+>>           * Set it to coherent_dma_mask by default if the architecture
+>> @@ -185,13 +185,24 @@ static void of_dma_configure(struct device *dev)
+>>          ret = of_dma_get_range(dev->of_node,&dma_addr,&paddr,&size);
+>>          if (ret<  0) {
+>>                  dma_addr = offset = 0;
+>> -               size = dev->coherent_dma_mask;
+>
+> Are we assuming dma_addr, paddr and size are not touched on error? If
+> so, we can get rid of this clause entirely.
+Checking the code for of_dma_get_range() I see paddr is modified on 
+error case, but is used only for success case in this function. dma_addr 
+and size are not modified. So setting dma_addr and offset to zero before 
+hand like size might work as below
 
--Travis
+dma_addr = offset = 0;
+size = 1ULL <<  32;
+
+ret = of_dma_get_range(dev->of_node,&dma_addr,&paddr,&size);
+if (!ret) {
+	offset = PFN_DOWN(paddr - dma_addr);
+}
+
+.. rest of the code.
+
+Murali
+
+
+>
+>>          } else {
+>>                  offset = PFN_DOWN(paddr - dma_addr);
+>>                  dev_dbg(dev, "dma_pfn_offset(%#08lx)\n", dev->dma_pfn_offset);
+>>          }
+>>          dev->dma_pfn_offset = offset;
+>>
+>> +       /*
+>> +        * Workaround for DTs setting the size to a mask or 0.
+>> +        */
+>> +       if (is_power_of_2(size + 1))
+>> +               size += 1;
+>
+> As I mentioned, I think power of 2 is too restrictive (from a DT
+> perspective even though the kernel may require a power of 2 here for
+> the mask). Just checking bit0 set should be enough.
+>
+> Also, we need a WARN here so DTs get fixed.
+>
+>> +
+>> +       /*
+>> +        * Coherent DMA masks larger than 32-bit must be explicitly set by the
+>> +        * driver.
+>> +        */
+>> +       dev->coherent_dma_mask = min(DMA_BIT_MASK(32), DMA_BIT_MASK(ilog2(size)));
+>> +
+>>          coherent = of_dma_is_coherent(dev->of_node);
+>>          dev_dbg(dev, "device is%sdma coherent\n",
+>>                  coherent ? " " : " not ");
+>>
+>> --
+>> Catalin
+
+
+-- 
+Murali Karicheri
+Linux Kernel, Texas Instruments
