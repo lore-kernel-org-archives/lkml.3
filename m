@@ -1,158 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762447AbbA2Kdl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 05:33:41 -0500
-Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:44737 "EHLO
-	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755715AbbA2JAW (ORCPT
+	id S1758391AbbA1VQl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 16:16:41 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:40980 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750894AbbA1Uuf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 04:00:22 -0500
-From: Jiri Slaby <jslaby@suse.cz>
-To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Sagi Grimberg <sagig@mellanox.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 134/176] iser-target: Fix connected_handler + teardown flow race
-Date: Wed, 28 Jan 2015 15:29:24 +0100
-Message-Id: <8f8419f2e03955e84cac96266cacd87ce6caf242.1422455352.git.jslaby@suse.cz>
-X-Mailer: git-send-email 2.2.2
-In-Reply-To: <ce4a451f616a1e7ab58cfeceea5e49c8b1c68c81.1422455352.git.jslaby@suse.cz>
-References: <ce4a451f616a1e7ab58cfeceea5e49c8b1c68c81.1422455352.git.jslaby@suse.cz>
-In-Reply-To: <cover.1422455352.git.jslaby@suse.cz>
-References: <cover.1422455352.git.jslaby@suse.cz>
+	Wed, 28 Jan 2015 15:50:35 -0500
+Date: Wed, 28 Jan 2015 06:29:25 -0800
+From: tip-bot for Jan Beulich <tipbot@zytor.com>
+Message-ID: <tip-81907478c4311a679849216abf723999184ab984@git.kernel.org>
+Cc: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
+        riel@redhat.com, hpa@zytor.com, JBeulich@suse.com,
+        peterz@infradead.org, tglx@linutronix.de, jbeulich@suse.com,
+        mingo@kernel.org
+Reply-To: hpa@zytor.com, riel@redhat.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, jbeulich@suse.com, mingo@kernel.org,
+        peterz@infradead.org, JBeulich@suse.com, tglx@linutronix.de
+In-Reply-To: <54C2139202000078000588F7@mail.emea.novell.com>
+References: <54C2139202000078000588F7@mail.emea.novell.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:sched/urgent] sched/fair:
+  Avoid using uninitialized variable in preferred_group_nid()
+Git-Commit-ID: 81907478c4311a679849216abf723999184ab984
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sagi Grimberg <sagig@mellanox.com>
+Commit-ID:  81907478c4311a679849216abf723999184ab984
+Gitweb:     http://git.kernel.org/tip/81907478c4311a679849216abf723999184ab984
+Author:     Jan Beulich <JBeulich@suse.com>
+AuthorDate: Fri, 23 Jan 2015 08:25:38 +0000
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Wed, 28 Jan 2015 13:14:12 +0100
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+sched/fair: Avoid using uninitialized variable in preferred_group_nid()
 
-===============
+At least some gcc versions - validly afaict - warn about potentially
+using max_group uninitialized: There's no way the compiler can prove
+that the body of the conditional where it and max_faults get set/
+updated gets executed; in fact, without knowing all the details of
+other scheduler code, I can't prove this either.
 
-commit 19e2090fb246ca21b3e569ead51a6a7a1748eadd upstream.
+Generally the necessary change would appear to be to clear max_group
+prior to entering the inner loop, and break out of the outer loop when
+it ends up being all clear after the inner one. This, however, seems
+inefficient, and afaict the same effect can be achieved by exiting the
+outer loop when max_faults is still zero after the inner loop.
 
-Take isert_conn pointer from cm_id->qp->qp_context. This
-will allow us to know that the cm_id context is always
-the network portal. This will make the cm_id event check
-(connection or network portal) more reliable.
+[ mingo: changed the solution to zero initialization: uninitialized_var()
+  needs to die, as it's an actively dangerous construct: if in the future
+  a known-proven-good piece of code is changed to have a true, buggy
+  uninitialized variable, the compiler warning is then supressed...
 
-In order to avoid a NULL dereference in cma_id->qp->qp_context
-we destroy the qp after we destroy the cm_id (and make the
-dereference safe). session stablishment/teardown sequences
-can happen in parallel, we should take into account that
-connected_handler might race with connection teardown flow.
+  The better long term solution is to clean up the code flow, so that
+  even simple minded compilers (and humans!) are able to read it without
+  getting a headache.  ]
 
-Also, protect isert_conn->conn_device->active_qps decrement
-within the error patch during QP creation failure and the
-normal teardown path in isert_connect_release().
-
-Squashed:
-
-iser-target: Decrement completion context active_qps in error flow
-
-Signed-off-by: Sagi Grimberg <sagig@mellanox.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Signed-off-by: Jan Beulich <jbeulich@suse.com>
+Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Link: http://lkml.kernel.org/r/54C2139202000078000588F7@mail.emea.novell.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- drivers/infiniband/ulp/isert/ib_isert.c | 31 +++++++++++++++++++------------
- 1 file changed, 19 insertions(+), 12 deletions(-)
+ kernel/sched/fair.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/infiniband/ulp/isert/ib_isert.c b/drivers/infiniband/ulp/isert/ib_isert.c
-index 12011e009643..7102b9427e6e 100644
---- a/drivers/infiniband/ulp/isert/ib_isert.c
-+++ b/drivers/infiniband/ulp/isert/ib_isert.c
-@@ -135,12 +135,18 @@ isert_conn_setup_qp(struct isert_conn *isert_conn, struct rdma_cm_id *cma_id)
- 	ret = rdma_create_qp(cma_id, isert_conn->conn_pd, &attr);
- 	if (ret) {
- 		pr_err("rdma_create_qp failed for cma_id %d\n", ret);
--		return ret;
-+		goto err;
- 	}
- 	isert_conn->conn_qp = cma_id->qp;
- 	pr_debug("rdma_create_qp() returned success >>>>>>>>>>>>>>>>>>>>>>>>>.\n");
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 40667cb..fe331fc 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -1730,7 +1730,7 @@ static int preferred_group_nid(struct task_struct *p, int nid)
+ 	nodes = node_online_map;
+ 	for (dist = sched_max_numa_distance; dist > LOCAL_DISTANCE; dist--) {
+ 		unsigned long max_faults = 0;
+-		nodemask_t max_group;
++		nodemask_t max_group = NODE_MASK_NONE;
+ 		int a, b;
  
- 	return 0;
-+err:
-+	mutex_lock(&device_list_mutex);
-+	device->cq_active_qps[min_index]--;
-+	mutex_unlock(&device_list_mutex);
-+
-+	return ret;
- }
- 
- static void
-@@ -531,7 +537,6 @@ isert_connect_request(struct rdma_cm_id *cma_id, struct rdma_cm_event *event)
- 	spin_lock_init(&isert_conn->conn_lock);
- 	INIT_LIST_HEAD(&isert_conn->conn_frwr_pool);
- 
--	cma_id->context = isert_conn;
- 	isert_conn->conn_cm_id = cma_id;
- 	isert_conn->responder_resources = event->param.conn.responder_resources;
- 	isert_conn->initiator_depth = event->param.conn.initiator_depth;
-@@ -635,18 +640,20 @@ isert_connect_release(struct isert_conn *isert_conn)
- 	if (device && device->use_frwr)
- 		isert_conn_free_frwr_pool(isert_conn);
- 
-+	isert_free_rx_descriptors(isert_conn);
-+	rdma_destroy_id(isert_conn->conn_cm_id);
-+
- 	if (isert_conn->conn_qp) {
- 		cq_index = ((struct isert_cq_desc *)
- 			isert_conn->conn_qp->recv_cq->cq_context)->cq_index;
- 		pr_debug("isert_connect_release: cq_index: %d\n", cq_index);
-+		mutex_lock(&device_list_mutex);
- 		isert_conn->conn_device->cq_active_qps[cq_index]--;
-+		mutex_unlock(&device_list_mutex);
- 
--		rdma_destroy_qp(isert_conn->conn_cm_id);
-+		ib_destroy_qp(isert_conn->conn_qp);
- 	}
- 
--	isert_free_rx_descriptors(isert_conn);
--	rdma_destroy_id(isert_conn->conn_cm_id);
--
- 	if (isert_conn->login_buf) {
- 		ib_dma_unmap_single(ib_dev, isert_conn->login_rsp_dma,
- 				    ISER_RX_LOGIN_SIZE, DMA_TO_DEVICE);
-@@ -666,7 +673,7 @@ isert_connect_release(struct isert_conn *isert_conn)
- static void
- isert_connected_handler(struct rdma_cm_id *cma_id)
- {
--	struct isert_conn *isert_conn = cma_id->context;
-+	struct isert_conn *isert_conn = cma_id->qp->qp_context;
- 
- 	pr_info("conn %p\n", isert_conn);
- 
-@@ -744,16 +751,16 @@ isert_conn_terminate(struct isert_conn *isert_conn)
- static int
- isert_disconnected_handler(struct rdma_cm_id *cma_id)
- {
-+	struct iscsi_np *np = cma_id->context;
-+	struct isert_np *isert_np = np->np_context;
- 	struct isert_conn *isert_conn;
- 
--	if (!cma_id->qp) {
--		struct isert_np *isert_np = cma_id->context;
--
-+	if (isert_np->np_cm_id == cma_id) {
- 		isert_np->np_cm_id = NULL;
- 		return -1;
- 	}
- 
--	isert_conn = (struct isert_conn *)cma_id->context;
-+	isert_conn = cma_id->qp->qp_context;
- 
- 	mutex_lock(&isert_conn->conn_mutex);
- 	isert_conn_terminate(isert_conn);
-@@ -768,7 +775,7 @@ isert_disconnected_handler(struct rdma_cm_id *cma_id)
- static void
- isert_connect_error(struct rdma_cm_id *cma_id)
- {
--	struct isert_conn *isert_conn = (struct isert_conn *)cma_id->context;
-+	struct isert_conn *isert_conn = cma_id->qp->qp_context;
- 
- 	isert_put_conn(isert_conn);
- }
--- 
-2.2.2
-
+ 		/* Are there nodes at this distance from each other? */
