@@ -1,56 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933373AbbA2CKU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 21:10:20 -0500
-Received: from mout.kundenserver.de ([212.227.126.187]:56608 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752321AbbA2CKR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 21:10:17 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: gregkh@linuxfoundation.org
-Cc: linux-usb@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Felipe Balbi <balbi@ti.com>,
-        Yoshihiro Shimoda <yoshihiro.shimoda.uh@renesas.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] usb: renesas: fix extcon dependency
-Date: Wed, 28 Jan 2015 22:47:18 +0100
-Message-ID: <2167400.bYh9r60XLF@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
+	id S1755988AbbA2Bfd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 20:35:33 -0500
+Received: from p3plex2out02.prod.phx3.secureserver.net ([184.168.131.14]:58304
+	"EHLO p3plex2out02.prod.phx3.secureserver.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755971AbbA2Bf3 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jan 2015 20:35:29 -0500
+From: Hartley Sweeten <HartleyS@visionengravers.com>
+To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        Ian Abbott <abbotti@mev.co.uk>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Chase Southwood <chase.southwood@gmail.com>,
+        Conrad Meyer <cemeyer@uw.edu>, Fred Akers <knivey@botops.net>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH v2] staging: comedi: drivers: addi-data: hwdrv_apci1500:
+ Removed variables that is never used
+Thread-Topic: [PATCH v2] staging: comedi: drivers: addi-data:
+ hwdrv_apci1500: Removed variables that is never used
+Thread-Index: AQHQO0PPMtO2TIXC+U+2MqsHlPXjEZzWENjw
+Date: Wed, 28 Jan 2015 21:48:44 +0000
+Message-ID: <DC148C5AA1CEBA4E87973D432B1C2D88260F74AD@P3PWEX4MB008.ex4.secureserver.net>
+References: <1422481761-31281-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+In-Reply-To: <1422481761-31281-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [184.183.19.121]
 Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V03:K0:PusqTmWVXVrlUJxwq79IeNVXaSWkeRTRaR66wKbEDg2kn0Vg2vf
- W07xz1FlX8F4Q0Cdp10YkMbC5mzjFU22YDcuJMEAzgya2PafgVDA/YByVXkBXbvwcrlKKfx
- xYI9yTFOTs2TGXldXY2aUesMICi1tpinXRgCshMqt8Pe8aCnpLa3LWexSxaMwO0K7E+3Ze+
- NX5upWE8Usg6zShge6UbQ==
-X-UI-Out-Filterresults: notjunk:1;
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The renesas usbhs driver calls extcon_get_edev_by_phandle(), which
-is defined in drivers/extcon/extcon-class.c, and that can be a
-loadable module. If the extcon-class support is disabled, usbhs
-will work correctly for all devices that do not need extcon.
+On Wednesday, January 28, 2015 2:49 PM, Rickard Strandqvist wrote:
+> Variable ar assigned a value that is never used.
+> I have also removed all the code that thereby serves no purpose.
+>
+> This was found using a static code analysis program called cppcheck
+>
+> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+> ---
+>  drivers/staging/comedi/drivers/addi-data/hwdrv_apci1500.c |   12 ++----------
+>  1 file changed, 2 insertions(+), 10 deletions(-)
 
-However, if extcon-class is a loadable module, and usbhs is
-built-in, the kernel fails to link. In order to solve that,
-we need a Kconfig dependency that allows extcon to be disabled
-but does not allow usbhs built-in if extcon is a module.
+This file has been deleted.
 
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Please base comedi patches on the current linux-next tree.
 
-diff --git a/drivers/usb/renesas_usbhs/Kconfig b/drivers/usb/renesas_usbhs/Kconfig
-index de83b9d0cd5c..0ea9040b9f10 100644
---- a/drivers/usb/renesas_usbhs/Kconfig
-+++ b/drivers/usb/renesas_usbhs/Kconfig
-@@ -6,6 +6,7 @@ config USB_RENESAS_USBHS
- 	tristate 'Renesas USBHS controller'
- 	depends on USB_GADGET
- 	depends on ARCH_SHMOBILE || SUPERH || COMPILE_TEST
-+	depends on EXTCON || !EXTCON # for module build if extcon is
- 	default n
- 	help
- 	  Renesas USBHS is a discrete USB host and peripheral controller chip
+Thanks,
+Hartley
 
