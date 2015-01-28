@@ -1,23 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934032AbbA1CKP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 21:10:15 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41202 "EHLO
+	id S964893AbbA1CWG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 21:22:06 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41037 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759895AbbA1B2X (ORCPT
+	with ESMTP id S1751856AbbA1B2I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 20:28:23 -0500
+	Tue, 27 Jan 2015 20:28:08 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Andrew Lunn <andrew@lunn.ch>
-Subject: [PATCH 3.18 33/61] ARM: mvebu: completely disable hardware I/O coherency
+        Kukjin Kim <kgene.kim@samsung.com>, GP Orcullo <kinsamanka@gmail.com>,
+        Doug Anderson <dianders@chromium.org>,
+        Tobias Jakobi <tjakobi@math.uni-bielefeld.de>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>
+Subject: [PATCH 3.10 15/32] clocksource: exynos_mct: Fix bitmask regression for exynos4_mct_write
 Date: Tue, 27 Jan 2015 17:26:45 -0800
-Message-Id: <20150128012640.523026252@linuxfoundation.org>
+Message-Id: <20150128012629.356766970@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150128012636.936333725@linuxfoundation.org>
-References: <20150128012636.936333725@linuxfoundation.org>
+In-Reply-To: <20150128012627.081285723@linuxfoundation.org>
+References: <20150128012627.081285723@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -25,48 +27,46 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.18-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+From: Tobias Jakobi <tjakobi@math.uni-bielefeld.de>
 
-commit 8f1e8ee28660018a935c7576b9af8ffe1feab54c upstream.
+commit 8c38d28ba8da98f7102c31d35359b4dbe9d1f329 upstream.
 
-The current hardware I/O coherency is known to cause problems with DMA
-coherent buffers, as it still requires explicit I/O synchronization
-barriers, which is not compatible with the semantics expected by the
-Linux DMA coherent buffers API.
+EXYNOS4_MCT_L_MASK is defined as 0xffffff00, so applying this bitmask
+produces a number outside the range 0x00 to 0xff, which always results
+in execution of the default switch statement.
 
-So, in order to have enough time to validate a new solution based on
-automatic I/O synchronization barriers, this commit disables hardware
-I/O coherency entirely. Future patches will re-enable it.
+Obviously this is wrong and git history shows that the bitmask inversion
+was incorrectly set during a refactoring of the MCT code.
 
-Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Signed-off-by: Andrew Lunn <andrew@lunn.ch>
+Fix this by putting the inversion at the correct position again.
+
+Acked-by: Kukjin Kim <kgene.kim@samsung.com>
+Reported-by: GP Orcullo <kinsamanka@gmail.com>
+Reviewed-by: Doug Anderson <dianders@chromium.org>
+Signed-off-by: Tobias Jakobi <tjakobi@math.uni-bielefeld.de>
+Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/mach-mvebu/coherency.c |    7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ drivers/clocksource/exynos_mct.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/arch/arm/mach-mvebu/coherency.c
-+++ b/arch/arm/mach-mvebu/coherency.c
-@@ -398,9 +398,14 @@ static int coherency_type(void)
- 	return type;
- }
+--- a/drivers/clocksource/exynos_mct.c
++++ b/drivers/clocksource/exynos_mct.c
+@@ -94,8 +94,8 @@ static void exynos4_mct_write(unsigned i
+ 	__raw_writel(value, reg_base + offset);
  
-+/*
-+ * As a precaution, we currently completely disable hardware I/O
-+ * coherency, until enough testing is done with automatic I/O
-+ * synchronization barriers to validate that it is a proper solution.
-+ */
- int coherency_available(void)
- {
--	return coherency_type() != COHERENCY_FABRIC_TYPE_NONE;
-+	return false;
- }
- 
- int __init coherency_init(void)
+ 	if (likely(offset >= EXYNOS4_MCT_L_BASE(0))) {
+-		stat_addr = (offset & ~EXYNOS4_MCT_L_MASK) + MCT_L_WSTAT_OFFSET;
+-		switch (offset & EXYNOS4_MCT_L_MASK) {
++		stat_addr = (offset & EXYNOS4_MCT_L_MASK) + MCT_L_WSTAT_OFFSET;
++		switch (offset & ~EXYNOS4_MCT_L_MASK) {
+ 		case MCT_L_TCON_OFFSET:
+ 			mask = 1 << 3;		/* L_TCON write status */
+ 			break;
 
 
