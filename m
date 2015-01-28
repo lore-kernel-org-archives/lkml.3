@@ -1,51 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756272AbbA1UWZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 15:22:25 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42265 "EHLO
+	id S1756363AbbA1UWa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 15:22:30 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42263 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754898AbbA1UWU (ORCPT
+	with ESMTP id S1754113AbbA1UWU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 28 Jan 2015 15:22:20 -0500
-Date: Wed, 28 Jan 2015 09:54:48 -0800
+Date: Wed, 28 Jan 2015 09:55:02 -0800
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: Lai Jiangshan <laijs@cn.fujitsu.com>, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org, Eric Sandeen <sandeen@sandeen.net>,
-        Dave Chinner <david@fromorbit.com>
-Subject: Re: [PATCH 3.18 11/61] workqueue: fix subtle pool management issue
- which can stall whole worker_pool
-Message-ID: <20150128175448.GB28561@kroah.com>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, satoru.takeuchi@gmail.com,
+        shuah.kh@samsung.com, stable@vger.kernel.org
+Subject: Re: [PATCH 3.18 00/61] 3.18.5-stable review
+Message-ID: <20150128175502.GC28561@kroah.com>
 References: <20150128012636.936333725@linuxfoundation.org>
- <20150128012638.187292688@linuxfoundation.org>
- <54C840BA.7020207@cn.fujitsu.com>
- <20150128022456.GF12314@htj.dyndns.org>
- <54C85454.6070303@cn.fujitsu.com>
- <20150128150701.GA3199@htj.dyndns.org>
+ <54C8EF0B.8000904@roeck-us.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20150128150701.GA3199@htj.dyndns.org>
+In-Reply-To: <54C8EF0B.8000904@roeck-us.net>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 28, 2015 at 10:07:01AM -0500, Tejun Heo wrote:
-> On Wed, Jan 28, 2015 at 11:15:32AM +0800, Lai Jiangshan wrote:
-> > Was the bug introduced at the first time when maybe_create_worker() was
-> > introduced?  Although manage_workers()/maybe_create_worker() was changed a bit,
-> > the stable-tree team can simply make manage_workers() return true to fix
-> > this bug for the very old kernel versions.
+On Wed, Jan 28, 2015 at 06:15:39AM -0800, Guenter Roeck wrote:
+> On 01/27/2015 05:26 PM, Greg Kroah-Hartman wrote:
+> >This is the start of the stable review cycle for the 3.18.5 release.
+> >There are 61 patches in this series, all will be posted as a response
+> >to this one.  If anyone has any issues with these being applied, please
+> >let me know.
+> >
+> >Responses should be made by Fri Jan 30 01:26:13 UTC 2015.
+> >Anything received after that time might be too late.
+> >
 > 
-> Yes, this bug has been there from the beginning of cmwq.  I'm
-> attaching a patch which is for before the removal of
-> maybe_destory_worker().
+> Build results:
+> 	total: 134 pass: 134 fail: 0
+> Qemu tests:
+> 	total: 30 pass: 30 fail: 0
+> 
+> Details are available at http://server.roeck-us.net:8010/builders.
 
-This patch will apply to 3.10, but not 3.14, and I'm confused.  Should I
-backport the original version to 3.14?  3.10?  Use this different
-version instead?
-
-confused,
+Thanks for testing all 3 of these and letting me know.
 
 greg k-h
