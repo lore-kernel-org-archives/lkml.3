@@ -1,109 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761911AbbA1Up6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 15:45:58 -0500
-Received: from mga14.intel.com ([192.55.52.115]:5071 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761884AbbA1Up4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 15:45:56 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.09,481,1418112000"; 
-   d="scan'208";a="677408915"
-Date: Wed, 28 Jan 2015 16:20:25 +0200
-From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-To: David Cohen <david.a.cohen@linux.intel.com>
-Cc: Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Baolu Lu <baolu.lu@linux.intel.com>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Kishon Vijay Abraham I <kishon@ti.com>
-Subject: Re: [PATCH 8/8] phy: add driver for TI TUSB1210 ULPI PHY
-Message-ID: <20150128142024.GA2378@kuha.fi.intel.com>
-References: <1422025978-178336-1-git-send-email-heikki.krogerus@linux.intel.com>
- <1422025978-178336-9-git-send-email-heikki.krogerus@linux.intel.com>
- <20150124235811.GA24665@psi-dev26.jf.intel.com>
- <20150126125503.GB28539@kuha.fi.intel.com>
- <20150126192337.GA13936@psi-dev26.jf.intel.com>
- <20150127092856.GD28539@kuha.fi.intel.com>
- <20150127173801.GA8441@psi-dev26.jf.intel.com>
+	id S1754012AbbA1UzA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 15:55:00 -0500
+Received: from mail-bn1on0064.outbound.protection.outlook.com ([157.56.110.64]:53584
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753931AbbA1Uyy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jan 2015 15:54:54 -0500
+Date: Wed, 28 Jan 2015 15:21:19 +0100
+From: Michal Simek <michal.simek@xilinx.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150127173801.GA8441@psi-dev26.jf.intel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: =?UTF-8?B?QW5kcmVhcyBGw6RyYmVy?= <afaerber@suse.de>,
+        Soren Brinkmann <soren.brinkmann@xilinx.com>,
+        Michal Simek <michal.simek@xilinx.com>
+CC: <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>,
+        Peter Crosthwaite <peter.crosthwaite@xilinx.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: [PATCH 1/2] ARM: zynq: Remove bogus value from 'bias-disable'
+ property
+References: <1422301796-22888-1-git-send-email-soren.brinkmann@xilinx.com>
+ <54C6DDE8.3000905@suse.de>
+In-Reply-To: <54C6DDE8.3000905@suse.de>
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature";
+	boundary="Of3Md1kDMWwojpwvIlFLKVqWoDU8k6HtX"
+X-RCIS-Action: ALLOW
+X-TM-AS-Product-Ver: IMSS-7.1.0.1224-7.5.0.1018-21288.007
+X-TM-AS-User-Approved-Sender: Yes
+Message-ID: <ce6e56872ab744a49612ef9bca07c73d@BN1AFFO11FD005.protection.gbl>
+X-EOPAttributedMessage: 0
+Authentication-Results: spf=pass (sender IP is 62.221.5.235)
+ smtp.mailfrom=michal.simek@xilinx.com; suse.de; dkim=none (message not
+ signed) header.d=none;
+X-Forefront-Antispam-Report: CIP:62.221.5.235;CTRY:GB;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(377454003)(164054003)(479174004)(24454002)(51704005)(512874002)(92566002)(6806004)(19580395003)(64126003)(76176999)(106466001)(84326002)(74316001)(92726002)(65806001)(54356999)(86362001)(19580405001)(46102003)(77156002)(77096005)(2950100001)(568964001)(33646002)(108616004)(65956001)(83506001)(87936001)(62966003)(50986999)(104016003)(65826006)(107986001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BN1AFFO11HUB020;H:xir-pvapsmtpgw01;FPR:;SPF:None;MLV:sfv;LANG:en;
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1AFFO11HUB020;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:BN1AFFO11HUB020;
+X-Forefront-PRVS: 047001DADA
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BN1AFFO11HUB020;
+X-OriginatorOrg: xilinx.com
+X-MS-Exchange-CrossTenant-OriginalArrivalTime: 28 Jan 2015 14:21:36.7512
+ (UTC)
+X-MS-Exchange-CrossTenant-Id: 657af505-d5df-48d0-8300-c31994686c5c
+X-MS-Exchange-CrossTenant-OriginalAttributedTenantConnectingIp: TenantId=657af505-d5df-48d0-8300-c31994686c5c;Ip=[62.221.5.235]
+X-MS-Exchange-CrossTenant-FromEntityHeader: HybridOnPrem
+X-MS-Exchange-Transport-CrossTenantHeadersStamped: BN1AFFO11HUB020
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+--Of3Md1kDMWwojpwvIlFLKVqWoDU8k6HtX
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: quoted-printable
 
-> > > Can you share how tusb1210 is connected on the platform you're using as
-> > > test for this patch? I don't think this driver would work reliably with
-> > > this device:
-> > > http://liliputing.com/2014/11/trekstor-launches-first-android-tablet-based-intels-irda-reference-design.html
-> > 
-> > The only reason why that board doesn't work is because of very much
-> > Baytrail-CR specific problems. These are are two issues, but the first
-> 
-> That's not BYT-CR specific problems. That's just dwc3 and tusb1210
-> interacting as they're expecting to.
-> 
-> > one is critical for getting it working. Both will be handled, but
-> > separately from this set:
-> > 
-> > 1) The firmware leaves the PHY in reset, forcing us to enable it
-> > somehow in OS before accessing ulpi. Unless we can get a firmware fix
-> > for that (it's starting to look like it's not going to happen; please
-> > correct me if you know something else!), we need to add a quirk for
-> > Baytrails (attached), which is probable still OK. But IMO this really
-> > should be fixed in the firmware.
-> 
-> It seems you're expecting the PHY to be fully operational in order to
-> probe it. That's wrong assumption. BYT-CR's BIOS is doing nothing wrong
-> by leaving PHY on reset state.
+On 01/27/2015 01:38 AM, Andreas F=C3=A4rber wrote:
+> Am 26.01.2015 um 20:49 schrieb Soren Brinkmann:
+>> In one pinctrl node, a 'bias-disable' property is erroneously assigned=
+ a
+>> value.
+>>
+>> Fixes: ARM: zynq: DT: Add pinctrl information
+>> Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+>=20
+> Reviewed-by: Andreas F=C3=A4rber <afaerber@suse.de>
+>=20
+> Andreas
+>=20
 
-But it is. If we want to use ULPI as a bus like we do, then the PHY
-will be no different then devices attached to many other buses. We
-have made firmware fixes like that before. All the devices need to be
-in a state, operational enough after bootup, so we can probe them in
-OS without the need for hacks where they are separately enabled before
-it's possible.
-
-> The real problem is what I stated above.
-> With your current logic, you'll get stuck with checking/egg problem: you
-> need phy probed to probe dwc3, but need dwc3 probed to power on phy.
-> You need a logic to break this circular dependency.
-
-The moment we register the ulpi interface with the ulpi bus in
-dwc3_probe(), we know dwc3 has it's PHY interface in operational mode
-and register access to ULPI PHY is possible. And that is all dwc3
-needs to/can do.
-
-I don't think you are seeing the whole "ulpi bus" in these patches,
-but in any case; Like I said, this problem is purely BYT-CR specific,
-which IMO really should be fixed in the firmware.
-
-> > 2) Since the gpio resources are given to the controller device in ACPI
-> > tables and there isn't separate device object for the PHY at all, we
-> > need to deliver the gpios somehow separately to the phy driver. There
-> > is a thread where we are talking about how to do that:
-> > https://lkml.org/lkml/2014/12/18/82
-> 
-> How about just leave the logic the way it is:
-> dwc3-pci.c registers platform_device with gpio as resource if the GPIOs
-> are provided to dwc3. If not, then dwc3-pci.c will expect phy to have
-> its own ACPI id.
-
-I think you are now talking about the platform devices for the legacy
-USB PHY framework created in dwc3-pci.c, which btw. were removed.
-Please note that we are not using platform bus with the ULPI devices,
-and those devices are created by the bus driver and not dwc3.
-
-I'm pretty sure now that you are not seeing the whole point with this
-set, which is to provide new bus type for ULPI. If so, then could you
-please review the whole series.
-
+Applied both.
 
 Thanks,
+Michal
 
--- 
-heikki
+
+--Of3Md1kDMWwojpwvIlFLKVqWoDU8k6HtX
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAlTI8GMACgkQykllyylKDCHOvgCfbuar5AsiJInFpFDpFKWmS2/o
+ao0AoIrnqImPrQk7T3HaPUuvPq6lfq7p
+=ufXe
+-----END PGP SIGNATURE-----
+
+--Of3Md1kDMWwojpwvIlFLKVqWoDU8k6HtX--
