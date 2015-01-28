@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761352AbbA1CW6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 21:22:58 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41037 "EHLO
+	id S1759703AbbA1B2P (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 20:28:15 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41028 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755034AbbA1B2H (ORCPT
+	with ESMTP id S1755225AbbA1B2H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 27 Jan 2015 20:28:07 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Jani Nikula <jani.nikula@intel.com>
-Subject: [PATCH 3.10 07/32] drm/i915: Fix mutex->owner inspection race under DEBUG_MUTEXES
-Date: Tue, 27 Jan 2015 17:26:37 -0800
-Message-Id: <20150128012628.133066845@linuxfoundation.org>
+        Brian King <brking@linux.vnet.ibm.com>,
+        Wendy Xiong <wenxiong@linux.vnet.ibm.com>,
+        Christoph Hellwig <hch@lst.de>
+Subject: [PATCH 3.10 08/32] ipr: wait for aborted command responses
+Date: Tue, 27 Jan 2015 17:26:38 -0800
+Message-Id: <20150128012628.300092999@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <20150128012627.081285723@linuxfoundation.org>
 References: <20150128012627.081285723@linuxfoundation.org>
@@ -30,56 +30,183 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Wilson <chris@chris-wilson.co.uk>
+From: Brian King <brking@linux.vnet.ibm.com>
 
-commit 226e5ae9e5f9108beb0bde4ac69f68fe6210fed9 upstream.
+commit 6cdb08172bc89f0a39e1643c5e7eab362692fd1b upstream.
 
-If CONFIG_DEBUG_MUTEXES is set, the mutex->owner field is only cleared
-if the mutex debugging is enabled which introduces a race in our
-mutex_is_locked_by() - i.e. we may inspect the old owner value before it
-is acquired by the new task.
+Fixes a race condition in abort handling that was injected
+when multiple interrupt support was added. When only a single
+interrupt is present, the adapter guarantees it will send
+responses for aborted commands prior to the response for the
+abort command itself. With multiple interrupts, these responses
+generally come back on different interrupts, so we need to
+ensure the abort thread waits until the aborted command is
+complete so we don't perform a double completion. This race
+condition was being hit frequently in environments which
+were triggering command timeouts, which was resulting in
+a double completion causing a kernel oops.
 
-This is the root cause of this error:
-
-# diff --git a/kernel/locking/mutex-debug.c b/kernel/locking/mutex-debug.c
-# index 5cf6731..3ef3736 100644
-# --- a/kernel/locking/mutex-debug.c
-# +++ b/kernel/locking/mutex-debug.c
-# @@ -80,13 +80,13 @@ void debug_mutex_unlock(struct mutex *lock)
-# 			DEBUG_LOCKS_WARN_ON(lock->owner != current);
-#
-# 		DEBUG_LOCKS_WARN_ON(!lock->wait_list.prev && !lock->wait_list.next);
-# -		mutex_clear_owner(lock);
-# 	}
-#
-# 	/*
-# 	 * __mutex_slowpath_needs_to_unlock() is explicitly 0 for debug
-# 	 * mutexes so that we can do it here after we've verified state.
-# 	 */
-# +	mutex_clear_owner(lock);
-# 	atomic_set(&lock->count, 1);
-#  }
-
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=87955
-Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-Reviewed-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-Signed-off-by: Jani Nikula <jani.nikula@intel.com>
+Signed-off-by: Brian King <brking@linux.vnet.ibm.com>
+Reviewed-by: Wendy Xiong <wenxiong@linux.vnet.ibm.com>
+Tested-by: Wendy Xiong <wenxiong@linux.vnet.ibm.com>
+Signed-off-by: Christoph Hellwig <hch@lst.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/i915_gem.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/scsi/ipr.c |   92 +++++++++++++++++++++++++++++++++++++++++++++++++++++
+ drivers/scsi/ipr.h |    1 
+ 2 files changed, 93 insertions(+)
 
---- a/drivers/gpu/drm/i915/i915_gem.c
-+++ b/drivers/gpu/drm/i915/i915_gem.c
-@@ -4449,7 +4449,7 @@ static bool mutex_is_locked_by(struct mu
- 	if (!mutex_is_locked(mutex))
- 		return false;
+--- a/drivers/scsi/ipr.c
++++ b/drivers/scsi/ipr.c
+@@ -645,6 +645,7 @@ static void ipr_init_ipr_cmnd(struct ipr
+ 	ipr_reinit_ipr_cmnd(ipr_cmd);
+ 	ipr_cmd->u.scratch = 0;
+ 	ipr_cmd->sibling = NULL;
++	ipr_cmd->eh_comp = NULL;
+ 	ipr_cmd->fast_done = fast_done;
+ 	init_timer(&ipr_cmd->timer);
+ }
+@@ -810,6 +811,8 @@ static void ipr_scsi_eh_done(struct ipr_
  
--#if defined(CONFIG_SMP) || defined(CONFIG_DEBUG_MUTEXES)
-+#if defined(CONFIG_SMP) && !defined(CONFIG_DEBUG_MUTEXES)
- 	return mutex->owner == task;
- #else
- 	/* Since UP may be pre-empted, we cannot assume that we own the lock */
+ 	scsi_dma_unmap(ipr_cmd->scsi_cmd);
+ 	scsi_cmd->scsi_done(scsi_cmd);
++	if (ipr_cmd->eh_comp)
++		complete(ipr_cmd->eh_comp);
+ 	list_add_tail(&ipr_cmd->queue, &ipr_cmd->hrrq->hrrq_free_q);
+ }
+ 
+@@ -4767,6 +4770,84 @@ static int ipr_slave_alloc(struct scsi_d
+ 	return rc;
+ }
+ 
++/**
++ * ipr_match_lun - Match function for specified LUN
++ * @ipr_cmd:	ipr command struct
++ * @device:		device to match (sdev)
++ *
++ * Returns:
++ *	1 if command matches sdev / 0 if command does not match sdev
++ **/
++static int ipr_match_lun(struct ipr_cmnd *ipr_cmd, void *device)
++{
++	if (ipr_cmd->scsi_cmd && ipr_cmd->scsi_cmd->device == device)
++		return 1;
++	return 0;
++}
++
++/**
++ * ipr_wait_for_ops - Wait for matching commands to complete
++ * @ipr_cmd:	ipr command struct
++ * @device:		device to match (sdev)
++ * @match:		match function to use
++ *
++ * Returns:
++ *	SUCCESS / FAILED
++ **/
++static int ipr_wait_for_ops(struct ipr_ioa_cfg *ioa_cfg, void *device,
++			    int (*match)(struct ipr_cmnd *, void *))
++{
++	struct ipr_cmnd *ipr_cmd;
++	int wait;
++	unsigned long flags;
++	struct ipr_hrr_queue *hrrq;
++	signed long timeout = IPR_ABORT_TASK_TIMEOUT;
++	DECLARE_COMPLETION_ONSTACK(comp);
++
++	ENTER;
++	do {
++		wait = 0;
++
++		for_each_hrrq(hrrq, ioa_cfg) {
++			spin_lock_irqsave(hrrq->lock, flags);
++			list_for_each_entry(ipr_cmd, &hrrq->hrrq_pending_q, queue) {
++				if (match(ipr_cmd, device)) {
++					ipr_cmd->eh_comp = &comp;
++					wait++;
++				}
++			}
++			spin_unlock_irqrestore(hrrq->lock, flags);
++		}
++
++		if (wait) {
++			timeout = wait_for_completion_timeout(&comp, timeout);
++
++			if (!timeout) {
++				wait = 0;
++
++				for_each_hrrq(hrrq, ioa_cfg) {
++					spin_lock_irqsave(hrrq->lock, flags);
++					list_for_each_entry(ipr_cmd, &hrrq->hrrq_pending_q, queue) {
++						if (match(ipr_cmd, device)) {
++							ipr_cmd->eh_comp = NULL;
++							wait++;
++						}
++					}
++					spin_unlock_irqrestore(hrrq->lock, flags);
++				}
++
++				if (wait)
++					dev_err(&ioa_cfg->pdev->dev, "Timed out waiting for aborted commands\n");
++				LEAVE;
++				return wait ? FAILED : SUCCESS;
++			}
++		}
++	} while (wait);
++
++	LEAVE;
++	return SUCCESS;
++}
++
+ static int ipr_eh_host_reset(struct scsi_cmnd *cmd)
+ {
+ 	struct ipr_ioa_cfg *ioa_cfg;
+@@ -4985,11 +5066,17 @@ static int __ipr_eh_dev_reset(struct scs
+ static int ipr_eh_dev_reset(struct scsi_cmnd *cmd)
+ {
+ 	int rc;
++	struct ipr_ioa_cfg *ioa_cfg;
++
++	ioa_cfg = (struct ipr_ioa_cfg *) cmd->device->host->hostdata;
+ 
+ 	spin_lock_irq(cmd->device->host->host_lock);
+ 	rc = __ipr_eh_dev_reset(cmd);
+ 	spin_unlock_irq(cmd->device->host->host_lock);
+ 
++	if (rc == SUCCESS)
++		rc = ipr_wait_for_ops(ioa_cfg, cmd->device, ipr_match_lun);
++
+ 	return rc;
+ }
+ 
+@@ -5167,13 +5254,18 @@ static int ipr_eh_abort(struct scsi_cmnd
+ {
+ 	unsigned long flags;
+ 	int rc;
++	struct ipr_ioa_cfg *ioa_cfg;
+ 
+ 	ENTER;
+ 
++	ioa_cfg = (struct ipr_ioa_cfg *) scsi_cmd->device->host->hostdata;
++
+ 	spin_lock_irqsave(scsi_cmd->device->host->host_lock, flags);
+ 	rc = ipr_cancel_op(scsi_cmd);
+ 	spin_unlock_irqrestore(scsi_cmd->device->host->host_lock, flags);
+ 
++	if (rc == SUCCESS)
++		rc = ipr_wait_for_ops(ioa_cfg, scsi_cmd->device, ipr_match_lun);
+ 	LEAVE;
+ 	return rc;
+ }
+--- a/drivers/scsi/ipr.h
++++ b/drivers/scsi/ipr.h
+@@ -1578,6 +1578,7 @@ struct ipr_cmnd {
+ 		struct scsi_device *sdev;
+ 	} u;
+ 
++	struct completion *eh_comp;
+ 	struct ipr_hrr_queue *hrrq;
+ 	struct ipr_ioa_cfg *ioa_cfg;
+ };
 
 
