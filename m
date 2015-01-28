@@ -1,237 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760879AbbA2CEF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 21:04:05 -0500
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:39131 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754564AbbA2CEA (ORCPT
+	id S1755366AbbA2DJ7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 22:09:59 -0500
+Received: from mail-lb0-f181.google.com ([209.85.217.181]:59291 "EHLO
+	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965031AbbA2Cg5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 21:04:00 -0500
-From: Ivan Khoronzhuk <ivan.khoronzhuk@linaro.org>
-To: linux-kernel@vger.kernel.org, ard.biesheuvel@linaro.org,
-        grant.likely@linaro.org, matt.fleming@intel.com
-Cc: dmidecode-devel@nongnu.org, leif.lindholm@linaro.org,
-        Ivan Khoronzhuk <ivan.khoronzhuk@linaro.org>
-Subject: [Patch v3] firmware: dmi-sysfs: add SMBIOS entry point area raw attribute
-Date: Wed, 28 Jan 2015 14:39:23 +0200
-Message-Id: <1422448763-17583-1-git-send-email-ivan.khoronzhuk@linaro.org>
-X-Mailer: git-send-email 1.9.1
+	Wed, 28 Jan 2015 21:36:57 -0500
+MIME-Version: 1.0
+In-Reply-To: <A9667DDFB95DB7438FA9D7D576C3D87E0AC2C932@SHSMSX104.ccr.corp.intel.com>
+References: <CACzj_yUu5omqFL7u8NE6vyqXGy_-dAeukRspJha+EiGXVBzmYg@mail.gmail.com>
+ <A9667DDFB95DB7438FA9D7D576C3D87E0AC2C563@SHSMSX104.ccr.corp.intel.com>
+ <CACzj_yVqDYyz5VwCX5d=Po2X_DdsHbqLmON8N=1PVLLocoHNpw@mail.gmail.com>
+ <A9667DDFB95DB7438FA9D7D576C3D87E0AC2C800@SHSMSX104.ccr.corp.intel.com>
+ <CACzj_yWZzhgjqBPNkxy39v6-uXnRpKb0Eo-YjEQwfSYL+tT-bQ@mail.gmail.com>
+ <A9667DDFB95DB7438FA9D7D576C3D87E0AC2C865@SHSMSX104.ccr.corp.intel.com>
+ <CACzj_yV+eQP1bZZ07MvECMrQ52DgkcrfsJTFDQ=uPz4j7LkEHg@mail.gmail.com> <A9667DDFB95DB7438FA9D7D576C3D87E0AC2C932@SHSMSX104.ccr.corp.intel.com>
+From: Wincy Van <fanwenyi0529@gmail.com>
+Date: Wed, 28 Jan 2015 20:45:16 +0800
+Message-ID: <CACzj_yXCPWFxFxPq45OQEwS_ASE6TQK8XwXEFOcSzQS8r90jaA@mail.gmail.com>
+Subject: Re: [PATCH v3 1/6] KVM: nVMX: Use hardware MSR bitmap
+To: "Zhang, Yang Z" <yang.z.zhang@intel.com>
+Cc: Paolo Bonzini <pbonzini@redhat.com>, "gleb@kernel.org" <gleb@kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Wanpeng Li <wanpeng.li@linux.intel.com>,
+        Jan Kiszka <jan.kiszka@web.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some utils, like dmidecode and smbios, needs to access SMBIOS entry
-table area in order to get information like SMBIOS version, size, etc.
-Currently it's done via /dev/mem. But for situation when /dev/mem
-usage is disabled, the utils have to use dmi sysfs instead, which
-doesn't represent SMBIOS entry. So this patch adds SMBIOS area to
-dmi-sysfs in order to allow utils in question to work correctly with
-dmi sysfs interface.
+On Wed, Jan 28, 2015 at 8:33 PM, Zhang, Yang Z <yang.z.zhang@intel.com> wrote:
+>>>
+>>> You are right, but this is not fit for all the cases, we should
+>>> custom the nested_msr_bitmap.
+>>> e.g.  Currently L0 wants to intercept some of the x2apic msrs' reading:
+>>>          if (enable_apicv) {
+>>>                 for (msr = 0x800; msr <= 0x8ff; msr++)
+>> vmx_disable_intercept_msr_read_x2apic(msr);
+>>>                 /* According SDM, in x2apic mode, the whole id reg
+>>> is
+>> used.
+>>>                  * But in KVM, it only use the highest eight bits. Need to
+>>>                  * intercept it */
+>>>                 vmx_enable_intercept_msr_read_x2apic(0x802); /* TMCCT
+>>>                 */ vmx_enable_intercept_msr_read_x2apic(0x839); /* TPR
+>>>                 */ vmx_disable_intercept_msr_write_x2apic(0x808); /*
+>>> EOI
+>> */
+>>>                 vmx_disable_intercept_msr_write_x2apic(0x80b); /*
+>>>                 SELF-IPI */
+>>>                 vmx_disable_intercept_msr_write_x2apic(0x83f);
+>>>         }
+>>> But L1 may not want this. So I think we are better to deal with the
+>>
+>> Actually, from L0's point, it is totally unaware of the L2. The only
+>> thing L0 aware is that the CPU should follow L0's configuration when
+>> VCPU is running. So if L0 wants to trap a msr, then the read operation
+>> to this msr should cause vmexit unconditionally no matter who is running(who means L1, L2, L3.....).
+>>
+>>> msrs seperately, there is not a common way suit for all the cases.
+>>> If other features want to intercept a msr in nested entry, they can
+>>> put the custom code in nested_vmx_merge_msr_bitmap.
+>>
+>> Yes, if other features want to do it in 'nested' entry, they can fill
+>> nested_vmx_merge_msr_bitmap. But if in non-nested case, it should be
+>> our responsibly to handle it correctly, how about add following check:
+>>
+>> if (type & MSR_TYPE_R && !test_bit(msr, vmcs01_msr_bitmap) &&
+>> !test_bit(msr, msr_bitmap_l1 + 0x000 / f))
+>>         __clear_bit(msr, msr_bitmap_nested + 0x000 / f);
+>
+>
+> Anyway, this is not necessary for your current patch. We can consider it later if there really have other features will use it.
+>
 
-Reviewed-by: Ard Biesheuvel <ard.biesheuvel@linaro.org>
-Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@linaro.org>
----
+Yep, I know what you mean now, for other msrs which are not forwarded
+access by a mechanism like virtual-apic page, we should intercept it
+unconditionally. I think we should ensure the msr can be allowed
+before call nested_vmx_disable_intercept_for_msr, if L0 want to
+intercept it, just do not call nested_vmx_disable_intercept_for_msr.
 
-v1: https://lkml.org/lkml/2015/1/23/643
-v2: https://lkml.org/lkml/2015/1/26/345
+ !test_bit(msr, vmcs01_msr_bitmap) will introduce a problem that some
+of the msrs will be affcted by vmcs01_msr_bitmap, TMCCT and TPR, for
+example.
+Intercept reading for these msrs is okay, but it is not efficient.
 
-v3..v2:
-  firmware: dmi_scan: add symbol to get SMBIOS entry area
-  firmware: dmi-sysfs: add SMBIOS entry point area attribute
-	combined in one patch
-	added SMBIOS information to ABI sysfs-dmi documentaton
-
-v2..v1:
-  firmware: dmi_scan: add symbol to get SMBIOS entry area
-	- used additional static var to hold SMBIOS raw table size
-	- changed format of get_smbios_entry_area symbol
-	  returned pointer on const smbios table
-
-  firmware: dmi-sysfs: add SMBIOS entry point area attribute
-	- adopted to updated get_smbios_entry_area symbol
-  	- removed redundant array to save smbios table
-
-
- Documentation/ABI/testing/sysfs-firmware-dmi | 10 +++++++
- drivers/firmware/dmi-sysfs.c                 | 42 ++++++++++++++++++++++++++++
- drivers/firmware/dmi_scan.c                  | 26 +++++++++++++++++
- include/linux/dmi.h                          |  3 ++
- 4 files changed, 81 insertions(+)
-
-diff --git a/Documentation/ABI/testing/sysfs-firmware-dmi b/Documentation/ABI/testing/sysfs-firmware-dmi
-index c78f9ab..3a9ffe8 100644
---- a/Documentation/ABI/testing/sysfs-firmware-dmi
-+++ b/Documentation/ABI/testing/sysfs-firmware-dmi
-@@ -12,6 +12,16 @@ Description:
- 		cannot ensure that the data as exported to userland is
- 		without error either.
- 
-+		The firmware provides DMI structures as a packed list of
-+		data referenced by a SMBIOS table entry point. The SMBIOS
-+		entry point contains general information, like SMBIOS
-+		version, DMI table size, etc. The structure, content and
-+		size of SMBIOS entry point is dependent on SMBIOS version.
-+		That's why SMBIOS entry point is represented in dmi sysfs
-+		like a raw attribute and is accessible via
-+		/sys/firmware/dmi/smbios_raw_header. The format of SMBIOS
-+		entry point header can be read in SMBIOS specification.
-+
- 		DMI is structured as a large table of entries, where
- 		each entry has a common header indicating the type and
- 		length of the entry, as well as a firmware-provided
-diff --git a/drivers/firmware/dmi-sysfs.c b/drivers/firmware/dmi-sysfs.c
-index e0f1cb3..61b6a38 100644
---- a/drivers/firmware/dmi-sysfs.c
-+++ b/drivers/firmware/dmi-sysfs.c
-@@ -29,6 +29,8 @@
- #define MAX_ENTRY_TYPE 255 /* Most of these aren't used, but we consider
- 			      the top entry type is only 8 bits */
- 
-+static const u8 *smbios_raw_header;
-+
- struct dmi_sysfs_entry {
- 	struct dmi_header dh;
- 	struct kobject kobj;
-@@ -646,9 +648,37 @@ static void cleanup_entry_list(void)
- 	}
- }
- 
-+static ssize_t smbios_entry_area_raw_read(struct file *filp,
-+					  struct kobject *kobj,
-+					  struct bin_attribute *bin_attr,
-+					  char *buf, loff_t pos, size_t count)
-+{
-+	ssize_t size;
-+
-+	size = bin_attr->size;
-+
-+	if (size > pos)
-+		size -= pos;
-+	else
-+		return 0;
-+
-+	if (count < size)
-+		size = count;
-+
-+	memcpy(buf, &smbios_raw_header[pos], size);
-+
-+	return size;
-+}
-+
-+static struct bin_attribute smbios_raw_area_attr = {
-+	.read = smbios_entry_area_raw_read,
-+	.attr = {.name = "smbios_raw_header", .mode = 0400},
-+};
-+
- static int __init dmi_sysfs_init(void)
- {
- 	int error = -ENOMEM;
-+	int size;
- 	int val;
- 
- 	/* Set up our directory */
-@@ -669,6 +699,18 @@ static int __init dmi_sysfs_init(void)
- 		goto err;
- 	}
- 
-+	smbios_raw_header = dmi_get_smbios_entry_area(&size);
-+	if (!smbios_raw_header) {
-+		pr_debug("dmi-sysfs: SMBIOS raw data is not available.\n");
-+		error = -ENODATA;
-+		goto err;
-+	}
-+
-+	/* Create the raw binary file to access the entry area */
-+	smbios_raw_area_attr.size = size;
-+	if (sysfs_create_bin_file(dmi_kobj, &smbios_raw_area_attr))
-+		goto err;
-+
- 	pr_debug("dmi-sysfs: loaded.\n");
- 
- 	return 0;
-diff --git a/drivers/firmware/dmi_scan.c b/drivers/firmware/dmi_scan.c
-index 420c8d8..d94c6b7 100644
---- a/drivers/firmware/dmi_scan.c
-+++ b/drivers/firmware/dmi_scan.c
-@@ -113,6 +113,8 @@ static void dmi_table(u8 *buf, int len, int num,
- 	}
- }
- 
-+static unsigned char smbios_header[32];
-+static int smbios_header_size;
- static phys_addr_t dmi_base;
- static u16 dmi_len;
- static u16 dmi_num;
-@@ -474,6 +476,8 @@ static int __init dmi_present(const u8 *buf)
- 	if (memcmp(buf, "_SM_", 4) == 0 &&
- 	    buf[5] < 32 && dmi_checksum(buf, buf[5])) {
- 		smbios_ver = get_unaligned_be16(buf + 6);
-+		smbios_header_size = buf[5];
-+		memcpy(smbios_header, buf, smbios_header_size);
- 
- 		/* Some BIOS report weird SMBIOS version, fix that up */
- 		switch (smbios_ver) {
-@@ -505,6 +509,8 @@ static int __init dmi_present(const u8 *buf)
- 				pr_info("SMBIOS %d.%d present.\n",
- 				       dmi_ver >> 8, dmi_ver & 0xFF);
- 			} else {
-+				smbios_header_size = 15;
-+				memcpy(smbios_header, buf, smbios_header_size);
- 				dmi_ver = (buf[14] & 0xF0) << 4 |
- 					   (buf[14] & 0x0F);
- 				pr_info("Legacy DMI %d.%d present.\n",
-@@ -531,6 +537,8 @@ static int __init dmi_smbios3_present(const u8 *buf)
- 		dmi_ver &= 0xFFFFFF;
- 		dmi_len = get_unaligned_le32(buf + 12);
- 		dmi_base = get_unaligned_le64(buf + 16);
-+		smbios_header_size = buf[6];
-+		memcpy(smbios_header, buf, smbios_header_size);
- 
- 		/*
- 		 * The 64-bit SMBIOS 3.0 entry point no longer has a field
-@@ -944,3 +952,21 @@ void dmi_memdev_name(u16 handle, const char **bank, const char **device)
- 	}
- }
- EXPORT_SYMBOL_GPL(dmi_memdev_name);
-+
-+/**
-+ * dmi_get_smbios_entry_area - copy SMBIOS entry point area to array.
-+ * @size - pointer to assign actual size of SMBIOS entry point area.
-+ *
-+ * returns NULL if table is not available, otherwise returns pointer on
-+ * SMBIOS entry point area array.
-+ */
-+const u8 *dmi_get_smbios_entry_area(int *size)
-+{
-+	if (!smbios_header_size || !dmi_available)
-+		return NULL;
-+
-+	*size = smbios_header_size;
-+
-+	return smbios_header;
-+}
-+EXPORT_SYMBOL_GPL(dmi_get_smbios_entry_area);
-diff --git a/include/linux/dmi.h b/include/linux/dmi.h
-index f820f0a..8e1a28d 100644
---- a/include/linux/dmi.h
-+++ b/include/linux/dmi.h
-@@ -109,6 +109,7 @@ extern int dmi_walk(void (*decode)(const struct dmi_header *, void *),
- 	void *private_data);
- extern bool dmi_match(enum dmi_field f, const char *str);
- extern void dmi_memdev_name(u16 handle, const char **bank, const char **device);
-+const u8 *dmi_get_smbios_entry_area(int *size);
- 
- #else
- 
-@@ -140,6 +141,8 @@ static inline void dmi_memdev_name(u16 handle, const char **bank,
- 		const char **device) { }
- static inline const struct dmi_system_id *
- 	dmi_first_match(const struct dmi_system_id *list) { return NULL; }
-+static inline const u8 *dmi_get_smbios_entry_area(int *size)
-+	{ return NULL; }
- 
- #endif
- 
--- 
-1.9.1
-
+Thanks,
+Wincy
