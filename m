@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754645AbbA2I7w (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 03:59:52 -0500
+	id S1754928AbbA2JAE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 04:00:04 -0500
 Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:44737 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754553AbbA2I7s (ORCPT
+	by vger.kernel.org with ESMTP id S1754798AbbA2JAA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 03:59:48 -0500
+	Thu, 29 Jan 2015 04:00:00 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Andy Lutomirski <luto@amacapital.net>,
-        torvalds@linux-foundation.org, Thomas Gleixner <tglx@linutronix.de>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 160/176] x86, tls: Interpret an all-zero struct user_desc as "no segment"
-Date: Wed, 28 Jan 2015 15:29:50 +0100
-Message-Id: <c7217a9385916f523d4e1e31a98739581f1cc0fe.1422455352.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org,
+        "Bryan O'Donoghue" <pure.logic@nexus-software.ie>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 161/176] x86/apic: Re-enable PCI_MSI support for non-SMP X86_32
+Date: Wed, 28 Jan 2015 15:29:51 +0100
+Message-Id: <cad99a3029284319310b17934cb54443f118f814.1422455352.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <ce4a451f616a1e7ab58cfeceea5e49c8b1c68c81.1422455352.git.jslaby@suse.cz>
 References: <ce4a451f616a1e7ab58cfeceea5e49c8b1c68c81.1422455352.git.jslaby@suse.cz>
@@ -24,121 +25,64 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andy Lutomirski <luto@amacapital.net>
+From: Bryan O'Donoghue <pure.logic@nexus-software.ie>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 3669ef9fa7d35f573ec9c0e0341b29251c2734a7 upstream.
+commit 38a1dfda8e77d7ba74c94d06d8bc41ba98a4bc8c upstream.
 
-The Witcher 2 did something like this to allocate a TLS segment index:
+Commit 0dbc6078c06bc0 ('x86, build, pci: Fix PCI_MSI build on !SMP')
+introduced the dependency that X86_UP_APIC is only available when
+PCI_MSI is false. This effectively prevents PCI_MSI support on 32bit
+UP systems because it disables both APIC and IO-APIC. But APIC support
+is architecturally required for PCI_MSI.
 
-        struct user_desc u_info;
-        bzero(&u_info, sizeof(u_info));
-        u_info.entry_number = (uint32_t)-1;
+The intention of the patch was to enforce APIC support when PCI_MSI is
+enabled, but failed to do so.
 
-        syscall(SYS_set_thread_area, &u_info);
+Remove the !PCI_MSI dependency from X86_UP_APIC and enforce
+X86_UP_APIC when PCI_MSI support is enabled on 32bit UP systems.
 
-Strictly speaking, this code was never correct.  It should have set
-read_exec_only and seg_not_present to 1 to indicate that it wanted
-to find a free slot without putting anything there, or it should
-have put something sensible in the TLS slot if it wanted to allocate
-a TLS entry for real.  The actual effect of this code was to
-allocate a bogus segment that could be used to exploit espfix.
+[ tglx: Massaged changelog ]
 
-The set_thread_area hardening patches changed the behavior, causing
-set_thread_area to return -EINVAL and crashing the game.
-
-This changes set_thread_area to interpret this as a request to find
-a free slot and to leave it empty, which isn't *quite* what the game
-expects but should be close enough to keep it working.  In
-particular, using the code above to allocate two segments will
-allocate the same segment both times.
-
-According to FrostbittenKing on Github, this fixes The Witcher 2.
-
-If this somehow still causes problems, we could instead allocate
-a limit==0 32-bit data segment, but that seems rather ugly to me.
-
-Fixes: 41bdc78544b8 x86/tls: Validate TLS entries to protect espfix
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-Cc: torvalds@linux-foundation.org
-Link: http://lkml.kernel.org/r/0cb251abe1ff0958b8e468a9a9a905b80ae3a746.1421954363.git.luto@amacapital.net
+Fixes 0dbc6078c06bc0 'x86, build, pci: Fix PCI_MSI build on !SMP'
+Signed-off-by: Bryan O'Donoghue <pure.logic@nexus-software.ie>
+Suggested-by: Thomas Gleixner <tglx@linutronix.de>
+Reviewed-by: Andy Shevchenko <andy.shevchenko@gmail.com>
+Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Link: http://lkml.kernel.org/r/1421967529-9037-1-git-send-email-pure.logic@nexus-software.ie
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- arch/x86/include/asm/desc.h | 13 +++++++++++++
- arch/x86/kernel/tls.c       | 25 +++++++++++++++++++++++--
- 2 files changed, 36 insertions(+), 2 deletions(-)
+ arch/x86/Kconfig | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
-diff --git a/arch/x86/include/asm/desc.h b/arch/x86/include/asm/desc.h
-index 9210eebd079e..f6aaf7d16571 100644
---- a/arch/x86/include/asm/desc.h
-+++ b/arch/x86/include/asm/desc.h
-@@ -262,6 +262,19 @@ static inline void native_load_tls(struct thread_struct *t, unsigned int cpu)
- 	 (info)->seg_not_present	== 1	&&	\
- 	 (info)->useable		== 0)
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index f968d8527190..5b5c6ea1a76c 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -861,7 +861,7 @@ source "kernel/Kconfig.preempt"
  
-+/* Lots of programs expect an all-zero user_desc to mean "no segment at all". */
-+static inline bool LDT_zero(const struct user_desc *info)
-+{
-+	return (info->base_addr		== 0 &&
-+		info->limit		== 0 &&
-+		info->contents		== 0 &&
-+		info->read_exec_only	== 0 &&
-+		info->seg_32bit		== 0 &&
-+		info->limit_in_pages	== 0 &&
-+		info->seg_not_present	== 0 &&
-+		info->useable		== 0);
-+}
+ config X86_UP_APIC
+ 	bool "Local APIC support on uniprocessors"
+-	depends on X86_32 && !SMP && !X86_32_NON_STANDARD && !PCI_MSI
++	depends on X86_32 && !SMP && !X86_32_NON_STANDARD
+ 	---help---
+ 	  A local APIC (Advanced Programmable Interrupt Controller) is an
+ 	  integrated interrupt controller in the CPU. If you have a single-CPU
+@@ -872,6 +872,10 @@ config X86_UP_APIC
+ 	  performance counters), and the NMI watchdog which detects hard
+ 	  lockups.
+ 
++config X86_UP_APIC_MSI
++	def_bool y
++	select X86_UP_APIC if X86_32 && !SMP && !X86_32_NON_STANDARD && PCI_MSI
 +
- static inline void clear_LDT(void)
- {
- 	set_ldt(NULL, 0);
-diff --git a/arch/x86/kernel/tls.c b/arch/x86/kernel/tls.c
-index 4e942f31b1a7..7fc5e843f247 100644
---- a/arch/x86/kernel/tls.c
-+++ b/arch/x86/kernel/tls.c
-@@ -29,7 +29,28 @@ static int get_free_idx(void)
- 
- static bool tls_desc_okay(const struct user_desc *info)
- {
--	if (LDT_empty(info))
-+	/*
-+	 * For historical reasons (i.e. no one ever documented how any
-+	 * of the segmentation APIs work), user programs can and do
-+	 * assume that a struct user_desc that's all zeros except for
-+	 * entry_number means "no segment at all".  This never actually
-+	 * worked.  In fact, up to Linux 3.19, a struct user_desc like
-+	 * this would create a 16-bit read-write segment with base and
-+	 * limit both equal to zero.
-+	 *
-+	 * That was close enough to "no segment at all" until we
-+	 * hardened this function to disallow 16-bit TLS segments.  Fix
-+	 * it up by interpreting these zeroed segments the way that they
-+	 * were almost certainly intended to be interpreted.
-+	 *
-+	 * The correct way to ask for "no segment at all" is to specify
-+	 * a user_desc that satisfies LDT_empty.  To keep everything
-+	 * working, we accept both.
-+	 *
-+	 * Note that there's a similar kludge in modify_ldt -- look at
-+	 * the distinction between modes 1 and 0x11.
-+	 */
-+	if (LDT_empty(info) || LDT_zero(info))
- 		return true;
- 
- 	/*
-@@ -71,7 +92,7 @@ static void set_tls_desc(struct task_struct *p, int idx,
- 	cpu = get_cpu();
- 
- 	while (n-- > 0) {
--		if (LDT_empty(info))
-+		if (LDT_empty(info) || LDT_zero(info))
- 			desc->a = desc->b = 0;
- 		else
- 			fill_ldt(desc, info);
+ config X86_UP_IOAPIC
+ 	bool "IO-APIC support on uniprocessors"
+ 	depends on X86_UP_APIC
 -- 
 2.2.2
 
