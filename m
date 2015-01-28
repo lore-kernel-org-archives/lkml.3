@@ -1,45 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755687AbbA2BdY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 20:33:24 -0500
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:46288 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754079AbbA2BdU (ORCPT
+	id S1756558AbbA1Uc4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 15:32:56 -0500
+Received: from smtprelay0146.hostedemail.com ([216.40.44.146]:56810 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755793AbbA1Ucw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 20:33:20 -0500
-Date: Wed, 28 Jan 2015 10:05:05 -0800
-From: Brian Norris <computersforpeace@gmail.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-mtd@lists.infradead.org, David Woodhouse <dwmw2@infradead.org>,
-        Christoph Hellwig <hch@lst.de>, Tejun Heo <tj@kernel.org>,
-        Jens Axboe <axboe@fb.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] mtd: export new mtd_mmap_capabilities
-Message-ID: <20150128180505.GW9759@ld-irv-0074>
-References: <1900951.4yX9yJNQM5@wuerfel>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1900951.4yX9yJNQM5@wuerfel>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 28 Jan 2015 15:32:52 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:69:355:379:541:973:988:989:1260:1345:1437:1537:1561:1711:1714:1730:1747:1777:1792:2393:2559:2562:3138:3139:3140:3141:3142:3867:5007:6261:6642:10004:10848:11026:11658:11914:12043:12438:12517:12519:12683:13311:13357:14095:14110:14394:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: team68_33c9825456e11
+X-Filterd-Recvd-Size: 940
+From: Joe Perches <joe@perches.com>
+To: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
+Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 0/3] dvb_net: general cleaning
+Date: Wed, 28 Jan 2015 10:05:49 -0800
+Message-Id: <cover.1422468185.git.joe@perches.com>
+X-Mailer: git-send-email 2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 28, 2015 at 04:19:31PM +0100, Arnd Bergmann wrote:
-> The recently added mtd_mmap_capabilities can be used from loadable
-> modules, in particular romfs, but is not exported, so we get
-> 
-> ERROR: "mtd_mmap_capabilities" [fs/romfs/romfs.ko] undefined!
-> 
-> This adds the missing export.
-> 
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> Fixes: b4caecd48005f ("fs: introduce f_op->mmap_capabilities for nommu mmap support")
+Use more common kernel mechanisms
 
-Acked-by: Brian Norris <computersforpeace@gmail.com>
+Joe Perches (3):
+  dvb_net: Use vsprintf %pM extension to print Ethernet addresses
+  dvb_net: Use standard debugging facilities
+  dvb_net: Convert local hex dump to print_hex_dump_debug
 
-This should go through the block tree in which the target commit is
-queued.
+ drivers/media/dvb-core/dvb_net.c | 88 ++++++++++++----------------------------
+ 1 file changed, 26 insertions(+), 62 deletions(-)
 
-Brian
+-- 
+2.1.2
+
