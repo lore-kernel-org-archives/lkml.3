@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965049AbbA1Fd3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 00:33:29 -0500
-Received: from mail.kernel.org ([198.145.29.136]:36741 "EHLO mail.kernel.org"
+	id S1760455AbbA1ENw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 23:13:52 -0500
+Received: from mail.kernel.org ([198.145.29.136]:36749 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760387AbbA1ENq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 23:13:46 -0500
+	id S1760417AbbA1ENt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 23:13:49 -0500
 From: lizf@kernel.org
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Takashi Iwai <tiwai@suse.de>,
+Cc: linux-kernel@vger.kernel.org,
+        Christian Borntraeger <borntraeger@de.ibm.com>,
         Zefan Li <lizefan@huawei.com>
-Subject: [PATCH 3.4 06/91] ALSA: hda - Fix COEF setups for ALC1150 codec
-Date: Wed, 28 Jan 2015 12:06:18 +0800
-Message-Id: <1422418236-12852-11-git-send-email-lizf@kernel.org>
+Subject: [PATCH 3.4 006/177] KVM: s390: unintended fallthrough for external call
+Date: Wed, 28 Jan 2015 12:06:19 +0800
+Message-Id: <1422418236-12852-12-git-send-email-lizf@kernel.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422418050-12581-1-git-send-email-lizf@kernel.org>
 References: <1422418050-12581-1-git-send-email-lizf@kernel.org>
@@ -20,47 +21,36 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Christian Borntraeger <borntraeger@de.ibm.com>
 
-3.4.105-rc1 review patch.  If anyone has any objections, please let me know.
+3.4.106-rc1 review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
 
-commit acf08081adb5e8fe0519eb97bb49797ef52614d6 upstream.
+commit f346026e55f1efd3949a67ddd1dcea7c1b9a615e upstream.
 
-ALC1150 codec seems to need the COEF- and PLL-setups just like its
-compatible ALC882 codec.  Some machines (e.g. SunMicro X10SAT) show
-the problem like too low output volumes unless the COEF setup is
-applied.
+We must not fallthrough if the conditions for external call are not met.
 
-Reported-and-tested-by: Dana Goyette <danagoyette@gmail.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Christian Borntraeger <borntraeger@de.ibm.com>
+Reviewed-by: Thomas Huth <thuth@linux.vnet.ibm.com>
 Signed-off-by: Zefan Li <lizefan@huawei.com>
 ---
- sound/pci/hda/patch_realtek.c | 2 ++
- 1 file changed, 2 insertions(+)
+ arch/s390/kvm/interrupt.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/sound/pci/hda/patch_realtek.c b/sound/pci/hda/patch_realtek.c
-index 36284b8..9461a00 100644
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -811,6 +811,7 @@ static void alc_auto_init_amp(struct hda_codec *codec, int type)
- 		case 0x10ec0885:
- 		case 0x10ec0887:
- 		/*case 0x10ec0889:*/ /* this causes an SPDIF problem */
-+		case 0x10ec0900:
- 			alc889_coef_init(codec);
- 			break;
- 		case 0x10ec0888:
-@@ -5516,6 +5517,7 @@ static int patch_alc882(struct hda_codec *codec)
- 	switch (codec->vendor_id) {
- 	case 0x10ec0882:
- 	case 0x10ec0885:
-+	case 0x10ec0900:
- 		break;
- 	default:
- 		/* ALC883 and variants */
+diff --git a/arch/s390/kvm/interrupt.c b/arch/s390/kvm/interrupt.c
+index 10e13b3..df69bcb 100644
+--- a/arch/s390/kvm/interrupt.c
++++ b/arch/s390/kvm/interrupt.c
+@@ -43,6 +43,7 @@ static int __interrupt_is_deliverable(struct kvm_vcpu *vcpu,
+ 			return 0;
+ 		if (vcpu->arch.sie_block->gcr[0] & 0x2000ul)
+ 			return 1;
++		return 0;
+ 	case KVM_S390_INT_EMERGENCY:
+ 		if (psw_extint_disabled(vcpu))
+ 			return 0;
 -- 
 1.9.1
 
