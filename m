@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1764141AbbA2DW3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 22:22:29 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:46941 "EHLO
+	id S1764152AbbA2DWn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 22:22:43 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:46938 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964915AbbA2Cfs (ORCPT
+	with ESMTP id S964900AbbA2Cfn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 21:35:48 -0500
+	Wed, 28 Jan 2015 21:35:43 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Lars-Peter Clausen <lars@metafoo.de>, Mark Brown <broonie@kernel.org>,
+Cc: Alex Deucher <alexander.deucher@amd.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13.y-ckt 040/139] ASoC: sigmadsp: Refuse to load firmware files with a non-supported version
-Date: Wed, 28 Jan 2015 14:19:43 -0800
-Message-Id: <1422483682-15393-41-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13.y-ckt 041/139] drm/radeon: work around a hw bug in MGCG on CIK
+Date: Wed, 28 Jan 2015 14:19:44 -0800
+Message-Id: <1422483682-15393-42-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422483682-15393-1-git-send-email-kamal@canonical.com>
 References: <1422483682-15393-1-git-send-email-kamal@canonical.com>
@@ -27,39 +27,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lars-Peter Clausen <lars@metafoo.de>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 50c0f21b42dd4cd02b51f82274f66912d9a7fa32 upstream.
+commit 4bb62c95a7e781a238b2ab374f34b1bf91e01ddc upstream.
 
-Make sure to check the version field of the firmware header to make sure to
-not accidentally try to parse a firmware file with a different layout.
-Trying to do so can result in loading invalid firmware code to the device.
+Always need to set bit 0 of RLC_CGTT_MGCG_OVERRIDE
+to avoid unreliable doorbell updates in some cases.
 
-Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
-Signed-off-by: Mark Brown <broonie@kernel.org>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- sound/soc/codecs/sigmadsp.c | 7 +++++++
- 1 file changed, 7 insertions(+)
+ drivers/gpu/drm/radeon/cik.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/sound/soc/codecs/sigmadsp.c b/sound/soc/codecs/sigmadsp.c
-index 4068f24..bb3878c 100644
---- a/sound/soc/codecs/sigmadsp.c
-+++ b/sound/soc/codecs/sigmadsp.c
-@@ -176,6 +176,13 @@ static int _process_sigma_firmware(struct device *dev,
- 		goto done;
- 	}
+diff --git a/drivers/gpu/drm/radeon/cik.c b/drivers/gpu/drm/radeon/cik.c
+index 642eed1..e205912 100644
+--- a/drivers/gpu/drm/radeon/cik.c
++++ b/drivers/gpu/drm/radeon/cik.c
+@@ -5676,6 +5676,7 @@ static void cik_enable_mgcg(struct radeon_device *rdev, bool enable)
+ 		}
  
-+	if (ssfw_head->version != 1) {
-+		dev_err(dev,
-+			"Failed to load firmware: Invalid version %d. Supported firmware versions: 1\n",
-+			ssfw_head->version);
-+		goto done;
-+	}
-+
- 	crc = crc32(0, fw->data + sizeof(*ssfw_head),
- 			fw->size - sizeof(*ssfw_head));
- 	pr_debug("%s: crc=%x\n", __func__, crc);
+ 		orig = data = RREG32(RLC_CGTT_MGCG_OVERRIDE);
++		data |= 0x00000001;
+ 		data &= 0xfffffffd;
+ 		if (orig != data)
+ 			WREG32(RLC_CGTT_MGCG_OVERRIDE, data);
+@@ -5707,7 +5708,7 @@ static void cik_enable_mgcg(struct radeon_device *rdev, bool enable)
+ 		}
+ 	} else {
+ 		orig = data = RREG32(RLC_CGTT_MGCG_OVERRIDE);
+-		data |= 0x00000002;
++		data |= 0x00000003;
+ 		if (orig != data)
+ 			WREG32(RLC_CGTT_MGCG_OVERRIDE, data);
+ 
 -- 
 1.9.1
 
