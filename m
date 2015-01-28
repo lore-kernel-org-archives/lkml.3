@@ -1,103 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933798AbbA1CJc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 21:09:32 -0500
-Received: from nasmtp01.atmel.com ([192.199.1.246]:17587 "EHLO
-	DVREDG02.corp.atmel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S933356AbbA1CJ2 (ORCPT
+	id S934108AbbA1CMr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 21:12:47 -0500
+Received: from smtprelay0205.hostedemail.com ([216.40.44.205]:41538 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S933350AbbA1CMp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 21:09:28 -0500
-Message-ID: <54C844D2.9040905@atmel.com>
-Date: Wed, 28 Jan 2015 10:09:22 +0800
-From: Josh Wu <josh.wu@atmel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
+	Tue, 27 Jan 2015 21:12:45 -0500
+X-Session-Marker: 6E657665747340676F6F646D69732E6F7267
+X-Spam-Summary: 50,0,0,,d41d8cd98f00b204,rostedt@goodmis.org,:::::::::::,RULES_HIT:41:69:355:379:541:599:800:960:967:973:988:989:1260:1277:1311:1313:1314:1345:1359:1437:1515:1516:1518:1534:1540:1593:1594:1711:1730:1747:1777:1792:2393:2525:2553:2560:2563:2682:2685:2693:2859:2911:2933:2937:2939:2942:2945:2947:2951:2954:3022:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3872:3934:3936:3938:3941:3944:3947:3950:3953:3956:3959:4250:4321:4425:5007:6120:6261:6671:6672:7576:7875:7901:8599:8987:9025:9388:10004:10400:10848:10967:11232:11658:11914:12043:12438:12517:12519:12555:12740:13007:13008:13025:13069:13255:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: teeth98_1784a0781a813
+X-Filterd-Recvd-Size: 2028
+Date: Tue, 27 Jan 2015 21:12:40 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: John Paul Adrian Glaubitz <glaubitz@physik.fu-berlin.de>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        Matt Fleming <matt@console-pimps.org>,
+        Michael Karcher <kernel@mkarcher.dialup.fu-berlin.de>
+Subject: Re: [PATCH 3.10 06/32] scripts/recordmcount.pl: There is no -m32
+ gcc option on Super-H anymore
+Message-ID: <20150127211240.29083dff@gandalf.local.home>
+In-Reply-To: <54C83C21.5080707@physik.fu-berlin.de>
+References: <20150128012627.081285723@linuxfoundation.org>
+	<20150128012627.996535068@linuxfoundation.org>
+	<54C83C21.5080707@physik.fu-berlin.de>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-CC: <linux-media@vger.kernel.org>, <m.chehab@samsung.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] media: v4l2-image-sizes.h: add SVGA, XGA and UXGA
- size definitions
-References: <1416905668-23029-1-git-send-email-josh.wu@atmel.com> <Pine.LNX.4.64.1411252318330.17362@axis700.grange> <547698A6.3090703@atmel.com> <Pine.LNX.4.64.1411272112320.5267@axis700.grange>
-In-Reply-To: <Pine.LNX.4.64.1411272112320.5267@axis700.grange>
-Content-Type: text/plain; charset="windows-1252"; format=flowed
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.168.5.13]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Guennadi
+On Wed, 28 Jan 2015 02:32:17 +0100
+John Paul Adrian Glaubitz <glaubitz@physik.fu-berlin.de> wrote:
 
-On 11/28/2014 4:13 AM, Guennadi Liakhovetski wrote:
-> Hi Josh,
->
-> On Thu, 27 Nov 2014, Josh Wu wrote:
->
->> Hi, Guennadi
->>
->> On 11/26/2014 6:23 AM, Guennadi Liakhovetski wrote:
->>> Hi Josh,
->>>
->>> On Tue, 25 Nov 2014, Josh Wu wrote:
->>>
->>>> Add SVGA, UXGA and XGA size definitions to v4l2-image-sizes.h.
->>>> The definitions are sorted by alphabet order.
->>>>
->>>> Signed-off-by: Josh Wu <josh.wu@atmel.com>
->>> Thanks for your patches. I'm ok with these two, but the second of them
->>> depends on the first one, and the first one wouldn't (normally) be going
->>> via the soc-camera tree. Mauro, how would you prefer to handle this?
->>> Should I pick up and push to you both of them or postpone #2 until the
->>> next merge window?
->> The first patch is already merged in the media_tree. If the soc-camera tree
->> will be merged to the media_tree, then there should have no dependency issue.
->> Am I understanding correct?
-> Yes, then it should be ok!
+> On 01/28/2015 02:26 AM, Greg Kroah-Hartman wrote:
+> > 3.10-stable review patch.  If anyone has any objections, please let me know.
+> > 
+> > ------------------
+> > 
+> > From: Michael Karcher <kernel@mkarcher.dialup.fu-berlin.de>
+> > 
+> > commit 1caf6aaaa47471831d77c75f094d4e00ad1ec808 upstream.
+> > 
+> > Compiling SH with gcc-4.8 fails due to the -m32 option not being
+> > supported.
+> 
+> JFTR, I didn't test with earlier kernels than 3.18 yet but I assume
+> earlier versions will just compile fine as well.
+> 
+> Here's the log of a successful build of 3.18 with the patch applied:
+> 
+> >
+> http://buildd.debian-ports.org/status/fetch.php?pkg=linux&arch=sh4&ver=3.18.3-1~exp1&stamp=1422284071
 
-Just checking the status of this patch. I don't found this patch in 
-media's tree or soc_camera's tree.
-Could you take this patch in your tree?
+I doubt it would have an issue with earlier kernels. Earlier compilers
+are another story.
 
-Best Regards,
-Josh Wu
-
->
-> Thanks
-> Guennadi
->
->> Best Regards,
->> Josh Wu
->>
->>> Thanks
->>> Guennadi
->>>
->>>> ---
->>>>    include/media/v4l2-image-sizes.h | 9 +++++++++
->>>>    1 file changed, 9 insertions(+)
->>>>
->>>> diff --git a/include/media/v4l2-image-sizes.h
->>>> b/include/media/v4l2-image-sizes.h
->>>> index 10daf92..c70c917 100644
->>>> --- a/include/media/v4l2-image-sizes.h
->>>> +++ b/include/media/v4l2-image-sizes.h
->>>> @@ -25,10 +25,19 @@
->>>>    #define QVGA_WIDTH	320
->>>>    #define QVGA_HEIGHT	240
->>>>    +#define SVGA_WIDTH	800
->>>> +#define SVGA_HEIGHT	680
->>>> +
->>>>    #define SXGA_WIDTH	1280
->>>>    #define SXGA_HEIGHT	1024
->>>>      #define VGA_WIDTH	640
->>>>    #define VGA_HEIGHT	480
->>>>    +#define UXGA_WIDTH	1600
->>>> +#define UXGA_HEIGHT	1200
->>>> +
->>>> +#define XGA_WIDTH	1024
->>>> +#define XGA_HEIGHT	768
->>>> +
->>>>    #endif /* _IMAGE_SIZES_H */
->>>> -- 
->>>> 1.9.1
->>>>
-
+-- Steve
