@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760612AbbA1BvS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 20:51:18 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41426 "EHLO
+	id S933166AbbA1BuE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 20:50:04 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41450 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933331AbbA1Bid (ORCPT
+	with ESMTP id S933338AbbA1Bie (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 20:38:33 -0500
+	Tue, 27 Jan 2015 20:38:34 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Vlastimil Babka <vbabka@suse.cz>,
+        Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
+        Rik van Riel <riel@redhat.com>, Vlastimil Babka <vbabka@suse.cz>,
         Jan Kara <jack@suse.cz>, Michal Hocko <mhocko@suse.cz>,
         Hugh Dickins <hughd@google.com>, Dave Hansen <dave.hansen@intel.com>,
         Theodore Tso <tytso@mit.edu>,
@@ -19,9 +19,9 @@ Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Oleg Nesterov <oleg@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.14 57/77] mm: page_alloc: lookup pageblock migratetype with IRQs enabled during free
-Date: Tue, 27 Jan 2015 17:27:35 -0800
-Message-Id: <20150128012747.678835516@linuxfoundation.org>
+Subject: [PATCH 3.14 58/77] mm: shmem: avoid atomic operation during shmem_getpage_gfp
+Date: Tue, 27 Jan 2015 17:27:36 -0800
+Message-Id: <20150128012747.707647324@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <20150128012745.971137091@linuxfoundation.org>
 References: <20150128012745.971137091@linuxfoundation.org>
@@ -38,15 +38,16 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Mel Gorman <mgorman@suse.de>
 
-commit cfc47a2803db42140167b92d991ef04018e162c7 upstream.
+commit 07a427884348d38a6fd56fa4d78249c407196650 upstream.
 
-get_pageblock_migratetype() is called during free with IRQs disabled.
-This is unnecessary and disables IRQs for longer than necessary.
+shmem_getpage_gfp uses an atomic operation to set the SwapBacked field
+before it's even added to the LRU or visible.  This is unnecessary as what
+could it possible race against?  Use an unlocked variant.
 
 Signed-off-by: Mel Gorman <mgorman@suse.de>
+Acked-by: Johannes Weiner <hannes@cmpxchg.org>
 Acked-by: Rik van Riel <riel@redhat.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Acked-by: Vlastimil Babka <vbabka@suse.cz>
+Cc: Vlastimil Babka <vbabka@suse.cz>
 Cc: Jan Kara <jack@suse.cz>
 Cc: Michal Hocko <mhocko@suse.cz>
 Cc: Hugh Dickins <hughd@google.com>
@@ -61,21 +62,30 @@ Signed-off-by: Mel Gorman <mgorman@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/page_alloc.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ include/linux/page-flags.h |    1 +
+ mm/shmem.c                 |    2 +-
+ 2 files changed, 2 insertions(+), 1 deletion(-)
 
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -774,9 +774,9 @@ static void __free_pages_ok(struct page
- 	if (!free_pages_prepare(page, order))
- 		return;
+--- a/include/linux/page-flags.h
++++ b/include/linux/page-flags.h
+@@ -208,6 +208,7 @@ PAGEFLAG(Pinned, pinned) TESTSCFLAG(Pinn
+ PAGEFLAG(SavePinned, savepinned);			/* Xen */
+ PAGEFLAG(Reserved, reserved) __CLEARPAGEFLAG(Reserved, reserved)
+ PAGEFLAG(SwapBacked, swapbacked) __CLEARPAGEFLAG(SwapBacked, swapbacked)
++	__SETPAGEFLAG(SwapBacked, swapbacked)
  
-+	migratetype = get_pfnblock_migratetype(page, pfn);
- 	local_irq_save(flags);
- 	__count_vm_events(PGFREE, 1 << order);
--	migratetype = get_pfnblock_migratetype(page, pfn);
- 	set_freepage_migratetype(page, migratetype);
- 	free_one_page(page_zone(page), page, pfn, order, migratetype);
- 	local_irq_restore(flags);
+ __PAGEFLAG(SlobFree, slob_free)
+ 
+--- a/mm/shmem.c
++++ b/mm/shmem.c
+@@ -1140,7 +1140,7 @@ repeat:
+ 			goto decused;
+ 		}
+ 
+-		SetPageSwapBacked(page);
++		__SetPageSwapBacked(page);
+ 		__set_page_locked(page);
+ 		error = mem_cgroup_cache_charge(page, current->mm,
+ 						gfp & GFP_RECLAIM_MASK);
 
 
