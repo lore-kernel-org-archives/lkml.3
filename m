@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760805AbbA1EOk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 23:14:40 -0500
-Received: from mail.kernel.org ([198.145.29.136]:37046 "EHLO mail.kernel.org"
+	id S1762939AbbA1F14 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 00:27:56 -0500
+Received: from mail.kernel.org ([198.145.29.136]:37056 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760740AbbA1EOg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 23:14:36 -0500
+	id S1753901AbbA1EOi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 23:14:38 -0500
 From: lizf@kernel.org
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, James Ralston <james.d.ralston@intel.com>,
-        Tejun Heo <tj@kernel.org>, Zefan Li <lizefan@huawei.com>
-Subject: [PATCH 3.4 15/91] ata_piix: Add Device IDs for Intel 9 Series PCH
-Date: Wed, 28 Jan 2015 12:06:36 +0800
-Message-Id: <1422418236-12852-29-git-send-email-lizf@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Kees Cook <keescook@chromium.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Zefan Li <lizefan@huawei.com>
+Subject: [PATCH 3.4 015/177] firmware_class: make sure fw requests contain a name
+Date: Wed, 28 Jan 2015 12:06:37 +0800
+Message-Id: <1422418236-12852-30-git-send-email-lizf@kernel.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422418050-12581-1-git-send-email-lizf@kernel.org>
 References: <1422418050-12581-1-git-send-email-lizf@kernel.org>
@@ -20,43 +21,46 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: James Ralston <james.d.ralston@intel.com>
+From: Kees Cook <keescook@chromium.org>
 
-3.4.105-rc1 review patch.  If anyone has any objections, please let me know.
+3.4.106-rc1 review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
 
-commit 6cad1376954e591c3c41500c4e586e183e7ffe6d upstream.
+commit 471b095dfe0d693a8d624cbc716d1ee4d74eb437 upstream.
 
-This patch adds the IDE mode SATA Device IDs for the Intel 9 Series PCH.
+An empty firmware request name will trigger warnings when building
+device names. Make sure this is caught earlier and rejected.
 
-Signed-off-by: James Ralston <james.d.ralston@intel.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
+The warning was visible via the test_firmware.ko module interface:
+
+echo -ne "\x00" > /sys/devices/virtual/misc/test_firmware/trigger_request
+
+Reported-by: Sasha Levin <sasha.levin@oracle.com>
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Tested-by: Sasha Levin <sasha.levin@oracle.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+[lizf: Backported to 3.4: adjust context]
 Signed-off-by: Zefan Li <lizefan@huawei.com>
 ---
- drivers/ata/ata_piix.c | 8 ++++++++
- 1 file changed, 8 insertions(+)
+ drivers/base/firmware_class.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/drivers/ata/ata_piix.c b/drivers/ata/ata_piix.c
-index 9f165a81..2f081a3 100644
---- a/drivers/ata/ata_piix.c
-+++ b/drivers/ata/ata_piix.c
-@@ -362,6 +362,14 @@ static const struct pci_device_id piix_pci_tbl[] = {
- 	{ 0x8086, 0x0F21, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata_byt },
- 	/* SATA Controller IDE (Coleto Creek) */
- 	{ 0x8086, 0x23a6, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata },
-+	/* SATA Controller IDE (9 Series) */
-+	{ 0x8086, 0x8c88, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata_snb },
-+	/* SATA Controller IDE (9 Series) */
-+	{ 0x8086, 0x8c89, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata_snb },
-+	/* SATA Controller IDE (9 Series) */
-+	{ 0x8086, 0x8c80, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_sata_snb },
-+	/* SATA Controller IDE (9 Series) */
-+	{ 0x8086, 0x8c81, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_sata_snb },
+diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
+index 5401814..b7a4fe5 100644
+--- a/drivers/base/firmware_class.c
++++ b/drivers/base/firmware_class.c
+@@ -588,6 +588,9 @@ request_firmware(const struct firmware **firmware_p, const char *name,
+ 	struct firmware_priv *fw_priv;
+ 	int ret;
  
- 	{ }	/* terminate list */
- };
++	if (!name || name[0] == '\0')
++		return -EINVAL;
++
+ 	fw_priv = _request_firmware_prepare(firmware_p, name, device, true,
+ 					    false);
+ 	if (IS_ERR_OR_NULL(fw_priv))
 -- 
 1.9.1
 
