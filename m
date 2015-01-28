@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762162AbbA2KQt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 05:16:49 -0500
-Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:44737 "EHLO
+	id S1758386AbbA2JCm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 04:02:42 -0500
+Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:44776 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1757098AbbA2JBM (ORCPT
+	by vger.kernel.org with ESMTP id S1754198AbbA2JCd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 04:01:12 -0500
+	Thu, 29 Jan 2015 04:02:33 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, Amit Virdi <amit.virdi@st.com>,
         Felipe Balbi <balbi@ti.com>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 107/176] usb: dwc3: gadget: Fix TRB preparation during SG
-Date: Wed, 28 Jan 2015 15:28:57 +0100
-Message-Id: <e0410d7fd7c36cd8552b1c5dd784c47a11c6c2ef.1422455352.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 108/176] usb: dwc3: gadget: Stop TRB preparation after limit is reached
+Date: Wed, 28 Jan 2015 15:28:58 +0100
+Message-Id: <fc642bfa122cccd22b32f734bf7f10fc84a729ab.1422455352.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <ce4a451f616a1e7ab58cfeceea5e49c8b1c68c81.1422455352.git.jslaby@suse.cz>
 References: <ce4a451f616a1e7ab58cfeceea5e49c8b1c68c81.1422455352.git.jslaby@suse.cz>
@@ -29,44 +29,44 @@ From: Amit Virdi <amit.virdi@st.com>
 
 ===============
 
-commit ec512fb8e5611fed1df2895f90317ce6797d6b32 upstream.
+commit 39e60635a01520e8c8ed3946a28c2b98e6a46f79 upstream.
 
-When scatter gather (SG) is used, multiple TRBs are prepared from one DWC3
-request (dwc3_request). So while preparing TRBs, the 'last' flag should be set
-only when it is the last TRB being prepared from the last dwc3_request entry.
+DWC3 gadget sets up a pool of 32 TRBs for each EP during initialization. This
+means, the max TRBs that can be submitted for an EP is fixed to 32. Since the
+request queue for an EP is a linked list, any number of requests can be queued
+to it by the gadget layer.  However, the dwc3 driver must not submit TRBs more
+than the pool it has created for. This limit wasn't respected when SG was used
+resulting in submitting more than the max TRBs, eventually leading to
+non-transfer of the TRBs submitted over the max limit.
 
-The current implementation uses list_is_last to check if the dwc3_request is the
-last entry from the request_list. However, list_is_last returns false for the
-last entry too. This is because, while preparing the first TRB from a request,
-the function dwc3_prepare_one_trb modifies the request's next and prev pointers
-while moving the URB to req_queued. Hence, list_is_last always returns false no
-matter what.
+Root cause:
+When SG is used, there are two loops iterating to prepare TRBs:
+ - Outer loop over the request_list
+ - Inner loop over the SG list
+The code was missing break to get out of the outer loop.
 
-The correct way is not to access the modified pointers of dwc3_request but to
-use list_empty macro instead.
-
-Fixes: e5ba5ec833aa (usb: dwc3: gadget: fix scatter gather implementation)
+Fixes: eeb720fb21d6 (usb: dwc3: gadget: add support for SG lists)
 Signed-off-by: Amit Virdi <amit.virdi@st.com>
 Signed-off-by: Felipe Balbi <balbi@ti.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/usb/dwc3/gadget.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/usb/dwc3/gadget.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
 diff --git a/drivers/usb/dwc3/gadget.c b/drivers/usb/dwc3/gadget.c
-index be149b82564f..3a075d1fbf99 100644
+index 3a075d1fbf99..d19564d0f79a 100644
 --- a/drivers/usb/dwc3/gadget.c
 +++ b/drivers/usb/dwc3/gadget.c
-@@ -887,8 +887,7 @@ static void dwc3_prepare_trbs(struct dwc3_ep *dep, bool starting)
- 
- 				if (i == (request->num_mapped_sgs - 1) ||
- 						sg_is_last(s)) {
--					if (list_is_last(&req->list,
--							&dep->request_list))
-+					if (list_empty(&dep->request_list))
- 						last_one = true;
- 					chain = false;
- 				}
+@@ -905,6 +905,9 @@ static void dwc3_prepare_trbs(struct dwc3_ep *dep, bool starting)
+ 				if (last_one)
+ 					break;
+ 			}
++
++			if (last_one)
++				break;
+ 		} else {
+ 			dma = req->request.dma;
+ 			length = req->request.length;
 -- 
 2.2.2
 
