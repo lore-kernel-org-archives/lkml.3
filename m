@@ -1,64 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754140AbbA2Gen (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 01:34:43 -0500
-Received: from sauhun.de ([89.238.76.85]:37899 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752340AbbA2Gem (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 01:34:42 -0500
-Date: Wed, 28 Jan 2015 07:59:29 +0100
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Jim Davis <jim.epost@gmail.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        linux-next <linux-next@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        david.e.box@linux.intel.com, linux-i2c@vger.kernel.org
-Subject: Re: randconfig build error with next-20150127, in
- drivers/i2c/busses/i2c-designware-baytrail.c
-Message-ID: <20150128065929.GA1086@katana>
-References: <CA+r1ZhisCd7+LJ0gm-NLPJ+UE-FEuEWFQqDqcy7KPp2tD_bveA@mail.gmail.com>
+	id S1760717AbbA2CCq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 21:02:46 -0500
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:46509 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760652AbbA2CCl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jan 2015 21:02:41 -0500
+Message-ID: <54C888EF.2080500@collabora.com>
+Date: Wed, 28 Jan 2015 07:59:59 +0100
+From: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="uAKRQypu60I7Lcqm"
-Content-Disposition: inline
-In-Reply-To: <CA+r1ZhisCd7+LJ0gm-NLPJ+UE-FEuEWFQqDqcy7KPp2tD_bveA@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Mike Turquette <mturquette@linaro.org>
+CC: Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Subject: Re: [PATCH v13 0/6] Per-user clock constraints
+References: <1422011024-32283-1-git-send-email-tomeu.vizoso@collabora.com> <54C6E1FB.5030907@codeaurora.org>
+In-Reply-To: <54C6E1FB.5030907@codeaurora.org>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 01/27/2015 01:55 AM, Stephen Boyd wrote:
+> On 01/23/15 03:03, Tomeu Vizoso wrote:
+>> Hi,
+>>
+>> in this v13 I have:
+>>
+>> * added the latest R-b tags from Stephen,
+>>
+>> * split some lines that went over the 80-char limit,
+>>
+>> * made explicit in the docs that the range limits are inclusive, and
+>>
+>> * removed an ifdef in clkdev.c by adding a dev_id param to __of_clk_get_by_name.
+>>
+> 
+> I think this patch series is ready to go except for the last one? Do you
+> plan on polishing that one some more?
 
---uAKRQypu60I7Lcqm
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Hi Mike,
 
-On Tue, Jan 27, 2015 at 04:41:44PM -0700, Jim Davis wrote:
-> Building with the attached random configuration file,
+do you plan to merge this for 3.20?
 
-A proper Kconfig dependency fix has already been added and is in
-linux-next as of today.
+Thanks,
 
+Tomeu
 
---uAKRQypu60I7Lcqm
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUyIjRAAoJEBQN5MwUoCm2QlYP/0zO854F6omGBspWgmMoMN4d
-6lZmyiBqOxwhLlSIrcDJqbWVvxVaGXcMhJL2OppeH0y7AZQrXHFtTWWLPqPDS4qG
-JdRHhQj7DaoA28rZ1/09TRcdK9UHGPJvA93Qy0gxOaAnpHRnaKR6HZXIRtvkY1PS
-0gDSixw1Ib5dwgtJFNzSRcc00RdmpuXefvtFTCJ/0ogvtovDXBSKQQ5jlEyq2GZj
-KQDXVmZiKvOseSKvPnNmjBmCGxaId1QchrAnpWTnUq3K/5mmBa+mF0gQLyFQBrKX
-64Y724mgW+4grWyzlbuM7y64ZWh8HOUQLeppcV6/x/ukqpscZcdFvI0CWhDhurA0
-D8SAjsMNCiBn4ui2Her72NsFg+Iwi10lVj+ceseXBZ5aBs9gZNuHG4jbaOdtU2WQ
-0OI7iV/+ikHy5cjiAb0yQKRrSfgfZCns9SOKwMHWDaFKzj+xBdNWUGZh+rvFt+Au
-ns2kvAgNZubbzxhpWW/AA7zAauCpjrvDgo/8K8Ext3N9/VG9Zaet/jpg9CNM7N82
-bvjqWlpV3BIe8dO9YB8pT4oYJxRYggxA7cyOas5/VmNwFmW3vI3L0au/oUAhXwQc
-s28cGzjPQ61hHPOBqYQ4ipz1afQ9SFhZiYJjxHvakiwEKTnBmbkPHnurdmumPSJT
-U94XVQ+DUoLiwvADP8WM
-=lF3S
------END PGP SIGNATURE-----
-
---uAKRQypu60I7Lcqm--
