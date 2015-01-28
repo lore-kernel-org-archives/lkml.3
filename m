@@ -1,59 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756700AbbA1VFX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 16:05:23 -0500
-Received: from mail-oi0-f44.google.com ([209.85.218.44]:41564 "EHLO
-	mail-oi0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754687AbbA1U4T (ORCPT
+	id S1759081AbbA1U1z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 15:27:55 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:44173 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933095AbbA1U1w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 15:56:19 -0500
-From: Rob Herring <robh@kernel.org>
-To: Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Rob Herring <robh@kernel.org>
-Subject: [PATCH 3/3] dts: versatile: add sysregs node
-Date: Wed, 28 Jan 2015 11:56:32 -0600
-Message-Id: <1422467792-2065-4-git-send-email-robh@kernel.org>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1422467792-2065-1-git-send-email-robh@kernel.org>
-References: <1422467792-2065-1-git-send-email-robh@kernel.org>
+	Wed, 28 Jan 2015 15:27:52 -0500
+MIME-Version: 1.0
+In-Reply-To: <1421247905-3749-5-git-send-email-hanjun.guo@linaro.org>
+References: <1421247905-3749-1-git-send-email-hanjun.guo@linaro.org>
+	<1421247905-3749-5-git-send-email-hanjun.guo@linaro.org>
+Date: Wed, 28 Jan 2015 11:58:54 -0600
+Message-ID: <CAOZdJXU2bFR1T4ZnGavvnrUXAp5e=vNt9g6WKX46H8qs1wz-TQ@mail.gmail.com>
+Subject: Re: [Linaro-acpi] [PATCH v7 04/17] ARM64 / ACPI: Introduce
+ early_param for "acpi" and pass acpi=force to enable ACPI
+From: Timur Tabi <timur@codeaurora.org>
+To: Hanjun Guo <hanjun.guo@linaro.org>
+Cc: Catalin Marinas <catalin.marinas@arm.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Will Deacon <will.deacon@arm.com>, linaro-acpi@lists.linaro.org,
+        wangyijing@huawei.com, Rob Herring <robh@kernel.org>,
+        Timur Tabi <timur@codeaurora.org>, linux-acpi@vger.kernel.org,
+        phoenix.liyi@huawei.com, Robert Richter <rric@kernel.org>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Marc Zyngier <marc.zyngier@arm.com>, Jon Masters <jcm@redhat.com>,
+        Mark Brown <broonie@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Versatile boards have the same sysregs as other ARM Ltd boards. Add
-the nodes in order to enable support for 24MHz counter as sched_clock.
+On Wed, Jan 14, 2015 at 9:04 AM, Hanjun Guo <hanjun.guo@linaro.org> wrote:
+> From: Al Stone <al.stone@linaro.org>
+>
+> Introduce one early parameters "off" and "force" for "acpi", acpi=off
+> will be the default behavior for ARM64, so introduce acpi=force to
+> enable ACPI on ARM64.
+>
+> Disable ACPI before early parameters parsed, and enable it to pass
+> "acpi=force" if people want use ACPI on ARM64. This ensures DT be
+> the prefer one if ACPI table and DT both are provided at this moment.
 
-This is a minimal node definition as the existing sub node definition
-used on VExpress has some issues raised by Linus W.
+What is the reason to assume that DT is preferred over ACPI?  I would
+have thought that if ACPI is present, then it means we're on an ARM64
+server platform, and therefore it should be used.  It seems silly to
+require acpi=force on every ARM64 server platform.
 
-Signed-off-by: Rob Herring <robh@kernel.org>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Linus Walleij <linus.walleij@linaro.org>
-Cc: devicetree@vger.kernel.org
----
- arch/arm/boot/dts/versatile-ab.dts | 5 +++++
- 1 file changed, 5 insertions(+)
-
-diff --git a/arch/arm/boot/dts/versatile-ab.dts b/arch/arm/boot/dts/versatile-ab.dts
-index 27d0d9c..01f4019 100644
---- a/arch/arm/boot/dts/versatile-ab.dts
-+++ b/arch/arm/boot/dts/versatile-ab.dts
-@@ -252,6 +252,11 @@
- 			#size-cells = <1>;
- 			ranges = <0 0x10000000 0x10000>;
- 
-+			sysreg@0 {
-+				compatible = "arm,versatile-sysreg", "syscon";
-+				reg = <0x00000 0x1000>;
-+			};
-+
- 			aaci@4000 {
- 				compatible = "arm,primecell";
- 				reg = <0x4000 0x1000>;
 -- 
-2.1.0
-
+Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+a Linux Foundation Collaborative Project.
