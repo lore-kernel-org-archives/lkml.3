@@ -1,25 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933661AbbA1BnM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 20:43:12 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41778 "EHLO
+	id S1760303AbbA1Bad (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 20:30:33 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41191 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933383AbbA1Bij (ORCPT
+	with ESMTP id S1760132AbbA1B2f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 20:38:39 -0500
+	Tue, 27 Jan 2015 20:28:35 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Bryan ODonoghue <pure.logic@nexus-software.ie>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andy Shevchenko <andy.shevchenko@gmail.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Subject: [PATCH 3.14 29/77] x86/apic: Re-enable PCI_MSI support for non-SMP X86_32
-Date: Tue, 27 Jan 2015 17:27:07 -0800
-Message-Id: <20150128012746.847114092@linuxfoundation.org>
+        David Vrabel <david.vrabel@citrix.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Subject: [PATCH 3.18 56/61] Revert "swiotlb-xen: pass dev_addr to swiotlb_tbl_unmap_single"
+Date: Tue, 27 Jan 2015 17:27:08 -0800
+Message-Id: <20150128012643.003627594@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150128012745.971137091@linuxfoundation.org>
-References: <20150128012745.971137091@linuxfoundation.org>
+In-Reply-To: <20150128012636.936333725@linuxfoundation.org>
+References: <20150128012636.936333725@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -27,62 +25,38 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.18-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Bryan O'Donoghue <pure.logic@nexus-software.ie>
+From: David Vrabel <david.vrabel@citrix.com>
 
-commit 38a1dfda8e77d7ba74c94d06d8bc41ba98a4bc8c upstream.
+commit dbdd74763f1faf799fbb9ed30423182e92919378 upstream.
 
-Commit 0dbc6078c06bc0 ('x86, build, pci: Fix PCI_MSI build on !SMP')
-introduced the dependency that X86_UP_APIC is only available when
-PCI_MSI is false. This effectively prevents PCI_MSI support on 32bit
-UP systems because it disables both APIC and IO-APIC. But APIC support
-is architecturally required for PCI_MSI.
+This reverts commit 2c3fc8d26dd09b9d7069687eead849ee81c78e46.
 
-The intention of the patch was to enforce APIC support when PCI_MSI is
-enabled, but failed to do so.
+This commit broke on x86 PV because entries in the generic SWIOTLB are
+indexed using (pseudo-)physical address not DMA address and these are
+not the same in a x86 PV guest.
 
-Remove the !PCI_MSI dependency from X86_UP_APIC and enforce
-X86_UP_APIC when PCI_MSI support is enabled on 32bit UP systems.
-
-[ tglx: Massaged changelog ]
-
-Fixes 0dbc6078c06bc0 'x86, build, pci: Fix PCI_MSI build on !SMP'
-Signed-off-by: Bryan O'Donoghue <pure.logic@nexus-software.ie>
-Suggested-by: Thomas Gleixner <tglx@linutronix.de>
-Reviewed-by: Andy Shevchenko <andy.shevchenko@gmail.com>
-Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Link: http://lkml.kernel.org/r/1421967529-9037-1-git-send-email-pure.logic@nexus-software.ie
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: David Vrabel <david.vrabel@citrix.com>
+Reviewed-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/Kconfig |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ drivers/xen/swiotlb-xen.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -854,7 +854,7 @@ source "kernel/Kconfig.preempt"
+--- a/drivers/xen/swiotlb-xen.c
++++ b/drivers/xen/swiotlb-xen.c
+@@ -449,7 +449,7 @@ static void xen_unmap_single(struct devi
  
- config X86_UP_APIC
- 	bool "Local APIC support on uniprocessors"
--	depends on X86_32 && !SMP && !X86_32_NON_STANDARD && !PCI_MSI
-+	depends on X86_32 && !SMP && !X86_32_NON_STANDARD
- 	---help---
- 	  A local APIC (Advanced Programmable Interrupt Controller) is an
- 	  integrated interrupt controller in the CPU. If you have a single-CPU
-@@ -865,6 +865,10 @@ config X86_UP_APIC
- 	  performance counters), and the NMI watchdog which detects hard
- 	  lockups.
+ 	/* NOTE: We use dev_addr here, not paddr! */
+ 	if (is_xen_swiotlb_buffer(dev_addr)) {
+-		swiotlb_tbl_unmap_single(hwdev, dev_addr, size, dir);
++		swiotlb_tbl_unmap_single(hwdev, paddr, size, dir);
+ 		return;
+ 	}
  
-+config X86_UP_APIC_MSI
-+	def_bool y
-+	select X86_UP_APIC if X86_32 && !SMP && !X86_32_NON_STANDARD && PCI_MSI
-+
- config X86_UP_IOAPIC
- 	bool "IO-APIC support on uniprocessors"
- 	depends on X86_UP_APIC
 
 
