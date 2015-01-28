@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763841AbbA2DN7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 22:13:59 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:46969 "EHLO
+	id S1763990AbbA2DR4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 22:17:56 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:46954 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754293AbbA2Cgf (ORCPT
+	with ESMTP id S1755996AbbA2CgK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 21:36:35 -0500
+	Wed, 28 Jan 2015 21:36:10 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jiang Liu <jiang.liu@linux.intel.com>, Joerg Roedel <jroedel@suse.de>,
+Cc: Milan Broz <gmazyland@gmail.com>, Mike Snitzer <snitzer@redhat.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13.y-ckt 067/139] iommu/vt-d: Fix an off-by-one bug in __domain_mapping()
-Date: Wed, 28 Jan 2015 14:20:10 -0800
-Message-Id: <1422483682-15393-68-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13.y-ckt 068/139] dm crypt: use memzero_explicit for on-stack buffer
+Date: Wed, 28 Jan 2015 14:20:11 -0800
+Message-Id: <1422483682-15393-69-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422483682-15393-1-git-send-email-kamal@canonical.com>
 References: <1422483682-15393-1-git-send-email-kamal@canonical.com>
@@ -27,55 +27,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiang Liu <jiang.liu@linux.intel.com>
+From: Milan Broz <gmazyland@gmail.com>
 
-commit cc4f14aa170d895c9a43bdb56f62070c8a6da908 upstream.
+commit 1a71d6ffe18c0d0f03fc8531949cc8ed41d702ee upstream.
 
-There's an off-by-one bug in function __domain_mapping(), which may
-trigger the BUG_ON(nr_pages < lvl_pages) when
-	(nr_pages + 1) & superpage_mask == 0
+Use memzero_explicit to cleanup sensitive data allocated on stack
+to prevent the compiler from optimizing and removing memset() calls.
 
-The issue was introduced by commit 9051aa0268dc "intel-iommu: Combine
-domain_pfn_mapping() and domain_sg_mapping()", which sets sg_res to
-"nr_pages + 1" to avoid some of the 'sg_res==0' code paths.
-
-It's safe to remove extra "+1" because sg_res is only used to calculate
-page size now.
-
-Reported-And-Tested-by: Sudeep Dutt <sudeep.dutt@intel.com>
-Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
-Acked-By: David Woodhouse <David.Woodhouse@intel.com>
-Signed-off-by: Joerg Roedel <jroedel@suse.de>
+Signed-off-by: Milan Broz <gmazyland@gmail.com>
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/iommu/intel-iommu.c | 8 +++-----
- 1 file changed, 3 insertions(+), 5 deletions(-)
+ drivers/md/dm-crypt.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
-index 59779e1..79cc9f1 100644
---- a/drivers/iommu/intel-iommu.c
-+++ b/drivers/iommu/intel-iommu.c
-@@ -1796,7 +1796,7 @@ static int __domain_mapping(struct dmar_domain *domain, unsigned long iov_pfn,
- 	struct dma_pte *first_pte = NULL, *pte = NULL;
- 	phys_addr_t uninitialized_var(pteval);
- 	int addr_width = agaw_to_width(domain->agaw) - VTD_PAGE_SHIFT;
--	unsigned long sg_res;
-+	unsigned long sg_res = 0;
- 	unsigned int largepage_lvl = 0;
- 	unsigned long lvl_pages = 0;
- 
-@@ -1807,10 +1807,8 @@ static int __domain_mapping(struct dmar_domain *domain, unsigned long iov_pfn,
- 
- 	prot &= DMA_PTE_READ | DMA_PTE_WRITE | DMA_PTE_SNP;
- 
--	if (sg)
--		sg_res = 0;
--	else {
--		sg_res = nr_pages + 1;
-+	if (!sg) {
-+		sg_res = nr_pages;
- 		pteval = ((phys_addr_t)phys_pfn << VTD_PAGE_SHIFT) | prot;
- 	}
+diff --git a/drivers/md/dm-crypt.c b/drivers/md/dm-crypt.c
+index 8c148f4..5e3f7de 100644
+--- a/drivers/md/dm-crypt.c
++++ b/drivers/md/dm-crypt.c
+@@ -711,7 +711,7 @@ static int crypt_iv_tcw_whitening(struct crypt_config *cc,
+ 	for (i = 0; i < ((1 << SECTOR_SHIFT) / 8); i++)
+ 		crypto_xor(data + i * 8, buf, 8);
+ out:
+-	memset(buf, 0, sizeof(buf));
++	memzero_explicit(buf, sizeof(buf));
+ 	return r;
+ }
  
 -- 
 1.9.1
