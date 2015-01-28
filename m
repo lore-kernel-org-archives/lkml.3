@@ -1,106 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934295AbbA1CZs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 21:25:48 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.242]:38651 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933308AbbA1CZq (ORCPT
+	id S1761368AbbA1CXZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 21:23:25 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:20331 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760245AbbA1CXV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 21:25:46 -0500
-From: Wenyou Yang <wenyou.yang@atmel.com>
-To: <nicolas.ferre@atmel.com>, <linux@arm.linux.org.uk>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <alexandre.belloni@free-electrons.com>, <sylvain.rochet@finsecur.com>,
-        <peda@axentia.se>, <sergei.shtylyov@cogentembedded.com>,
-        <linux@maxim.org.za>, <wenyou.yang@atmel.com>
-Subject: [PATCH v2 1/3] pm: at91: pm_suspend: add the WFI support for ARMv7
-Date: Wed, 28 Jan 2015 10:22:37 +0800
-Message-ID: <1422411757-13066-1-git-send-email-wenyou.yang@atmel.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1422411707-10945-1-git-send-email-wenyou.yang@atmel.com>
-References: <1422411707-10945-1-git-send-email-wenyou.yang@atmel.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	Tue, 27 Jan 2015 21:23:21 -0500
+From: Sasha Levin <sasha.levin@oracle.com>
+To: linux-kernel@vger.kernel.org
+Cc: iamjoonsoo.kim@lge.com, m.szyprowski@samsung.com,
+        akpm@linux-foundation.org, lauraa@codeaurora.org,
+        Sasha Levin <sasha.levin@oracle.com>
+Subject: [PATCH v3 0/3] mm: cma: debugfs access to CMA
+Date: Tue, 27 Jan 2015 21:22:54 -0500
+Message-Id: <1422411777-22332-1-git-send-email-sasha.levin@oracle.com>
+X-Mailer: git-send-email 2.1.0
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the WFI support to put the cpu to the sleep state.
+I've noticed that there is no interfaces exposed by CMA which would let me
+fuzz what's going on in there.
 
-In the meanwhile, disable the processor's clock.
+This small patch set exposes some information out to userspace, plus adds
+the ability to trigger allocation and freeing from userspace.
 
-Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
----
- arch/arm/mach-at91/pm_suspend.S |   49 ++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 48 insertions(+), 1 deletion(-)
+Changes from v2:
+ - Keep allocated memory lists per-cma
+ - Don't allow partial free with non-zero order_per_bit
+ - Use 0 alignment
 
-diff --git a/arch/arm/mach-at91/pm_suspend.S b/arch/arm/mach-at91/pm_suspend.S
-index 122a3f1..aed6903 100644
---- a/arch/arm/mach-at91/pm_suspend.S
-+++ b/arch/arm/mach-at91/pm_suspend.S
-@@ -53,6 +53,53 @@ mode	.req	r6
- 	beq	1b
- 	.endm
- 
-+/*
-+ * Put the processor to enter the WFI state
-+ */
-+	.macro _do_wfi
-+
-+#if defined(CONFIG_CPU_V7)
-+	/*
-+	 * Execute an ISB instruction to flush the pipeline to ensure
-+	 * that all of operations have beem completed.
-+	 */
-+	isb
-+
-+	dsb
-+	dmb
-+
-+	/* Disable the processor's clock */
-+	mov	tmp1, #AT91_PMC_PCK
-+	str	tmp1, [pmc, #AT91_PMC_SCDR]
-+
-+	wfi
-+
-+	/*
-+	 * CPU can speculatively prefetch the instructions
-+	 * so add NOPs after WFI. Sixteen NOPs as Cortex-A5 pipeline.
-+	 */
-+	nop
-+	nop
-+	nop
-+	nop
-+	nop
-+	nop
-+	nop
-+	nop
-+	nop
-+	nop
-+	nop
-+	nop
-+	nop
-+	nop
-+	nop
-+	nop
-+#else
-+	mcr	p15, 0, tmp1, c7, c0, 4
-+#endif
-+
-+	.endm
-+
- 	.text
- 
- /*
-@@ -181,7 +228,7 @@ sdr_sr_done:
- 
- skip_disable_main_clock:
- 	/* Wait for interrupt */
--	mcr	p15, 0, tmp1, c7, c0, 4
-+	_do_wfi
- 
- 	tst	mode, #AT91_PM_SLOW_CLOCK
- 	beq	skip_enable_main_clock
+Changes from v1:
+ - Make allocation and free hooks per-cma.
+ - Remove additional debug prints.
+
+Sasha Levin (3):
+  mm: cma: debugfs interface
+  mm: cma: allocation trigger
+  mm: cma: release trigger
+
+ mm/Kconfig     |    6 ++
+ mm/Makefile    |    1 +
+ mm/cma.c       |   19 ++----
+ mm/cma.h       |   20 +++++++
+ mm/cma_debug.c |  175 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 5 files changed, 206 insertions(+), 15 deletions(-)
+ create mode 100644 mm/cma.h
+ create mode 100644 mm/cma_debug.c
+
 -- 
-1.7.9.5
+1.7.10.4
 
