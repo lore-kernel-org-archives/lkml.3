@@ -1,106 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760283AbbA1UeF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 15:34:05 -0500
-Received: from mga03.intel.com ([134.134.136.65]:56986 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755605AbbA1UeB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 15:34:01 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.09,479,1418112000"; 
-   d="scan'208";a="668838937"
-From: "Zhang, Yang Z" <yang.z.zhang@intel.com>
-To: Wincy Van <fanwenyi0529@gmail.com>, Paolo Bonzini <pbonzini@redhat.com>,
-        "gleb@kernel.org" <gleb@kernel.org>
-CC: "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Wanpeng Li <wanpeng.li@linux.intel.com>,
-        Jan Kiszka <jan.kiszka@web.de>
-Subject: RE: [PATCH v3 1/6] KVM: nVMX: Use hardware MSR bitmap
-Thread-Topic: [PATCH v3 1/6] KVM: nVMX: Use hardware MSR bitmap
-Thread-Index: AQHQN79lT9Shw/DNlk+phY4fCFwl65zVMIRw
-Date: Wed, 28 Jan 2015 08:00:25 +0000
-Message-ID: <A9667DDFB95DB7438FA9D7D576C3D87E0AC2C547@SHSMSX104.ccr.corp.intel.com>
-References: <CACzj_yUu5omqFL7u8NE6vyqXGy_-dAeukRspJha+EiGXVBzmYg@mail.gmail.com>
-In-Reply-To: <CACzj_yUu5omqFL7u8NE6vyqXGy_-dAeukRspJha+EiGXVBzmYg@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="utf-8"
+	id S1756688AbbA1VAR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 16:00:17 -0500
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:50524 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756586AbbA1VAO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jan 2015 16:00:14 -0500
+Message-ID: <54C89816.8030709@gmail.com>
+Date: Wed, 28 Jan 2015 09:04:38 +0100
+From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
+To: Vivek Goyal <vgoyal@redhat.com>
+CC: mtk.manpages@gmail.com, lkml <linux-kernel@vger.kernel.org>,
+        "linux-man@vger.kernel.org" <linux-man@vger.kernel.org>,
+        kexec@lists.infradead.org, Andy Lutomirski <luto@amacapital.net>,
+        Dave Young <dyoung@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Borislav Petkov <bp@alien8.de>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: Re: Edited kexec_load(2) [kexec_file_load()] man page for review
+References: <545FBDDD.9060801@gmail.com> <20141111213037.GA31445@redhat.com> <54ADA284.30502@gmail.com> <20150112221634.GD16162@redhat.com> <54B91271.3000600@gmail.com> <20150127142459.GA12851@redhat.com>
+In-Reply-To: <20150127142459.GA12851@redhat.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id t0SKY9TQ006154
 
-Wincy Van wrote on 2015-01-24:
-> Currently, if L1 enables MSR_BITMAP, we will emulate this feature, all of L2's
-> msr access is intercepted by L0. Since many features like virtualize x2apic mode
-> has a complicated logic and it is difficult for us to emulate, we should use
-> hardware and merge the bitmap.
+Hi Vivek,
+
+On 01/27/2015 03:24 PM, Vivek Goyal wrote:
+> On Fri, Jan 16, 2015 at 02:30:25PM +0100, Michael Kerrisk (man-pages) wrote:
+> [..]
+>>
 > 
-> This patch introduces nested_vmx_merge_msr_bitmap for future use.
+> Hi Michael,
 > 
-> Signed-off-by: Wincy Van <fanwenyi0529@gmail.com>
-> ---
->  arch/x86/kvm/vmx.c |   71
-> +++++++++++++++++++++++++++++++++++++++++++--------
->  1 files changed, 60 insertions(+), 11 deletions(-)
+> Please find my responses below. Sorry, I got stuck in other work and
+> forgot about this thread.
 > 
-> diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c index c987374..36d0724
-> 100644
-> --- a/arch/x86/kvm/vmx.c
-> +++ b/arch/x86/kvm/vmx.c
-> @@ -798,6 +798,7 @@ static unsigned long *vmx_msr_bitmap_legacy;
-> static unsigned long *vmx_msr_bitmap_longmode;  static unsigned long
-> *vmx_msr_bitmap_legacy_x2apic;  static unsigned long
-> *vmx_msr_bitmap_longmode_x2apic;
-> +static unsigned long *vmx_msr_bitmap_nested;
->  static unsigned long *vmx_vmread_bitmap;  static unsigned long
-> *vmx_vmwrite_bitmap;
+>> So, returning to the kexeec_segment structure:
+>>
+>>            struct kexec_segment {
+>>                void   *buf;        /* Buffer in user space */
+>>                size_t  bufsz;      /* Buffer length in user space */
+>>                void   *mem;        /* Physical address of kernel */
+>>                size_t  memsz;      /* Physical address length */
+>>            };
+>>
+>> Are the following statements correct:
+>> * buf + bufsz identify a memory region in the caller's virtual 
+>>   address space that is the source of the copy
 > 
-> @@ -5812,13 +5813,18 @@ static __init int hardware_setup(void)
->                                 (unsigned long
-> *)__get_free_page(GFP_KERNEL);
->         if (!vmx_msr_bitmap_longmode_x2apic)
->                 goto out4;
-> +
-> +       vmx_msr_bitmap_nested = (unsigned long
-> *)__get_free_page(GFP_KERNEL);
-> +       if (!vmx_msr_bitmap_nested)
-> +               goto out5;
-> +
+> Yes.
 
-Since the nested virtualization is off by default. It's better to allocate the page
-only when nested is true. Maybe adding the following check is better:
+Okay.
 
-if (nested) {
-        vmx_msr_bitmap_nested = (unsigned long *)__get_free_page(GFP_KERNEL);
-        if (!vmx_msr_bitmap_nested)
-                goto out5;
-}
+>> * mem + memsz specify the target memory region of the copy
+> 
+> Yes.
 
-...snip...
+Okay.
 
-> +
-> +/*
-> + * Merge L0's and L1's MSR bitmap, return false to indicate that
-> + * we do not use the hardware.
-> + */
-> +static inline bool nested_vmx_merge_msr_bitmap(struct kvm_vcpu *vcpu,
-> +                                              struct vmcs12
-> *vmcs12) {
-> +       return false;
-> +}
-> +
+>> * mem is  physical memory address, as seen from kernel space
+> 
+> Yes.
 
-The following patches have nothing to do with the MSR control. Why leave the function empty here?
+Okay.
 
-Best regards,
-Yang
+>> * the number of bytes copied from userspace is min(bufsz, memsz)
+> 
+> Yes. bufsz can not be more than memsz. There is a check to validate
+> this in kernel.
+> 
+> 	result = -EINVAL;
+> 	for (i = 0; i < nr_segments; i++) {
+> 		if (image->segment[i].bufsz > image->segment[i].memsz)
+> 			return result;
+> 	}
+
+Okay. So it's more precise to leave discussion of min(bufz, memsz) 
+out of the man page just to say: bufsz bytes are transferred; 
+if bufsz < memsz, then the excess bytes in the target region are 
+filled with zeros. Right?
+
+>> * if bufsz > memsz, then excess bytes in the user-space buffer 
+>>   are ignored.
+> 
+> You will get -EINVAL.
+
+Okay.
+
+>> * if memsz > bufsz, then excess bytes in the target kernel buffer
+>>   are filled with zeros.
+> 
+> Yes.
+
+Okay.
+
+>> Also, it seems to me that 'mem' need not be page aligned.
+>> Is that correct? Should the man page say something about that?
+>> (E.g., is it generally desirable that 'mem' should be page aligned?)
+> 
+> mem and memsz need to be page aligned. There is a check for that too.
+> 
+> 	mstart = image->segment[i].mem;
+> 	mend   = mstart + image->segment[i].memsz;
+> 	if ((mstart & ~PAGE_MASK) || (mend & ~PAGE_MASK))
+> 		return result;
+> 
+>>
+>> Likewise, 'memsz' doesn't need to beta page multiple, IIUC.
+>> Should the man page say anything about this? For example, should 
+>> it note that the initialized kernel segment will be of size:
+>>
+>>      (mem % PAGE_SIZE + memsz) rounded up to the next multiple of PAGE_SIZE
+>>
+>> And should it note that if 'mem' is not a multiple of the page size, then
+>> the initial bytes (mem % PAGE_SIZE)) in the first page of the kernel segment 
+>> will be zeros?
+>>
+>> (Hopefully I have read kimage_load_normal_segment() correctly.)
+> 
+> Both mem and memsz need to be page aligned.
+
+And the error if not is EADDRNOTAVAIL, right?
+
+>> And one further question. Other than the fact that they are used with 
+>> different system calls, what is the difference between KEXEC_ON_CRASH 
+>> and KEXEC_FILE_ON_CRASH?
+> 
+> Right now I can't think of any other difference. They both tell respective
+> system call that this kernel needs to be loaded in reserved memory region
+> for crash kernel.
+
+Okay.
+
+I've made various adjustments to the page in the light of your comments 
+above. Thanks!
+
+Cheers,
+
+Michael
 
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+
+-- 
+Michael Kerrisk
+Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
+Linux/UNIX System Programming Training: http://man7.org/training/
