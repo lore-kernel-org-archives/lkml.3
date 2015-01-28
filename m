@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760743AbbA1BxC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 20:53:02 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41534 "EHLO
+	id S1760710AbbA1Bwp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 20:52:45 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41426 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933313AbbA1Bib (ORCPT
+	with ESMTP id S1759979AbbA1Bib (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 27 Jan 2015 20:38:31 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
-        Rik van Riel <riel@redhat.com>, Vlastimil Babka <vbabka@suse.cz>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Vlastimil Babka <vbabka@suse.cz>,
         Jan Kara <jack@suse.cz>, Michal Hocko <mhocko@suse.cz>,
         Hugh Dickins <hughd@google.com>, Dave Hansen <dave.hansen@intel.com>,
         Theodore Tso <tytso@mit.edu>,
@@ -19,9 +19,9 @@ Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Oleg Nesterov <oleg@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.14 53/77] mm: page_alloc: take the ALLOC_NO_WATERMARK check out of the fast path
-Date: Tue, 27 Jan 2015 17:27:31 -0800
-Message-Id: <20150128012747.560855114@linuxfoundation.org>
+Subject: [PATCH 3.14 54/77] mm: page_alloc: use unsigned int for order in more places
+Date: Tue, 27 Jan 2015 17:27:32 -0800
+Message-Id: <20150128012747.589922925@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <20150128012745.971137091@linuxfoundation.org>
 References: <20150128012745.971137091@linuxfoundation.org>
@@ -38,20 +38,16 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Mel Gorman <mgorman@suse.de>
 
-commit 5dab29113ca56335c78be3f98bf5ddf2ef8eb6a6 upstream.
+commit 7aeb09f9104b760fc53c98cb7d20d06640baf9e6 upstream.
 
-ALLOC_NO_WATERMARK is set in a few cases.  Always by kswapd, always for
-__GFP_MEMALLOC, sometimes for swap-over-nfs, tasks etc.  Each of these
-cases are relatively rare events but the ALLOC_NO_WATERMARK check is an
-unlikely branch in the fast path.  This patch moves the check out of the
-fast path and after it has been determined that the watermarks have not
-been met.  This helps the common fast path at the cost of making the slow
-path slower and hitting kswapd with a performance cost.  It's a reasonable
-tradeoff.
+X86 prefers the use of unsigned types for iterators and there is a
+tendency to mix whether a signed or unsigned type if used for page order.
+This converts a number of sites in mm/page_alloc.c to use unsigned int for
+order where possible.
 
 Signed-off-by: Mel Gorman <mgorman@suse.de>
-Acked-by: Johannes Weiner <hannes@cmpxchg.org>
-Reviewed-by: Rik van Riel <riel@redhat.com>
+Acked-by: Rik van Riel <riel@redhat.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
 Cc: Vlastimil Babka <vbabka@suse.cz>
 Cc: Jan Kara <jack@suse.cz>
 Cc: Michal Hocko <mhocko@suse.cz>
@@ -67,32 +63,174 @@ Signed-off-by: Mel Gorman <mgorman@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/page_alloc.c |    8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+ include/linux/mmzone.h |    8 ++++----
+ mm/page_alloc.c        |   43 +++++++++++++++++++++++--------------------
+ 2 files changed, 27 insertions(+), 24 deletions(-)
 
+--- a/include/linux/mmzone.h
++++ b/include/linux/mmzone.h
+@@ -807,10 +807,10 @@ static inline bool pgdat_is_empty(pg_dat
+ extern struct mutex zonelists_mutex;
+ void build_all_zonelists(pg_data_t *pgdat, struct zone *zone);
+ void wakeup_kswapd(struct zone *zone, int order, enum zone_type classzone_idx);
+-bool zone_watermark_ok(struct zone *z, int order, unsigned long mark,
+-		int classzone_idx, int alloc_flags);
+-bool zone_watermark_ok_safe(struct zone *z, int order, unsigned long mark,
+-		int classzone_idx, int alloc_flags);
++bool zone_watermark_ok(struct zone *z, unsigned int order,
++		unsigned long mark, int classzone_idx, int alloc_flags);
++bool zone_watermark_ok_safe(struct zone *z, unsigned int order,
++		unsigned long mark, int classzone_idx, int alloc_flags);
+ enum memmap_context {
+ 	MEMMAP_EARLY,
+ 	MEMMAP_HOTPLUG,
 --- a/mm/page_alloc.c
 +++ b/mm/page_alloc.c
-@@ -1959,9 +1959,6 @@ zonelist_scan:
- 			(alloc_flags & ALLOC_CPUSET) &&
- 			!cpuset_zone_allowed_softwall(zone, gfp_mask))
- 				continue;
--		BUILD_BUG_ON(ALLOC_NO_WATERMARKS < NR_WMARK);
--		if (unlikely(alloc_flags & ALLOC_NO_WATERMARKS))
--			goto try_this_zone;
- 		/*
- 		 * Distribute pages in proportion to the individual
- 		 * zone size to ensure fair page aging.  The zone a
-@@ -2008,6 +2005,11 @@ zonelist_scan:
- 				       classzone_idx, alloc_flags)) {
- 			int ret;
+@@ -408,7 +408,8 @@ static int destroy_compound_page(struct
+ 	return bad;
+ }
  
-+			/* Checked here to keep the fast path fast */
-+			BUILD_BUG_ON(ALLOC_NO_WATERMARKS < NR_WMARK);
-+			if (alloc_flags & ALLOC_NO_WATERMARKS)
-+				goto try_this_zone;
-+
- 			if (IS_ENABLED(CONFIG_NUMA) &&
- 					!did_zlc_setup && nr_online_nodes > 1) {
- 				/*
+-static inline void prep_zero_page(struct page *page, int order, gfp_t gfp_flags)
++static inline void prep_zero_page(struct page *page, unsigned int order,
++							gfp_t gfp_flags)
+ {
+ 	int i;
+ 
+@@ -452,7 +453,7 @@ static inline void set_page_guard_flag(s
+ static inline void clear_page_guard_flag(struct page *page) { }
+ #endif
+ 
+-static inline void set_page_order(struct page *page, int order)
++static inline void set_page_order(struct page *page, unsigned int order)
+ {
+ 	set_page_private(page, order);
+ 	__SetPageBuddy(page);
+@@ -503,7 +504,7 @@ __find_buddy_index(unsigned long page_id
+  * For recording page's order, we use page_private(page).
+  */
+ static inline int page_is_buddy(struct page *page, struct page *buddy,
+-								int order)
++							unsigned int order)
+ {
+ 	if (!pfn_valid_within(page_to_pfn(buddy)))
+ 		return 0;
+@@ -722,7 +723,7 @@ static void free_pcppages_bulk(struct zo
+ 	spin_unlock(&zone->lock);
+ }
+ 
+-static void free_one_page(struct zone *zone, struct page *page, int order,
++static void free_one_page(struct zone *zone, struct page *page, unsigned int order,
+ 				int migratetype)
+ {
+ 	spin_lock(&zone->lock);
+@@ -904,7 +905,7 @@ static inline int check_new_page(struct
+ 	return 0;
+ }
+ 
+-static int prep_new_page(struct page *page, int order, gfp_t gfp_flags)
++static int prep_new_page(struct page *page, unsigned int order, gfp_t gfp_flags)
+ {
+ 	int i;
+ 
+@@ -1115,16 +1116,17 @@ static int try_to_steal_freepages(struct
+ 
+ /* Remove an element from the buddy allocator from the fallback list */
+ static inline struct page *
+-__rmqueue_fallback(struct zone *zone, int order, int start_migratetype)
++__rmqueue_fallback(struct zone *zone, unsigned int order, int start_migratetype)
+ {
+ 	struct free_area *area;
+-	int current_order;
++	unsigned int current_order;
+ 	struct page *page;
+ 	int migratetype, new_type, i;
+ 
+ 	/* Find the largest possible block of pages in the other list */
+-	for (current_order = MAX_ORDER-1; current_order >= order;
+-						--current_order) {
++	for (current_order = MAX_ORDER-1;
++				current_order >= order && current_order <= MAX_ORDER-1;
++				--current_order) {
+ 		for (i = 0;; i++) {
+ 			migratetype = fallbacks[start_migratetype][i];
+ 
+@@ -1352,7 +1354,7 @@ void mark_free_pages(struct zone *zone)
+ {
+ 	unsigned long pfn, max_zone_pfn;
+ 	unsigned long flags;
+-	int order, t;
++	unsigned int order, t;
+ 	struct list_head *curr;
+ 
+ 	if (zone_is_empty(zone))
+@@ -1547,8 +1549,8 @@ int split_free_page(struct page *page)
+  */
+ static inline
+ struct page *buffered_rmqueue(struct zone *preferred_zone,
+-			struct zone *zone, int order, gfp_t gfp_flags,
+-			int migratetype)
++			struct zone *zone, unsigned int order,
++			gfp_t gfp_flags, int migratetype)
+ {
+ 	unsigned long flags;
+ 	struct page *page;
+@@ -1697,8 +1699,9 @@ static inline bool should_fail_alloc_pag
+  * Return true if free pages are above 'mark'. This takes into account the order
+  * of the allocation.
+  */
+-static bool __zone_watermark_ok(struct zone *z, int order, unsigned long mark,
+-		      int classzone_idx, int alloc_flags, long free_pages)
++static bool __zone_watermark_ok(struct zone *z, unsigned int order,
++			unsigned long mark, int classzone_idx, int alloc_flags,
++			long free_pages)
+ {
+ 	/* free_pages my go negative - that's OK */
+ 	long min = mark;
+@@ -1732,15 +1735,15 @@ static bool __zone_watermark_ok(struct z
+ 	return true;
+ }
+ 
+-bool zone_watermark_ok(struct zone *z, int order, unsigned long mark,
++bool zone_watermark_ok(struct zone *z, unsigned int order, unsigned long mark,
+ 		      int classzone_idx, int alloc_flags)
+ {
+ 	return __zone_watermark_ok(z, order, mark, classzone_idx, alloc_flags,
+ 					zone_page_state(z, NR_FREE_PAGES));
+ }
+ 
+-bool zone_watermark_ok_safe(struct zone *z, int order, unsigned long mark,
+-		      int classzone_idx, int alloc_flags)
++bool zone_watermark_ok_safe(struct zone *z, unsigned int order,
++			unsigned long mark, int classzone_idx, int alloc_flags)
+ {
+ 	long free_pages = zone_page_state(z, NR_FREE_PAGES);
+ 
+@@ -4137,7 +4140,7 @@ void __meminit memmap_init_zone(unsigned
+ 
+ static void __meminit zone_init_free_lists(struct zone *zone)
+ {
+-	int order, t;
++	unsigned int order, t;
+ 	for_each_migratetype_order(order, t) {
+ 		INIT_LIST_HEAD(&zone->free_area[order].free_list[t]);
+ 		zone->free_area[order].nr_free = 0;
+@@ -6477,7 +6480,7 @@ __offline_isolated_pages(unsigned long s
+ {
+ 	struct page *page;
+ 	struct zone *zone;
+-	int order, i;
++	unsigned int order, i;
+ 	unsigned long pfn;
+ 	unsigned long flags;
+ 	/* find the first valid pfn */
+@@ -6529,7 +6532,7 @@ bool is_free_buddy_page(struct page *pag
+ 	struct zone *zone = page_zone(page);
+ 	unsigned long pfn = page_to_pfn(page);
+ 	unsigned long flags;
+-	int order;
++	unsigned int order;
+ 
+ 	spin_lock_irqsave(&zone->lock, flags);
+ 	for (order = 0; order < MAX_ORDER; order++) {
 
 
