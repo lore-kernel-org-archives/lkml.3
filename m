@@ -1,64 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755883AbbA2Byu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 20:54:50 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:31816 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751528AbbA2Byr (ORCPT
+	id S1752900AbbA1UxH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 15:53:07 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:45531 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752764AbbA1UxB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 20:54:47 -0500
-X-AuditID: cbfee61b-f79d76d0000024d6-6a-54c8e7c42c05
-From: Robert Baldyga <r.baldyga@samsung.com>
-To: gregkh@linuxfoundation.org
-Cc: jslaby@suse.cz, akpm@linux-foundation.org, linux-serial@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Robert Baldyga <r.baldyga@samsung.com>
-Subject: [PATCH] serial: samsung: remove redundant interrupt enabling
-Date: Wed, 28 Jan 2015 14:44:23 +0100
-Message-id: <1422452663-24113-1-git-send-email-r.baldyga@samsung.com>
-X-Mailer: git-send-email 1.9.1
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrGJMWRmVeSWpSXmKPExsVy+t9jAd0jz0+EGKydw2ExZ/0aNovmxevZ
-	LD7/3sVqcXnXHDaLM4t72S0eHN7J7sDmcWLGbxaP/XPXsHv0bVnF6HFmwRF2j8+b5AJYo7hs
-	UlJzMstSi/TtErgylp2cw1bwjr3iXPNXpgbG42xdjJwcEgImElvWPYeyxSQu3FsPZgsJLGKU
-	uDyfp4uRC8huZ5I4+O4KI0iCTUBHYsv3CWC2iICcxJPbf5hBipgFJjNKdP/pZgdJCAu4Sjw5
-	9xLI5uBgEVCV2H3WASTMCxTub5vHBLFMTuLkscmsExi5FzAyrGIUTS1ILihOSs810itOzC0u
-	zUvXS87P3cQIDo1n0jsYVzVYHGIU4GBU4uF9YXYiRIg1say4MvcQowQHs5II7+O9QCHelMTK
-	qtSi/Pii0pzU4kOM0hwsSuK8SvZtIUIC6YklqdmpqQWpRTBZJg5OqQZGmVbXFT/ipfZ5vr7F
-	9OSOA8umZ7c2VyzWfav7/cSSWvM3xxj2PL9Rpd/542VAoXiPXWjwy41hnX1f1nVuLHC1T3rY
-	2bWpI7r0W+6PNQdUP3JvNJ5f8O/fjkBhE6X18/urv/Q3SAZzzrmjKbw1yH/F/c0Plp9j2xhu
-	f0bqGfs7HrtmjVbvr7eclFiKMxINtZiLihMBG40VOwkCAAA=
+	Wed, 28 Jan 2015 15:53:01 -0500
+Date: Wed, 28 Jan 2015 13:46:39 +0000
+From: Will Deacon <will.deacon@arm.com>
+To: Jiang Liu <jiang.liu@linux.intel.com>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>,
+        Borislav Petkov <bp@alien8.de>, Lv Zheng <lv.zheng@intel.com>,
+        Russell King <linux@arm.linux.org.uk>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>,
+        Tanmay Inamdar <tinamdar@apm.com>,
+        Michal Simek <michal.simek@xilinx.com>,
+        =?iso-8859-1?Q?S=F6ren?= Brinkmann <soren.brinkmann@xilinx.com>,
+        Yijing Wang <wangyijing@huawei.com>,
+        Murali Karicheri <m-karicheri2@ti.com>,
+        Srikanth Thokala <sthokal@xilinx.com>, Tony Luck <tony.luck@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [Patch v2 18/22] PCI: Use common resource list management code
+ instead of private implementation
+Message-ID: <20150128134639.GN1569@arm.com>
+References: <1422442660-455-1-git-send-email-jiang.liu@linux.intel.com>
+ <1422442660-455-19-git-send-email-jiang.liu@linux.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1422442660-455-19-git-send-email-jiang.liu@linux.intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Function s3c24xx_serial_start_tx_pio() enables interrupts if needed,
-so we don't have to (or even we shouldn't) enable them before.
+On Wed, Jan 28, 2015 at 10:57:36AM +0000, Jiang Liu wrote:
+> Use common resource list management data structure and interfaces
+> instead of private implementation.
+> 
+> Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+> ---
+>  arch/arm/kernel/bios32.c            |    5 ++---
+>  arch/x86/pci/bus_numa.c             |    4 ++--
+>  drivers/pci/bus.c                   |   18 ++++++------------
+>  drivers/pci/host-bridge.c           |    8 ++++----
+>  drivers/pci/host/pci-host-generic.c |    4 ++--
+>  drivers/pci/host/pci-xgene.c        |    4 ++--
+>  drivers/pci/host/pcie-xilinx.c      |    4 ++--
+>  drivers/pci/probe.c                 |   10 +++++-----
+>  include/linux/pci.h                 |    9 ++-------
+>  9 files changed, 27 insertions(+), 39 deletions(-)
 
-Signed-off-by: Robert Baldyga <r.baldyga@samsung.com>
----
- drivers/tty/serial/samsung.c | 9 +--------
- 1 file changed, 1 insertion(+), 8 deletions(-)
+The arch/arm/ and drivers/pci/host/pci-host-generic.c bits look fine to
+me:
 
-diff --git a/drivers/tty/serial/samsung.c b/drivers/tty/serial/samsung.c
-index 024e5ec..a07fe4f 100644
---- a/drivers/tty/serial/samsung.c
-+++ b/drivers/tty/serial/samsung.c
-@@ -358,15 +358,8 @@ void s3c24xx_serial_start_tx(struct uart_port *port)
- 			s3c24xx_serial_rx_disable(port);
- 
- 		tx_enabled(port) = 1;
--		if (!ourport->dma || !ourport->dma->tx_chan) {
--			if (s3c24xx_serial_has_interrupt_mask(port))
--				__clear_bit(S3C64XX_UINTM_TXD,
--						portaddrl(port, S3C64XX_UINTM));
--			else
--				enable_irq(ourport->tx_irq);
--
-+		if (!ourport->dma || !ourport->dma->tx_chan)
- 			s3c24xx_serial_start_tx_pio(ourport);
--		}
- 	}
- 
- 	if (ourport->dma && ourport->dma->tx_chan) {
--- 
-1.9.1
+  Acked-by: Will Deacon <will.deacon@arm.com>
 
+Will
