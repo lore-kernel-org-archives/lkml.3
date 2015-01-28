@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965077AbbA1Fdv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 00:33:51 -0500
-Received: from mail.kernel.org ([198.145.29.136]:36705 "EHLO mail.kernel.org"
+	id S1760415AbbA1ENr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 23:13:47 -0500
+Received: from mail.kernel.org ([198.145.29.136]:36719 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760364AbbA1ENl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 23:13:41 -0500
+	id S1760375AbbA1ENo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 23:13:44 -0500
 From: lizf@kernel.org
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Champion Chen <champion_chen@realsil.com.cn>,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        Marcel Holtmann <marcel@holtmann.org>, Zefan Li <lizefan@huawei.com>
-Subject: [PATCH 3.4 005/177] Bluetooth: Fix issue with USB suspend in btusb driver
-Date: Wed, 28 Jan 2015 12:06:16 +0800
-Message-Id: <1422418236-12852-9-git-send-email-lizf@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Thomas Hellstrom <thellstrom@vmware.com>,
+        Zefan Li <lizefan@huawei.com>
+Subject: [PATCH 3.4 05/91] drm/vmwgfx: Fix a potential infinite spin waiting for fifo idle
+Date: Wed, 28 Jan 2015 12:06:17 +0800
+Message-Id: <1422418236-12852-10-git-send-email-lizf@kernel.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422418050-12581-1-git-send-email-lizf@kernel.org>
 References: <1422418050-12581-1-git-send-email-lizf@kernel.org>
@@ -21,63 +20,42 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Champion Chen <champion_chen@realsil.com.cn>
+From: Thomas Hellstrom <thellstrom@vmware.com>
 
-3.4.106-rc1 review patch.  If anyone has any objections, please let me know.
+3.4.105-rc1 review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
 
-commit 85560c4a828ec9c8573840c9b66487b6ae584768 upstream.
+commit f01ea0c3d9db536c64d47922716d8b3b8f21d850 upstream.
 
-Suspend could fail for some platforms because
-btusb_suspend==> btusb_stop_traffic ==> usb_kill_anchored_urbs.
+The code waiting for fifo idle was incorrect and could possibly spin
+forever under certain circumstances.
 
-When btusb_bulk_complete returns before system suspend and resubmits
-an URB, the system cannot enter suspend state.
-
-Signed-off-by: Champion Chen <champion_chen@realsil.com.cn>
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
-Signed-off-by: Marcel Holtmann <marcel@holtmann.org>
+Signed-off-by: Thomas Hellstrom <thellstrom@vmware.com>
+Reported-by: Mark Sheldon <markshel@vmware.com>
+Reviewed-by: Jakob Bornecrantz <jakob@vmware.com>
+Reivewed-by: Mark Sheldon <markshel@vmware.com>
 Signed-off-by: Zefan Li <lizefan@huawei.com>
 ---
- drivers/bluetooth/btusb.c | 9 +++++++++
- 1 file changed, 9 insertions(+)
+ drivers/gpu/drm/vmwgfx/vmwgfx_fifo.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/bluetooth/btusb.c b/drivers/bluetooth/btusb.c
-index 3cc2425..155a618 100644
---- a/drivers/bluetooth/btusb.c
-+++ b/drivers/bluetooth/btusb.c
-@@ -304,6 +304,9 @@ static void btusb_intr_complete(struct urb *urb)
- 			BT_ERR("%s corrupted event packet", hdev->name);
- 			hdev->stat.err_rx++;
- 		}
-+	} else if (urb->status == -ENOENT) {
-+		/* Avoid suspend failed when usb_kill_urb */
-+		return;
- 	}
+diff --git a/drivers/gpu/drm/vmwgfx/vmwgfx_fifo.c b/drivers/gpu/drm/vmwgfx/vmwgfx_fifo.c
+index a0c2f12..decca82 100644
+--- a/drivers/gpu/drm/vmwgfx/vmwgfx_fifo.c
++++ b/drivers/gpu/drm/vmwgfx/vmwgfx_fifo.c
+@@ -163,8 +163,9 @@ void vmw_fifo_release(struct vmw_private *dev_priv, struct vmw_fifo_state *fifo)
  
- 	if (!test_bit(BTUSB_INTR_RUNNING, &data->flags))
-@@ -392,6 +395,9 @@ static void btusb_bulk_complete(struct urb *urb)
- 			BT_ERR("%s corrupted ACL packet", hdev->name);
- 			hdev->stat.err_rx++;
- 		}
-+	} else if (urb->status == -ENOENT) {
-+		/* Avoid suspend failed when usb_kill_urb */
-+		return;
- 	}
+ 	mutex_lock(&dev_priv->hw_mutex);
  
- 	if (!test_bit(BTUSB_BULK_RUNNING, &data->flags))
-@@ -486,6 +492,9 @@ static void btusb_isoc_complete(struct urb *urb)
- 				hdev->stat.err_rx++;
- 			}
- 		}
-+	} else if (urb->status == -ENOENT) {
-+		/* Avoid suspend failed when usb_kill_urb */
-+		return;
- 	}
++	vmw_write(dev_priv, SVGA_REG_SYNC, SVGA_SYNC_GENERIC);
+ 	while (vmw_read(dev_priv, SVGA_REG_BUSY) != 0)
+-		vmw_write(dev_priv, SVGA_REG_SYNC, SVGA_SYNC_GENERIC);
++		;
  
- 	if (!test_bit(BTUSB_ISOC_RUNNING, &data->flags))
+ 	dev_priv->last_read_seqno = ioread32(fifo_mem + SVGA_FIFO_FENCE);
+ 
 -- 
 1.9.1
 
