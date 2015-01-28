@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934200AbbA1EVj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 23:21:39 -0500
-Received: from mail.kernel.org ([198.145.29.136]:39599 "EHLO mail.kernel.org"
+	id S934749AbbA1Eyf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 23:54:35 -0500
+Received: from mail.kernel.org ([198.145.29.136]:39617 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761652AbbA1EVd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 23:21:33 -0500
+	id S1761317AbbA1EVg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 23:21:36 -0500
 From: lizf@kernel.org
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Mikulas Patocka <mpatocka@redhat.com>,
-        Mike Snitzer <snitzer@redhat.com>, Zefan Li <lizefan@huawei.com>
-Subject: [PATCH 3.4 82/91] dm crypt: fix access beyond the end of allocated space
-Date: Wed, 28 Jan 2015 12:08:51 +0800
-Message-Id: <1422418236-12852-164-git-send-email-lizf@kernel.org>
+Cc: linux-kernel@vger.kernel.org, James Bottomley <JBottomley@Parallels.com>,
+        Zefan Li <lizefan@huawei.com>
+Subject: [PATCH 3.4 83/91] Fix spurious request sense in error handling
+Date: Wed, 28 Jan 2015 12:08:52 +0800
+Message-Id: <1422418236-12852-165-git-send-email-lizf@kernel.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422418050-12581-1-git-send-email-lizf@kernel.org>
 References: <1422418050-12581-1-git-send-email-lizf@kernel.org>
@@ -20,106 +20,49 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mikulas Patocka <mpatocka@redhat.com>
+From: James Bottomley <JBottomley@Parallels.com>
 
 3.4.105-rc1 review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
 
-commit d49ec52ff6ddcda178fc2476a109cf1bd1fa19ed upstream.
+commit d555a2abf3481f81303d835046a5ec2c4fb3ca8e upstream.
 
-The DM crypt target accesses memory beyond allocated space resulting in
-a crash on 32 bit x86 systems.
+We unconditionally execute scsi_eh_get_sense() to make sure all failed
+commands that should have sense attached, do.  However, the routine forgets
+that some commands, because of the way they fail, will not have any sense code
+... we should not bother them with a REQUEST_SENSE command.  Fix this by
+testing to see if we actually got a CHECK_CONDITION return and skip asking for
+sense if we don't.
 
-This bug is very old (it dates back to 2.6.25 commit 3a7f6c990ad04 "dm
-crypt: use async crypto").  However, this bug was masked by the fact
-that kmalloc rounds the size up to the next power of two.  This bug
-wasn't exposed until 3.17-rc1 commit 298a9fa08a ("dm crypt: use per-bio
-data").  By switching to using per-bio data there was no longer any
-padding beyond the end of a dm-crypt allocated memory block.
-
-To minimize allocation overhead dm-crypt puts several structures into one
-block allocated with kmalloc.  The block holds struct ablkcipher_request,
-cipher-specific scratch pad (crypto_ablkcipher_reqsize(any_tfm(cc))),
-struct dm_crypt_request and an initialization vector.
-
-The variable dmreq_start is set to offset of struct dm_crypt_request
-within this memory block.  dm-crypt allocates the block with this size:
-cc->dmreq_start + sizeof(struct dm_crypt_request) + cc->iv_size.
-
-When accessing the initialization vector, dm-crypt uses the function
-iv_of_dmreq, which performs this calculation: ALIGN((unsigned long)(dmreq
-+ 1), crypto_ablkcipher_alignmask(any_tfm(cc)) + 1).
-
-dm-crypt allocated "cc->iv_size" bytes beyond the end of dm_crypt_request
-structure.  However, when dm-crypt accesses the initialization vector, it
-takes a pointer to the end of dm_crypt_request, aligns it, and then uses
-it as the initialization vector.  If the end of dm_crypt_request is not
-aligned on a crypto_ablkcipher_alignmask(any_tfm(cc)) boundary the
-alignment causes the initialization vector to point beyond the allocated
-space.
-
-Fix this bug by calculating the variable iv_size_padding and adding it
-to the allocated size.
-
-Also correct the alignment of dm_crypt_request.  struct dm_crypt_request
-is specific to dm-crypt (it isn't used by the crypto subsystem at all),
-so it is aligned on __alignof__(struct dm_crypt_request).
-
-Also align per_bio_data_size on ARCH_KMALLOC_MINALIGN, so that it is
-aligned as if the block was allocated with kmalloc.
-
-Reported-by: Krzysztof Kolasa <kkolasa@winsoft.pl>
-Tested-by: Milan Broz <gmazyland@gmail.com>
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
-[lizf: Backported by Mikulas]
+Tested-by: Alan Stern <stern@rowland.harvard.edu>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Zefan Li <lizefan@huawei.com>
 ---
- drivers/md/dm-crypt.c | 20 ++++++++++++++++----
- 1 file changed, 16 insertions(+), 4 deletions(-)
+ drivers/scsi/scsi_error.c | 9 +++++++++
+ 1 file changed, 9 insertions(+)
 
-diff --git a/drivers/md/dm-crypt.c b/drivers/md/dm-crypt.c
-index 535c3e2..926989d 100644
---- a/drivers/md/dm-crypt.c
-+++ b/drivers/md/dm-crypt.c
-@@ -1566,6 +1566,7 @@ static int crypt_ctr(struct dm_target *ti, unsigned int argc, char **argv)
- 	unsigned int key_size, opt_params;
- 	unsigned long long tmpll;
- 	int ret;
-+	size_t iv_size_padding;
- 	struct dm_arg_set as;
- 	const char *opt_string;
- 	char dummy;
-@@ -1602,12 +1603,23 @@ static int crypt_ctr(struct dm_target *ti, unsigned int argc, char **argv)
+diff --git a/drivers/scsi/scsi_error.c b/drivers/scsi/scsi_error.c
+index b3f0b0f..dcc39b6 100644
+--- a/drivers/scsi/scsi_error.c
++++ b/drivers/scsi/scsi_error.c
+@@ -916,6 +916,15 @@ int scsi_eh_get_sense(struct list_head *work_q,
+ 		    SCSI_SENSE_VALID(scmd))
+ 			continue;
  
- 	cc->dmreq_start = sizeof(struct ablkcipher_request);
- 	cc->dmreq_start += crypto_ablkcipher_reqsize(any_tfm(cc));
--	cc->dmreq_start = ALIGN(cc->dmreq_start, crypto_tfm_ctx_alignment());
--	cc->dmreq_start += crypto_ablkcipher_alignmask(any_tfm(cc)) &
--			   ~(crypto_tfm_ctx_alignment() - 1);
-+	cc->dmreq_start = ALIGN(cc->dmreq_start, __alignof__(struct dm_crypt_request));
++		if (status_byte(scmd->result) != CHECK_CONDITION)
++			/*
++			 * don't request sense if there's no check condition
++			 * status because the error we're processing isn't one
++			 * that has a sense code (and some devices get
++			 * confused by sense requests out of the blue)
++			 */
++			continue;
 +
-+	if (crypto_ablkcipher_alignmask(any_tfm(cc)) < CRYPTO_MINALIGN) {
-+		/* Allocate the padding exactly */
-+		iv_size_padding = -(cc->dmreq_start + sizeof(struct dm_crypt_request))
-+				& crypto_ablkcipher_alignmask(any_tfm(cc));
-+	} else {
-+		/*
-+		 * If the cipher requires greater alignment than kmalloc
-+		 * alignment, we don't know the exact position of the
-+		 * initialization vector. We must assume worst case.
-+		 */
-+		iv_size_padding = crypto_ablkcipher_alignmask(any_tfm(cc));
-+	}
- 
- 	cc->req_pool = mempool_create_kmalloc_pool(MIN_IOS, cc->dmreq_start +
--			sizeof(struct dm_crypt_request) + cc->iv_size);
-+			sizeof(struct dm_crypt_request) + iv_size_padding + cc->iv_size);
- 	if (!cc->req_pool) {
- 		ti->error = "Cannot allocate crypt request mempool";
- 		goto bad;
+ 		SCSI_LOG_ERROR_RECOVERY(2, scmd_printk(KERN_INFO, scmd,
+ 						  "%s: requesting sense\n",
+ 						  current->comm));
 -- 
 1.9.1
 
