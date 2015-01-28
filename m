@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933280AbbA2DFH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 22:05:07 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:46999 "EHLO
+	id S1763586AbbA2DCi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 22:02:38 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:47007 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965184AbbA2Cha (ORCPT
+	with ESMTP id S965299AbbA2Chm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 21:37:30 -0500
+	Wed, 28 Jan 2015 21:37:42 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
 Cc: Richard Weinberger <richard@nod.at>,
         Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13.y-ckt 028/139] UBI: Fix double free after do_sync_erase()
-Date: Wed, 28 Jan 2015 14:19:31 -0800
-Message-Id: <1422483682-15393-29-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13.y-ckt 029/139] UBI: Fix invalid vfree()
+Date: Wed, 28 Jan 2015 14:19:32 -0800
+Message-Id: <1422483682-15393-30-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422483682-15393-1-git-send-email-kamal@canonical.com>
 References: <1422483682-15393-1-git-send-email-kamal@canonical.com>
@@ -30,57 +30,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Richard Weinberger <richard@nod.at>
 
-commit aa5ad3b6eb8feb2399a5d26c8fb0060561bb9534 upstream.
+commit f38aed975c0c3645bbdfc5ebe35726e64caaf588 upstream.
 
-If the erase worker is unable to erase a PEB it will
-free the ubi_wl_entry itself.
-The failing ubi_wl_entry must not free()'d again after
-do_sync_erase() returns.
+The logic of vfree()'ing vol->upd_buf is tied to vol->updating.
+In ubi_start_update() vol->updating is set long before vmalloc()'ing
+vol->upd_buf. If we encounter a write failure in ubi_start_update()
+before vmalloc() the UBI device release function will try to vfree()
+vol->upd_buf because vol->updating is set.
+Fix this by allocating vol->upd_buf directly after setting vol->updating.
+
+Fixes:
+[   31.559338] UBI warning: vol_cdev_release: update of volume 2 not finished, volume is damaged
+[   31.559340] ------------[ cut here ]------------
+[   31.559343] WARNING: CPU: 1 PID: 2747 at mm/vmalloc.c:1446 __vunmap+0xe3/0x110()
+[   31.559344] Trying to vfree() nonexistent vm area (ffffc90001f2b000)
+[   31.559345] Modules linked in:
+[   31.565620]  0000000000000bba ffff88002a0cbdb0 ffffffff818f0497 ffff88003b9ba148
+[   31.566347]  ffff88002a0cbde0 ffffffff8156f515 ffff88003b9ba148 0000000000000bba
+[   31.567073]  0000000000000000 0000000000000000 ffff88002a0cbe88 ffffffff8156c10a
+[   31.567793] Call Trace:
+[   31.568034]  [<ffffffff818f0497>] dump_stack+0x4e/0x7a
+[   31.568510]  [<ffffffff8156f515>] ubi_io_write_vid_hdr+0x155/0x160
+[   31.569084]  [<ffffffff8156c10a>] ubi_eba_write_leb+0x23a/0x870
+[   31.569628]  [<ffffffff81569b36>] vol_cdev_write+0x226/0x380
+[   31.570155]  [<ffffffff81179265>] vfs_write+0xb5/0x1f0
+[   31.570627]  [<ffffffff81179f8a>] SyS_pwrite64+0x6a/0xa0
+[   31.571123]  [<ffffffff818fde12>] system_call_fastpath+0x16/0x1b
 
 Signed-off-by: Richard Weinberger <richard@nod.at>
 Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/mtd/ubi/wl.c | 10 +++-------
- 1 file changed, 3 insertions(+), 7 deletions(-)
+ drivers/mtd/ubi/upd.c | 10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/mtd/ubi/wl.c b/drivers/mtd/ubi/wl.c
-index 02317c1..68b924e 100644
---- a/drivers/mtd/ubi/wl.c
-+++ b/drivers/mtd/ubi/wl.c
-@@ -1205,7 +1205,6 @@ static int wear_leveling_worker(struct ubi_device *ubi, struct ubi_work *wrk,
+diff --git a/drivers/mtd/ubi/upd.c b/drivers/mtd/ubi/upd.c
+index ec2c2dc..2a1b6e0 100644
+--- a/drivers/mtd/ubi/upd.c
++++ b/drivers/mtd/ubi/upd.c
+@@ -133,6 +133,10 @@ int ubi_start_update(struct ubi_device *ubi, struct ubi_volume *vol,
+ 	ubi_assert(!vol->updating && !vol->changing_leb);
+ 	vol->updating = 1;
  
- 	err = do_sync_erase(ubi, e1, vol_id, lnum, 0);
- 	if (err) {
--		kmem_cache_free(ubi_wl_entry_slab, e1);
- 		if (e2)
- 			kmem_cache_free(ubi_wl_entry_slab, e2);
- 		goto out_ro;
-@@ -1219,10 +1218,8 @@ static int wear_leveling_worker(struct ubi_device *ubi, struct ubi_work *wrk,
- 		dbg_wl("PEB %d (LEB %d:%d) was put meanwhile, erase",
- 		       e2->pnum, vol_id, lnum);
- 		err = do_sync_erase(ubi, e2, vol_id, lnum, 0);
--		if (err) {
--			kmem_cache_free(ubi_wl_entry_slab, e2);
-+		if (err)
- 			goto out_ro;
--		}
++	vol->upd_buf = vmalloc(ubi->leb_size);
++	if (!vol->upd_buf)
++		return -ENOMEM;
++
+ 	err = set_update_marker(ubi, vol);
+ 	if (err)
+ 		return err;
+@@ -152,14 +156,12 @@ int ubi_start_update(struct ubi_device *ubi, struct ubi_volume *vol,
+ 		err = clear_update_marker(ubi, vol, 0);
+ 		if (err)
+ 			return err;
++
++		vfree(vol->upd_buf);
+ 		vol->updating = 0;
+ 		return 0;
  	}
  
- 	dbg_wl("done");
-@@ -1258,10 +1255,9 @@ out_not_moved:
- 
- 	ubi_free_vid_hdr(ubi, vid_hdr);
- 	err = do_sync_erase(ubi, e2, vol_id, lnum, torture);
--	if (err) {
--		kmem_cache_free(ubi_wl_entry_slab, e2);
-+	if (err)
- 		goto out_ro;
--	}
-+
- 	mutex_unlock(&ubi->move_mutex);
- 	return 0;
- 
+-	vol->upd_buf = vmalloc(ubi->leb_size);
+-	if (!vol->upd_buf)
+-		return -ENOMEM;
+-
+ 	vol->upd_ebs = div_u64(bytes + vol->usable_leb_size - 1,
+ 			       vol->usable_leb_size);
+ 	vol->upd_bytes = bytes;
 -- 
 1.9.1
 
