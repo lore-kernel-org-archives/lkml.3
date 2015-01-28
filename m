@@ -1,69 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760592AbbA1BdT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 20:33:19 -0500
-Received: from mail-la0-f50.google.com ([209.85.215.50]:65262 "EHLO
-	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760574AbbA1BdQ (ORCPT
+	id S1760609AbbA1Bd1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 20:33:27 -0500
+Received: from mail-bn1on0111.outbound.protection.outlook.com ([157.56.110.111]:27296
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1760170AbbA1BdY convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 20:33:16 -0500
+	Tue, 27 Jan 2015 20:33:24 -0500
+From: "fugang.duan@freescale.com" <fugang.duan@freescale.com>
+To: Stefan Agner <stefan@agner.ch>, "jic23@kernel.org" <jic23@kernel.org>
+CC: "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
+        "maitysanchayan@gmail.com" <maitysanchayan@gmail.com>,
+        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 0/3] iio: adc: vf610: respect ADC clocking limitations
+Thread-Topic: [PATCH 0/3] iio: adc: vf610: respect ADC clocking limitations
+Thread-Index: AQHQNMpz11oolv30ikCxc43tvujT8JzUyoZw
+Date: Wed, 28 Jan 2015 01:33:16 +0000
+Message-ID: <BLUPR03MB37366EC9DAB3A4B0A16E72BF5330@BLUPR03MB373.namprd03.prod.outlook.com>
+References: <1421769723-28677-1-git-send-email-stefan@agner.ch>
+In-Reply-To: <1421769723-28677-1-git-send-email-stefan@agner.ch>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [123.151.195.51]
+authentication-results: agner.ch; dkim=none (message not signed)
+ header.d=none;agner.ch; dmarc=none action=none header.from=freescale.com;
+x-dmarcaction-test: None
+x-microsoft-antispam: BCL:0;PCL:0;RULEID:(3005004);SRVR:BLUPR03MB375;
+x-exchange-antispam-report-test: UriScan:;
+x-exchange-antispam-report-cfa-test: BCL:0;PCL:0;RULEID:;SRVR:BLUPR03MB375;
+x-forefront-prvs: 047001DADA
+x-forefront-antispam-report: SFV:NSPM;SFS:(10019020)(6009001)(377454003)(51704005)(46102003)(2900100001)(2950100001)(33656002)(40100003)(99286002)(2501002)(102836002)(77096005)(122556002)(77156002)(86362001)(19580395003)(19580405001)(92566002)(2656002)(87936001)(66066001)(76176999)(50986999)(54606007)(54206007)(106116001)(62966003)(54356999)(76576001)(74316001);DIR:OUT;SFP:1102;SCL:1;SRVR:BLUPR03MB375;H:BLUPR03MB373.namprd03.prod.outlook.com;FPR:;SPF:None;MLV:sfv;LANG:en;
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.11.1501271054310.25124@gentwo.org>
-References: <20150123213727.142554068@linux.com>
-	<20150123213735.590610697@linux.com>
-	<20150127082132.GE11358@js1304-P5Q-DELUXE>
-	<alpine.DEB.2.11.1501271054310.25124@gentwo.org>
-Date: Wed, 28 Jan 2015 10:33:14 +0900
-Message-ID: <CAAmzW4MzNfcRucHeTxJtXLks5T-Def=O1sRpQY6fo5ybTzKsBA@mail.gmail.com>
-Subject: Re: [RFC 1/3] Slab infrastructure for array operations
-From: Joonsoo Kim <js1304@gmail.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>, akpm@linuxfoundation.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux Memory Management List <linux-mm@kvack.org>,
-        Pekka Enberg <penberg@kernel.org>, iamjoonsoo@lge.com,
-        Jesper Dangaard Brouer <brouer@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+X-OriginatorOrg: freescale.com
+X-MS-Exchange-CrossTenant-originalarrivaltime: 28 Jan 2015 01:33:16.2251
+ (UTC)
+X-MS-Exchange-CrossTenant-fromentityheader: Hosted
+X-MS-Exchange-CrossTenant-id: 710a03f5-10f6-4d38-9ff4-a80b81da590d
+X-MS-Exchange-Transport-CrossTenantHeadersStamped: BLUPR03MB375
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2015-01-28 1:57 GMT+09:00 Christoph Lameter <cl@linux.com>:
-> On Tue, 27 Jan 2015, Joonsoo Kim wrote:
->
->> IMHO, exposing these options is not a good idea. It's really
->> implementation specific. And, this flag won't show consistent performance
->> according to specific slab implementation. For example, to get best
->> performance, if SLAB is used, GFP_SLAB_ARRAY_LOCAL would be the best option,
->> but, for the same purpose, if SLUB is used, GFP_SLAB_ARRAY_NEW would
->> be the best option. And, performance could also depend on number of objects
->> and size.
->
-> Why would slab show a better performance? SLUB also can have partial
-> allocated pages per cpu and could also get data quite fast if only a
-> minimal number of objects are desired. SLAB is slightly better because the
-> number of cachelines touches stays small due to the arrangement of the freelist
-> on the slab page and the queueing approach that does not involve linked
-> lists.
->
->
-> GFP_SLAB_ARRAY new is best for large quantities in either allocator since
-> SLAB also has to construct local metadata structures.
+From: Stefan Agner <stefan@agner.ch> Sent: Wednesday, January 21, 2015 12:02 AM
+> To: jic23@kernel.org
+> Cc: shawn.guo@linaro.org; Duan Fugang-B38611; maitysanchayan@gmail.com;
+> linux-iio@vger.kernel.org; linux-arm-kernel@lists.infradead.org; linux-
+> kernel@vger.kernel.org; stefan@agner.ch
+> Subject: [PATCH 0/3] iio: adc: vf610: respect ADC clocking limitations
+> 
+> Respect ADC clocking limitations which lead to bogous reading on 500MHz
+> clocked Vybrid SoC's. Additionally, also implement a sysfs-property to
+> configure the conversion mode available in this ADC peripherial.
+> 
+> Stefan Agner (3):
+>   iio: adc: vf610: use ADC clock within specification
+>   iio: adc: vf610: implement configurable conversion modes
+>   ARM: dts: add property for maximum ADC clock frequencies
+> 
+>  .../devicetree/bindings/iio/adc/vf610-adc.txt      |   9 ++
+>  arch/arm/boot/dts/vfxxx.dtsi                       |   4 +
+>  drivers/iio/adc/vf610_adc.c                        | 175
+> +++++++++++++++++----
+>  3 files changed, 156 insertions(+), 32 deletions(-)
+> 
+> --
+> 2.2.2
 
-In case of SLAB, there is just a little more work to construct local metadata so
-GFP_SLAB_ARRAY_NEW would not show better performance
-than GFP_SLAB_ARRAY_LOCAL, because it would cause more overhead due to
-more page allocations. Because of this characteristic, I said that
-which option is
-the best is implementation specific and therefore we should not expose it.
+The patch set are fine for me.
 
-Even if we narrow down the problem to the SLUB, choosing correct option is
-difficult enough. User should know how many objects are cached in this
-kmem_cache
-in order to choose best option since relative quantity would make
-performance difference.
+Acked-by: Fugang Duan <B38611@freescale.com>
 
-And, how many objects are cached in this kmem_cache could be changed
-whenever implementation changed.
-
-Thanks.
+Thanks. 
+Fugang
