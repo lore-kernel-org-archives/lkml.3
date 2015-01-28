@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1764086AbbA2DUu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 22:20:50 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:46945 "EHLO
+	id S964940AbbA2Cft (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 21:35:49 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:46939 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762103AbbA2Cfz (ORCPT
+	with ESMTP id S964894AbbA2Cfo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 21:35:55 -0500
+	Wed, 28 Jan 2015 21:35:44 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jarkko Nikula <jarkko.nikula@linux.intel.com>,
-        Mark Brown <broonie@kernel.org>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13.y-ckt 045/139] ASoC: max98090: Fix ill-defined sidetone route
-Date: Wed, 28 Jan 2015 14:19:48 -0800
-Message-Id: <1422483682-15393-46-git-send-email-kamal@canonical.com>
+Cc: Jens Axboe <axboe@fb.com>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13.y-ckt 046/139] blk-mq: use 'nr_cpu_ids' as highest CPU ID count for hwq <-> cpu map
+Date: Wed, 28 Jan 2015 14:19:49 -0800
+Message-Id: <1422483682-15393-47-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422483682-15393-1-git-send-email-kamal@canonical.com>
 References: <1422483682-15393-1-git-send-email-kamal@canonical.com>
@@ -27,46 +26,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jarkko Nikula <jarkko.nikula@linux.intel.com>
+From: Jens Axboe <axboe@fb.com>
 
-commit 48826ee590da03e9882922edf96d8d27bdfe9552 upstream.
+commit a33c1ba2913802b6fb23e974bb2f6a4e73c8b7ce upstream.
 
-Commit 5fe5b767dc6f ("ASoC: dapm: Do not pretend to support controls for non
-mixer/mux widgets") revealed ill-defined control in a route between
-"STENL Mux" and DACs in max98090.c:
+We currently use num_possible_cpus(), but that breaks on sparc64 where
+the CPU ID space is discontig. Use nr_cpu_ids as the highest CPU ID
+instead, so we don't end up reading from invalid memory.
 
-max98090 i2c-193C9890:00: Control not supported for path STENL Mux -> [NULL] -> DACL
-max98090 i2c-193C9890:00: ASoC: no dapm match for STENL Mux --> NULL --> DACL
-max98090 i2c-193C9890:00: ASoC: Failed to add route STENL Mux -> NULL -> DACL
-max98090 i2c-193C9890:00: Control not supported for path STENL Mux -> [NULL] -> DACR
-max98090 i2c-193C9890:00: ASoC: no dapm match for STENL Mux --> NULL --> DACR
-max98090 i2c-193C9890:00: ASoC: Failed to add route STENL Mux -> NULL -> DACR
-
-Since there is no control between "STENL Mux" and DACs the control name must
-be NULL not "NULL".
-
-Signed-off-by: Jarkko Nikula <jarkko.nikula@linux.intel.com>
-Signed-off-by: Mark Brown <broonie@kernel.org>
+Signed-off-by: Jens Axboe <axboe@fb.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- sound/soc/codecs/max98090.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ block/blk-mq-cpumap.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/sound/soc/codecs/max98090.c b/sound/soc/codecs/max98090.c
-index 764d0ea..9c20ef5 100644
---- a/sound/soc/codecs/max98090.c
-+++ b/sound/soc/codecs/max98090.c
-@@ -1378,8 +1378,8 @@ static const struct snd_soc_dapm_route max98090_dapm_routes[] = {
- 	{"STENL Mux", "Sidetone Left", "DMICL"},
- 	{"STENR Mux", "Sidetone Right", "ADCR"},
- 	{"STENR Mux", "Sidetone Right", "DMICR"},
--	{"DACL", "NULL", "STENL Mux"},
--	{"DACR", "NULL", "STENL Mux"},
-+	{"DACL", NULL, "STENL Mux"},
-+	{"DACR", NULL, "STENL Mux"},
+diff --git a/block/blk-mq-cpumap.c b/block/blk-mq-cpumap.c
+index f872127..78d3835 100644
+--- a/block/blk-mq-cpumap.c
++++ b/block/blk-mq-cpumap.c
+@@ -95,7 +95,7 @@ unsigned int *blk_mq_make_queue_map(struct blk_mq_reg *reg)
+ 	unsigned int *map;
  
- 	{"AIFINL", NULL, "SHDN"},
- 	{"AIFINR", NULL, "SHDN"},
+ 	/* If cpus are offline, map them to first hctx */
+-	map = kzalloc_node(sizeof(*map) * num_possible_cpus(), GFP_KERNEL,
++	map = kzalloc_node(sizeof(*map) * nr_cpu_ids, GFP_KERNEL,
+ 				reg->numa_node);
+ 	if (!map)
+ 		return NULL;
 -- 
 1.9.1
 
