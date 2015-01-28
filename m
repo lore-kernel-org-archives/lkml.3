@@ -1,119 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933347AbbA2CJO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 21:09:14 -0500
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:45679 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755155AbbA2CJK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 21:09:10 -0500
-X-AuditID: cbfec7f4-b7f126d000001e9a-4e-54c896221540
-Message-id: <1422431921.8854.4.camel@AMDC1943>
-Subject: Re: [RFT PATCH 1/4] power_supply: twl4030_madc: Check return value of
- power_supply_register
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Belisko Marek <marek.belisko@gmail.com>
-Cc: Dmitry Artamonow <mad_soft@inbox.ru>,
-        Cezary Jackiewicz <cezary.jackiewicz@gmail.com>,
-        Darren Hart <dvhart@infradead.org>, Sebastian Reichel <sre@kernel.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        platform-driver-x86@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux PM mailing list <linux-pm@vger.kernel.org>,
-        stable@vger.kernel.org
-Date: Wed, 28 Jan 2015 08:58:41 +0100
-In-reply-to: <CAAfyv34YoUG8dyq10mFZRQ-uf6-oT_KAbwZ1UQQ0FvFrs10BrQ@mail.gmail.com>
-References: <1422358221-13199-1-git-send-email-k.kozlowski@samsung.com>
- <1422358221-13199-2-git-send-email-k.kozlowski@samsung.com>
- <CAAfyv34YoUG8dyq10mFZRQ-uf6-oT_KAbwZ1UQQ0FvFrs10BrQ@mail.gmail.com>
-Content-type: text/plain; charset=UTF-8
-X-Mailer: Evolution 3.10.4-0ubuntu2
-MIME-version: 1.0
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrPLMWRmVeSWpSXmKPExsVy+t/xK7pK006EGLzfw2Ox5EQ3i8WkJ++Z
-	LboWGlhMXDmZ2eLyrjlsFp97jzBabG87ymKx8Yadxeo9L5gtTu8usViw8RGjA7fHzll32T2O
-	XbvD4rF5hZbHplWdbB6fN8kFsEZx2aSk5mSWpRbp2yVwZbxf/Iy9oFWk4sjLZ4wNjE/4uxg5
-	OSQETCT6p/1hg7DFJC7cWw9kc3EICSxllDjX0cwC4XxmlNiyaTsjSBWvgJ7ElrP7WEFsYYE0
-	if4THWDdbALGEpuXLwGzRQS0JVo/PGICaWYWmMEs0Xf6I1iCRUBV4t6PRewgNqdAsMThR3uZ
-	ITacYZTY+uQfWIJZQF1i0rxFQAkOoJuUJRr73SAWC0r8mHyPBaJEXmLzmrfMExgFZiHpmIWk
-	bBaSsgWMzKsYRVNLkwuKk9JzDfWKE3OLS/PS9ZLzczcxQiLhyw7GxcesDjEKcDAq8fC+MDsR
-	IsSaWFZcmXuIUYKDWUmE960GUIg3JbGyKrUoP76oNCe1+BAjEwenVAOj9ZfDDfX5u97Unppc
-	1GLMv/BLWEZGxYLL765WF7lIaqx9bPYtWKT6m5B/nqrNEiXXHCf7xf4rFlx1Ngo3CK0IXqgS
-	M0vZe5fwkt2xR+ev5U2wlq5Ywn3Ve6eO1szLtbwr573ctffJhpupH267rdYRjBHeddvoevaW
-	29riBz5u8n83z2Djmsl+SizFGYmGWsxFxYkA1pgVq2ICAAA=
+	id S1760283AbbA1UeF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 15:34:05 -0500
+Received: from mga03.intel.com ([134.134.136.65]:56986 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755605AbbA1UeB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jan 2015 15:34:01 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.09,479,1418112000"; 
+   d="scan'208";a="668838937"
+From: "Zhang, Yang Z" <yang.z.zhang@intel.com>
+To: Wincy Van <fanwenyi0529@gmail.com>, Paolo Bonzini <pbonzini@redhat.com>,
+        "gleb@kernel.org" <gleb@kernel.org>
+CC: "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Wanpeng Li <wanpeng.li@linux.intel.com>,
+        Jan Kiszka <jan.kiszka@web.de>
+Subject: RE: [PATCH v3 1/6] KVM: nVMX: Use hardware MSR bitmap
+Thread-Topic: [PATCH v3 1/6] KVM: nVMX: Use hardware MSR bitmap
+Thread-Index: AQHQN79lT9Shw/DNlk+phY4fCFwl65zVMIRw
+Date: Wed, 28 Jan 2015 08:00:25 +0000
+Message-ID: <A9667DDFB95DB7438FA9D7D576C3D87E0AC2C547@SHSMSX104.ccr.corp.intel.com>
+References: <CACzj_yUu5omqFL7u8NE6vyqXGy_-dAeukRspJha+EiGXVBzmYg@mail.gmail.com>
+In-Reply-To: <CACzj_yUu5omqFL7u8NE6vyqXGy_-dAeukRspJha+EiGXVBzmYg@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id t0SKY9TQ006154
 
-On wto, 2015-01-27 at 22:06 +0100, Belisko Marek wrote:
-> Hi Krzystof,
+Wincy Van wrote on 2015-01-24:
+> Currently, if L1 enables MSR_BITMAP, we will emulate this feature, all of L2's
+> msr access is intercepted by L0. Since many features like virtualize x2apic mode
+> has a complicated logic and it is difficult for us to emulate, we should use
+> hardware and merge the bitmap.
 > 
-> On Tue, Jan 27, 2015 at 12:30 PM, Krzysztof Kozlowski
-> <k.kozlowski@samsung.com> wrote:
-> > The return value of power_supply_register() call was not checked and
-> > even on error probe() function returned 0. If registering failed then
-> > during unbind the driver tried to unregister power supply which was not
-> > actually registered.
-> >
-> > This could lead to memory corruption because power_supply_unregister()
-> > unconditionally cleans up given power supply.
-> >
-> > Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> > Fixes: da0a00ebc239 ("power: Add twl4030_madc battery driver.")
-> > Cc: <stable@vger.kernel.org>
-> > ---
-> >  drivers/power/twl4030_madc_battery.c | 7 +++++--
-> >  1 file changed, 5 insertions(+), 2 deletions(-)
-> >
-> > diff --git a/drivers/power/twl4030_madc_battery.c b/drivers/power/twl4030_madc_battery.c
-> > index 7ef445a6cfa6..cf907609ec49 100644
-> > --- a/drivers/power/twl4030_madc_battery.c
-> > +++ b/drivers/power/twl4030_madc_battery.c
-> > @@ -192,6 +192,7 @@ static int twl4030_madc_battery_probe(struct platform_device *pdev)
-> >  {
-> >         struct twl4030_madc_battery *twl4030_madc_bat;
-> >         struct twl4030_madc_bat_platform_data *pdata = pdev->dev.platform_data;
-> > +       int ret = 0;
-> >
-> >         twl4030_madc_bat = kzalloc(sizeof(*twl4030_madc_bat), GFP_KERNEL);
-> >         if (!twl4030_madc_bat)
-> > @@ -216,9 +217,11 @@ static int twl4030_madc_battery_probe(struct platform_device *pdev)
-> >
-> >         twl4030_madc_bat->pdata = pdata;
-> >         platform_set_drvdata(pdev, twl4030_madc_bat);
-> > -       power_supply_register(&pdev->dev, &twl4030_madc_bat->psy);
-> > +       ret = power_supply_register(&pdev->dev, &twl4030_madc_bat->psy);
-> > +       if (ret < 0)
-> > +               kfree(twl4030_madc_bat);
-> I post update twl4030_madc to iio some time ago [1] where this change
-> was incorporated.
-> I plan to respin in next week so we can drop this one (or take and
-> I'll rebase on top).
+> This patch introduces nested_vmx_merge_msr_bitmap for future use.
+> 
+> Signed-off-by: Wincy Van <fanwenyi0529@gmail.com>
+> ---
+>  arch/x86/kvm/vmx.c |   71
+> +++++++++++++++++++++++++++++++++++++++++++--------
+>  1 files changed, 60 insertions(+), 11 deletions(-)
+> 
+> diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c index c987374..36d0724
+> 100644
+> --- a/arch/x86/kvm/vmx.c
+> +++ b/arch/x86/kvm/vmx.c
+> @@ -798,6 +798,7 @@ static unsigned long *vmx_msr_bitmap_legacy;
+> static unsigned long *vmx_msr_bitmap_longmode;  static unsigned long
+> *vmx_msr_bitmap_legacy_x2apic;  static unsigned long
+> *vmx_msr_bitmap_longmode_x2apic;
+> +static unsigned long *vmx_msr_bitmap_nested;
+>  static unsigned long *vmx_vmread_bitmap;  static unsigned long
+> *vmx_vmwrite_bitmap;
+> 
+> @@ -5812,13 +5813,18 @@ static __init int hardware_setup(void)
+>                                 (unsigned long
+> *)__get_free_page(GFP_KERNEL);
+>         if (!vmx_msr_bitmap_longmode_x2apic)
+>                 goto out4;
+> +
+> +       vmx_msr_bitmap_nested = (unsigned long
+> *)__get_free_page(GFP_KERNEL);
+> +       if (!vmx_msr_bitmap_nested)
+> +               goto out5;
+> +
 
-Hi,
+Since the nested virtualization is off by default. It's better to allocate the page
+only when nested is true. Maybe adding the following check is better:
 
-I am fine with both solutions (especially that I am not able to test my
-change). However there is one benefit of my fix: after applying it could
-be backported to stable kernels (3.11+?).
+if (nested) {
+        vmx_msr_bitmap_nested = (unsigned long *)__get_free_page(GFP_KERNEL);
+        if (!vmx_msr_bitmap_nested)
+                goto out5;
+}
+
+...snip...
+
+> +
+> +/*
+> + * Merge L0's and L1's MSR bitmap, return false to indicate that
+> + * we do not use the hardware.
+> + */
+> +static inline bool nested_vmx_merge_msr_bitmap(struct kvm_vcpu *vcpu,
+> +                                              struct vmcs12
+> *vmcs12) {
+> +       return false;
+> +}
+> +
+
+The following patches have nothing to do with the MSR control. Why leave the function empty here?
 
 Best regards,
-Krzysztof
+Yang
 
-> >
-> > -       return 0;
-> > +       return ret;
-> >  }
-> >
-> >  static int twl4030_madc_battery_remove(struct platform_device *pdev)
-> > --
-> > 1.9.1
-> >
-> 
-> [1] - https://lkml.org/lkml/2014/3/5/284
-> 
-> BR,
-> 
-> marek
-> 
 
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
