@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965376AbbA1E0d (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 23:26:33 -0500
-Received: from mail.kernel.org ([198.145.29.136]:41471 "EHLO mail.kernel.org"
+	id S965498AbbA1E2f (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 23:28:35 -0500
+Received: from mail.kernel.org ([198.145.29.136]:41492 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965327AbbA1E03 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 23:26:29 -0500
+	id S965366AbbA1E0c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 23:26:32 -0500
 From: lizf@kernel.org
 To: stable@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, Andy Lutomirski <luto@amacapital.net>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Ben Hutchings <ben@decadent.org.uk>, Zefan Li <lizefan@huawei.com>
-Subject: [PATCH 3.4 171/177] x86_64, traps: Fix the espfix64 #DF fixup and rewrite it in C
-Date: Wed, 28 Jan 2015 12:10:29 +0800
-Message-Id: <1422418236-12852-262-git-send-email-lizf@kernel.org>
+Subject: [PATCH 3.4 172/177] x86_64, traps: Rework bad_iret
+Date: Wed, 28 Jan 2015 12:10:30 +0800
+Message-Id: <1422418236-12852-263-git-send-email-lizf@kernel.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422418050-12581-1-git-send-email-lizf@kernel.org>
 References: <1422418050-12581-1-git-send-email-lizf@kernel.org>
@@ -28,122 +28,168 @@ From: Andy Lutomirski <luto@amacapital.net>
 ------------------
 
 
-commit af726f21ed8af2cdaa4e93098dc211521218ae65 upstream.
+commit b645af2d5905c4e32399005b867987919cbfc3ae upstream.
 
-There's nothing special enough about the espfix64 double fault fixup to
-justify writing it in assembly.  Move it to C.
+It's possible for iretq to userspace to fail.  This can happen because
+of a bad CS, SS, or RIP.
 
-This also fixes a bug: if the double fault came from an IST stack, the
-old asm code would return to a partially uninitialized stack frame.
+Historically, we've handled it by fixing up an exception from iretq to
+land at bad_iret, which pretends that the failed iret frame was really
+the hardware part of #GP(0) from userspace.  To make this work, there's
+an extra fixup to fudge the gs base into a usable state.
 
-Fixes: 3891a04aafd668686239349ea58f3314ea2af86b
+This is suboptimal because it loses the original exception.  It's also
+buggy because there's no guarantee that we were on the kernel stack to
+begin with.  For example, if the failing iret happened on return from an
+NMI, then we'll end up executing general_protection on the NMI stack.
+This is bad for several reasons, the most immediate of which is that
+general_protection, as a non-paranoid idtentry, will try to deliver
+signals and/or schedule from the wrong stack.
+
+This patch throws out bad_iret entirely.  As a replacement, it augments
+the existing swapgs fudge into a full-blown iret fixup, mostly written
+in C.  It's should be clearer and more correct.
+
 Signed-off-by: Andy Lutomirski <luto@amacapital.net>
 Reviewed-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 [bwh: Backported to 3.2:
- - Keep using the paranoiderrorentry macro to generate the asm code
- - Adjust context]
+ - We didn't use the _ASM_EXTABLE macro
+ - Don't use __visible]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 Signed-off-by: Zefan Li <lizefan@huawei.com>
 ---
- arch/x86/kernel/entry_64.S | 34 ++--------------------------------
- arch/x86/kernel/traps.c    | 24 ++++++++++++++++++++++++
- 2 files changed, 26 insertions(+), 32 deletions(-)
+ arch/x86/kernel/entry_64.S | 48 ++++++++++++++++++----------------------------
+ arch/x86/kernel/traps.c    | 29 ++++++++++++++++++++++++++++
+ 2 files changed, 48 insertions(+), 29 deletions(-)
 
 diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
-index 07db230..d720885 100644
+index d720885..45f9c70 100644
 --- a/arch/x86/kernel/entry_64.S
 +++ b/arch/x86/kernel/entry_64.S
-@@ -912,6 +912,7 @@ ENTRY(native_iret)
- 	jnz native_irq_return_ldt
- #endif
+@@ -914,12 +914,14 @@ ENTRY(native_iret)
  
-+.global native_irq_return_iret
+ .global native_irq_return_iret
  native_irq_return_iret:
++	/*
++	 * This may fault.  Non-paranoid faults on return to userspace are
++	 * handled by fixup_bad_iret.  These include #SS, #GP, and #NP.
++	 * Double-faults due to espfix64 are handled in do_double_fault.
++	 * Other faults here are fatal.
++	 */
  	iretq
  
-@@ -1011,37 +1012,6 @@ ENTRY(retint_kernel)
- 	CFI_ENDPROC
- END(common_interrupt)
- 
--	/*
--	 * If IRET takes a fault on the espfix stack, then we
--	 * end up promoting it to a doublefault.  In that case,
--	 * modify the stack to make it look like we just entered
--	 * the #GP handler from user space, similar to bad_iret.
--	 */
--#ifdef CONFIG_X86_ESPFIX64
--	ALIGN
--__do_double_fault:
--	XCPT_FRAME 1 RDI+8
--	movq RSP(%rdi),%rax		/* Trap on the espfix stack? */
--	sarq $PGDIR_SHIFT,%rax
--	cmpl $ESPFIX_PGD_ENTRY,%eax
--	jne do_double_fault		/* No, just deliver the fault */
--	cmpl $__KERNEL_CS,CS(%rdi)
--	jne do_double_fault
--	movq RIP(%rdi),%rax
--	cmpq $native_irq_return_iret,%rax
--	jne do_double_fault		/* This shouldn't happen... */
--	movq PER_CPU_VAR(kernel_stack),%rax
--	subq $(6*8-KERNEL_STACK_OFFSET),%rax	/* Reset to original stack */
--	movq %rax,RSP(%rdi)
--	movq $0,(%rax)			/* Missing (lost) #GP error code */
--	movq $general_protection,RIP(%rdi)
--	retq
--	CFI_ENDPROC
--END(__do_double_fault)
--#else
--# define __do_double_fault do_double_fault
--#endif
+-	.section __ex_table,"a"
+-	.quad native_irq_return_iret, bad_iret
+-	.previous
 -
+ #ifdef CONFIG_X86_ESPFIX64
+ native_irq_return_ldt:
+ 	pushq_cfi %rax
+@@ -946,25 +948,6 @@ native_irq_return_ldt:
+ 	jmp native_irq_return_iret
+ #endif
+ 
+-	.section .fixup,"ax"
+-bad_iret:
+-	/*
+-	 * The iret traps when the %cs or %ss being restored is bogus.
+-	 * We've lost the original trap vector and error code.
+-	 * #GPF is the most likely one to get for an invalid selector.
+-	 * So pretend we completed the iret and took the #GPF in user mode.
+-	 *
+-	 * We are now running with the kernel GS after exception recovery.
+-	 * But error_entry expects us to have user GS to match the user %cs,
+-	 * so swap back.
+-	 */
+-	pushq $0
+-
+-	SWAPGS
+-	jmp general_protection
+-
+-	.previous
+-
+ 	/* edi: workmask, edx: work */
+ retint_careful:
+ 	CFI_RESTORE_STATE
+@@ -1511,16 +1494,15 @@ error_sti:
+ 
  /*
-  * End of kprobes section
+  * There are two places in the kernel that can potentially fault with
+- * usergs. Handle them here. The exception handlers after iret run with
+- * kernel gs again, so don't set the user space flag. B stepping K8s
+- * sometimes report an truncated RIP for IRET exceptions returning to
+- * compat mode. Check for these here too.
++ * usergs. Handle them here.  B stepping K8s sometimes report a
++ * truncated RIP for IRET exceptions returning to compat mode. Check
++ * for these here too.
   */
-@@ -1217,7 +1187,7 @@ zeroentry overflow do_overflow
- zeroentry bounds do_bounds
- zeroentry invalid_op do_invalid_op
- zeroentry device_not_available do_device_not_available
--paranoiderrorentry double_fault __do_double_fault
-+paranoiderrorentry double_fault do_double_fault
- zeroentry coprocessor_segment_overrun do_coprocessor_segment_overrun
- errorentry invalid_TSS do_invalid_TSS
- errorentry segment_not_present do_segment_not_present
+ error_kernelspace:
+ 	incl %ebx
+ 	leaq native_irq_return_iret(%rip),%rcx
+ 	cmpq %rcx,RIP+8(%rsp)
+-	je error_swapgs
++	je error_bad_iret
+ 	movl %ecx,%eax	/* zero extend */
+ 	cmpq %rax,RIP+8(%rsp)
+ 	je bstep_iret
+@@ -1531,7 +1513,15 @@ error_kernelspace:
+ bstep_iret:
+ 	/* Fix truncated RIP */
+ 	movq %rcx,RIP+8(%rsp)
+-	jmp error_swapgs
++	/* fall through */
++
++error_bad_iret:
++	SWAPGS
++	mov %rsp,%rdi
++	call fixup_bad_iret
++	mov %rax,%rsp
++	decl %ebx	/* Return to usergs */
++	jmp error_sti
+ 	CFI_ENDPROC
+ END(error_entry)
+ 
 diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
-index a4643d2..ed904b9 100644
+index ed904b9..30f2677 100644
 --- a/arch/x86/kernel/traps.c
 +++ b/arch/x86/kernel/traps.c
-@@ -224,6 +224,30 @@ dotraplinkage void do_double_fault(struct pt_regs *regs, long error_code)
- 	static const char str[] = "double fault";
- 	struct task_struct *tsk = current;
- 
-+#ifdef CONFIG_X86_ESPFIX64
-+	extern unsigned char native_irq_return_iret[];
+@@ -363,6 +363,35 @@ asmlinkage __kprobes struct pt_regs *sync_regs(struct pt_regs *eregs)
+ 		*regs = *eregs;
+ 	return regs;
+ }
 +
++struct bad_iret_stack {
++	void *error_entry_ret;
++	struct pt_regs regs;
++};
++
++asmlinkage
++struct bad_iret_stack *fixup_bad_iret(struct bad_iret_stack *s)
++{
 +	/*
-+	 * If IRET takes a non-IST fault on the espfix64 stack, then we
-+	 * end up promoting it to a doublefault.  In that case, modify
-+	 * the stack to make it look like we just entered the #GP
-+	 * handler from user space, similar to bad_iret.
++	 * This is called from entry_64.S early in handling a fault
++	 * caused by a bad iret to user mode.  To handle the fault
++	 * correctly, we want move our stack frame to task_pt_regs
++	 * and we want to pretend that the exception came from the
++	 * iret target.
 +	 */
-+	if (((long)regs->sp >> PGDIR_SHIFT) == ESPFIX_PGD_ENTRY &&
-+		regs->cs == __KERNEL_CS &&
-+		regs->ip == (unsigned long)native_irq_return_iret)
-+	{
-+		struct pt_regs *normal_regs = task_pt_regs(current);
++	struct bad_iret_stack *new_stack =
++		container_of(task_pt_regs(current),
++			     struct bad_iret_stack, regs);
 +
-+		/* Fake a #GP(0) from userspace. */
-+		memmove(&normal_regs->ip, (void *)regs->sp, 5*8);
-+		normal_regs->orig_ax = 0;  /* Missing (lost) #GP error code */
-+		regs->ip = (unsigned long)general_protection;
-+		regs->sp = (unsigned long)&normal_regs->orig_ax;
-+		return;
-+	}
-+#endif
++	/* Copy the IRET target to the new stack. */
++	memmove(&new_stack->regs.ip, (void *)s->regs.sp, 5*8);
 +
- 	/* Return not checked because double check cannot be ignored */
- 	notify_die(DIE_TRAP, str, regs, error_code, X86_TRAP_DF, SIGSEGV);
++	/* Copy the remainder of the stack from the current stack. */
++	memmove(new_stack, s, offsetof(struct bad_iret_stack, regs.ip));
++
++	BUG_ON(!user_mode_vm(&new_stack->regs));
++	return new_stack;
++}
+ #endif
  
+ /*
 -- 
 1.9.1
 
