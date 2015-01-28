@@ -1,125 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761990AbbA1UsQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 15:48:16 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:45528 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760422AbbA1UsM (ORCPT
+	id S933226AbbA2Bwh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 20:52:37 -0500
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:33266 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755626AbbA2Bwc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 15:48:12 -0500
-Date: Wed, 28 Jan 2015 12:29:42 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Cc: Murali Karicheri <m-karicheri2@ti.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Joerg Roedel <joro@8bytes.org>, Rob Herring <robh+dt@kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        "suravee.suthikulpanit@amd.com" <suravee.suthikulpanit@amd.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>
-Subject: Re: [PATCH v4 1/6] of: iommu: add ptr to OF node arg to
- of_iommu_configure()
-Message-ID: <20150128122941.GK1569@arm.com>
-References: <1422052359-12384-1-git-send-email-m-karicheri2@ti.com>
- <54C68C1D.5030605@ti.com>
- <20150128113300.GF1569@arm.com>
- <3953539.m9NpxSWcJ5@avalon>
+	Wed, 28 Jan 2015 20:52:32 -0500
+Message-ID: <54C8D68B.6010607@cogentembedded.com>
+Date: Wed, 28 Jan 2015 15:31:07 +0300
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <3953539.m9NpxSWcJ5@avalon>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Peter Hung <hpeter@gmail.com>, johan@kernel.org
+CC: gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, tom_tsai@fintek.com.tw,
+        peter_hong@fintek.com.tw, Peter Hung <hpeter+linux_kernel@gmail.com>
+Subject: Re: [PATCH v3 5/5] usb: serial: implement CMSPAR for F81232
+References: <1422424712-7561-1-git-send-email-hpeter+linux_kernel@gmail.com>
+In-Reply-To: <1422424712-7561-1-git-send-email-hpeter+linux_kernel@gmail.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 28, 2015 at 12:23:03PM +0000, Laurent Pinchart wrote:
-> On Wednesday 28 January 2015 11:33:00 Will Deacon wrote:
-> > On Mon, Jan 26, 2015 at 06:49:01PM +0000, Murali Karicheri wrote:
-> > > On 01/25/2015 08:32 AM, Laurent Pinchart wrote:
-> > >> On Friday 23 January 2015 17:32:34 Murali Karicheri wrote:
-> > >>> Function of_iommu_configure() is called from of_dma_configure() to
-> > >>> setup iommu ops using DT property. This API is currently used for
-> > >>> platform devices for which DMA configuration (including iommu ops)
-> > >>> may come from device's parent. To extend this functionality for PCI
-> > >>> devices, this API need to take a parent node ptr as an argument
-> > >>> instead of assuming device's parent. This is needed since for PCI, the
-> > >>> dma configuration may be defined in the DT node of the root bus
-> > >>> bridge's parent device. Currently only dma-range is used for PCI and
-> > >>> iommu is not supported. So return error if the device is PCI.
-> > >>> 
-> > >>> Cc: Joerg Roedel<joro@8bytes.org>
-> > >>> Cc: Grant Likely<grant.likely@linaro.org>
-> > >>> Cc: Rob Herring<robh+dt@kernel.org>
-> > >>> Cc: Bjorn Helgaas<bhelgaas@google.com>
-> > >>> Cc: Will Deacon<will.deacon@arm.com>
-> > >>> Cc: Russell King<linux@arm.linux.org.uk>
-> > >>> Cc: Arnd Bergmann<arnd@arndb.de>
-> > >>> Cc: Suravee Suthikulpanit<Suravee.Suthikulpanit@amd.com>
-> > >>> 
-> > >>> Signed-off-by: Murali Karicheri<m-karicheri2@ti.com>
-> > >>> ---
-> > >>> 
-> > >>>   drivers/iommu/of_iommu.c |   10 ++++++++--
-> > >>>   drivers/of/platform.c    |    2 +-
-> > >>>   include/linux/of_iommu.h |    6 ++++--
-> > >>>   3 files changed, 13 insertions(+), 5 deletions(-)
-> > >>> 
-> > >>> diff --git a/drivers/iommu/of_iommu.c b/drivers/iommu/of_iommu.c
-> > >>> index af1dc6a..439235b 100644
-> > >>> --- a/drivers/iommu/of_iommu.c
-> > >>> +++ b/drivers/iommu/of_iommu.c
-> > >>> @@ -133,19 +133,25 @@ struct iommu_ops *of_iommu_get_ops(struct
-> > >>> device_node *np)
-> > >>>   	return ops;
-> > >>>  }
-> > >>> 
-> > >>> -struct iommu_ops *of_iommu_configure(struct device *dev)
-> > >>> +struct iommu_ops *of_iommu_configure(struct device *dev,
-> > >>> +				     struct device_node *iommu_np)
-> > >>>  {
-> > >>>   	struct of_phandle_args iommu_spec;
-> > >>>   	struct device_node *np;
-> > >>>   	struct iommu_ops *ops = NULL;
-> > >>>   	int idx = 0;
-> > >>> 
-> > >>> +	if (dev_is_pci(dev)) {
-> > >>> +		dev_err(dev, "iommu is currently not supported for PCI\n");
-> > >>> +		return NULL;
-> > >>> +	}
-> > >>> +
-> > >>>   	/*
-> > >>>   	 * We don't currently walk up the tree looking for a parent IOMMU.
-> > >>>   	 * See the `Notes:' section of
-> > >>>   	 * Documentation/devicetree/bindings/iommu/iommu.txt
-> > >>>   	 */
-> > >> 
-> > >> Wouldn't it be better to fix this rather than passing the device node
-> > >> pointer to the function ? The solution would be more generic.
-> > > 
-> > > Will Deacon (Copied here) is working on this as we alteady discussed in
-> > > this thread. So it will be addressed by him in another series.
-> > 
-> > Well, "working on this" equates to "has it somewhere near the bottom of
-> > a very long list" :)
-> 
-> What's your opinion on this patch then, do you think adding the iommu_np 
-> argument makes sense as a temporary hack, or should we instead walk up the 
-> tree looking for an iommus attribute in parent nodes ? I don't expect that to 
-> be insanely difficult to code.
+Hello.
 
-If walking up the tree is useful, then I think we should do that and update
-the Documentation to reflect the new behaviour. The only reason that I
-didn't code that in of_iommu_configure originally is because I didn't want
-to go against the binding spec for the initial version, especially as we
-didn't have a reason to look at parent nodes.
+On 1/28/2015 8:58 AM, Peter Hung wrote:
 
-The only thing to double-check is that we don't break any existing users
-of the binding with this change, but I don't think that we do.
+> This patch implement CMSPAR in set_termios,
+> and fix some warnning from checkpatch.pl
 
-Will
+     Please don't try to do 2 unrelated things in one patch.
+
+> Signed-off-by: Peter Hung <hpeter+linux_kernel@gmail.com>
+> ---
+>   drivers/usb/serial/f81232.c | 21 +++++++++++++++------
+>   1 file changed, 15 insertions(+), 6 deletions(-)
+
+> diff --git a/drivers/usb/serial/f81232.c b/drivers/usb/serial/f81232.c
+> index 11a236b..79592d6 100644
+> --- a/drivers/usb/serial/f81232.c
+> +++ b/drivers/usb/serial/f81232.c
+[...]
+> @@ -361,12 +361,21 @@ static void f81232_set_termios(struct tty_struct *tty,
+>
+>
+>   	if (cflag & PARENB) {
+> -		if (cflag & PARODD)
+> -			new_lcr |= UART_LCR_PARITY; /* odd */
+> -		else
+> -			new_lcr |= SERIAL_EVEN_PARITY; /* even */
+> +		if (cflag & CMSPAR) {
+> +			if (cflag & PARODD)
+> +				new_lcr |= (UART_LCR_PARITY | UART_LCR_SPAR);
+> +			else
+> +				new_lcr |= (SERIAL_EVEN_PARITY
+> +							| UART_LCR_SPAR);
+> +		} else {
+> +			if (cflag & PARODD)
+> +				new_lcr |= UART_LCR_PARITY; /* odd */
+> +			else
+> +				new_lcr |= SERIAL_EVEN_PARITY; /* even */
+> +		}
+>   	}
+>
+> +
+
+    Not needed at all.
+
+>   	if (cflag & CSTOPB)
+>   		new_lcr |= UART_LCR_STOP;
+>   	else
+> @@ -445,7 +454,7 @@ static int f81232_open(struct tty_struct *tty, struct usb_serial_port *port)
+>
+>   	result = usb_submit_urb(port->interrupt_in_urb, GFP_KERNEL);
+>   	if (result) {
+> -		dev_err(&port->dev, "failed submitting interrupt urb, error %d\n",
+> +		dev_err(&port->dev, "failed submitting urb, error %d\n",
+
+    What are you fixing here?
+
+WBR, Sergei
+
