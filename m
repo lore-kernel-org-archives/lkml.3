@@ -1,165 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934247AbbA1CXv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 21:23:51 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:21598 "EHLO
+	id S964895AbbA1CXc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 21:23:32 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:21612 "EHLO
 	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761370AbbA1CX0 (ORCPT
+	with ESMTP id S1755034AbbA1CX2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 21:23:26 -0500
+	Tue, 27 Jan 2015 21:23:28 -0500
 From: Sasha Levin <sasha.levin@oracle.com>
 To: linux-kernel@vger.kernel.org
 Cc: iamjoonsoo.kim@lge.com, m.szyprowski@samsung.com,
         akpm@linux-foundation.org, lauraa@codeaurora.org,
         Sasha Levin <sasha.levin@oracle.com>
-Subject: [PATCH v3 2/3] mm: cma: allocation trigger
-Date: Tue, 27 Jan 2015 21:22:56 -0500
-Message-Id: <1422411777-22332-3-git-send-email-sasha.levin@oracle.com>
+Subject: [PATCH v3 3/3] mm: cma: release trigger
+Date: Tue, 27 Jan 2015 21:22:57 -0500
+Message-Id: <1422411777-22332-4-git-send-email-sasha.levin@oracle.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1422411777-22332-1-git-send-email-sasha.levin@oracle.com>
 References: <1422411777-22332-1-git-send-email-sasha.levin@oracle.com>
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Provides a userspace interface to trigger a CMA allocation.
+Provides a userspace interface to trigger a CMA release.
 
 Usage:
 
-	echo [pages] > alloc
+	echo [pages] > free
 
-This would provide testing/fuzzing access to the CMA allocation paths.
+This would provide testing/fuzzing access to the CMA release paths.
 
 Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
 ---
- mm/cma.c       |    6 ++++++
- mm/cma.h       |    4 ++++
- mm/cma_debug.c |   56 ++++++++++++++++++++++++++++++++++++++++++++++++++++++--
- 3 files changed, 64 insertions(+), 2 deletions(-)
+ mm/cma_debug.c |   56 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 56 insertions(+)
 
-diff --git a/mm/cma.c b/mm/cma.c
-index e093b53..e0a9cc2 100644
---- a/mm/cma.c
-+++ b/mm/cma.c
-@@ -121,6 +121,12 @@ static int __init cma_activate_area(struct cma *cma)
- 	} while (--i);
- 
- 	mutex_init(&cma->lock);
-+
-+#ifdef CONFIG_CMA_DEBUGFS
-+	INIT_HLIST_HEAD(&cma->mem_head);
-+	spin_init(&cma->mem_head_lock);
-+#endif
-+
- 	return 0;
- 
- err:
-diff --git a/mm/cma.h b/mm/cma.h
-index 4141887..1132d73 100644
---- a/mm/cma.h
-+++ b/mm/cma.h
-@@ -7,6 +7,10 @@ struct cma {
- 	unsigned long   *bitmap;
- 	unsigned int order_per_bit; /* Order of pages represented by one bit */
- 	struct mutex    lock;
-+#ifdef CONFIG_CMA_DEBUGFS
-+	struct hlist_head mem_head;
-+	spinlock_t mem_head_lock;
-+#endif
- };
- 
- extern struct cma cma_areas[MAX_CMA_AREAS];
 diff --git a/mm/cma_debug.c b/mm/cma_debug.c
-index 3a25413..5bd6863 100644
+index 5bd6863..c29f029 100644
 --- a/mm/cma_debug.c
 +++ b/mm/cma_debug.c
-@@ -7,9 +7,18 @@
+@@ -39,6 +39,59 @@ static void cma_add_to_cma_mem_list(struct cma *cma, struct cma_mem *mem)
+ 	spin_unlock(&cma->mem_head_lock);
+ }
  
- #include <linux/debugfs.h>
- #include <linux/cma.h>
-+#include <linux/list.h>
-+#include <linux/kernel.h>
-+#include <linux/slab.h>
- 
- #include "cma.h"
- 
-+struct cma_mem {
-+	struct hlist_node node;
-+	struct page *p;
-+	unsigned long n;
-+};
-+
- static struct dentry *cma_debugfs_root;
- 
- static int cma_debugfs_get(void *data, u64 *val)
-@@ -23,8 +32,48 @@ static int cma_debugfs_get(void *data, u64 *val)
- 
- DEFINE_SIMPLE_ATTRIBUTE(cma_debugfs_fops, cma_debugfs_get, NULL, "%llu\n");
- 
--static void cma_debugfs_add_one(struct cma *cma, int idx)
-+static void cma_add_to_cma_mem_list(struct cma *cma, struct cma_mem *mem)
++static struct cma_mem *cma_get_entry_from_list(struct cma *cma)
 +{
++	struct cma_mem *mem = NULL;
++
 +	spin_lock(&cma->mem_head_lock);
-+	hlist_add_head(&mem->node, &cma->mem_head);
++	if (!hlist_empty(&cma->mem_head)) {
++		mem = hlist_entry(cma->mem_head.first, struct cma_mem, node);
++		hlist_del_init(&mem->node);
++	}
 +	spin_unlock(&cma->mem_head_lock);
++
++	return mem;
 +}
 +
-+static int cma_alloc_mem(struct cma *cma, int count)
++static int cma_free_mem(struct cma *cma, int count)
 +{
-+	struct cma_mem *mem;
-+	struct page *p;
++	struct cma_mem *mem = NULL;
 +
-+	mem = kzalloc(sizeof(*mem), GFP_KERNEL);
-+	if (!mem) 
-+		return -ENOMEM;
++	while (count) {
++		mem = cma_get_entry_from_list(cma);
++		if (mem == NULL)
++			return 0;
 +
-+	p = cma_alloc(cma, count, 0);
-+	if (!p) {
-+		kfree(mem);
-+		return -ENOMEM;
++		if (mem->n <= count) {
++			cma_release(cma, mem->p, mem->n);
++			count -= mem->n;
++			kfree(mem);
++		} else if (cma->order_per_bit == 0) {
++			cma_release(cma, mem->p, count);
++			mem->p += count;
++			mem->n -= count;
++			count = 0;
++			cma_add_to_cma_mem_list(cma, mem);
++		} else {
++			cma_add_to_cma_mem_list(cma, mem);
++			break;
++		}
 +	}
 +
-+	mem->p = p;
-+	mem->n = count;
-+
-+	cma_add_to_cma_mem_list(cma, mem);
-+
 +	return 0;
++			
 +}
 +
-+static int cma_alloc_write(void *data, u64 val)
- {
-+	int pages = val;
++static int cma_free_write(void *data, u64 val)
++{
++        int pages = val;
 +	struct cma *cma = data;
 +
-+	return cma_alloc_mem(cma, pages);
++        return cma_free_mem(cma, pages);
 +}
 +
-+DEFINE_SIMPLE_ATTRIBUTE(cma_alloc_fops, NULL, cma_alloc_write, "%llu\n");
++DEFINE_SIMPLE_ATTRIBUTE(cma_free_fops, NULL, cma_free_write, "%llu\n");
 +
-+static void cma_debugfs_add_one(struct cma *cma, int idx)
-+{       
- 	struct dentry *tmp;
- 	char name[16];
- 	int u32s;
-@@ -33,12 +82,15 @@ static void cma_debugfs_add_one(struct cma *cma, int idx)
+ static int cma_alloc_mem(struct cma *cma, int count)
+ {
+ 	struct cma_mem *mem;
+@@ -85,6 +138,9 @@ static void cma_debugfs_add_one(struct cma *cma, int idx)
+ 	debugfs_create_file("alloc", S_IWUSR, cma_debugfs_root, cma,
+ 				&cma_alloc_fops);
  
- 	tmp = debugfs_create_dir(name, cma_debugfs_root);
- 
-+	debugfs_create_file("alloc", S_IWUSR, cma_debugfs_root, cma,
-+				&cma_alloc_fops);
++	debugfs_create_file("free", S_IWUSR, cma_debugfs_root, cma,
++				&cma_free_fops);
 +
  	debugfs_create_file("base_pfn", S_IRUGO, tmp,
  				&cma->base_pfn, &cma_debugfs_fops);
  	debugfs_create_file("count", S_IRUGO, tmp,
- 				&cma->count, &cma_debugfs_fops);
- 	debugfs_create_file("order_per_bit", S_IRUGO, tmp,
--			&cma->order_per_bit, &cma_debugfs_fops);
-+				&cma->order_per_bit, &cma_debugfs_fops);
- 
- 	u32s = DIV_ROUND_UP(cma_bitmap_maxno(cma), BITS_PER_BYTE * sizeof(u32));
- 	debugfs_create_u32_array("bitmap", S_IRUGO, tmp, (u32*)cma->bitmap, u32s);
 -- 
 1.7.10.4
 
