@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934236AbbA1COP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 21:14:15 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41037 "EHLO
+	id S934322AbbA1C05 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 21:26:57 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41020 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759851AbbA1B2S (ORCPT
+	with ESMTP id S1753993AbbA1B2F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 20:28:18 -0500
+	Tue, 27 Jan 2015 20:28:05 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Marek Kordik <kordikmarek@gmail.com>, Yinghai Lu <yinghai@kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>
-Subject: [PATCH 3.18 20/61] PCI: Add pci_bus_clip_resource() to clip to fit upstream window
+        Johan Hovold <johan@kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH 3.10 02/32] gpio: sysfs: fix gpio device-attribute leak
 Date: Tue, 27 Jan 2015 17:26:32 -0800
-Message-Id: <20150128012639.212456542@linuxfoundation.org>
+Message-Id: <20150128012627.464883057@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150128012636.936333725@linuxfoundation.org>
-References: <20150128012636.936333725@linuxfoundation.org>
+In-Reply-To: <20150128012627.081285723@linuxfoundation.org>
+References: <20150128012627.081285723@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -25,93 +25,104 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.18-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Yinghai Lu <yinghai@kernel.org>
+From: Johan Hovold <johan@kernel.org>
 
-commit 0f7e7aee2f37119a32e6e8b63250922442528961 upstream.
+commit 0915e6feb38de8d3601819992a5bd050201a56fa upstream.
 
-Add pci_bus_clip_resource().  If a PCI-PCI bridge window overlaps an
-upstream bridge window but is not completely contained by it, this clips
-the downstream window so it fits inside the upstream one.
+The gpio device attributes were never destroyed when the gpio was
+unexported (or on export failures).
 
-No functional change (this adds the function but no callers).
+Use device_create_with_groups() to create the default device attributes
+of the gpio class device. Note that this also fixes the
+attribute-creation race with userspace for these attributes.
 
-[bhelgaas: changelog, split into separate patch]
-Link: https://bugzilla.kernel.org/show_bug.cgi?id=85491
-Reported-by: Marek Kordik <kordikmarek@gmail.com>
-Fixes: 5b28541552ef ("PCI: Restrict 64-bit prefetchable bridge windows to 64-bit resources")
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+Remove contingent attributes in export error path and on unexport.
+
+Fixes: d8f388d8dc8d ("gpio: sysfs interface")
+Cc: stable <stable@vger.kernel.org> # v2.6.27+
+Signed-off-by: Johan Hovold <johan@kernel.org>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+[johan: fix leaks without device_create_with_groups, which wasn't
+introduced until 3.11 ]
+Signed-off-by: Johan Hovold <johan@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-diff --git a/drivers/pci/bus.c b/drivers/pci/bus.c
-index 73aef51a28f0..8fb16188cd82 100644
---- a/drivers/pci/bus.c
-+++ b/drivers/pci/bus.c
-@@ -228,6 +228,49 @@ int pci_bus_alloc_resource(struct pci_bus *bus, struct resource *res,
+---
+ drivers/gpio/gpiolib.c |   19 +++++++++++++------
+ 1 file changed, 13 insertions(+), 6 deletions(-)
+
+--- a/drivers/gpio/gpiolib.c
++++ b/drivers/gpio/gpiolib.c
+@@ -362,7 +362,7 @@ static ssize_t gpio_value_store(struct d
+ 	return status;
  }
- EXPORT_SYMBOL(pci_bus_alloc_resource);
  
-+/*
-+ * The @idx resource of @dev should be a PCI-PCI bridge window.  If this
-+ * resource fits inside a window of an upstream bridge, do nothing.  If it
-+ * overlaps an upstream window but extends outside it, clip the resource so
-+ * it fits completely inside.
-+ */
-+bool pci_bus_clip_resource(struct pci_dev *dev, int idx)
-+{
-+	struct pci_bus *bus = dev->bus;
-+	struct resource *res = &dev->resource[idx];
-+	struct resource orig_res = *res;
-+	struct resource *r;
-+	int i;
-+
-+	pci_bus_for_each_resource(bus, r, i) {
-+		resource_size_t start, end;
-+
-+		if (!r)
-+			continue;
-+
-+		if (resource_type(res) != resource_type(r))
-+			continue;
-+
-+		start = max(r->start, res->start);
-+		end = min(r->end, res->end);
-+
-+		if (start > end)
-+			continue;	/* no overlap */
-+
-+		if (res->start == start && res->end == end)
-+			return false;	/* no change */
-+
-+		res->start = start;
-+		res->end = end;
-+		dev_printk(KERN_DEBUG, &dev->dev, "%pR clipped to %pR\n",
-+				 &orig_res, res);
-+
-+		return true;
-+	}
-+
-+	return false;
-+}
-+
- void __weak pcibios_resource_survey_bus(struct pci_bus *bus) { }
+-static const DEVICE_ATTR(value, 0644,
++static DEVICE_ATTR(value, 0644,
+ 		gpio_value_show, gpio_value_store);
  
- /**
-diff --git a/drivers/pci/pci.h b/drivers/pci/pci.h
-index 8aff29a804ff..d54632a1db43 100644
---- a/drivers/pci/pci.h
-+++ b/drivers/pci/pci.h
-@@ -208,6 +208,7 @@ void __pci_bus_size_bridges(struct pci_bus *bus,
- void __pci_bus_assign_resources(const struct pci_bus *bus,
- 				struct list_head *realloc_head,
- 				struct list_head *fail_head);
-+bool pci_bus_clip_resource(struct pci_dev *dev, int idx);
+ static irqreturn_t gpio_sysfs_irq(int irq, void *priv)
+@@ -580,17 +580,17 @@ static ssize_t gpio_active_low_store(str
+ 	return status ? : size;
+ }
  
- /**
-  * pci_ari_enabled - query ARI forwarding status
+-static const DEVICE_ATTR(active_low, 0644,
++static DEVICE_ATTR(active_low, 0644,
+ 		gpio_active_low_show, gpio_active_low_store);
+ 
+-static const struct attribute *gpio_attrs[] = {
++static struct attribute *gpio_attrs[] = {
+ 	&dev_attr_value.attr,
+ 	&dev_attr_active_low.attr,
+ 	NULL,
+ };
+ 
+ static const struct attribute_group gpio_attr_group = {
+-	.attrs = (struct attribute **) gpio_attrs,
++       .attrs = gpio_attrs,
+ };
+ 
+ /*
+@@ -806,20 +806,24 @@ static int gpiod_export(struct gpio_desc
+ 	if (direction_may_change) {
+ 		status = device_create_file(dev, &dev_attr_direction);
+ 		if (status)
+-			goto fail_unregister_device;
++			goto fail_remove_attr_group;
+ 	}
+ 
+ 	if (gpiod_to_irq(desc) >= 0 && (direction_may_change ||
+ 				       !test_bit(FLAG_IS_OUT, &desc->flags))) {
+ 		status = device_create_file(dev, &dev_attr_edge);
+ 		if (status)
+-			goto fail_unregister_device;
++			goto fail_remove_attr_direction;
+ 	}
+ 
+ 	set_bit(FLAG_EXPORT, &desc->flags);
+ 	mutex_unlock(&sysfs_lock);
+ 	return 0;
+ 
++fail_remove_attr_direction:
++	device_remove_file(dev, &dev_attr_direction);
++fail_remove_attr_group:
++	sysfs_remove_group(&dev->kobj, &gpio_attr_group);
+ fail_unregister_device:
+ 	device_unregister(dev);
+ fail_unlock:
+@@ -962,6 +966,9 @@ static void gpiod_unexport(struct gpio_d
+ 
+ 		dev = class_find_device(&gpio_class, NULL, desc, match_export);
+ 		if (dev) {
++			device_remove_file(dev, &dev_attr_edge);
++			device_remove_file(dev, &dev_attr_direction);
++			sysfs_remove_group(&dev->kobj, &gpio_attr_group);
+ 			gpio_setup_irq(desc, dev, 0);
+ 			clear_bit(FLAG_EXPORT, &desc->flags);
+ 		} else
 
 
