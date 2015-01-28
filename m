@@ -1,85 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1764715AbbA2Dvm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 22:51:42 -0500
-Received: from mail-lb0-f170.google.com ([209.85.217.170]:48049 "EHLO
-	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753839AbbA2Dvj convert rfc822-to-8bit (ORCPT
+	id S933110AbbA1U3M (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 15:29:12 -0500
+Received: from mx-guillaumet.finsecur.com ([91.217.234.131]:59341 "EHLO
+	guillaumet.finsecur.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755602AbbA1U3I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 22:51:39 -0500
+	Wed, 28 Jan 2015 15:29:08 -0500
+Date: Wed, 28 Jan 2015 09:59:13 +0100
+From: Sylvain Rochet <sylvain.rochet@finsecur.com>
+To: Wenyou Yang <wenyou.yang@atmel.com>
+Cc: nicolas.ferre@atmel.com, linux@arm.linux.org.uk,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        alexandre.belloni@free-electrons.com, peda@axentia.se,
+        sergei.shtylyov@cogentembedded.com, linux@maxim.org.za
+Message-ID: <20150128085913.GA7742@gradator.net>
+References: <1422409172-24178-1-git-send-email-wenyou.yang@atmel.com>
 MIME-Version: 1.0
-In-Reply-To: <A9667DDFB95DB7438FA9D7D576C3D87E0AC2C563@SHSMSX104.ccr.corp.intel.com>
-References: <CACzj_yUu5omqFL7u8NE6vyqXGy_-dAeukRspJha+EiGXVBzmYg@mail.gmail.com>
- <A9667DDFB95DB7438FA9D7D576C3D87E0AC2C563@SHSMSX104.ccr.corp.intel.com>
-From: Wincy Van <fanwenyi0529@gmail.com>
-Date: Wed, 28 Jan 2015 16:57:56 +0800
-Message-ID: <CACzj_yVqDYyz5VwCX5d=Po2X_DdsHbqLmON8N=1PVLLocoHNpw@mail.gmail.com>
-Subject: Re: [PATCH v3 1/6] KVM: nVMX: Use hardware MSR bitmap
-To: "Zhang, Yang Z" <yang.z.zhang@intel.com>
-Cc: Paolo Bonzini <pbonzini@redhat.com>, "gleb@kernel.org" <gleb@kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Wanpeng Li <wanpeng.li@linux.intel.com>,
-        Jan Kiszka <jan.kiszka@web.de>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1422409172-24178-1-git-send-email-wenyou.yang@atmel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 172.16.8.13
+X-SA-Exim-Mail-From: sylvain.rochet@finsecur.com
+Subject: Re: [PATCH v4 00/13] AT91 pm cleanup for 3.20
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on guillaumet.finsecur.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 28, 2015 at 4:05 PM, Zhang, Yang Z <yang.z.zhang@intel.com> wrote:
->> @@ -8344,7 +8394,68 @@ static int
->> nested_vmx_check_msr_bitmap_controls(struct kvm_vcpu *vcpu,  static
->> inline bool nested_vmx_merge_msr_bitmap(struct kvm_vcpu *vcpu,
->>                                                struct vmcs12
->> *vmcs12)  {
->> -       return false;
->> +       struct page *page;
->> +       unsigned long *msr_bitmap;
->> +
->> +       if (!nested_cpu_has_virt_x2apic_mode(vmcs12))
->> +               return false;
->> +
->> +       page = nested_get_page(vcpu, vmcs12->msr_bitmap);
->> +       if (!page) {
->> +               WARN_ON(1);
->> +               return false;
->> +       }
->> +       msr_bitmap = (unsigned long *)kmap(page);
->> +       if (!msr_bitmap) {
->> +               nested_release_page_clean(page);
->> +               WARN_ON(1);
->> +               return false;
->> +       }
->> +
->> +       memset(vmx_msr_bitmap_nested, 0xff, PAGE_SIZE);
->> +
->> +       if (nested_cpu_has_virt_x2apic_mode(vmcs12))
->> +               /* TPR is allowed */
->> +               nested_vmx_disable_intercept_for_msr(msr_bitmap,
->> +                               vmx_msr_bitmap_nested,
->> +                               APIC_BASE_MSR + (APIC_TASKPRI >>
->> 4),
->> +                               MSR_TYPE_R | MSR_TYPE_W);
->
-> I didn't understand what this function does? Per my understanding, you only need to set the (vmx_msr_bitmap_nested = vmcs01->msr_bitmap | vmcs12->msr_bitmap) and inject the nested vmexit to L1 if the bit in vmcs12->msr_bitmap is setting. Am I missing some patches?
+Hello Wenyou,
 
-In the beginning, I want to do "vmcs01->msr_bitmap |
-vmcs12->msr_bitmap", but I remember that there isn't a instruction to
-do a bit or operation in two pages effectively, so I do the bit or
-operation in nested_vmx_disable_intercept_for_msr. If the hardware do
-not support this, I think it is faster if we deal with the bits on
-demand. nested_vmx_merge_msr_bitmap is used to merge L0's and L1's
-bitmaps, any features can put their logic here.
+On Wed, Jan 28, 2015 at 09:39:32AM +0800, Wenyou Yang wrote:
+> Hi Nicolas,
+> 
+> This version is rebased on the branch: at91-3.20-cleanup of the repository
+> 	git://git.kernel.org/pub/scm/linux/kernel/git/nferre/linux-at91.git
+> 
+> It is purpose to clean up the PM code, includes the patches from Peter Rosin and Sylvain Rochet.
+> 
+> Since verifying the USB clock and USB PLL disabling before suspending to memory,
+> it aslo depends on the following patch serials from Sylvain:
+> 	[PATCHv6 0/5] USB: gadget: atmel_usba_udc: Driver improvements
+> 	[PATCHv7 0/6] USB: host: Atmel OHCI and EHCI drivers improvements
+> 
+> Removes CONFIG_AT91_SLOW_CLOCK config item to simply the PM config,
+> The suspend to standby mode uses the same sram function as the suspend to memory mode.
+> Remove some unused code.
+> 
+> Alexandr & Sylvain, Thank you very much for so many feedbacks.
+> 
+> Changes in v2:
+>  - Rebase on the at91-3.20-cleanup branch
+>  - Recover the verify clock condition, only for suspend to memory.
+>  - Collect ACK from Alexandre
+>  - Add the macro for PM mode
+> 
+> Changes in v3:
+>  - Clear unused state argument in at91_pm_verify_clocks()
+>  - Remove pr_info("AT91:... slow_clock ? ..") in patch 07/13.
 
-If there is a faster way, please teach me how to do it : )
+Changes in v4: ? :-)
 
-Thanks,
-Wincy
-
-
->
-> Best regards,
-> Yang
->
->
+Sylvain
