@@ -1,59 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933672AbbA2CVr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 21:21:47 -0500
-Received: from mout.kundenserver.de ([212.227.17.13]:51467 "EHLO
+	id S932988AbbA2BwH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 20:52:07 -0500
+Received: from mout.kundenserver.de ([212.227.17.10]:52205 "EHLO
 	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758955AbbA2BwK (ORCPT
+	with ESMTP id S1755464AbbA2BwD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 20:52:10 -0500
+	Wed, 28 Jan 2015 20:52:03 -0500
 From: Arnd Bergmann <arnd@arndb.de>
 To: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
 Cc: linux-media@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>
-Subject: [PATCH 0/7] [media] ARM randconfig fixes
-Date: Wed, 28 Jan 2015 22:17:40 +0100
-Message-Id: <1422479867-3370921-1-git-send-email-arnd@arndb.de>
+Subject: [PATCH 1/7] [media] timberdale: do not select TIMB_DMA
+Date: Wed, 28 Jan 2015 22:17:41 +0100
+Message-Id: <1422479867-3370921-2-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 2.1.0.rc2
-X-Provags-ID: V03:K0:LylgDjsiDH4KOBapIMmHq8DOgseCaSnEWYqUPY6ViJFj4RGr4SH
- zF/KcVWWOnQPvTTztN70boBASvLZvo7qO6mk066BvSjvXV3PNHdoM9AVA39RXjG+2+/mhVR
- vSEASkCgr7QLG2GKxshzqcC+I2Yy9DHRCxxtc54/uxZI1Kt1xugXngWFYMEUP/2aX1cdQQ5
- TA9ZAO6q35mVz/PcnmvvQ==
+In-Reply-To: <1422479867-3370921-1-git-send-email-arnd@arndb.de>
+References: <1422479867-3370921-1-git-send-email-arnd@arndb.de>
+X-Provags-ID: V03:K0:I7im+ZZ4nZo7T5EbfkU8X6pAq9PJ5BQPGkzMOfgR2T5rUhPhTI3
+ 8rLKZQaG7BkO55NEMkovL+Po0HWFhEPAA6XiA3aN9J/dUnICFI9ok7yx/BwvjRWiHEFStW2
+ NeY334lLvcOG4ckLwiGfxFgewJX9+RRXc5g0yEO9RC+FMjJva+t83DWPJiXM3mNm5OGP9rc
+ fhoFa5ZtHYYLKGsGkPFXA==
 X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mauro,
+The timberdale media driver requires the use of the respective
+dma engine driver, but that may not be enabled, causing a
+Kconfig warning:
 
-This is one set of randconfig fixes that I've been carrying in
-a local branch for a long time. I have made sure that they are
-all still required, but there are others that I have not been
-able to reproduce yet, so I will probably send them out once
-I get the errors again.
+warning: (VIDEO_TIMBERDALE) selects TIMB_DMA which has unmet direct dependencies (DMADEVICES && MFD_TIMBERDALE)
 
-The ones here are all trivial, mostly adding missing dependencies.
+This fixes the dependency by removing the inappropriate 'select'
+statement and replacing it with a direct dependency on the
+drivers that provide the services this needs.
 
-Please apply.
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Fixes: 7155043c2d027 ("[media] enable COMPILE_TEST for media drivers")
+---
+ drivers/media/platform/Kconfig | 6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
 
-Arnd Bergmann (7):
-  [media] timberdale: do not select TIMB_DMA
-  [media] radio/aimslab: use mdelay instead of udelay
-  [media] staging/davinci/vpfe/dm365: add missing dependencies
-  [media] siano: fix Kconfig dependencies
-  [media] gspca: add INPUT dependency
-  [media] marvell-ccic: MMP_CAMERA never worked
-  [media] marvell-ccic needs VIDEOBUF2_DMA_SG
-
- drivers/media/mmc/siano/Kconfig             | 2 ++
- drivers/media/platform/Kconfig              | 6 ++----
- drivers/media/platform/marvell-ccic/Kconfig | 3 ++-
- drivers/media/radio/radio-aimslab.c         | 4 ++--
- drivers/media/usb/gspca/Kconfig             | 1 +
- drivers/media/usb/siano/Kconfig             | 2 ++
- drivers/staging/media/davinci_vpfe/Kconfig  | 2 ++
- 7 files changed, 13 insertions(+), 7 deletions(-)
-
+diff --git a/drivers/media/platform/Kconfig b/drivers/media/platform/Kconfig
+index 765bffb49a72..6a1334be7544 100644
+--- a/drivers/media/platform/Kconfig
++++ b/drivers/media/platform/Kconfig
+@@ -56,10 +56,8 @@ config VIDEO_VIU
+ 
+ config VIDEO_TIMBERDALE
+ 	tristate "Support for timberdale Video In/LogiWIN"
+-	depends on VIDEO_V4L2 && I2C && DMADEVICES
+-	depends on MFD_TIMBERDALE || COMPILE_TEST
+-	select DMA_ENGINE
+-	select TIMB_DMA
++	depends on VIDEO_V4L2 && I2C
++	depends on (MFD_TIMBERDALE && TIMB_DMA) || COMPILE_TEST
+ 	select VIDEO_ADV7180
+ 	select VIDEOBUF_DMA_CONTIG
+ 	---help---
 -- 
 2.1.0.rc2
 
