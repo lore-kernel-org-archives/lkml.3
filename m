@@ -1,95 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932719AbbA1USy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 15:18:54 -0500
-Received: from e37.co.us.ibm.com ([32.97.110.158]:36534 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755598AbbA1USu (ORCPT
+	id S1761243AbbA1WDr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 17:03:47 -0500
+Received: from mailrelay113.isp.belgacom.be ([195.238.20.140]:62897 "EHLO
+	mailrelay113.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753645AbbA1UXI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 15:18:50 -0500
-Date: Wed, 28 Jan 2015 09:48:17 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Sasha Levin <sasha.levin@oracle.com>, Borislav Petkov <bp@alien8.de>,
-        X86 ML <x86@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
-        Tony Luck <tony.luck@intel.com>, Andi Kleen <andi@firstfloor.org>,
-        Josh Triplett <josh@joshtriplett.org>,
-        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH v4 2/5] x86, traps: Track entry into and exit from IST
- context
-Message-ID: <20150128174817.GQ19109@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <cover.1416604491.git.luto@amacapital.net>
- <7665538633a500255d7da9ca5985547f6a2aa191.1416604491.git.luto@amacapital.net>
- <54C17139.1040706@oracle.com>
- <CALCETrWEUXHOaG-WzDkteoMP=6=tAvyNLfrbg=Xf8ybvMumAow@mail.gmail.com>
- <20150123180455.GA3192@pd.tnic>
- <CALCETrXA+OKGfxV9M=1AxvBSBPAt_+VmjDH0A+Rq4Ss+tKmTBw@mail.gmail.com>
- <54C2B396.9090106@oracle.com>
- <CALCETrXtA-xbec2oGBXW6KUFMY8v=MN2gS5trn1J221OSDDuJA@mail.gmail.com>
- <CALCETrVN0DyQw+7ArX1zrKJRqSso2py6xH2k7QCS_b6J9a=8Gg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALCETrVN0DyQw+7ArX1zrKJRqSso2py6xH2k7QCS_b6J9a=8Gg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 15012817-0025-0000-0000-000008205267
+	Wed, 28 Jan 2015 15:23:08 -0500
+X-Belgacom-Dynamic: yes
+X-Cloudmark-SP-Filtered: true
+X-Cloudmark-SP-Result: v=1.1 cv=r3/LV5qEOeRNqOlObU3fPeZ+G8vFrxRTI9UozocECbw= c=1 sm=2
+ a=Z4Rwk6OoAAAA:8 a=KFU0DpkgyvVFIAF4aCMA:9
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: A2CaFgCsIclU/1YVQ1dagwaBK7IFBQEBAQEBAQUBd5c6gRxEAQEBAQF9hDovI4EaN4gwAcZGj3iGBIl0HYQTBYVDiQqJQoogiBwigUUBgik9MYJCAQEB
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel@vger.kernel.org
+Cc: Jan Kara <jack@suse.cz>, Fabian Frederick <fabf@skynet.be>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH 1/1 linux-next] FS/AFFS: use inode writecount instead of local i_opencnt
+Date: Wed, 28 Jan 2015 18:52:03 +0100
+Message-Id: <1422467523-22051-1-git-send-email-fabf@skynet.be>
+X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 28, 2015 at 08:33:06AM -0800, Andy Lutomirski wrote:
-> On Fri, Jan 23, 2015 at 5:25 PM, Andy Lutomirski <luto@amacapital.net> wrote:
-> > On Fri, Jan 23, 2015 at 12:48 PM, Sasha Levin <sasha.levin@oracle.com> wrote:
-> >> On 01/23/2015 01:34 PM, Andy Lutomirski wrote:
-> >>> On Fri, Jan 23, 2015 at 10:04 AM, Borislav Petkov <bp@alien8.de> wrote:
-> >>>> On Fri, Jan 23, 2015 at 09:58:01AM -0800, Andy Lutomirski wrote:
-> >>>>>> [  543.999079] Call Trace:
-> >>>>>> [  543.999079] dump_stack (lib/dump_stack.c:52)
-> >>>>>> [  543.999079] lockdep_rcu_suspicious (kernel/locking/lockdep.c:4259)
-> >>>>>> [  543.999079] atomic_notifier_call_chain (include/linux/rcupdate.h:892 kernel/notifier.c:182 kernel/notifier.c:193)
-> >>>>>> [  543.999079] ? atomic_notifier_call_chain (kernel/notifier.c:192)
-> >>>>>> [  543.999079] notify_die (kernel/notifier.c:538)
-> >>>>>> [  543.999079] ? atomic_notifier_call_chain (kernel/notifier.c:538)
-> >>>>>> [  543.999079] ? debug_smp_processor_id (lib/smp_processor_id.c:57)
-> >>>>>> [  543.999079] do_debug (arch/x86/kernel/traps.c:652)
-> >>>>>> [  543.999079] ? trace_hardirqs_on (kernel/locking/lockdep.c:2609)
-> >>>>>> [  543.999079] ? do_int3 (arch/x86/kernel/traps.c:610)
-> >>>>>> [  543.999079] ? trace_hardirqs_on_caller (kernel/locking/lockdep.c:2554 kernel/locking/lockdep.c:2601)
-> >>>>>> [  543.999079] debug (arch/x86/kernel/entry_64.S:1310)
-> >>>>>
-> >>>>> I don't know how to read this stack trace.  Are we in do_int3,
-> >>>>> do_debug, or both?  I didn't change do_debug at all.
-> >>>>
-> >>>> It looks like we're in do_debug. do_int3 is only on the stack but not
-> >>>> part of the current frame if I can trust the '?' ...
-> >>>>
-> >>>
-> >>> It's possible that an int3 happened and I did something wrong on
-> >>> return that caused a subsequent do_debug to screw up, but I don't see
-> >>> how my patch would have caused that.
-> >>>
-> >>> Were there any earlier log messages?
-> >>
-> >> Nope, nothing odd before or after.
-> >
-> > Trinity just survived for a decent amount of time for me with my
-> > patches, other than a bunch of apparently expected OOM kills.  I have
-> > no idea how to tell trinity how much memory to use.
-> 
-> A longer trinity run on a larger VM survived (still with some OOM
-> kills, but no taint) with these patches.  I suspect that it's a
-> regression somewhere else in the RCU changes.  I have
-> CONFIG_PROVE_RCU=y, so I should have seen the failure if it was there,
-> I think.
+atomic_t i_opencnt was used to free allocation in case there were no
+more opens. This patch replaces affs_file_open by generic_file_open
+and uses FMODE_WRITE/i_writecount==1 for the task like other FS.
 
-If by "RCU changes" you mean my changes to the RCU infrastructure, I am
-going to need more of a hint than I see in this thread thus far.  ;-)
+Reviewed-by: Jan Kara <jack@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+ fs/affs/affs.h  |  1 -
+ fs/affs/file.c  | 17 ++++-------------
+ fs/affs/inode.c |  2 --
+ 3 files changed, 4 insertions(+), 16 deletions(-)
 
-							Thanx, Paul
+diff --git a/fs/affs/affs.h b/fs/affs/affs.h
+index ff44ff3..c50815f 100644
+--- a/fs/affs/affs.h
++++ b/fs/affs/affs.h
+@@ -39,7 +39,6 @@ struct affs_ext_key {
+  * affs fs inode data in memory
+  */
+ struct affs_inode_info {
+-	atomic_t i_opencnt;
+ 	struct semaphore i_link_lock;		/* Protects internal inode access. */
+ 	struct semaphore i_ext_lock;		/* Protects internal inode access. */
+ #define i_hash_lock i_ext_lock
+diff --git a/fs/affs/file.c b/fs/affs/file.c
+index d2468bf..77e30e8 100644
+--- a/fs/affs/file.c
++++ b/fs/affs/file.c
+@@ -18,21 +18,12 @@
+ static struct buffer_head *affs_get_extblock_slow(struct inode *inode, u32 ext);
+ 
+ static int
+-affs_file_open(struct inode *inode, struct file *filp)
+-{
+-	pr_debug("open(%lu,%d)\n",
+-		 inode->i_ino, atomic_read(&AFFS_I(inode)->i_opencnt));
+-	atomic_inc(&AFFS_I(inode)->i_opencnt);
+-	return 0;
+-}
+-
+-static int
+ affs_file_release(struct inode *inode, struct file *filp)
+ {
+-	pr_debug("release(%lu, %d)\n",
+-		 inode->i_ino, atomic_read(&AFFS_I(inode)->i_opencnt));
++	pr_debug("release(%lu)\n", inode->i_ino);
+ 
+-	if (atomic_dec_and_test(&AFFS_I(inode)->i_opencnt)) {
++	if ((filp->f_mode & FMODE_WRITE) &&
++	    (atomic_read(&inode->i_writecount) == 1)) {
+ 		mutex_lock(&inode->i_mutex);
+ 		if (inode->i_size != AFFS_I(inode)->mmu_private)
+ 			affs_truncate(inode);
+@@ -969,7 +960,7 @@ const struct file_operations affs_file_operations = {
+ 	.write		= new_sync_write,
+ 	.write_iter	= generic_file_write_iter,
+ 	.mmap		= generic_file_mmap,
+-	.open		= affs_file_open,
++	.open		= generic_file_open,
+ 	.release	= affs_file_release,
+ 	.fsync		= affs_file_fsync,
+ 	.splice_read	= generic_file_splice_read,
+diff --git a/fs/affs/inode.c b/fs/affs/inode.c
+index 25cb4b4..5c160dd 100644
+--- a/fs/affs/inode.c
++++ b/fs/affs/inode.c
+@@ -56,7 +56,6 @@ struct inode *affs_iget(struct super_block *sb, unsigned long ino)
+ 	AFFS_I(inode)->i_extcnt = 1;
+ 	AFFS_I(inode)->i_ext_last = ~1;
+ 	AFFS_I(inode)->i_protect = prot;
+-	atomic_set(&AFFS_I(inode)->i_opencnt, 0);
+ 	AFFS_I(inode)->i_blkcnt = 0;
+ 	AFFS_I(inode)->i_lc = NULL;
+ 	AFFS_I(inode)->i_lc_size = 0;
+@@ -307,7 +306,6 @@ affs_new_inode(struct inode *dir)
+ 	inode->i_ino     = block;
+ 	set_nlink(inode, 1);
+ 	inode->i_mtime   = inode->i_atime = inode->i_ctime = CURRENT_TIME_SEC;
+-	atomic_set(&AFFS_I(inode)->i_opencnt, 0);
+ 	AFFS_I(inode)->i_blkcnt = 0;
+ 	AFFS_I(inode)->i_lc = NULL;
+ 	AFFS_I(inode)->i_lc_size = 0;
+-- 
+2.1.0
 
