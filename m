@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932853AbbA2KUD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 05:20:03 -0500
+	id S1760381AbbA2KVL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 05:21:11 -0500
 Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:44737 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756846AbbA2JA7 (ORCPT
+	by vger.kernel.org with ESMTP id S1756784AbbA2JAy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 04:00:59 -0500
+	Thu, 29 Jan 2015 04:00:54 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org,
-        Trond Myklebust <trond.myklebust@primarydata.com>,
-        Bruce Fields <bfields@fieldses.org>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 129/176] LOCKD: Fix a race when initialising nlmsvc_timeout
-Date: Wed, 28 Jan 2015 15:29:19 +0100
-Message-Id: <47427496998a44df34bdc1b47fca647e8398716b.1422455352.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Nicholas Bellinger <nab@linux-iscsi.org>,
+        Christoph Hellwig <hch@lst.de>, "Michael S. Tsirkin" <mst@redhat.com>,
+        Paolo Bonzini <pbonzini@redhat.com>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 130/176] vhost-scsi: Add missing virtio-scsi -> TCM attribute conversion
+Date: Wed, 28 Jan 2015 15:29:20 +0100
+Message-Id: <0dc7138d884d21a4bc0091830c2cad3acb532f77.1422455352.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <ce4a451f616a1e7ab58cfeceea5e49c8b1c68c81.1422455352.git.jslaby@suse.cz>
 References: <ce4a451f616a1e7ab58cfeceea5e49c8b1c68c81.1422455352.git.jslaby@suse.cz>
@@ -24,57 +24,72 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Trond Myklebust <trond.myklebust@primarydata.com>
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 06bed7d18c2c07b3e3eeadf4bd357f6e806618cc upstream.
+commit 46243860806bdc2756f3ce8ac86b4d7c616bcd6c upstream.
 
-This commit fixes a race whereby nlmclnt_init() first starts the lockd
-daemon, and then calls nlm_bind_host() with the expectation that
-nlmsvc_timeout has already been initialised. Unfortunately, there is no
-no synchronisation between lockd() and lockd_up() to guarantee that this
-is the case.
+While looking at hch's recent conversion to drop the MSG_*_TAG
+definitions, I noticed a long standing bug in vhost-scsi where
+the VIRTIO_SCSI_S_* attribute definitions where incorrectly
+being passed directly into target_submit_cmd_map_sgls().
 
-Fix is to move the initialisation of nlmsvc_timeout into lockd_create_svc
+This patch adds the missing virtio-scsi to TCM/SAM task attribute
+conversion.
 
-Fixes: 9a1b6bf818e74 ("LOCKD: Don't call utsname()->nodename...")
-Cc: Bruce Fields <bfields@fieldses.org>
-Cc: stable@vger.kernel.org # 3.10.x
-Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
+Cc: Christoph Hellwig <hch@lst.de>
+Cc: Michael S. Tsirkin <mst@redhat.com>
+Cc: Paolo Bonzini <pbonzini@redhat.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- fs/lockd/svc.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ drivers/vhost/scsi.c | 23 ++++++++++++++++++++---
+ 1 file changed, 20 insertions(+), 3 deletions(-)
 
-diff --git a/fs/lockd/svc.c b/fs/lockd/svc.c
-index 223e1cb14345..59a53f664005 100644
---- a/fs/lockd/svc.c
-+++ b/fs/lockd/svc.c
-@@ -137,10 +137,6 @@ lockd(void *vrqstp)
+diff --git a/drivers/vhost/scsi.c b/drivers/vhost/scsi.c
+index c5b631cceb4c..d7fddc7d10d5 100644
+--- a/drivers/vhost/scsi.c
++++ b/drivers/vhost/scsi.c
+@@ -861,6 +861,23 @@ vhost_scsi_map_iov_to_sgl(struct tcm_vhost_cmd *cmd,
+ 	return 0;
+ }
  
- 	dprintk("NFS locking service started (ver " LOCKD_VERSION ").\n");
- 
--	if (!nlm_timeout)
--		nlm_timeout = LOCKD_DFLT_TIMEO;
--	nlmsvc_timeout = nlm_timeout * HZ;
--
- 	/*
- 	 * The main request loop. We don't terminate until the last
- 	 * NFS mount or NFS daemon has gone away.
-@@ -346,6 +342,10 @@ static struct svc_serv *lockd_create_svc(void)
- 		printk(KERN_WARNING
- 			"lockd_up: no pid, %d users??\n", nlmsvc_users);
- 
-+	if (!nlm_timeout)
-+		nlm_timeout = LOCKD_DFLT_TIMEO;
-+	nlmsvc_timeout = nlm_timeout * HZ;
++static int vhost_scsi_to_tcm_attr(int attr)
++{
++	switch (attr) {
++	case VIRTIO_SCSI_S_SIMPLE:
++		return MSG_SIMPLE_TAG;
++	case VIRTIO_SCSI_S_ORDERED:
++		return MSG_ORDERED_TAG;
++	case VIRTIO_SCSI_S_HEAD:
++		return MSG_HEAD_TAG;
++	case VIRTIO_SCSI_S_ACA:
++		return MSG_ACA_TAG;
++	default:
++		break;
++	}
++	return MSG_SIMPLE_TAG;
++}
 +
- 	serv = svc_create(&nlmsvc_program, LOCKD_BUFSIZE, NULL);
- 	if (!serv) {
- 		printk(KERN_WARNING "lockd_up: create service failed\n");
+ static void tcm_vhost_submission_work(struct work_struct *work)
+ {
+ 	struct tcm_vhost_cmd *cmd =
+@@ -887,9 +904,9 @@ static void tcm_vhost_submission_work(struct work_struct *work)
+ 	rc = target_submit_cmd_map_sgls(se_cmd, tv_nexus->tvn_se_sess,
+ 			cmd->tvc_cdb, &cmd->tvc_sense_buf[0],
+ 			cmd->tvc_lun, cmd->tvc_exp_data_len,
+-			cmd->tvc_task_attr, cmd->tvc_data_direction,
+-			TARGET_SCF_ACK_KREF, sg_ptr, cmd->tvc_sgl_count,
+-			sg_bidi_ptr, sg_no_bidi);
++			vhost_scsi_to_tcm_attr(cmd->tvc_task_attr),
++			cmd->tvc_data_direction, TARGET_SCF_ACK_KREF,
++			sg_ptr, cmd->tvc_sgl_count, sg_bidi_ptr, sg_no_bidi);
+ 	if (rc < 0) {
+ 		transport_send_check_condition_and_sense(se_cmd,
+ 				TCM_LOGICAL_UNIT_COMMUNICATION_FAILURE, 0);
 -- 
 2.2.2
 
