@@ -1,232 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933099AbbA1Bx4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 20:53:56 -0500
-Received: from mga03.intel.com ([134.134.136.65]:47006 "EHLO mga03.intel.com"
+	id S934028AbbA1CA6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 21:00:58 -0500
+Received: from ozlabs.org ([103.22.144.67]:52081 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760745AbbA1Bxk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 20:53:40 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.09,478,1418112000"; 
-   d="scan'208";a="643599630"
-From: Jiang Liu <jiang.liu@linux.intel.com>
-To: Bjorn Helgaas <bhelgaas@google.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
-        Borislav Petkov <bp@alien8.de>, Dimitri Sivanich <sivanich@sgi.com>,
-        x86@kernel.org, Joerg Roedel <joro@8bytes.org>,
-        Jiang Liu <jiang.liu@linux.intel.com>,
-        Yijing Wang <wangyijing@huawei.com>,
-        Grant Likely <grant.likely@linaro.org>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        David Cohen <david.a.cohen@linux.intel.com>,
-        Sander Eikelenboom <linux@eikelenboom.it>,
-        David Vrabel <david.vrabel@citrix.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tony Luck <tony.luck@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-acpi@vger.kernel.org, iommu@lists.linux-foundation.org
-Subject: [Patch Part2 v4] x86/irq: Kill x86_io_apic_ops.eoi_ioapic_pin and related interfaces
-Date: Wed, 28 Jan 2015 09:56:11 +0800
-Message-Id: <1422410185-24982-1-git-send-email-jiang.liu@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1421733113-15704-7-git-send-email-jiang.liu@linux.intel.com>
-References: <1421733113-15704-7-git-send-email-jiang.liu@linux.intel.com>
+	id S933204AbbA1CAz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 21:00:55 -0500
+Date: Wed, 28 Jan 2015 13:00:47 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Mark Brown <broonie@kernel.org>, Liam Girdwood <lgirdwood@gmail.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Charles Keepax <ckeepax@opensource.wolfsonmicro.com>,
+        Lars-Peter Clausen <lars@metafoo.de>
+Subject: linux-next: build failure after merge of the sound-asoc tree
+Message-ID: <20150128130047.2311c637@canb.auug.org.au>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/kx.AJGkjc9l5UT4eVH9FeYJ"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now there is no user of x86_io_apic_ops.eoi_ioapic_pin anymore, so kill
-it.
+--Sig_/kx.AJGkjc9l5UT4eVH9FeYJ
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Tony Luck <tony.luck@intel.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: iommu@lists.linux-foundation.org
-Cc: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Rafael J. Wysocki <rjw@rjwysocki.net>
-Cc: Randy Dunlap <rdunlap@infradead.org>
-Cc: Yinghai Lu <yinghai@kernel.org>
-Cc: Borislav Petkov <bp@alien8.de>
-Cc: Joerg Roedel <joro@8bytes.org>
-Cc: Yijing Wang <wangyijing@huawei.com>
-Cc: Grant Likely <grant.likely@linaro.org>
-Link: http://lkml.kernel.org/r/1416901802-24211-16-git-send-email-jiang.liu@linux.intel.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Tested-by: Joerg Roedel <jroedel@suse.de>
----
-Hi Thomas,
-	This update fixes build failure when IOAPIC is disabled, which
-is introduced when rebasing the patch set.
-Regards,
-Gerry
----
- arch/x86/include/asm/io_apic.h  |    7 -------
- arch/x86/include/asm/x86_init.h |    1 -
- arch/x86/kernel/apic/io_apic.c  |   20 ++++----------------
- arch/x86/kernel/x86_init.c      |    1 -
- drivers/iommu/irq_remapping.c   |   19 -------------------
- 5 files changed, 4 insertions(+), 44 deletions(-)
+Hi all,
 
-diff --git a/arch/x86/include/asm/io_apic.h b/arch/x86/include/asm/io_apic.h
-index 0ff68daa9949..fa4b25ebd658 100644
---- a/arch/x86/include/asm/io_apic.h
-+++ b/arch/x86/include/asm/io_apic.h
-@@ -150,10 +150,6 @@ struct irq_cfg;
- extern void ioapic_insert_resources(void);
- extern int arch_early_ioapic_init(void);
- 
--extern void eoi_ioapic_irq(unsigned int irq, struct irq_cfg *cfg);
--
--extern void native_eoi_ioapic_pin(int apic, int pin, int vector);
--
- extern int save_ioapic_entries(void);
- extern void mask_ioapic_entries(void);
- extern int restore_ioapic_entries(void);
-@@ -237,8 +233,6 @@ static inline void io_apic_modify(unsigned int apic, unsigned int reg, unsigned
- 	x86_io_apic_ops.modify(apic, reg, value);
- }
- 
--extern void io_apic_eoi(unsigned int apic, unsigned int vector);
--
- extern void setup_IO_APIC(void);
- extern void enable_IO_APIC(void);
- extern void disable_IO_APIC(void);
-@@ -282,7 +276,6 @@ static inline void disable_ioapic_support(void) { }
- #define native_io_apic_write		NULL
- #define native_io_apic_modify		NULL
- #define native_disable_io_apic		NULL
--#define native_eoi_ioapic_pin		NULL
- 
- static inline void setup_IO_APIC(void) { }
- static inline void enable_IO_APIC(void) { }
-diff --git a/arch/x86/include/asm/x86_init.h b/arch/x86/include/asm/x86_init.h
-index f9f83cfabcaa..4ada3d3a0e86 100644
---- a/arch/x86/include/asm/x86_init.h
-+++ b/arch/x86/include/asm/x86_init.h
-@@ -191,7 +191,6 @@ struct x86_io_apic_ops {
- 	void		(*write)  (unsigned int apic, unsigned int reg, unsigned int value);
- 	void		(*modify) (unsigned int apic, unsigned int reg, unsigned int value);
- 	void		(*disable)(void);
--	void		(*eoi_ioapic_pin)(int apic, int pin, int vector);
- };
- 
- extern struct x86_init_ops x86_init;
-diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index fff17afdfe5d..8690334ad40c 100644
---- a/arch/x86/kernel/apic/io_apic.c
-+++ b/arch/x86/kernel/apic/io_apic.c
-@@ -273,7 +273,7 @@ static __attribute_const__ struct io_apic __iomem *io_apic_base(int idx)
- 		+ (mpc_ioapic_addr(idx) & ~PAGE_MASK);
- }
- 
--void io_apic_eoi(unsigned int apic, unsigned int vector)
-+static inline void io_apic_eoi(unsigned int apic, unsigned int vector)
- {
- 	struct io_apic __iomem *io_apic = io_apic_base(apic);
- 	writel(vector, &io_apic->eoi);
-@@ -529,7 +529,7 @@ static void unmask_ioapic_irq(struct irq_data *data)
-  * Otherwise, we simulate the EOI message manually by changing the trigger
-  * mode to edge and then back to level, with RTE being masked during this.
-  */
--void native_eoi_ioapic_pin(int apic, int pin, int vector)
-+static void __eoi_ioapic_pin(int apic, int pin, int vector)
- {
- 	if (mpc_ioapic_ver(apic) >= 0x20) {
- 		io_apic_eoi(apic, vector);
-@@ -560,19 +560,7 @@ void eoi_ioapic_pin(int vector, struct irq_cfg *cfg)
- 
- 	raw_spin_lock_irqsave(&ioapic_lock, flags);
- 	for_each_irq_pin(entry, cfg->irq_2_pin)
--		native_eoi_ioapic_pin(entry->apic, entry->pin, vector);
--	raw_spin_unlock_irqrestore(&ioapic_lock, flags);
--}
--
--void eoi_ioapic_irq(unsigned int irq, struct irq_cfg *cfg)
--{
--	struct irq_pin_list *entry;
--	unsigned long flags;
--
--	raw_spin_lock_irqsave(&ioapic_lock, flags);
--	for_each_irq_pin(entry, cfg->irq_2_pin)
--		x86_io_apic_ops.eoi_ioapic_pin(entry->apic, entry->pin,
--					       cfg->vector);
-+		__eoi_ioapic_pin(entry->apic, entry->pin, vector);
- 	raw_spin_unlock_irqrestore(&ioapic_lock, flags);
- }
- 
-@@ -608,7 +596,7 @@ static void clear_IO_APIC_pin(unsigned int apic, unsigned int pin)
- 			ioapic_write_entry(apic, pin, entry);
- 		}
- 		raw_spin_lock_irqsave(&ioapic_lock, flags);
--		native_eoi_ioapic_pin(apic, pin, entry.vector);
-+		__eoi_ioapic_pin(apic, pin, entry.vector);
- 		raw_spin_unlock_irqrestore(&ioapic_lock, flags);
- 	}
- 
-diff --git a/arch/x86/kernel/x86_init.c b/arch/x86/kernel/x86_init.c
-index f7e8eab3a7c4..f612dc018fb6 100644
---- a/arch/x86/kernel/x86_init.c
-+++ b/arch/x86/kernel/x86_init.c
-@@ -144,5 +144,4 @@ struct x86_io_apic_ops x86_io_apic_ops = {
- 	.write			= native_io_apic_write,
- 	.modify			= native_io_apic_modify,
- 	.disable		= native_disable_io_apic,
--	.eoi_ioapic_pin		= native_eoi_ioapic_pin,
- };
-diff --git a/drivers/iommu/irq_remapping.c b/drivers/iommu/irq_remapping.c
-index 7baa54a13921..bca42550b1ad 100644
---- a/drivers/iommu/irq_remapping.c
-+++ b/drivers/iommu/irq_remapping.c
-@@ -43,21 +43,9 @@ static void irq_remapping_disable_io_apic(void)
- 		disconnect_bsp_APIC(0);
- }
- 
--static void eoi_ioapic_pin_remapped(int apic, int pin, int vector)
--{
--	/*
--	 * Intr-remapping uses pin number as the virtual vector
--	 * in the RTE. Actual vector is programmed in
--	 * intr-remapping table entry. Hence for the io-apic
--	 * EOI we use the pin number.
--	 */
--	io_apic_eoi(apic, pin);
--}
--
- static void __init irq_remapping_modify_x86_ops(void)
- {
- 	x86_io_apic_ops.disable		= irq_remapping_disable_io_apic;
--	x86_io_apic_ops.eoi_ioapic_pin	= eoi_ioapic_pin_remapped;
- }
- 
- static __init int setup_nointremap(char *str)
-@@ -171,12 +159,6 @@ void ir_ack_apic_edge(struct irq_data *data)
- 	ack_APIC_irq();
- }
- 
--static void ir_ack_apic_level(struct irq_data *data)
--{
--	ack_APIC_irq();
--	eoi_ioapic_irq(data->irq, irqd_cfg(data));
--}
--
- static void ir_print_prefix(struct irq_data *data, struct seq_file *p)
- {
- 	seq_printf(p, " IR-%s", data->chip->name);
-@@ -186,7 +168,6 @@ void irq_remap_modify_chip_defaults(struct irq_chip *chip)
- {
- 	chip->irq_print_chip = ir_print_prefix;
- 	chip->irq_ack = ir_ack_apic_edge;
--	chip->irq_eoi = ir_ack_apic_level;
- }
- 
- bool setup_remapped_irq(int irq, struct irq_cfg *cfg, struct irq_chip *chip)
--- 
-1.7.10.4
+After merging the sound-asoc tree, today's linux-next build (x86_64 allmodc=
+onfig)
+failed like this:
 
+sound/soc/codecs/arizona.c: In function 'arizona_out_ev':
+sound/soc/codecs/arizona.c:738:57: error: 'struct snd_soc_dapm_widget' has =
+no member named 'codec'
+  struct arizona_priv *priv =3D snd_soc_codec_get_drvdata(w->codec);
+                                                         ^
+
+Caused by commit 054e1b489227 ("ASoC: arizona: Add delay for output
+disable") interacting with commit 96da4e5b2e1d ("ASoC: Remove codec
+field from snd_soc_dapm_widget").  It needed to be fixed up in merge
+commit 7659e0ab1afa ("Merge remote-tracking branches
+'asoc/topic/ad193x', 'asoc/topic/alc5632', 'asoc/topic/arizona' and
+'asoc/topic/atmel' into asoc-next").
+
+I have used the sound-asoc tree from next-20150127 for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Sig_/kx.AJGkjc9l5UT4eVH9FeYJ
+Content-Type: application/pgp-signature
+Content-Description: OpenPGP digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJUyELUAAoJEMDTa8Ir7ZwVo0sP/3b/fQHKfHz96XtZ07/hS+Dg
+kK41FWo0oJeOb2vCH9A85aP7JmXVWtF/kx8W0w0JlsEs60jZB9QmqfVMXOL1FYOy
+IRrVRcKQnFdrV4soXFieD65sH56GhQuZFejQZp9E2ERPAy0dvr2tTimHVO8u9+XR
+MC5s5Gvs6KLOFBrd0AnVgbddQwGnknfqhFrWLZM506pn6s13MxJqaGdLpd5F7/Ao
+UaHh1DTwRGQY1i4f9GcEnnYLZZrkDubDx+7XV2bsfAi4O4TFF+JeEryaJBD5t58m
+kEHGrYxQMSoh1mBceGV1iyPg2I4prUNDO71pRkxqysoDcLmDYWE5lmyeex3S/9Bj
+uo22bBtrVBxj7OT40vY84kwot936ytLiguIllTDX546cWGPzG1uyQKWYXCsqiTwU
+DEqFqdHIoK13U1XmFc3tXLrwjd6ge29slSL0cPorY4ECO3eJMa2LFsDEDLGhTbSz
+wmXycTuS/gq+vzPxadX9b9BEQSdu8OmOtThglKqVDys3ewnM8xMKd0ZmlzmBRUh1
+E6jIUCAftI1z8gHb3VNZ7ynaVGi73VCJsglZMlLlyHXXjWwy8E9sW3mASq3PMLqf
+nCa6iQqk5+MrJbdJHgK+gfYaJcw5Ft6InZhG2zDQ/ZB+IkMweTIQgZQio9oTXAtC
+zR0lseYbeHAVEavbKVAo
+=usAh
+-----END PGP SIGNATURE-----
+
+--Sig_/kx.AJGkjc9l5UT4eVH9FeYJ--
