@@ -1,62 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932772AbbA2BtH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 20:49:07 -0500
-Received: from nblzone-211-213.nblnetworks.fi ([83.145.211.213]:53255 "EHLO
-	hillosipuli.retiisi.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932727AbbA2BtC (ORCPT
+	id S1757277AbbA1UYp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 15:24:45 -0500
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:55824 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755605AbbA1UYl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 20:49:02 -0500
-Date: Wed, 28 Jan 2015 09:04:17 +0200
-From: Sakari Ailus <sakari.ailus@iki.fi>
-To: Jacek Anaszewski <j.anaszewski@samsung.com>
-Cc: Pavel Machek <pavel@ucw.cz>, Rob Herring <robherring2@gmail.com>,
-        linux-leds@vger.kernel.org,
-        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Bryan Wu <cooloney@gmail.com>, Richard Purdie <rpurdie@rpsys.net>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Liam Girdwood <lgirdwood@gmail.com>,
-        Mark Brown <broonie@kernel.org>
-Subject: Re: [PATCH/RFC v10 03/19] DT: leds: Add led-sources property
-Message-ID: <20150128070417.GK17565@valkosipuli.retiisi.org.uk>
-References: <CAL_JsqKpJtUG0G6g1GOuSVpc31oe-dp3qdrKJUE0upG-xRDFhA@mail.gmail.com>
- <54B4DA81.7060900@samsung.com>
- <CAL_JsqLYxB5hzLAWXpU=uncM5DEMZU78mP673H9oSSNB-cgcYQ@mail.gmail.com>
- <54B8D4D0.3000904@samsung.com>
- <CAL_Jsq+EFWzs1HP1tVt6P=p=HZn2AtSPjp55YrmMQi_mE+kNfQ@mail.gmail.com>
- <54B933D0.1090004@samsung.com>
- <54BE7DAB.80702@samsung.com>
- <CAL_JsqKoiaUmVhbQdnNveG=AAYh4-OHGS70L+LAgLLoKChUuYQ@mail.gmail.com>
- <20150120174010.GA2900@amd>
- <54BF73B9.8060402@samsung.com>
+	Wed, 28 Jan 2015 15:24:41 -0500
+Message-ID: <54C88ACF.9000401@redhat.com>
+Date: Wed, 28 Jan 2015 08:07:59 +0100
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54BF73B9.8060402@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Wincy Van <fanwenyi0529@gmail.com>
+CC: "gleb@kernel.org" <gleb@kernel.org>,
+        "Zhang, Yang Z" <yang.z.zhang@intel.com>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Wanpeng Li <wanpeng.li@linux.intel.com>,
+        Jan Kiszka <jan.kiszka@web.de>
+Subject: Re: [PATCH v3 6/6] KVM: nVMX: Enable nested posted interrupt processing.
+References: <CACzj_yWZSJkfn0JAJr9w6hLWtMbr3PpHQVxH_GkwmY8g3x1x8w@mail.gmail.com> <54C80955.4070305@redhat.com> <CACzj_yUn8yMY1iW2Umd_nYX29jw1vyuPd=m+jfx55ZwXXUPTBw@mail.gmail.com>
+In-Reply-To: <CACzj_yUn8yMY1iW2Umd_nYX29jw1vyuPd=m+jfx55ZwXXUPTBw@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 21, 2015 at 10:39:05AM +0100, Jacek Anaszewski wrote:
-> I agree. I think that led-sources-cnt is redundant. A list property
-> can be read using of_prop_next_u32 function. I missed that and thus
-> proposed putting led-sources-cnt in each sub-node to be able to read
-> led-sources list with of_property_read_u32_array.
-> 
-> Effectively, I propose to avoid adding led-sources-cnt property.
+On 28/01/2015 06:54, Wincy Van wrote:
+> Why? L1 may config these features seperately, we should check them one by one.
+> e.g.  L1 may enable posted interrupt processing and virtual interrupt
+> delivery, but leaving virtualize x2apic mode disabled, then
+> nested_cpu_has_virt_x2apic_mode will return false.
 
-You can also read the array size using of_get_property().
+You're right, I confused && with ||.
 
--- 
-Regards,
+*blush*.
 
-Sakari Ailus
-e-mail: sakari.ailus@iki.fi	XMPP: sailus@retiisi.org.uk
+Paolo
