@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755550AbbA1EOL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 23:14:11 -0500
-Received: from mail.kernel.org ([198.145.29.136]:36866 "EHLO mail.kernel.org"
+	id S964934AbbA1Fbw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 00:31:52 -0500
+Received: from mail.kernel.org ([198.145.29.136]:36881 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759556AbbA1EOG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 23:14:06 -0500
+	id S1756792AbbA1EOI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 23:14:08 -0500
 From: lizf@kernel.org
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
+Cc: linux-kernel@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>,
+        Tejun Heo <tj@kernel.org>, Honggang Li <enjoymindful@gmail.com>,
         Zefan Li <lizefan@huawei.com>
-Subject: [PATCH 3.4 09/91] percpu: fix pcpu_alloc_pages() failure path
-Date: Wed, 28 Jan 2015 12:06:25 +0800
-Message-Id: <1422418236-12852-18-git-send-email-lizf@kernel.org>
+Subject: [PATCH 3.4 010/177] Revert "percpu: free percpu allocation info for uniprocessor system"
+Date: Wed, 28 Jan 2015 12:06:26 +0800
+Message-Id: <1422418236-12852-19-git-send-email-lizf@kernel.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422418050-12581-1-git-send-email-lizf@kernel.org>
 References: <1422418050-12581-1-git-send-email-lizf@kernel.org>
@@ -20,75 +21,45 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tejun Heo <tj@kernel.org>
+From: Guenter Roeck <linux@roeck-us.net>
 
-3.4.105-rc1 review patch.  If anyone has any objections, please let me know.
+3.4.106-rc1 review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
 
-commit f0d279654dea22b7a6ad34b9334aee80cda62cde upstream.
+commit bb2e226b3bef596dd56be97df655d857b4603923 upstream.
 
-When pcpu_alloc_pages() fails midway, pcpu_free_pages() is invoked to
-free what has already been allocated.  The invocation is across the
-whole requested range and pcpu_free_pages() will try to free all
-non-NULL pages; unfortunately, this is incorrect as
-pcpu_get_pages_and_bitmap(), unlike what its comment suggests, doesn't
-clear the pages array and thus the array may have entries from the
-previous invocations making the partial failure path free incorrect
-pages.
+This reverts commit 3189eddbcafc ("percpu: free percpu allocation info for
+uniprocessor system").
 
-Fix it by open-coding the partial freeing of the already allocated
-pages.
+The commit causes a hang with a crisv32 image. This may be an architecture
+problem, but at least for now the revert is necessary to be able to boot a
+crisv32 image.
 
+Cc: Tejun Heo <tj@kernel.org>
+Cc: Honggang Li <enjoymindful@gmail.com>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 Signed-off-by: Tejun Heo <tj@kernel.org>
+Fixes: 3189eddbcafc ("percpu: free percpu allocation info for uniprocessor system")
 Signed-off-by: Zefan Li <lizefan@huawei.com>
 ---
- mm/percpu-vm.c | 21 +++++++++++++++------
- 1 file changed, 15 insertions(+), 6 deletions(-)
+ mm/percpu.c | 2 --
+ 1 file changed, 2 deletions(-)
 
-diff --git a/mm/percpu-vm.c b/mm/percpu-vm.c
-index 405d331..6c055e4 100644
---- a/mm/percpu-vm.c
-+++ b/mm/percpu-vm.c
-@@ -108,7 +108,7 @@ static int pcpu_alloc_pages(struct pcpu_chunk *chunk,
- 			    int page_start, int page_end)
- {
- 	const gfp_t gfp = GFP_KERNEL | __GFP_HIGHMEM | __GFP_COLD;
--	unsigned int cpu;
-+	unsigned int cpu, tcpu;
- 	int i;
+diff --git a/mm/percpu.c b/mm/percpu.c
+index 5f6042b..13b2eef 100644
+--- a/mm/percpu.c
++++ b/mm/percpu.c
+@@ -1907,8 +1907,6 @@ void __init setup_per_cpu_areas(void)
  
- 	for_each_possible_cpu(cpu) {
-@@ -116,14 +116,23 @@ static int pcpu_alloc_pages(struct pcpu_chunk *chunk,
- 			struct page **pagep = &pages[pcpu_page_idx(cpu, i)];
- 
- 			*pagep = alloc_pages_node(cpu_to_node(cpu), gfp, 0);
--			if (!*pagep) {
--				pcpu_free_pages(chunk, pages, populated,
--						page_start, page_end);
--				return -ENOMEM;
--			}
-+			if (!*pagep)
-+				goto err;
- 		}
- 	}
- 	return 0;
-+
-+err:
-+	while (--i >= page_start)
-+		__free_page(pages[pcpu_page_idx(cpu, i)]);
-+
-+	for_each_possible_cpu(tcpu) {
-+		if (tcpu == cpu)
-+			break;
-+		for (i = page_start; i < page_end; i++)
-+			__free_page(pages[pcpu_page_idx(tcpu, i)]);
-+	}
-+	return -ENOMEM;
+ 	if (pcpu_setup_first_chunk(ai, fc) < 0)
+ 		panic("Failed to initialize percpu areas.");
+-
+-	pcpu_free_alloc_info(ai);
  }
  
- /**
+ #endif	/* CONFIG_SMP */
 -- 
 1.9.1
 
