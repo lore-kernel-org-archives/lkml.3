@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763586AbbA2DCi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 22:02:38 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:47007 "EHLO
+	id S1763431AbbA2C72 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 21:59:28 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:47015 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965299AbbA2Chm (ORCPT
+	with ESMTP id S965374AbbA2Ch4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 21:37:42 -0500
+	Wed, 28 Jan 2015 21:37:56 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Richard Weinberger <richard@nod.at>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
+Cc: Vitaly Kuznetsov <vkuznets@redhat.com>,
+        "K. Y. Srinivasan" <kys@microsoft.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13.y-ckt 029/139] UBI: Fix invalid vfree()
-Date: Wed, 28 Jan 2015 14:19:32 -0800
-Message-Id: <1422483682-15393-30-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13.y-ckt 030/139] Drivers: hv: vmbus: Fix a race condition when unregistering a device
+Date: Wed, 28 Jan 2015 14:19:33 -0800
+Message-Id: <1422483682-15393-31-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422483682-15393-1-git-send-email-kamal@canonical.com>
 References: <1422483682-15393-1-git-send-email-kamal@canonical.com>
@@ -28,74 +29,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Richard Weinberger <richard@nod.at>
+From: Vitaly Kuznetsov <vkuznets@redhat.com>
 
-commit f38aed975c0c3645bbdfc5ebe35726e64caaf588 upstream.
+commit 04a258c162a85c0f4ae56be67634dc43c9a4fa9b upstream.
 
-The logic of vfree()'ing vol->upd_buf is tied to vol->updating.
-In ubi_start_update() vol->updating is set long before vmalloc()'ing
-vol->upd_buf. If we encounter a write failure in ubi_start_update()
-before vmalloc() the UBI device release function will try to vfree()
-vol->upd_buf because vol->updating is set.
-Fix this by allocating vol->upd_buf directly after setting vol->updating.
+When build with Debug the following crash is sometimes observed:
+Call Trace:
+ [<ffffffff812b9600>] string+0x40/0x100
+ [<ffffffff812bb038>] vsnprintf+0x218/0x5e0
+ [<ffffffff810baf7d>] ? trace_hardirqs_off+0xd/0x10
+ [<ffffffff812bb4c1>] vscnprintf+0x11/0x30
+ [<ffffffff8107a2f0>] vprintk+0xd0/0x5c0
+ [<ffffffffa0051ea0>] ? vmbus_process_rescind_offer+0x0/0x110 [hv_vmbus]
+ [<ffffffff8155c71c>] printk+0x41/0x45
+ [<ffffffffa004ebac>] vmbus_device_unregister+0x2c/0x40 [hv_vmbus]
+ [<ffffffffa0051ecb>] vmbus_process_rescind_offer+0x2b/0x110 [hv_vmbus]
+...
 
-Fixes:
-[   31.559338] UBI warning: vol_cdev_release: update of volume 2 not finished, volume is damaged
-[   31.559340] ------------[ cut here ]------------
-[   31.559343] WARNING: CPU: 1 PID: 2747 at mm/vmalloc.c:1446 __vunmap+0xe3/0x110()
-[   31.559344] Trying to vfree() nonexistent vm area (ffffc90001f2b000)
-[   31.559345] Modules linked in:
-[   31.565620]  0000000000000bba ffff88002a0cbdb0 ffffffff818f0497 ffff88003b9ba148
-[   31.566347]  ffff88002a0cbde0 ffffffff8156f515 ffff88003b9ba148 0000000000000bba
-[   31.567073]  0000000000000000 0000000000000000 ffff88002a0cbe88 ffffffff8156c10a
-[   31.567793] Call Trace:
-[   31.568034]  [<ffffffff818f0497>] dump_stack+0x4e/0x7a
-[   31.568510]  [<ffffffff8156f515>] ubi_io_write_vid_hdr+0x155/0x160
-[   31.569084]  [<ffffffff8156c10a>] ubi_eba_write_leb+0x23a/0x870
-[   31.569628]  [<ffffffff81569b36>] vol_cdev_write+0x226/0x380
-[   31.570155]  [<ffffffff81179265>] vfs_write+0xb5/0x1f0
-[   31.570627]  [<ffffffff81179f8a>] SyS_pwrite64+0x6a/0xa0
-[   31.571123]  [<ffffffff818fde12>] system_call_fastpath+0x16/0x1b
+This happens due to the following race: between 'if (channel->device_obj)' check
+in vmbus_process_rescind_offer() and pr_debug() in vmbus_device_unregister() the
+device can disappear. Fix the issue by taking an additional reference to the
+device before proceeding to vmbus_device_unregister().
 
-Signed-off-by: Richard Weinberger <richard@nod.at>
-Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Signed-off-by: Vitaly Kuznetsov <vkuznets@redhat.com>
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/mtd/ubi/upd.c | 10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
+ drivers/hv/channel_mgmt.c | 11 +++++++++--
+ 1 file changed, 9 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/mtd/ubi/upd.c b/drivers/mtd/ubi/upd.c
-index ec2c2dc..2a1b6e0 100644
---- a/drivers/mtd/ubi/upd.c
-+++ b/drivers/mtd/ubi/upd.c
-@@ -133,6 +133,10 @@ int ubi_start_update(struct ubi_device *ubi, struct ubi_volume *vol,
- 	ubi_assert(!vol->updating && !vol->changing_leb);
- 	vol->updating = 1;
- 
-+	vol->upd_buf = vmalloc(ubi->leb_size);
-+	if (!vol->upd_buf)
-+		return -ENOMEM;
+diff --git a/drivers/hv/channel_mgmt.c b/drivers/hv/channel_mgmt.c
+index fa92046..505fe29 100644
+--- a/drivers/hv/channel_mgmt.c
++++ b/drivers/hv/channel_mgmt.c
+@@ -202,9 +202,16 @@ static void vmbus_process_rescind_offer(struct work_struct *work)
+ 	unsigned long flags;
+ 	struct vmbus_channel *primary_channel;
+ 	struct vmbus_channel_relid_released msg;
++	struct device *dev;
 +
- 	err = set_update_marker(ubi, vol);
- 	if (err)
- 		return err;
-@@ -152,14 +156,12 @@ int ubi_start_update(struct ubi_device *ubi, struct ubi_volume *vol,
- 		err = clear_update_marker(ubi, vol, 0);
- 		if (err)
- 			return err;
-+
-+		vfree(vol->upd_buf);
- 		vol->updating = 0;
- 		return 0;
- 	}
++	if (channel->device_obj) {
++		dev = get_device(&channel->device_obj->device);
++		if (dev) {
++			vmbus_device_unregister(channel->device_obj);
++			put_device(dev);
++		}
++	}
  
--	vol->upd_buf = vmalloc(ubi->leb_size);
--	if (!vol->upd_buf)
--		return -ENOMEM;
--
- 	vol->upd_ebs = div_u64(bytes + vol->usable_leb_size - 1,
- 			       vol->usable_leb_size);
- 	vol->upd_bytes = bytes;
+-	if (channel->device_obj)
+-		vmbus_device_unregister(channel->device_obj);
+ 	memset(&msg, 0, sizeof(struct vmbus_channel_relid_released));
+ 	msg.child_relid = channel->offermsg.child_relid;
+ 	msg.header.msgtype = CHANNELMSG_RELID_RELEASED;
 -- 
 1.9.1
 
