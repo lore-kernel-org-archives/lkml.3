@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933478AbbA1Bji (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 20:39:38 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41722 "EHLO
+	id S933432AbbA1Bio (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 20:38:44 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41773 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933403AbbA1Bil (ORCPT
+	with ESMTP id S933407AbbA1Bim (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 20:38:41 -0500
+	Tue, 27 Jan 2015 20:38:42 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
+        Dave Chinner <david@fromorbit.com>, Michal Hocko <mhocko@suse.cz>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.14 75/77] mm: page_alloc: reduce cost of the fair zone allocation policy
-Date: Tue, 27 Jan 2015 17:27:53 -0800
-Message-Id: <20150128012748.207832838@linuxfoundation.org>
+Subject: [PATCH 3.14 76/77] mm: get rid of radix tree gfp mask for pagecache_get_page
+Date: Tue, 27 Jan 2015 17:27:54 -0800
+Message-Id: <20150128012748.236795750@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <20150128012745.971137091@linuxfoundation.org>
 References: <20150128012745.971137091@linuxfoundation.org>
@@ -30,237 +29,156 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mel Gorman <mgorman@suse.de>
+From: Michal Hocko <mhocko@suse.cz>
 
-commit 4ffeaf3560a52b4a69cc7909873d08c0ef5909d4 upstream.
+commit 45f87de57f8fad59302fd263dd81ffa4843b5b24 upstream.
 
-The fair zone allocation policy round-robins allocations between zones
-within a node to avoid age inversion problems during reclaim.  If the
-first allocation fails, the batch counts are reset and a second attempt
-made before entering the slow path.
+Commit 2457aec63745 ("mm: non-atomically mark page accessed during page
+cache allocation where possible") has added a separate parameter for
+specifying gfp mask for radix tree allocations.
 
-One assumption made with this scheme is that batches expire at roughly
-the same time and the resets each time are justified.  This assumption
-does not hold when zones reach their low watermark as the batches will
-be consumed at uneven rates.  Allocation failure due to watermark
-depletion result in additional zonelist scans for the reset and another
-watermark check before hitting the slowpath.
+Not only this is less than optimal from the API point of view because it
+is error prone, it is also buggy currently because
+grab_cache_page_write_begin is using GFP_KERNEL for radix tree and if
+fgp_flags doesn't contain FGP_NOFS (mostly controlled by fs by
+AOP_FLAG_NOFS flag) but the mapping_gfp_mask has __GFP_FS cleared then
+the radix tree allocation wouldn't obey the restriction and might
+recurse into filesystem and cause deadlocks.  This is the case for most
+filesystems unfortunately because only ext4 and gfs2 are using
+AOP_FLAG_NOFS.
 
-On UMA, the benefit is negligible -- around 0.25%.  On 4-socket NUMA
-machine it's variable due to the variability of measuring overhead with
-the vmstat changes.  The system CPU overhead comparison looks like
+Let's simply remove radix_gfp_mask parameter because the allocation
+context is same for both page cache and for the radix tree.  Just make
+sure that the radix tree gets only the sane subset of the mask (e.g.  do
+not pass __GFP_WRITE).
 
-          3.16.0-rc3  3.16.0-rc3  3.16.0-rc3
-             vanilla   vmstat-v5 lowercost-v5
-User          746.94      774.56      802.00
-System      65336.22    32847.27    40852.33
-Elapsed     27553.52    27415.04    27368.46
+Long term it is more preferable to convert remaining users of
+AOP_FLAG_NOFS to use mapping_gfp_mask instead and simplify this
+interface even further.
 
-However it is worth noting that the overall benchmark still completed
-faster and intuitively it makes sense to take as few passes as possible
-through the zonelists.
-
-Signed-off-by: Mel Gorman <mgorman@suse.de>
-Acked-by: Johannes Weiner <hannes@cmpxchg.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Reported-by: Dave Chinner <david@fromorbit.com>
+Signed-off-by: Michal Hocko <mhocko@suse.cz>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Mel Gorman <mgorman@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- include/linux/mmzone.h |    6 ++
- mm/page_alloc.c        |  101 +++++++++++++++++++++++++------------------------
- 2 files changed, 59 insertions(+), 48 deletions(-)
 
---- a/include/linux/mmzone.h
-+++ b/include/linux/mmzone.h
-@@ -529,6 +529,7 @@ typedef enum {
- 	ZONE_WRITEBACK,			/* reclaim scanning has recently found
- 					 * many pages under writeback
- 					 */
-+	ZONE_FAIR_DEPLETED,		/* fair zone policy batch depleted */
- } zone_flags_t;
+
+---
+ include/linux/pagemap.h |   13 ++++++-------
+ mm/filemap.c            |   20 +++++++++-----------
+ 2 files changed, 15 insertions(+), 18 deletions(-)
+
+--- a/include/linux/pagemap.h
++++ b/include/linux/pagemap.h
+@@ -256,7 +256,7 @@ pgoff_t page_cache_prev_hole(struct addr
+ #define FGP_NOWAIT		0x00000020
  
- static inline void zone_set_flag(struct zone *zone, zone_flags_t flag)
-@@ -566,6 +567,11 @@ static inline int zone_is_reclaim_locked
- 	return test_bit(ZONE_RECLAIM_LOCKED, &zone->flags);
- }
+ struct page *pagecache_get_page(struct address_space *mapping, pgoff_t offset,
+-		int fgp_flags, gfp_t cache_gfp_mask, gfp_t radix_gfp_mask);
++		int fgp_flags, gfp_t cache_gfp_mask);
  
-+static inline int zone_is_fair_depleted(const struct zone *zone)
-+{
-+	return test_bit(ZONE_FAIR_DEPLETED, &zone->flags);
-+}
-+
- static inline int zone_is_oom_locked(const struct zone *zone)
+ /**
+  * find_get_page - find and get a page reference
+@@ -271,13 +271,13 @@ struct page *pagecache_get_page(struct a
+ static inline struct page *find_get_page(struct address_space *mapping,
+ 					pgoff_t offset)
  {
- 	return test_bit(ZONE_OOM_LOCKED, &zone->flags);
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -1614,6 +1614,9 @@ again:
- 	}
- 
- 	__mod_zone_page_state(zone, NR_ALLOC_BATCH, -(1 << order));
-+	if (zone_page_state(zone, NR_ALLOC_BATCH) == 0 &&
-+	    !zone_is_fair_depleted(zone))
-+		zone_set_flag(zone, ZONE_FAIR_DEPLETED);
- 
- 	__count_zone_vm_events(PGALLOC, zone, 1 << order);
- 	zone_statistics(preferred_zone, zone, gfp_flags);
-@@ -1938,6 +1941,18 @@ static inline void init_zone_allows_recl
- }
- #endif	/* CONFIG_NUMA */
- 
-+static void reset_alloc_batches(struct zone *preferred_zone)
-+{
-+	struct zone *zone = preferred_zone->zone_pgdat->node_zones;
-+
-+	do {
-+		mod_zone_page_state(zone, NR_ALLOC_BATCH,
-+			high_wmark_pages(zone) - low_wmark_pages(zone) -
-+			atomic_long_read(&zone->vm_stat[NR_ALLOC_BATCH]));
-+		zone_clear_flag(zone, ZONE_FAIR_DEPLETED);
-+	} while (zone++ != preferred_zone);
-+}
-+
- /*
-  * get_page_from_freelist goes through the zonelist trying to allocate
-  * a page.
-@@ -1955,8 +1970,12 @@ get_page_from_freelist(gfp_t gfp_mask, n
- 	int did_zlc_setup = 0;		/* just call zlc_setup() one time */
- 	bool consider_zone_dirty = (alloc_flags & ALLOC_WMARK_LOW) &&
- 				(gfp_mask & __GFP_WRITE);
-+	int nr_fair_skipped = 0;
-+	bool zonelist_rescan;
- 
- zonelist_scan:
-+	zonelist_rescan = false;
-+
- 	/*
- 	 * Scan zonelist, looking for a zone with enough free.
- 	 * See also __cpuset_node_allowed_softwall() comment in kernel/cpuset.c.
-@@ -1981,8 +2000,10 @@ zonelist_scan:
- 		if (alloc_flags & ALLOC_FAIR) {
- 			if (!zone_local(preferred_zone, zone))
- 				break;
--			if (atomic_long_read(&zone->vm_stat[NR_ALLOC_BATCH]) <= 0)
-+			if (zone_is_fair_depleted(zone)) {
-+				nr_fair_skipped++;
- 				continue;
-+			}
- 		}
- 		/*
- 		 * When allocating a page cache page for writing, we
-@@ -2088,13 +2109,7 @@ this_zone_full:
- 			zlc_mark_zone_full(zonelist, z);
- 	}
- 
--	if (unlikely(IS_ENABLED(CONFIG_NUMA) && page == NULL && zlc_active)) {
--		/* Disable zlc cache for second zonelist scan */
--		zlc_active = 0;
--		goto zonelist_scan;
--	}
--
--	if (page)
-+	if (page) {
- 		/*
- 		 * page->pfmemalloc is set when ALLOC_NO_WATERMARKS was
- 		 * necessary to allocate the page. The expectation is
-@@ -2103,8 +2118,37 @@ this_zone_full:
- 		 * for !PFMEMALLOC purposes.
- 		 */
- 		page->pfmemalloc = !!(alloc_flags & ALLOC_NO_WATERMARKS);
-+		return page;
-+	}
- 
--	return page;
-+	/*
-+	 * The first pass makes sure allocations are spread fairly within the
-+	 * local node.  However, the local node might have free pages left
-+	 * after the fairness batches are exhausted, and remote zones haven't
-+	 * even been considered yet.  Try once more without fairness, and
-+	 * include remote zones now, before entering the slowpath and waking
-+	 * kswapd: prefer spilling to a remote zone over swapping locally.
-+	 */
-+	if (alloc_flags & ALLOC_FAIR) {
-+		alloc_flags &= ~ALLOC_FAIR;
-+		if (nr_fair_skipped) {
-+			zonelist_rescan = true;
-+			reset_alloc_batches(preferred_zone);
-+		}
-+		if (nr_online_nodes > 1)
-+			zonelist_rescan = true;
-+	}
-+
-+	if (unlikely(IS_ENABLED(CONFIG_NUMA) && zlc_active)) {
-+		/* Disable zlc cache for second zonelist scan */
-+		zlc_active = 0;
-+		zonelist_rescan = true;
-+	}
-+
-+	if (zonelist_rescan)
-+		goto zonelist_scan;
-+
-+	return NULL;
+-	return pagecache_get_page(mapping, offset, 0, 0, 0);
++	return pagecache_get_page(mapping, offset, 0, 0);
  }
  
- /*
-@@ -2433,28 +2477,6 @@ __alloc_pages_high_priority(gfp_t gfp_ma
- 	return page;
+ static inline struct page *find_get_page_flags(struct address_space *mapping,
+ 					pgoff_t offset, int fgp_flags)
+ {
+-	return pagecache_get_page(mapping, offset, fgp_flags, 0, 0);
++	return pagecache_get_page(mapping, offset, fgp_flags, 0);
  }
  
--static void reset_alloc_batches(struct zonelist *zonelist,
--				enum zone_type high_zoneidx,
--				struct zone *preferred_zone)
--{
--	struct zoneref *z;
--	struct zone *zone;
--
--	for_each_zone_zonelist(zone, z, zonelist, high_zoneidx) {
--		/*
--		 * Only reset the batches of zones that were actually
--		 * considered in the fairness pass, we don't want to
--		 * trash fairness information for zones that are not
--		 * actually part of this zonelist's round-robin cycle.
--		 */
--		if (!zone_local(preferred_zone, zone))
--			continue;
--		mod_zone_page_state(zone, NR_ALLOC_BATCH,
--			high_wmark_pages(zone) - low_wmark_pages(zone) -
--			atomic_long_read(&zone->vm_stat[NR_ALLOC_BATCH]));
--	}
--}
--
- static void wake_all_kswapds(unsigned int order,
- 			     struct zonelist *zonelist,
- 			     enum zone_type high_zoneidx,
-@@ -2792,29 +2814,12 @@ retry_cpuset:
- 	if (allocflags_to_migratetype(gfp_mask) == MIGRATE_MOVABLE)
- 		alloc_flags |= ALLOC_CMA;
- #endif
--retry:
- 	/* First allocation attempt */
- 	page = get_page_from_freelist(gfp_mask|__GFP_HARDWALL, nodemask, order,
- 			zonelist, high_zoneidx, alloc_flags,
- 			preferred_zone, classzone_idx, migratetype);
- 	if (unlikely(!page)) {
- 		/*
--		 * The first pass makes sure allocations are spread
--		 * fairly within the local node.  However, the local
--		 * node might have free pages left after the fairness
--		 * batches are exhausted, and remote zones haven't
--		 * even been considered yet.  Try once more without
--		 * fairness, and include remote zones now, before
--		 * entering the slowpath and waking kswapd: prefer
--		 * spilling to a remote zone over swapping locally.
--		 */
--		if (alloc_flags & ALLOC_FAIR) {
--			reset_alloc_batches(zonelist, high_zoneidx,
--					    preferred_zone);
--			alloc_flags &= ~ALLOC_FAIR;
--			goto retry;
+ /**
+@@ -297,7 +297,7 @@ static inline struct page *find_get_page
+ static inline struct page *find_lock_page(struct address_space *mapping,
+ 					pgoff_t offset)
+ {
+-	return pagecache_get_page(mapping, offset, FGP_LOCK, 0, 0);
++	return pagecache_get_page(mapping, offset, FGP_LOCK, 0);
+ }
+ 
+ /**
+@@ -324,7 +324,7 @@ static inline struct page *find_or_creat
+ {
+ 	return pagecache_get_page(mapping, offset,
+ 					FGP_LOCK|FGP_ACCESSED|FGP_CREAT,
+-					gfp_mask, gfp_mask & GFP_RECLAIM_MASK);
++					gfp_mask);
+ }
+ 
+ /**
+@@ -345,8 +345,7 @@ static inline struct page *grab_cache_pa
+ {
+ 	return pagecache_get_page(mapping, index,
+ 			FGP_LOCK|FGP_CREAT|FGP_NOFS|FGP_NOWAIT,
+-			mapping_gfp_mask(mapping),
+-			GFP_NOFS);
++			mapping_gfp_mask(mapping));
+ }
+ 
+ struct page *find_get_entry(struct address_space *mapping, pgoff_t offset);
+--- a/mm/filemap.c
++++ b/mm/filemap.c
+@@ -897,7 +897,7 @@ EXPORT_SYMBOL(find_lock_entry);
+  * @mapping: the address_space to search
+  * @offset: the page index
+  * @fgp_flags: PCG flags
+- * @gfp_mask: gfp mask to use if a page is to be allocated
++ * @gfp_mask: gfp mask to use for the page cache data page allocation
+  *
+  * Looks up the page cache slot at @mapping & @offset.
+  *
+@@ -916,7 +916,7 @@ EXPORT_SYMBOL(find_lock_entry);
+  * If there is a page cache page, it is returned with an increased refcount.
+  */
+ struct page *pagecache_get_page(struct address_space *mapping, pgoff_t offset,
+-	int fgp_flags, gfp_t cache_gfp_mask, gfp_t radix_gfp_mask)
++	int fgp_flags, gfp_t gfp_mask)
+ {
+ 	struct page *page;
+ 
+@@ -953,13 +953,11 @@ no_page:
+ 	if (!page && (fgp_flags & FGP_CREAT)) {
+ 		int err;
+ 		if ((fgp_flags & FGP_WRITE) && mapping_cap_account_dirty(mapping))
+-			cache_gfp_mask |= __GFP_WRITE;
+-		if (fgp_flags & FGP_NOFS) {
+-			cache_gfp_mask &= ~__GFP_FS;
+-			radix_gfp_mask &= ~__GFP_FS;
 -		}
--		/*
- 		 * Runtime PM, block IO and its error handling path
- 		 * can deadlock because I/O on the device might not
- 		 * complete.
++			gfp_mask |= __GFP_WRITE;
++		if (fgp_flags & FGP_NOFS)
++			gfp_mask &= ~__GFP_FS;
+ 
+-		page = __page_cache_alloc(cache_gfp_mask);
++		page = __page_cache_alloc(gfp_mask);
+ 		if (!page)
+ 			return NULL;
+ 
+@@ -970,7 +968,8 @@ no_page:
+ 		if (fgp_flags & FGP_ACCESSED)
+ 			init_page_accessed(page);
+ 
+-		err = add_to_page_cache_lru(page, mapping, offset, radix_gfp_mask);
++		err = add_to_page_cache_lru(page, mapping, offset,
++				gfp_mask & GFP_RECLAIM_MASK);
+ 		if (unlikely(err)) {
+ 			page_cache_release(page);
+ 			page = NULL;
+@@ -2460,8 +2459,7 @@ struct page *grab_cache_page_write_begin
+ 		fgp_flags |= FGP_NOFS;
+ 
+ 	page = pagecache_get_page(mapping, index, fgp_flags,
+-			mapping_gfp_mask(mapping),
+-			GFP_KERNEL);
++			mapping_gfp_mask(mapping));
+ 	if (page)
+ 		wait_for_stable_page(page);
+ 
 
 
