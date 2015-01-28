@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1764226AbbA2DYg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 22:24:36 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:46933 "EHLO
+	id S932346AbbA2DZt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 22:25:49 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:46928 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932921AbbA2Cfe (ORCPT
+	with ESMTP id S1762069AbbA2CfZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 21:35:34 -0500
+	Wed, 28 Jan 2015 21:35:25 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Andy Lutomirski <luto@amacapital.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13.y-ckt 049/139] USB: cdc-acm: check for valid interfaces
-Date: Wed, 28 Jan 2015 14:19:52 -0800
-Message-Id: <1422483682-15393-50-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13.y-ckt 050/139] x86/asm/traps: Disable tracing and kprobes in fixup_bad_iret and sync_regs
+Date: Wed, 28 Jan 2015 14:19:53 -0800
+Message-Id: <1422483682-15393-51-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422483682-15393-1-git-send-email-kamal@canonical.com>
 References: <1422483682-15393-1-git-send-email-kamal@canonical.com>
@@ -27,41 +29,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+From: Andy Lutomirski <luto@amacapital.net>
 
-commit 403dff4e2c94f275e24fd85f40b2732ffec268a1 upstream.
+commit 7ddc6a2199f1da405a2fb68c40db8899b1a8cd87 upstream.
 
-We need to check that we have both a valid data and control inteface for both
-types of headers (union and not union.)
+These functions can be executed on the int3 stack, so kprobes
+are dangerous. Tracing is probably a bad idea, too.
 
-References: https://bugzilla.kernel.org/show_bug.cgi?id=83551
-Reported-by: Simon Schubert <2+kernel@0x2c.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Fixes: b645af2d5905 ("x86_64, traps: Rework bad_iret")
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Link: http://lkml.kernel.org/r/50e33d26adca60816f3ba968875801652507d0c4.1416870125.git.luto@amacapital.net
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/usb/class/cdc-acm.c | 9 +++++----
- 1 file changed, 5 insertions(+), 4 deletions(-)
+ arch/x86/kernel/traps.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/usb/class/cdc-acm.c b/drivers/usb/class/cdc-acm.c
-index 8a236bf..6746103 100644
---- a/drivers/usb/class/cdc-acm.c
-+++ b/drivers/usb/class/cdc-acm.c
-@@ -1049,10 +1049,11 @@ next_desc:
- 	} else {
- 		control_interface = usb_ifnum_to_if(usb_dev, union_header->bMasterInterface0);
- 		data_interface = usb_ifnum_to_if(usb_dev, (data_interface_num = union_header->bSlaveInterface0));
--		if (!control_interface || !data_interface) {
--			dev_dbg(&intf->dev, "no interfaces\n");
--			return -ENODEV;
--		}
-+	}
-+
-+	if (!control_interface || !data_interface) {
-+		dev_dbg(&intf->dev, "no interfaces\n");
-+		return -ENODEV;
- 	}
+diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
+index 574b356..c83c6af 100644
+--- a/arch/x86/kernel/traps.c
++++ b/arch/x86/kernel/traps.c
+@@ -369,7 +369,7 @@ exit:
+  * for scheduling or signal handling. The actual stack switch is done in
+  * entry.S
+  */
+-asmlinkage __kprobes struct pt_regs *sync_regs(struct pt_regs *eregs)
++asmlinkage __visible notrace struct pt_regs *sync_regs(struct pt_regs *eregs)
+ {
+ 	struct pt_regs *regs = eregs;
+ 	/* Did already sync */
+@@ -394,7 +394,7 @@ struct bad_iret_stack {
+ 	struct pt_regs regs;
+ };
  
- 	if (data_interface_num != call_interface_num)
+-asmlinkage __visible
++asmlinkage __visible notrace
+ struct bad_iret_stack *fixup_bad_iret(struct bad_iret_stack *s)
+ {
+ 	/*
 -- 
 1.9.1
 
