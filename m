@@ -1,73 +1,320 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756853AbbA2NsJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 08:48:09 -0500
-Received: from smtprelay0160.hostedemail.com ([216.40.44.160]:38792 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752455AbbA2NsG (ORCPT
+	id S1757219AbbA2Nsx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 08:48:53 -0500
+Received: from mail-oi0-f46.google.com ([209.85.218.46]:57307 "EHLO
+	mail-oi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752376AbbA2Nsw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 08:48:06 -0500
-X-Session-Marker: 6E657665747340676F6F646D69732E6F7267
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,rostedt@goodmis.org,:::::::::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1183:1260:1277:1311:1313:1314:1345:1359:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:1981:2194:2199:2393:2553:2559:2562:2736:3138:3139:3140:3141:3142:3352:3622:3865:3867:3868:3870:3872:3873:3874:4362:5007:6261:7875:8660:9040:9108:10004:10400:10848:10967:11026:11232:11658:11914:12043:12295:12438:12517:12519:12740:13069:13148:13149:13230:13311:13357:14096:14097:21060:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: books85_29452c61cc510
-X-Filterd-Recvd-Size: 2168
-Date: Thu, 29 Jan 2015 08:48:02 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [RFC][PATCH 0/3] kprobes/ftrace/x86: Function graph trace
- jprobes
-Message-ID: <20150129084802.77431788@gandalf.local.home>
-In-Reply-To: <54C9CD7C.3030402@hitachi.com>
-References: <20150128043036.429390502@goodmis.org>
-	<54C9CD7C.3030402@hitachi.com>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
+	Thu, 29 Jan 2015 08:48:52 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1422432945-6764-2-git-send-email-minchan@kernel.org>
+References: <1422432945-6764-1-git-send-email-minchan@kernel.org>
+	<1422432945-6764-2-git-send-email-minchan@kernel.org>
+Date: Thu, 29 Jan 2015 21:48:51 +0800
+Message-ID: <CADAEsF9tejvCL3gqGuYKsnv_wsfpsESsAg=Hm3r_ZfbpftE4-w@mail.gmail.com>
+Subject: Re: [PATCH v1 2/2] zram: remove init_lock in zram_make_request
+From: Ganesh Mahendran <opensource.ganesh@gmail.com>
+To: Minchan Kim <minchan@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Linux-MM <linux-mm@kvack.org>, Nitin Gupta <ngupta@vflare.org>,
+        Jerome Marchand <jmarchan@redhat.com>,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 29 Jan 2015 15:04:44 +0900
-Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
- 
-> Hmm, could you make this more generic? Maybe we can directly call
-> ftrace_return_to_handler() from longjmp_break_handler().
+Hello, Minchan:
 
-I tried that, but because the longjump handlers can also be traced (and
-I still want them to be :-) It makes things even more complicated to
-get the stacks right. It's best to deal with the stack when you can.
+2015-01-28 16:15 GMT+08:00 Minchan Kim <minchan@kernel.org>:
+> Admin could reset zram during I/O operation going on so we have
+> used zram->init_lock as read-side lock in I/O path to prevent
+> sudden zram meta freeing.
 
-> Actually, current implementation seems just skipping one return
-> address, however, there may be possible to call jprobe_return() in
-> the nested functions, like below;
-> 
-> void test_exit(int flag)
-> {
-> 	if (!flag)
-> 		jprobe_return();
-> }
-> int jdo_fork(...)
-> {
-> 	...
-> 	test_exit(something_to_test);
-> 	...
-> 	jprobe_return();
-> 	return 0;
-> }
-> 
-> I've tested similar code on this series and it crashed kernel.
-> (I also checked that the above example can work safely without graph tracer)
-> 
+When I/O operation is running, that means the /dev/zram0 is
+mounted or swaped on. Then the device could not be reset by
+below code:
 
-Ah yes, I missed this. I have a way to solve this but it's not going to
-get done before the merge window. Thanks for the test case. I'll use
-this and more complicated ones for future changes.
+    /* Do not reset an active device! */
+    if (bdev->bd_holders) {
+        ret = -EBUSY;
+        goto out;
+    }
 
-Thanks!
+So the zram->init_lock in I/O path is to check whether the device
+has been initialized(echo xxx > /sys/block/zram/disk_size).
 
--- Steve
+Is that right?
 
+>
+> However, the init_lock is really troublesome.
+> We can't do call zram_meta_alloc under init_lock due to lockdep splat
+
+I do not know much about the lockdep.
+
+enabled the CONFIG_LOCKDEP, But from the test, there is no warning
+printed. Could you please tell me how this happened?
+
+Thanks.
+
+> because zram_rw_page is one of the function under reclaim path and
+> hold it as read_lock while other places in process context hold it
+> as write_lock. So, we have used allocation out of the lock to avoid
+> lockdep warn but it's not good for readability and fainally, I met
+> another lockdep splat between init_lock and cpu_hotpulug from
+> kmem_cache_destroy during wokring zsmalloc compaction. :(
+>
+> Yes, the ideal is to remove horrible init_lock of zram in rw path.
+> This patch removes it in rw path and instead, put init_done bool
+> variable to check initialization done with smp_[wmb|rmb] and
+> srcu_[un]read_lock to prevent sudden zram meta freeing
+> during I/O operation.
+>
+> Signed-off-by: Minchan Kim <minchan@kernel.org>
+> ---
+>  drivers/block/zram/zram_drv.c | 85 +++++++++++++++++++++++++++++++------------
+>  drivers/block/zram/zram_drv.h |  5 +++
+>  2 files changed, 66 insertions(+), 24 deletions(-)
+>
+> diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
+> index a598ada817f0..b33add453027 100644
+> --- a/drivers/block/zram/zram_drv.c
+> +++ b/drivers/block/zram/zram_drv.c
+> @@ -32,6 +32,7 @@
+>  #include <linux/string.h>
+>  #include <linux/vmalloc.h>
+>  #include <linux/err.h>
+> +#include <linux/srcu.h>
+>
+>  #include "zram_drv.h"
+>
+> @@ -53,9 +54,31 @@ static ssize_t name##_show(struct device *d,         \
+>  }                                                                      \
+>  static DEVICE_ATTR_RO(name);
+>
+> -static inline int init_done(struct zram *zram)
+> +static inline bool init_done(struct zram *zram)
+>  {
+> -       return zram->meta != NULL;
+> +       /*
+> +        * init_done can be used without holding zram->init_lock in
+> +        * read/write handler(ie, zram_make_request) but we should make sure
+> +        * that zram->init_done should set up after meta initialization is
+> +        * done. Look at setup_init_done.
+> +        */
+> +       bool ret = zram->init_done;
+> +
+> +       if (ret)
+> +               smp_rmb(); /* pair with setup_init_done */
+> +
+> +       return ret;
+> +}
+> +
+> +static inline void setup_init_done(struct zram *zram, bool flag)
+> +{
+> +       /*
+> +        * Store operation of struct zram fields should complete
+> +        * before zram->init_done set up because zram_bvec_rw
+> +        * doesn't hold an zram->init_lock.
+> +        */
+> +       smp_wmb();
+> +       zram->init_done = flag;
+>  }
+>
+>  static inline struct zram *dev_to_zram(struct device *dev)
+> @@ -326,6 +349,10 @@ static void zram_meta_free(struct zram_meta *meta)
+>         kfree(meta);
+>  }
+>
+> +static void rcu_zram_do_nothing(struct rcu_head *unused)
+> +{
+> +}
+> +
+>  static struct zram_meta *zram_meta_alloc(int device_id, u64 disksize)
+>  {
+>         char pool_name[8];
+> @@ -726,11 +753,8 @@ static void zram_reset_device(struct zram *zram, bool reset_capacity)
+>                 return;
+>         }
+>
+> -       zcomp_destroy(zram->comp);
+>         zram->max_comp_streams = 1;
+>
+> -       zram_meta_free(zram->meta);
+> -       zram->meta = NULL;
+>         /* Reset stats */
+>         memset(&zram->stats, 0, sizeof(zram->stats));
+>
+> @@ -738,8 +762,12 @@ static void zram_reset_device(struct zram *zram, bool reset_capacity)
+>         if (reset_capacity)
+>                 set_capacity(zram->disk, 0);
+
+Should this be after synchronize_srcu()?
+
+>
+> +       setup_init_done(zram, false);
+> +       call_srcu(&zram->srcu, &zram->rcu, rcu_zram_do_nothing);
+> +       synchronize_srcu(&zram->srcu);
+> +       zram_meta_free(zram->meta);
+> +       zcomp_destroy(zram->comp);
+>         up_write(&zram->init_lock);
+> -
+>         /*
+>          * Revalidate disk out of the init_lock to avoid lockdep splat.
+>          * It's okay because disk's capacity is protected by init_lock
+> @@ -762,10 +790,19 @@ static ssize_t disksize_store(struct device *dev,
+>         if (!disksize)
+>                 return -EINVAL;
+>
+> +       down_write(&zram->init_lock);
+> +       if (init_done(zram)) {
+> +               pr_info("Cannot change disksize for initialized device\n");
+> +               up_write(&zram->init_lock);
+> +               return -EBUSY;
+> +       }
+> +
+>         disksize = PAGE_ALIGN(disksize);
+>         meta = zram_meta_alloc(zram->disk->first_minor, disksize);
+> -       if (!meta)
+> +       if (!meta) {
+> +               up_write(&zram->init_lock);
+>                 return -ENOMEM;
+> +       }
+>
+>         comp = zcomp_create(zram->compressor, zram->max_comp_streams);
+>         if (IS_ERR(comp)) {
+> @@ -775,17 +812,11 @@ static ssize_t disksize_store(struct device *dev,
+>                 goto out_free_meta;
+>         }
+>
+> -       down_write(&zram->init_lock);
+> -       if (init_done(zram)) {
+> -               pr_info("Cannot change disksize for initialized device\n");
+> -               err = -EBUSY;
+> -               goto out_destroy_comp;
+> -       }
+> -
+>         zram->meta = meta;
+>         zram->comp = comp;
+>         zram->disksize = disksize;
+>         set_capacity(zram->disk, zram->disksize >> SECTOR_SHIFT);
+> +       setup_init_done(zram, true);
+>         up_write(&zram->init_lock);
+>
+>         /*
+> @@ -797,10 +828,8 @@ static ssize_t disksize_store(struct device *dev,
+>
+>         return len;
+>
+> -out_destroy_comp:
+> -       up_write(&zram->init_lock);
+> -       zcomp_destroy(comp);
+>  out_free_meta:
+> +       up_write(&zram->init_lock);
+>         zram_meta_free(meta);
+>         return err;
+>  }
+> @@ -905,9 +934,10 @@ out:
+>   */
+>  static void zram_make_request(struct request_queue *queue, struct bio *bio)
+>  {
+> +       int idx;
+>         struct zram *zram = queue->queuedata;
+>
+> -       down_read(&zram->init_lock);
+> +       idx = srcu_read_lock(&zram->srcu);
+>         if (unlikely(!init_done(zram)))
+>                 goto error;
+>
+> @@ -918,12 +948,12 @@ static void zram_make_request(struct request_queue *queue, struct bio *bio)
+>         }
+>
+>         __zram_make_request(zram, bio);
+> -       up_read(&zram->init_lock);
+> +       srcu_read_unlock(&zram->srcu, idx);
+>
+>         return;
+>
+>  error:
+> -       up_read(&zram->init_lock);
+> +       srcu_read_unlock(&zram->srcu, idx);
+>         bio_io_error(bio);
+>  }
+>
+> @@ -945,18 +975,20 @@ static void zram_slot_free_notify(struct block_device *bdev,
+>  static int zram_rw_page(struct block_device *bdev, sector_t sector,
+>                        struct page *page, int rw)
+>  {
+> -       int offset, err;
+> +       int offset, err, idx;
+>         u32 index;
+>         struct zram *zram;
+>         struct bio_vec bv;
+>
+>         zram = bdev->bd_disk->private_data;
+> +       idx = srcu_read_lock(&zram->srcu);
+> +
+>         if (!valid_io_request(zram, sector, PAGE_SIZE)) {
+>                 atomic64_inc(&zram->stats.invalid_io);
+> +               srcu_read_unlock(&zram->srcu, idx);
+>                 return -EINVAL;
+>         }
+>
+> -       down_read(&zram->init_lock);
+>         if (unlikely(!init_done(zram))) {
+>                 err = -EIO;
+>                 goto out_unlock;
+> @@ -971,7 +1003,7 @@ static int zram_rw_page(struct block_device *bdev, sector_t sector,
+>
+>         err = zram_bvec_rw(zram, &bv, index, offset, rw);
+>  out_unlock:
+> -       up_read(&zram->init_lock);
+> +       srcu_read_unlock(&zram->srcu, idx);
+>         /*
+>          * If I/O fails, just return error(ie, non-zero) without
+>          * calling page_endio.
+> @@ -1041,6 +1073,11 @@ static int create_device(struct zram *zram, int device_id)
+>
+>         init_rwsem(&zram->init_lock);
+>
+> +       if (init_srcu_struct(&zram->srcu)) {
+> +               pr_err("Error initialize srcu for device %d\n", device_id);
+> +               goto out;
+> +       }
+> +
+>         zram->queue = blk_alloc_queue(GFP_KERNEL);
+>         if (!zram->queue) {
+>                 pr_err("Error allocating disk queue for device %d\n",
+> @@ -1125,8 +1162,8 @@ static void destroy_device(struct zram *zram)
+>
+>         del_gendisk(zram->disk);
+>         put_disk(zram->disk);
+> -
+>         blk_cleanup_queue(zram->queue);
+> +       cleanup_srcu_struct(&zram->srcu);
+>  }
+>
+>  static int __init zram_init(void)
+> diff --git a/drivers/block/zram/zram_drv.h b/drivers/block/zram/zram_drv.h
+> index e492f6bf11f1..2042c310aea8 100644
+> --- a/drivers/block/zram/zram_drv.h
+> +++ b/drivers/block/zram/zram_drv.h
+> @@ -105,8 +105,13 @@ struct zram {
+>         struct gendisk *disk;
+>         struct zcomp *comp;
+>
+> +       struct srcu_struct srcu;
+> +       struct rcu_head rcu;
+> +
+>         /* Prevent concurrent execution of device init, reset and R/W request */
+>         struct rw_semaphore init_lock;
+> +       bool init_done;
+> +
+>         /*
+>          * This is the limit on amount of *uncompressed* worth of data
+>          * we can store in a disk.
+> --
+> 1.9.1
+>
