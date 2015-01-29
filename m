@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755646AbbA2ITV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 03:19:21 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:51144 "EHLO
+	id S1755551AbbA2ITT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 03:19:19 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:51171 "EHLO
 	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752648AbbA2IKF (ORCPT
+	with ESMTP id S1752724AbbA2IKF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 29 Jan 2015 03:10:05 -0500
 X-Original-SENDERIP: 10.177.220.203
@@ -18,9 +18,9 @@ Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Andi Kleen <andi@firstfloor.org>,
         Stephane Eranian <eranian@google.com>,
         Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [PATCH 12/42] perf tools: Add HEADER_DATA_INDEX feature
-Date: Thu, 29 Jan 2015 17:06:53 +0900
-Message-Id: <1422518843-25818-13-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 13/42] perf tools: Handle indexed data file properly
+Date: Thu, 29 Jan 2015 17:06:54 +0900
+Message-Id: <1422518843-25818-14-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <1422518843-25818-1-git-send-email-namhyung@kernel.org>
 References: <1422518843-25818-1-git-send-email-namhyung@kernel.org>
@@ -28,149 +28,112 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The HEADER_DATA_INDEX feature is to record index table for sample data
-so that they can be processed by multiple thread concurrently.  Each
-item is a struct perf_file_section which consists of an offset and size.
+When perf detects data file has index table, process header file first
+and then rest data files in a row.  Note that the indexed data is
+recorded for each cpu/thread separately, it's already ordered with
+respect to themselves so no need to use the ordered event queue
+interface.
 
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/builtin-data.c   |  0
- tools/perf/builtin-record.c |  2 ++
- tools/perf/util/header.c    | 61 +++++++++++++++++++++++++++++++++++++++++++++
- tools/perf/util/header.h    |  3 +++
- 4 files changed, 66 insertions(+)
- create mode 100644 tools/perf/builtin-data.c
+ tools/perf/util/session.c | 47 ++++++++++++++++++++++++++++++++++++-----------
+ tools/perf/util/session.h |  5 +++++
+ 2 files changed, 41 insertions(+), 11 deletions(-)
 
-diff --git a/tools/perf/builtin-data.c b/tools/perf/builtin-data.c
-new file mode 100644
-index 000000000000..e69de29bb2d1
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index 56118d8cf74a..b057e2caa5f1 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -312,6 +312,8 @@ static void record__init_features(struct record *rec)
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index 0baf75f12b7c..ff4d5913220c 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -1251,11 +1251,10 @@ fetch_mmaped_event(struct perf_session *session,
+ #define NUM_MMAPS 128
+ #endif
  
- 	if (!rec->opts.branch_stack)
- 		perf_header__clear_feat(&session->header, HEADER_BRANCH_STACK);
-+
-+	perf_header__clear_feat(&session->header, HEADER_DATA_INDEX);
- }
- 
- static volatile int workload_exec_errno;
-diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-index 1f407f7352a7..77206a6cbf65 100644
---- a/tools/perf/util/header.c
-+++ b/tools/perf/util/header.c
-@@ -869,6 +869,24 @@ static int write_branch_stack(int fd __maybe_unused,
- 	return 0;
- }
- 
-+static int write_data_index(int fd, struct perf_header *h,
-+			    struct perf_evlist *evlist __maybe_unused)
-+{
-+	int ret;
-+	unsigned i;
-+
-+	ret = do_write(fd, &h->nr_index, sizeof(h->nr_index));
-+	if (ret < 0)
-+		return ret;
-+
-+	for (i = 0; i < h->nr_index; i++) {
-+		ret = do_write(fd, &h->index[i], sizeof(*h->index));
-+		if (ret < 0)
-+			return ret;
-+	}
-+	return 0;
-+}
-+
- static void print_hostname(struct perf_header *ph, int fd __maybe_unused,
- 			   FILE *fp)
+-static int __perf_session__process_events(struct perf_session *session,
++static int __perf_session__process_events(struct perf_session *session, int fd,
+ 					  u64 data_offset, u64 data_size,
+ 					  u64 file_size, struct perf_tool *tool)
  {
-@@ -1225,6 +1243,12 @@ static void print_group_desc(struct perf_header *ph, int fd __maybe_unused,
+-	int fd = perf_data_file__fd(session->file);
+ 	u64 head, page_offset, file_offset, file_pos, size;
+ 	int err, mmap_prot, mmap_flags, map_idx = 0;
+ 	size_t	mmap_size;
+@@ -1278,7 +1277,9 @@ static int __perf_session__process_events(struct perf_session *session,
+ 	mmap_size = MMAP_SIZE;
+ 	if (mmap_size > file_size) {
+ 		mmap_size = file_size;
+-		session->one_mmap = true;
++
++		if (!perf_session__has_index(session))
++			session->one_mmap = true;
  	}
- }
  
-+static void print_data_index(struct perf_header *ph __maybe_unused,
-+			     int fd __maybe_unused, FILE *fp)
-+{
-+	fprintf(fp, "# contains data index for parallel processing\n");
-+}
-+
- static int __event_process_build_id(struct build_id_event *bev,
- 				    char *filename,
- 				    struct perf_session *session)
-@@ -1833,6 +1857,42 @@ static int process_group_desc(struct perf_file_section *section __maybe_unused,
- 	return ret;
- }
+ 	memset(mmaps, 0, sizeof(mmaps));
+@@ -1360,19 +1361,43 @@ static int __perf_session__process_events(struct perf_session *session,
+ int perf_session__process_events(struct perf_session *session,
+ 				 struct perf_tool *tool)
+ {
+-	u64 size = perf_data_file__size(session->file);
+-	int err;
++	struct perf_data_file *file = session->file;
++	u64 size = perf_data_file__size(file);
++	int err, i;
  
-+static int process_data_index(struct perf_file_section *section __maybe_unused,
-+			      struct perf_header *ph, int fd,
-+			      void *data __maybe_unused)
-+{
-+	ssize_t ret;
-+	u64 nr_index;
-+	unsigned i;
-+	struct perf_file_section *index;
+ 	if (perf_session__register_idle_thread(session) == NULL)
+ 		return -ENOMEM;
+ 
+-	if (!perf_data_file__is_pipe(session->file))
++	if (perf_data_file__is_pipe(file))
++		return __perf_session__process_pipe_events(session, tool);
 +
-+	ret = readn(fd, &nr_index, sizeof(nr_index));
-+	if (ret != sizeof(nr_index))
-+		return -1;
++	err = __perf_session__process_events(session,
++					     perf_data_file__fd(file),
++					     session->header.data_offset,
++					     session->header.data_size,
++					     size, tool);
 +
-+	if (ph->needs_swap)
-+		nr_index = bswap_64(nr_index);
++	if (err < 0 || !perf_session__has_index(session))
++		return err;
 +
-+	index = calloc(nr_index, sizeof(*index));
-+	if (index == NULL)
-+		return -1;
++	/*
++	 * For indexed data file, events are processed for
++	 * each cpu/thread so it's already ordered.
++	 */
++	tool->ordered_events = false;
 +
-+	for (i = 0; i < nr_index; i++) {
-+		ret = readn(fd, &index[i], sizeof(*index));
-+		if (ret != sizeof(*index))
-+			return ret;
++	for (i = 0; i < (int)session->header.nr_index; i++) {
++		if (!session->header.index[i].size)
++			continue;
 +
-+		if (ph->needs_swap) {
-+			index[i].offset = bswap_64(index[i].offset);
-+			index[i].size   = bswap_64(index[i].size);
-+		}
+ 		err = __perf_session__process_events(session,
+-						     session->header.data_offset,
+-						     session->header.data_size,
+-						     size, tool);
+-	else
+-		err = __perf_session__process_pipe_events(session, tool);
++						perf_data_file__fd(file),
++						session->header.index[i].offset,
++						session->header.index[i].size,
++						size, tool);
++		if (err < 0)
++			break;
 +	}
-+
-+	ph->index = index;
-+	ph->nr_index = nr_index;
-+	return 0;
+ 
+ 	return err;
+ }
+diff --git a/tools/perf/util/session.h b/tools/perf/util/session.h
+index 6d663dc76404..419976d74b51 100644
+--- a/tools/perf/util/session.h
++++ b/tools/perf/util/session.h
+@@ -138,4 +138,9 @@ int perf_event__synthesize_id_index(struct perf_tool *tool,
+ 				    struct perf_evlist *evlist,
+ 				    struct machine *machine);
+ 
++static inline bool perf_session__has_index(struct perf_session *session)
++{
++	return perf_header__has_feat(&session->header, HEADER_DATA_INDEX);
 +}
 +
- struct feature_ops {
- 	int (*write)(int fd, struct perf_header *h, struct perf_evlist *evlist);
- 	void (*print)(struct perf_header *h, int fd, FILE *fp);
-@@ -1873,6 +1933,7 @@ static const struct feature_ops feat_ops[HEADER_LAST_FEATURE] = {
- 	FEAT_OPA(HEADER_BRANCH_STACK,	branch_stack),
- 	FEAT_OPP(HEADER_PMU_MAPPINGS,	pmu_mappings),
- 	FEAT_OPP(HEADER_GROUP_DESC,	group_desc),
-+	FEAT_OPP(HEADER_DATA_INDEX,	data_index),
- };
- 
- struct header_print_data {
-diff --git a/tools/perf/util/header.h b/tools/perf/util/header.h
-index 3bb90ac172a1..e5594f0d6dcd 100644
---- a/tools/perf/util/header.h
-+++ b/tools/perf/util/header.h
-@@ -30,6 +30,7 @@ enum {
- 	HEADER_BRANCH_STACK,
- 	HEADER_PMU_MAPPINGS,
- 	HEADER_GROUP_DESC,
-+	HEADER_DATA_INDEX,
- 	HEADER_LAST_FEATURE,
- 	HEADER_FEAT_BITS	= 256,
- };
-@@ -94,6 +95,8 @@ struct perf_header {
- 	bool				needs_swap;
- 	u64				data_offset;
- 	u64				data_size;
-+	struct perf_file_section	*index;
-+	u64				nr_index;
- 	u64				feat_offset;
- 	DECLARE_BITMAP(adds_features, HEADER_FEAT_BITS);
- 	struct perf_session_env 	env;
+ #endif /* __PERF_SESSION_H */
 -- 
 2.2.2
 
