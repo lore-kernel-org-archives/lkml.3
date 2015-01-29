@@ -1,98 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933977AbbA2CdB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 21:33:01 -0500
-Received: from mail-qg0-f54.google.com ([209.85.192.54]:58260 "EHLO
-	mail-qg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933200AbbA2Cc6 (ORCPT
+	id S1757177AbbA2DQM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 22:16:12 -0500
+Received: from nasmtp01.atmel.com ([192.199.1.245]:36171 "EHLO
+	DVREDG01.corp.atmel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1759279AbbA2CgV convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 21:32:58 -0500
-From: "S. Gilles" <sgilles@terpmail.umd.edu>
-X-Google-Original-From: "S. Gilles" <sgilles@umd.edu>
-Date: Wed, 28 Jan 2015 21:32:47 -0500
-To: Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Maik Broemme <mbroemme@plusserver.de>
-Cc: linux-fbdev <linux-fbdev@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: i915 framebuffer init too slow to find logo
-Message-ID: <20150129023247.GA10967@number16>
+	Wed, 28 Jan 2015 21:36:21 -0500
+From: "Yang, Wenyou" <Wenyou.Yang@atmel.com>
+To: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+CC: "Ferre, Nicolas" <Nicolas.FERRE@atmel.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "alexandre.belloni@free-electrons.com" 
+	<alexandre.belloni@free-electrons.com>,
+        "sylvain.rochet@finsecur.com" <sylvain.rochet@finsecur.com>,
+        "peda@axentia.se" <peda@axentia.se>,
+        "Vilchez, Patrice" <Patrice.VILCHEZ@atmel.com>
+Subject: RE: [PATCH 2/7] pm: at91: pm_suspend: add the WFI support for ARMv7
+Thread-Topic: [PATCH 2/7] pm: at91: pm_suspend: add the WFI support for ARMv7
+Thread-Index: AQHQOU/HdMw+T88Z+Em9nd3GGfCtCpzU4ZwAgAGCwhA=
+Date: Thu, 29 Jan 2015 02:36:01 +0000
+Message-ID: <B256D81BAE5131468A838E5D7A243641BFD38E3C@penmbx01>
+References: <1422266617-24381-1-git-send-email-wenyou.yang@atmel.com>
+ <1422266761-24487-1-git-send-email-wenyou.yang@atmel.com>
+ <20150128112551.GA13253@e102568-lin.cambridge.arm.com>
+In-Reply-To: <20150128112551.GA13253@e102568-lin.cambridge.arm.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.168.5.13]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since commit 92b004d1aa9f367c372511ca0330f58216b25703 : prevent use of
-logs after they have been freed, my i915 machine has no logo on boot
-(reverting that commit brings it back on recent trees). My .config
-builds nothing but wireless as =m, so I think this is a genuine false
-positive (as predicted by the commit). Examining an augmented dmesg,
-it appears that the framebuffer setup is too slow by about 0.3s, which
-I wouldn't really expect from this system/driver.
+Hi Lorenzo,
 
-Is this slowness considered worth fixing, or is this issue considered
-too cosmetic? (Or is this just PEBKAC?)
+Thank you for your review.
 
-Possibly useful information:
+> -----Original Message-----
+> From: Lorenzo Pieralisi [mailto:lorenzo.pieralisi@arm.com]
+> Sent: Wednesday, January 28, 2015 7:26 PM
+> To: Yang, Wenyou
+> Cc: Ferre, Nicolas; linux@arm.linux.org.uk; linux-arm-kernel@lists.infradead.org;
+> linux-kernel@vger.kernel.org; alexandre.belloni@free-electrons.com;
+> sylvain.rochet@finsecur.com; peda@axentia.se; Vilchez, Patrice
+> Subject: Re: [PATCH 2/7] pm: at91: pm_suspend: add the WFI support for ARMv7
+> 
+> On Mon, Jan 26, 2015 at 10:06:01AM +0000, Wenyou Yang wrote:
+> 
+> Commit log please.
+Added in the v2.0
 
-$ lspci | grep VGA
-00:02.0 VGA compatible controller: Intel Corporation 2nd Generation Core Processor Family Integrated Graphics Controller (rev 09)
+> 
+> > Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
+> > ---
+> >  arch/arm/mach-at91/pm_suspend.S |   54
+> ++++++++++++++++++++++++++++++++++++++-
+> >  1 file changed, 53 insertions(+), 1 deletion(-)
+> >
+> > diff --git a/arch/arm/mach-at91/pm_suspend.S
+> > b/arch/arm/mach-at91/pm_suspend.S index 122a3f1..e796722 100644
+> > --- a/arch/arm/mach-at91/pm_suspend.S
+> > +++ b/arch/arm/mach-at91/pm_suspend.S
+> > @@ -53,6 +53,58 @@ mode	.req	r6
+> >  	beq	1b
+> >  	.endm
+> >
+> > +/*
+> > + * Put the processor to enter the WFI state  */
+> > +	.macro _do_wfi
+> 
+> You will have to explain why you need this, really.
+I don't understand your meaning.
 
->From various printk()s, it looks like the slow portion of
-fb_console_init() is restore_fbdev_mode(), specifically
-drm_mode_set_config_internal(), which takes about 0.45s, while the
-fb_logo_late_init() call happens about 0.15s into that. I can give the
-full details if requested.
+> 
+> > +
+> > +#if defined(CONFIG_CPU_V7)
+> > +	/*
+> > +	 * Execute an ISB instruction to flush the pipeline to ensure
+> > +	 * that all of operations have beem completed.
+> 
+> s/beem/been
+Thanks.
 
-Possibly relevant .config bits:
+> 
+> > +	 */
+> > +	isb
+> > +
+> > +	/*
+> > +	 * Execute an ISB instruction to ensure that all of the
+> > +	 * CP15 register changes have been committed.
+> > +	 */
+> > +	dsb
+> 
+> This is a dsb not an isb.
+Changed in the v2.0
 
-# Graphics support
-CONFIG_AGP=y
-CONFIG_AGP_INTEL=y
-CONFIG_INTEL_GTT=y
-CONFIG_VGA_ARB=y
-CONFIG_VGA_ARB_MAX_GPUS=16
+> 
+> > +	dmb
+> 
+> You have to explain why you need every single one of these barriers, otherwise I
+> am NAKing this patch.
+No need this one?
 
-# Direct Rendering Manager
-CONFIG_DRM=y
-CONFIG_DRM_KMS_HELPER=y
-CONFIG_DRM_KMS_FB_HELPER=y
+> 
+> > +
+> > +	/* Disable the processor's clock */
+> > +	mov	tmp1, #AT91_PMC_PCK
+> > +	str	tmp1, [pmc, #AT91_PMC_SCDR]
+> > +
+> > +	/* Execute a WFI instruction */
+> > +	wfi	@ Wait For Interrupt
+> 
+> This one looks ok :)
+> 
+> > +
+> > +	/*
+> > +	 * CPU can specualatively prefetch the instructions
+> > +	 * so add NOPs after WFI. Sixteen NOPs as Cortex-A5 pipeline.
+> 
+> So what ? I suspect your issue is related to wfi completion on pending IRQ. I
+> would like to know the details that describe the issue you are trying to solve here
+> please.
+Honestly, I referred to others, I will dig more, and test it.
 
-# I2C encoder or helper chips
-CONFIG_DRM_I915=y
-CONFIG_DRM_I915_KMS=y
-CONFIG_DRM_I915_FBDEV=y
-CONFIG_DRM_I915_PRELIMINARY_HW_SUPPORT=y
+> 
+> > +	 */
+> > +	nop
+> > +	nop
+> > +	nop
+> > +	nop
+> > +	nop
+> > +	nop
+> > +	nop
+> > +	nop
+> > +	nop
+> > +	nop
+> > +	nop
+> > +	nop
+> > +	nop
+> > +	nop
+> > +	nop
+> > +	nop
+> > +#else
+> > +	mcr	p15, 0, tmp1, c7, c0, 4
+> > +#endif
+> 
+> Tell us what's the problem you have to solve, first, then we will see how to fix it.
+> 
+> Thanks,
+> Lorenzo
+> 
+> > +
+> > +	.endm
+> > +
+> >  	.text
+> >
+> >  /*
+> > @@ -181,7 +233,7 @@ sdr_sr_done:
+> >
+> >  skip_disable_main_clock:
+> >  	/* Wait for interrupt */
+> > -	mcr	p15, 0, tmp1, c7, c0, 4
+> > +	_do_wfi
+> >
+> >  	tst	mode, #AT91_PM_SLOW_CLOCK
+> >  	beq	skip_enable_main_clock
+> > --
+> > 1.7.9.5
+> >
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe
+> > linux-kernel" in the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > Please read the FAQ at  http://www.tux.org/lkml/
+> >
 
-# Frame buffer Devices
-CONFIG_FB=y
-CONFIG_FIRMWARE_EDID=y
-CONFIG_FB_CMDLINE=y
-CONFIG_FB_CFB_FILLRECT=y
-CONFIG_FB_CFB_COPYAREA=y
-CONFIG_FB_CFB_IMAGEBLIT=y
-
-# Frame buffer hardware drivers
-CONFIG_BACKLIGHT_LCD_SUPPORT=y
-CONFIG_LCD_CLASS_DEVICE=y
-CONFIG_LCD_PLATFORM=y
-CONFIG_BACKLIGHT_CLASS_DEVICE=y
-CONFIG_BACKLIGHT_GENERIC=y
-CONFIG_HDMI=y
-
-# Console display driver support
-CONFIG_VGA_CONSOLE=y
-CONFIG_DUMMY_CONSOLE=y
-CONFIG_FRAMEBUFFER_CONSOLE=y
-CONFIG_FRAMEBUFFER_CONSOLE_DETECT_PRIMARY=y
-CONFIG_FRAMEBUFFER_CONSOLE_ROTATION=y
-CONFIG_LOGO=y
-CONFIG_LOGO_LINUX_MONO=y
-CONFIG_LOGO_LINUX_VGA16=y
-CONFIG_LOGO_LINUX_CLUT224=y
-
--- 
-S. Gilles
+Best Regards,
+Wenyou Yang
