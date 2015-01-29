@@ -1,77 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754327AbbA2PkA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 10:40:00 -0500
-Received: from smtp113.iad3a.emailsrvr.com ([173.203.187.113]:35412 "EHLO
-	smtp113.iad3a.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752040AbbA2Pj6 (ORCPT
+	id S1755384AbbA2Pkd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 10:40:33 -0500
+Received: from outbound-smtp06.blacknight.com ([81.17.249.39]:47649 "EHLO
+	outbound-smtp06.blacknight.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754226AbbA2Pk3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 10:39:58 -0500
-X-Sender-Id: abbotti@mev.co.uk
-Message-ID: <54CA5445.3090808@mev.co.uk>
-Date: Thu, 29 Jan 2015 15:39:49 +0000
-From: Ian Abbott <abbotti@mev.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.3.0
+	Thu, 29 Jan 2015 10:40:29 -0500
+Message-ID: <54CA546B.3040704@nexus-software.ie>
+Date: Thu, 29 Jan 2015 15:40:27 +0000
+From: "Bryan O'Donoghue" <pure.logic@nexus-software.ie>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
 MIME-Version: 1.0
-To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        H Hartley Sweeten <hsweeten@visionengravers.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Bernd Porr <mail@berndporr.me.uk>,
-        Chase Southwood <chase.southwood@gmail.com>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: comedi: drivers: usbduxsigma: Removed variables
- that is never used
-References: <1422484741-9666-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-In-Reply-To: <1422484741-9666-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+To: "Ong, Boon Leong" <boon.leong.ong@intel.com>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>,
+        "dvhart@infradead.org" <dvhart@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andy Shevchenko <andy.shevchenko@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: [PATCH 1/2] x86: Add Isolated Memory Regions for Quark X1000
+References: <1422470186-7860-1-git-send-email-pure.logic@nexus-software.ie>	<1422470186-7860-2-git-send-email-pure.logic@nexus-software.ie>	<20150129074411.GA4817@gmail.com> <CAHp75Vfff-C++LWyyK+FWLnot=jO4kQvbDaN9hJ2_VrhG8n2Qg@mail.gmail.com> <54CA0782.8000807@nexus-software.ie> <AF233D1473C1364ABD51D28909A1B1B7327158BE@PGSMSX105.gar.corp.intel.com> <54CA502D.9030307@nexus-software.ie> <AF233D1473C1364ABD51D28909A1B1B732715B43@PGSMSX105.gar.corp.intel.com>
+In-Reply-To: <AF233D1473C1364ABD51D28909A1B1B732715B43@PGSMSX105.gar.corp.intel.com>
 Content-Type: text/plain; charset=windows-1252; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 28/01/15 22:39, Rickard Strandqvist wrote:
-> Variable ar assigned a value that is never used.
-> I have also removed all the code that thereby serves no purpose.
+On 29/01/15 15:32, Ong, Boon Leong wrote:
 >
-> This was found using a static code analysis program called cppcheck
 >
-> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-> ---
->   drivers/staging/comedi/drivers/usbduxsigma.c |    3 +--
->   1 file changed, 1 insertion(+), 2 deletions(-)
->
-> diff --git a/drivers/staging/comedi/drivers/usbduxsigma.c b/drivers/staging/comedi/drivers/usbduxsigma.c
-> index dc19435..7b80887 100644
-> --- a/drivers/staging/comedi/drivers/usbduxsigma.c
-> +++ b/drivers/staging/comedi/drivers/usbduxsigma.c
-> @@ -215,7 +215,6 @@ static void usbduxsigma_ai_handle_urb(struct comedi_device *dev,
->   	struct usbduxsigma_private *devpriv = dev->private;
->   	struct comedi_async *async = s->async;
->   	struct comedi_cmd *cmd = &async->cmd;
-> -	unsigned int dio_state;
->   	uint32_t val;
->   	int ret;
->   	int i;
-> @@ -225,7 +224,7 @@ static void usbduxsigma_ai_handle_urb(struct comedi_device *dev,
->   		devpriv->ai_counter = devpriv->ai_timer;
->
->   		/* get the state of the dio pins to allow external trigger */
-> -		dio_state = be32_to_cpu(devpriv->in_buf[0]);
-> +		be32_to_cpu(devpriv->in_buf[0]);
+>> -----Original Message-----
+>> From: Bryan O'Donoghue [mailto:pure.logic@nexus-software.ie]
+>> Sent: Thursday, January 29, 2015 11:22 PM
+>> To: Ong, Boon Leong
+>> Cc: Thomas Gleixner; Ingo Molnar; H. Peter Anvin; x86@kernel.org;
+>> dvhart@infradead.org; linux-kernel@vger.kernel.org; Andy Shevchenko; Ingo
+>> Molnar
+>> Subject: Re: [PATCH 1/2] x86: Add Isolated Memory Regions for Quark X1000
+>>
+>> On 29/01/15 13:47, Ong, Boon Leong wrote:
+>>> Bryan,
+>>>
+>>> Once you have the next revision ready, I would like to test it on my end across
+>> both Galileo Gen v1 & v2.
+>>>
+>>> Cheers,
+>>> BL
+>>
+>> Andy/BL - thanks for taking the time to test.
+>>
+>> I may end up dropping the imr_del_range() tests based on index as a result of
+>> changing the external interface as suggested by Ingo.
+> It would be nice to have two variants (1) index based & (2) address based.
 
-That line produces a compiler warning.  The line can be removed as the 
-call to be32_to_cpu() has no side-effects.  The "/* get the state ..." 
-comment line can also be removed as it is only associated with this line.
+Understood. The direction from Ingo was to have address based external 
+interface imr_del_range() and support an index based internal 
+imr_clear() - internally.
 
-Perhaps Bernd intended to use dio_state for something here, but I'm not 
-sure what.
+So - in order to get test coverage - I'll move the self-test code back 
+into the main IMR code
 
->
->   		/* get the data from the USB bus and hand it over to comedi */
->   		for (i = 0; i < cmd->chanlist_len; i++) {
->
-
-
--- 
--=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk> )=-
--=(                          Web: http://www.mev.co.uk/  )=-
+Not as pretty that way - but better coverage :)
