@@ -1,113 +1,300 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757798AbbA2L0G (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 06:26:06 -0500
-Received: from mail-lb0-f176.google.com ([209.85.217.176]:47692 "EHLO
-	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754831AbbA2LZu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 06:25:50 -0500
+	id S1758385AbbA2L05 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 06:26:57 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:50260 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753977AbbA2L0s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Jan 2015 06:26:48 -0500
+Message-ID: <54CA18EF.2060607@ti.com>
+Date: Thu, 29 Jan 2015 13:26:39 +0200
+From: Roger Quadros <rogerq@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
 MIME-Version: 1.0
-In-Reply-To: <54C9F525.4040703@zonque.org>
-References: <1421435777-25306-1-git-send-email-gregkh@linuxfoundation.org>
- <1421435777-25306-2-git-send-email-gregkh@linuxfoundation.org>
- <54BE5DC8.70706@gmail.com> <54BE9D08.7010804@zonque.org> <54BF805B.4000609@gmail.com>
- <54BFDAAA.50203@zonque.org> <54C0CE8A.5080805@gmail.com> <CANq1E4S=3qNw599L85uj-8aXwxeV+mcurB_Nu_rHH8opAeePjw@mail.gmail.com>
- <54C10DDC.9000503@gmail.com> <20150123160854.GA5210@kroah.com>
- <54C65346.5070504@gmail.com> <CANq1E4SkHhs1pWUe-TzG7bzk1M-Q++mB2vmQGuYx0RMF53wg4Q@mail.gmail.com>
- <CALCETrU1O6LjhrXSH2aXWFt2WGh=ssrq4K9HD10f_Z55iT=Otw@mail.gmail.com> <54C9F525.4040703@zonque.org>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Thu, 29 Jan 2015 03:25:28 -0800
-Message-ID: <CALCETrV6P+Lx5FRLyDNubG18tqCTLprkXJf=82aa5DsRHjkuKA@mail.gmail.com>
-Subject: Re: [PATCH 01/13] kdbus: add documentation
-To: Daniel Mack <daniel@zonque.org>
-Cc: Michael Kerrisk <mtk.manpages@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
-        "Theodore T'so" <tytso@mit.edu>, Linux API <linux-api@vger.kernel.org>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Austin S Hemmelgarn <ahferroin7@gmail.com>,
-        Tom Gundersen <teg@jklm.no>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        David Herrmann <dh.herrmann@gmail.com>,
-        Djalal Harouni <tixxdz@opendz.org>, Johannes Stezenbach <js@sig21.net>,
-        Christoph Hellwig <hch@infradead.org>
-Content-Type: text/plain; charset=UTF-8
+To: Chanwoo Choi <cw00.choi@samsung.com>
+CC: <myungjoo.ham@samsung.com>, <balbi@ti.com>, <tony@atomide.com>,
+        <george.cherian@ti.com>, <nsekhar@ti.com>,
+        <devicetree@vger.kernel.org>, <linux-usb@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 1/7] extcon: usb-gpio: Introduce gpio usb extcon driver
+References: <1422274532-9488-1-git-send-email-rogerq@ti.com> <1422274532-9488-2-git-send-email-rogerq@ti.com> <54C8D2F4.9050404@ti.com> <54C99197.5070605@samsung.com>
+In-Reply-To: <54C99197.5070605@samsung.com>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Jan 29, 2015 3:53 AM, "Daniel Mack" <daniel@zonque.org> wrote:
->
-> Hi Andy,
->
-> On 01/27/2015 05:03 PM, Andy Lutomirski wrote:
-> > On Tue, Jan 27, 2015 at 7:05 AM, David Herrmann <dh.herrmann@gmail.com> wrote:
->
-> >> A 16byte copy does not affect the performance of kdbus message
-> >> transactions in any way that matters.
->
-> > What are the performance goals of kdbus?  How fast is it ever intended
-> > to be?
->
-> One of the design goals of kdbus is to speed up a typical D-Bus message
-> turnaround. That is, to minimize the number of context switches it
-> currently takes to get a message across the bus, and to avoid
-> unnecessary extra payload copies.
->
-> Even though I'm sure there's still room for future improvement, the
-> benchmark test we provided in the kernel self-tests shows that basic
-> data transmission performance is roughly comparable to that of UDS for
-> smaller payloads. For payloads of bigger sizes (>128kb), kdbus is
-> actually faster due to its zero-copy mechanism.
->
-> > The reason I ask is that, in the current design, kdbus
-> > collects "metadata" (credentials and other identifying information,
-> > collected in kdbus_meta_proc_collect) from the sender of every message
-> > *at send time*. [1]  This is slow, and it will always be slow.  The
-> > slowness of this operation will, in my personal system performance
-> > crystal ball, overshadow the cost of a 16 byte copy by several orders
-> > of magnitude.
->
-> That's certainly true, but that's not a contradiction to the performance
-> argument. Please keep in mind that if a receiving peer does not request
-> any metadata, the kernel doesn't collect and attach any. We know that
-> gathering of some of the metadata comes at a price, which is why we
-> split up the information is such fine-grained pieces.
->
-> Also note that if a receiving peer opts in for a certain piece of
-> metadata, it should do that that for a good reason, because it needs
-> that data to process a request. Letting kdbus do the work of providing
-> such information is still a lot faster than having the receiving peer
-> gather it itself, as that would involve more syscalls and more context
-> switches (let alone the fact that doing so is inherently racy, as
-> explained in earlier threads).
+Chanwoo,
 
-All this is true, but if you used connect-time metadata, this would be
-a non-issue.
+On 29/01/15 03:49, Chanwoo Choi wrote:
+> Hi Roger,
+> 
+> We need to discuss one point about 'id_irqwake'.
+> I don't recommend to use 'id_irqwake' field.
+> 
+> And I catch build warning by using "select" keywork in Kconfig.
+> It is my wrong guide of "select" keyword. So, I'll change it 
+> as 'depends on' keyword.
+> 
+> Looks good to me except for 'id_irqwake'. 
+> I'll apply this patch on 3.21 queue after completing this discussion.
+> 
+> On 01/28/2015 09:15 PM, Roger Quadros wrote:
+>> This driver observes the USB ID pin connected over a GPIO and
+>> updates the USB cable extcon states accordingly.
+>>
+>> The existing GPIO extcon driver is not suitable for this purpose
+>> as it needs to be taught to understand USB cable states and it
+>> can't handle more than one cable per instance.
+>>
+>> For the USB case we need to handle 2 cable states.
+>> 1) USB (attach/detach)
+>> 2) USB-Host (attach/detach)
+>>
+>> This driver can be easily updated in the future to handle VBUS
+>> events in case it happens to be available on GPIO for any platform.
+>>
+>> Signed-off-by: Roger Quadros <rogerq@ti.com>
+>> ---
+>> v3:
+>> - removed IRQF_NO_SUSPEND flag. Added IRQF_TRIGGER_RISING and
+>>   IRQF_TRIGGER_FALLING
+>> - Added disable_irq() to suspend() and enable_irq() to resume()
+>>
+>>  .../devicetree/bindings/extcon/extcon-usb-gpio.txt |  18 ++
+>>  drivers/extcon/Kconfig                             |   7 +
+>>  drivers/extcon/Makefile                            |   1 +
+>>  drivers/extcon/extcon-usb-gpio.c                   | 233 +++++++++++++++++++++
+>>  4 files changed, 259 insertions(+)
+>>  create mode 100644 Documentation/devicetree/bindings/extcon/extcon-usb-gpio.txt
+>>  create mode 100644 drivers/extcon/extcon-usb-gpio.c
+>>
+>> diff --git a/Documentation/devicetree/bindings/extcon/extcon-usb-gpio.txt b/Documentation/devicetree/bindings/extcon/extcon-usb-gpio.txt
+>> new file mode 100644
+>> index 0000000..85fe6b0
+>> --- /dev/null
+>> +++ b/Documentation/devicetree/bindings/extcon/extcon-usb-gpio.txt
+>> @@ -0,0 +1,18 @@
+>> +USB GPIO Extcon device
+>> +
+>> +This is a virtual device used to generate USB cable states from the USB ID pin
+>> +connected to a GPIO pin.
+>> +
+>> +Required properties:
+>> +- compatible: Should be "linux,extcon-usb-gpio"
+>> +- id-gpio: gpio for USB ID pin. See gpio binding.
+>> +
+>> +Example:
+>> +	extcon_usb1 {
+>> +		compatible = "linux,extcon-usb-gpio";
+>> +		id-gpio = <&gpio6 1 GPIO_ACTIVE_HIGH>;
+>> +	}
+>> +
+>> +	&omap_dwc3_1 {
+>> +		extcon = <&extcon_usb1>;
+>> +	};
+>> diff --git a/drivers/extcon/Kconfig b/drivers/extcon/Kconfig
+>> index 6a1f7de..fd11536 100644
+>> --- a/drivers/extcon/Kconfig
+>> +++ b/drivers/extcon/Kconfig
+>> @@ -93,4 +93,11 @@ config EXTCON_SM5502
+>>  	  Silicon Mitus SM5502. The SM5502 is a USB port accessory
+>>  	  detector and switch.
+>>  
+>> +config EXTCON_USB_GPIO
+>> +	tristate "USB GPIO extcon support"
+>> +	select GPIOLIB
+> 
+> I catch the build warning if using 'select' instead of 'depends on' as following:
+> It is my wrong guide to you. So, I'll modify it by using "depends on" as your original patch.
 
-Given that I see almost no advantage to send-time metadata, and I see
-three disadvantages (slower, inconsistent with the basic POSIX model,
-and inconsistent with existing user-space dbus), I still don't see why
-you designed it this way.
+OK. Thanks.
 
-There's an added disadvantage of the current design: if a kdbus user
-is communicating with a traditional d-bus user using the proxy, then
-IIUC the credentials at the time of connection get used.
+> 
+> make ARCH=arm CROSS_COMPILE=arm-linux-gnueabi- zImage  -j 8
+> scripts/kconfig/conf --silentoldconfig Kconfig
+> drivers/gpio/Kconfig:34:error: recursive dependency detected!
+> drivers/gpio/Kconfig:34:	symbol GPIOLIB is selected by EXTCON_USB_GPIO
+> drivers/extcon/Kconfig:96:	symbol EXTCON_USB_GPIO depends on EXTCON
+> drivers/extcon/Kconfig:1:	symbol EXTCON is selected by CHARGER_MANAGER
+> drivers/power/Kconfig:316:	symbol CHARGER_MANAGER depends on POWER_SUPPLY
+> drivers/power/Kconfig:1:	symbol POWER_SUPPLY is selected by HID_SONY
+> drivers/hid/Kconfig:670:	symbol HID_SONY depends on NEW_LEDS
+> drivers/leds/Kconfig:8:	symbol NEW_LEDS is selected by BCMA_DRIVER_GPIO
+> drivers/bcma/Kconfig:75:	symbol BCMA_DRIVER_GPIO depends on GPIOLIB
+> 
+>> +	help
+>> +	  Say Y here to enable GPIO based USB cable detection extcon support.
+>> +	  Used typically if GPIO is used for USB ID pin detection.
+>> +
+>>  endif # MULTISTATE_SWITCH
+>> diff --git a/drivers/extcon/Makefile b/drivers/extcon/Makefile
+>> index 0370b42..6a08a98 100644
+>> --- a/drivers/extcon/Makefile
+>> +++ b/drivers/extcon/Makefile
+>> @@ -12,3 +12,4 @@ obj-$(CONFIG_EXTCON_MAX8997)	+= extcon-max8997.o
+>>  obj-$(CONFIG_EXTCON_PALMAS)	+= extcon-palmas.o
+>>  obj-$(CONFIG_EXTCON_RT8973A)	+= extcon-rt8973a.o
+>>  obj-$(CONFIG_EXTCON_SM5502)	+= extcon-sm5502.o
+>> +obj-$(CONFIG_EXTCON_USB_GPIO)	+= extcon-usb-gpio.o
+>> diff --git a/drivers/extcon/extcon-usb-gpio.c b/drivers/extcon/extcon-usb-gpio.c
+>> new file mode 100644
+>> index 0000000..99a58b2
+>> --- /dev/null
+>> +++ b/drivers/extcon/extcon-usb-gpio.c
+>> @@ -0,0 +1,233 @@
+>> +/**
+>> + * drivers/extcon/extcon-usb-gpio.c - USB GPIO extcon driver
+>> + *
+>> + * Copyright (C) 2015 Texas Instruments Incorporated - http://www.ti.com
+>> + * Author: Roger Quadros <rogerq@ti.com>
+>> + *
+>> + * This program is free software; you can redistribute it and/or modify
+>> + * it under the terms of the GNU General Public License version 2 as
+>> + * published by the Free Software Foundation.
+>> + *
+>> + * This program is distributed in the hope that it will be useful,
+>> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+>> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+>> + * GNU General Public License for more details.
+>> + */
+>> +
+>> +#include <linux/extcon.h>
+>> +#include <linux/init.h>
+>> +#include <linux/interrupt.h>
+>> +#include <linux/irq.h>
+>> +#include <linux/kernel.h>
+>> +#include <linux/module.h>
+>> +#include <linux/of_gpio.h>
+>> +#include <linux/platform_device.h>
+>> +#include <linux/slab.h>
+>> +#include <linux/workqueue.h>
+>> +
+>> +#define USB_GPIO_DEBOUNCE_MS	20	/* ms */
+>> +
+>> +struct usb_extcon_info {
+>> +	struct device *dev;
+>> +	struct extcon_dev *edev;
+>> +
+>> +	struct gpio_desc *id_gpiod;
+>> +	int id_irq;
+>> +	bool id_irqwake;		/* ID wakeup enabled flag */
+> 
+> Do you really think id_irqwake is necessary?
+> I think it is not necessary.
 
-In summary, the current design is (a) unlike almost everything else
-that uses file descriptors, (b) much slower, (c) different from
-traditional d-bus, and (d) gives inconsistent behavior to new clients
-depending on what server they're connecting to.
+I will explain below why it is necessary.
 
---Andy
+> 
+>> +
+>> +	unsigned long debounce_jiffies;
+>> +	struct delayed_work wq_detcable;
+>> +};
+>> +
+>> +/* List of detectable cables */
+>> +enum {
+>> +	EXTCON_CABLE_USB = 0,
+>> +	EXTCON_CABLE_USB_HOST,
+>> +
+>> +	EXTCON_CABLE_END,
+>> +};
+>> +
+>> +static const char *usb_extcon_cable[] = {
+>> +	[EXTCON_CABLE_USB] = "USB",
+>> +	[EXTCON_CABLE_USB_HOST] = "USB-Host",
+>> +	NULL,
+>> +};
+>> +
+> 
+> [snip]
+> 
+>> +
+>> +static int usb_extcon_remove(struct platform_device *pdev)
+>> +{
+>> +	struct usb_extcon_info *info = platform_get_drvdata(pdev);
+>> +
+>> +	cancel_delayed_work_sync(&info->wq_detcable);
+>> +
+>> +	return 0;
+>> +}
+>> +
+>> +#ifdef CONFIG_PM_SLEEP
+>> +static int usb_extcon_suspend(struct device *dev)
+>> +{
+>> +	struct usb_extcon_info *info = dev_get_drvdata(dev);
+>> +
+>> +	if (device_may_wakeup(dev))
+>> +		if (!enable_irq_wake(info->id_irq))
+>> +			info->id_irqwake = true;
+>> +
+> 
+> You can simplify this code as following without 'id_irqwake':
+> 
+> 	if (device_may_wakeup(dev))
+> 		enable_irq_wake(info->id_irq);
 
->
-> So, yes, collecting metadata can slow down message exchange, but after
-> all, that's an optional feature that has to be used with sense. I'll add
-> some words on that to the man-pages.
->
->
-> HTH,
-> Daniel
->
+enable_irq_wake() can fail. And if it does we need to keep track of it
+to prevent unbalanced disable_irq_wake() call in resume().
+That's the reason I've added the id_irqwake flag in struct usb_extcon_info.
+
+> 
+>> +	/*
+>> +	 * We don't want to process any IRQs after this point
+>> +	 * as GPIOs used behind I2C subsystem might not be
+>> +	 * accessible until resume completes. So disable IRQ.
+>> +	 */
+>> +	disable_irq(info->id_irq);
+>> +
+>> +	return 0;
+>> +}
+>> +
+>> +static int usb_extcon_resume(struct device *dev)
+>> +{
+>> +	struct usb_extcon_info *info = dev_get_drvdata(dev);
+>> +
+>> +	if (info->id_irqwake) {
+>> +		disable_irq_wake(info->id_irq);
+>> +		info->id_irqwake = false;
+>> +	}
+> 
+> ditto.
+> 
+> 	if (device_may_wakeup(dev))
+> 		disable_irq_wake(info->id_irq);
+> 
+>> +
+>> +	enable_irq(info->id_irq);
+>> +
+>> +	return 0;
+>> +}
+>> +#endif
+>> +
+>> +static SIMPLE_DEV_PM_OPS(usb_extcon_pm_ops,
+>> +			 usb_extcon_suspend, usb_extcon_resume);
+>> +
+>> +static struct of_device_id usb_extcon_dt_match[] = {
+>> +	{ .compatible = "linux,extcon-usb-gpio", },
+>> +	{ /* sentinel */ }
+>> +};
+>> +MODULE_DEVICE_TABLE(of, usb_extcon_dt_match);
+>> +
+>> +static struct platform_driver usb_extcon_driver = {
+>> +	.probe		= usb_extcon_probe,
+>> +	.remove		= usb_extcon_remove,
+>> +	.driver		= {
+>> +		.name	= "extcon-usb-gpio",
+>> +		.pm	= &usb_extcon_pm_ops,
+>> +		.of_match_table = usb_extcon_dt_match,
+>> +	},
+>> +};
+>> +
+>> +module_platform_driver(usb_extcon_driver);
+>> +
+>> +MODULE_AUTHOR("Roger Quadros <rogerq@ti.com>");
+>> +MODULE_DESCRIPTION("USB GPIO extcon driver");
+>> +MODULE_LICENSE("GPL v2");
+>>
+> 
+cheers,
+-roger
