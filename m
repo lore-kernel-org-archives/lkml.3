@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932119AbbA2PC2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 10:02:28 -0500
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:47389 "EHLO
+	id S1754535AbbA2PAi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 10:00:38 -0500
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:47396 "EHLO
 	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753484AbbA2PAb (ORCPT
+	with ESMTP id S1754030AbbA2PAf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 10:00:31 -0500
+	Thu, 29 Jan 2015 10:00:35 -0500
 From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
 To: Ulf Hansson <ulf.hansson@linaro.org>
 Cc: Kukjin Kim <kgene@kernel.org>, Doug Anderson <dianders@chromium.org>,
@@ -16,9 +16,9 @@ Cc: Kukjin Kim <kgene@kernel.org>, Doug Anderson <dianders@chromium.org>,
         linux-arm-kernel@lists.infradead.org, linux-mmc@vger.kernel.org,
         devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
         Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Subject: [PATCH v3 4/6] mmc: pwrseq_simple: Add optional reference clock support
-Date: Thu, 29 Jan 2015 16:00:06 +0100
-Message-Id: <1422543608-24704-5-git-send-email-javier.martinez@collabora.co.uk>
+Subject: [PATCH v3 5/6] ARM: dts: exynos5250-snow: Enable wifi power-on
+Date: Thu, 29 Jan 2015 16:00:07 +0100
+Message-Id: <1422543608-24704-6-git-send-email-javier.martinez@collabora.co.uk>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <1422543608-24704-1-git-send-email-javier.martinez@collabora.co.uk>
 References: <1422543608-24704-1-git-send-email-javier.martinez@collabora.co.uk>
@@ -26,136 +26,80 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some WLAN chips attached to a SDIO interface, need a reference clock.
+The Snow board has a MMC/SDIO wifi chip that is always powered but it
+needs a power sequence involving a reset (active low) and an enable
+(active high) pins. Both pins are marked as active low since the MMC
+simple power sequence driver asserts the pins prior to the card power
+up procedure and de-asserts the pins after the card has been powered.
 
-Since this is very common, extend the prseq_simple driver to support
-an optional clock that is enabled prior the card power up procedure.
+So the reset line will be left de-asserted and the enable pin will be
+left asserted.
 
-Note: the external clock is optional. Thus an error is not returned
-if the clock is not found.
+The chip also needs an external 32kHz reference clock to be operational
+that is by the MAX77686 PMIC clock.
+
+Add a simple MMC power sequence provider for the wifi MMC/SDIO slot.
 
 Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
 ---
 
-Changes since v2:
- - Add a clk_enabled bool to struct mmc_pwrseq_simple to track clock
-   gate/ungate since .power_off can be called prior to .pre_power_on.
-   Suggested by Ulf Hansson.
- - clk_get() does not return -ENOSYS so don't check for that.
-   Suggested by Ulf Hansson.
+Changes since v2: None.
 
 Changes since v1:
- - Rebase on top of latest changes.
- - Use IS_ERR() instead of checking for NULL to see if the clock exists.
+ - Remove cap-sdio-irq from mmc3 dev node since is a separate change.
+   Suggested by Arend van Spriel.
 ---
- drivers/mmc/core/pwrseq_simple.c | 38 ++++++++++++++++++++++++++++++++++++--
- 1 file changed, 36 insertions(+), 2 deletions(-)
+ arch/arm/boot/dts/exynos5250-snow.dts | 25 ++++++++++++++++++++++++-
+ 1 file changed, 24 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/mmc/core/pwrseq_simple.c b/drivers/mmc/core/pwrseq_simple.c
-index e53d3c7e059c..50d09d920430 100644
---- a/drivers/mmc/core/pwrseq_simple.c
-+++ b/drivers/mmc/core/pwrseq_simple.c
-@@ -7,6 +7,7 @@
-  *
-  *  Simple MMC power sequence management
-  */
-+#include <linux/clk.h>
- #include <linux/kernel.h>
- #include <linux/slab.h>
- #include <linux/device.h>
-@@ -20,6 +21,8 @@
- 
- struct mmc_pwrseq_simple {
- 	struct mmc_pwrseq pwrseq;
-+	bool clk_enabled;
-+	struct clk *ext_clk;
- 	int nr_gpios;
- 	struct gpio_desc *reset_gpios[0];
- };
-@@ -39,6 +42,11 @@ static void mmc_pwrseq_simple_pre_power_on(struct mmc_host *host)
- 	struct mmc_pwrseq_simple *pwrseq = container_of(host->pwrseq,
- 					struct mmc_pwrseq_simple, pwrseq);
- 
-+	if (!IS_ERR(pwrseq->ext_clk)) {
-+		clk_prepare_enable(pwrseq->ext_clk);
-+		pwrseq->clk_enabled = true;
-+	}
+diff --git a/arch/arm/boot/dts/exynos5250-snow.dts b/arch/arm/boot/dts/exynos5250-snow.dts
+index b9aeec430527..b78712058903 100644
+--- a/arch/arm/boot/dts/exynos5250-snow.dts
++++ b/arch/arm/boot/dts/exynos5250-snow.dts
+@@ -229,6 +229,14 @@
+ 		power-supply = <&fet6>;
+ 		backlight = <&backlight>;
+ 	};
 +
- 	mmc_pwrseq_simple_set_gpios_value(pwrseq, 1);
- }
- 
-@@ -50,6 +58,19 @@ static void mmc_pwrseq_simple_post_power_on(struct mmc_host *host)
- 	mmc_pwrseq_simple_set_gpios_value(pwrseq, 0);
- }
- 
-+static void mmc_pwrseq_simple_power_off(struct mmc_host *host)
-+{
-+	struct mmc_pwrseq_simple *pwrseq = container_of(host->pwrseq,
-+					struct mmc_pwrseq_simple, pwrseq);
-+
-+	mmc_pwrseq_simple_set_gpios_value(pwrseq, 1);
-+
-+	if (pwrseq->clk_enabled) {
-+		clk_disable_unprepare(pwrseq->ext_clk);
-+		pwrseq->clk_enabled = false;
-+	}
-+}
-+
- static void mmc_pwrseq_simple_free(struct mmc_host *host)
- {
- 	struct mmc_pwrseq_simple *pwrseq = container_of(host->pwrseq,
-@@ -60,6 +81,9 @@ static void mmc_pwrseq_simple_free(struct mmc_host *host)
- 		if (!IS_ERR(pwrseq->reset_gpios[i]))
- 			gpiod_put(pwrseq->reset_gpios[i]);
- 
-+	if (!IS_ERR(pwrseq->ext_clk))
-+		clk_put(pwrseq->ext_clk);
-+
- 	kfree(pwrseq);
- 	host->pwrseq = NULL;
- }
-@@ -67,7 +91,7 @@ static void mmc_pwrseq_simple_free(struct mmc_host *host)
- static struct mmc_pwrseq_ops mmc_pwrseq_simple_ops = {
- 	.pre_power_on = mmc_pwrseq_simple_pre_power_on,
- 	.post_power_on = mmc_pwrseq_simple_post_power_on,
--	.power_off = mmc_pwrseq_simple_pre_power_on,
-+	.power_off = mmc_pwrseq_simple_power_off,
- 	.free = mmc_pwrseq_simple_free,
++	mmc3_pwrseq: mmc3_pwrseq {
++		compatible = "mmc-pwrseq-simple";
++		reset-gpios = <&gpx0 2 GPIO_ACTIVE_LOW>, /* WIFI_RSTn */
++			      <&gpx0 1 GPIO_ACTIVE_LOW>; /* WIFI_EN */
++		clocks = <&max77686 MAX77686_CLK_PMIC>;
++		clock-names = "ext_clock";
++	};
  };
  
-@@ -85,6 +109,13 @@ int mmc_pwrseq_simple_alloc(struct mmc_host *host, struct device *dev)
- 	if (!pwrseq)
- 		return -ENOMEM;
+ &dp {
+@@ -536,12 +544,27 @@
+ 	samsung,dw-mshc-sdr-timing = <2 3>;
+ 	samsung,dw-mshc-ddr-timing = <1 2>;
+ 	pinctrl-names = "default";
+-	pinctrl-0 = <&sd3_clk &sd3_cmd &sd3_bus4>;
++	pinctrl-0 = <&sd3_clk &sd3_cmd &sd3_bus4 &wifi_en &wifi_rst>;
+ 	bus-width = <4>;
+ 	cap-sd-highspeed;
++	mmc-pwrseq = <&mmc3_pwrseq>;
+ };
  
-+	pwrseq->ext_clk = clk_get(dev, "ext_clock");
-+	if (IS_ERR(pwrseq->ext_clk) &&
-+	    PTR_ERR(pwrseq->ext_clk) != -ENOENT) {
-+		ret = PTR_ERR(pwrseq->ext_clk);
-+		goto free;
-+	}
+ &pinctrl_0 {
++	wifi_en: wifi-en {
++		samsung,pins = "gpx0-1";
++		samsung,pin-function = <1>;
++		samsung,pin-pud = <0>;
++		samsung,pin-drv = <0>;
++	};
 +
- 	for (i = 0; i < nr_gpios; i++) {
- 		pwrseq->reset_gpios[i] = gpiod_get_index(dev, "reset", i,
- 							 GPIOD_OUT_HIGH);
-@@ -96,7 +127,7 @@ int mmc_pwrseq_simple_alloc(struct mmc_host *host, struct device *dev)
- 			while (--i)
- 				gpiod_put(pwrseq->reset_gpios[i]);
- 
--			goto free;
-+			goto clk_put;
- 		}
- 	}
- 
-@@ -105,6 +136,9 @@ int mmc_pwrseq_simple_alloc(struct mmc_host *host, struct device *dev)
- 	host->pwrseq = &pwrseq->pwrseq;
- 
- 	return 0;
-+clk_put:
-+	if (!IS_ERR(pwrseq->ext_clk))
-+		clk_put(pwrseq->ext_clk);
- free:
- 	kfree(pwrseq);
- 	return ret;
++	wifi_rst: wifi-rst {
++		samsung,pins = "gpx0-2";
++		samsung,pin-function = <1>;
++		samsung,pin-pud = <0>;
++		samsung,pin-drv = <0>;
++	};
++
+ 	power_key_irq: power-key-irq {
+ 		samsung,pins = "gpx1-3";
+ 		samsung,pin-function = <0xf>;
 -- 
 2.1.3
 
