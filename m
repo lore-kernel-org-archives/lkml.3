@@ -1,42 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753727AbbA2MZH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 07:25:07 -0500
-Received: from mout.kundenserver.de ([212.227.17.13]:53033 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752702AbbA2MZF (ORCPT
+	id S1754887AbbA2M0Q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 07:26:16 -0500
+Received: from smtp113.iad3a.emailsrvr.com ([173.203.187.113]:58755 "EHLO
+	smtp113.iad3a.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753925AbbA2M0P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 07:25:05 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Zubair Lutfullah Kakakhel <Zubair.Kakakhel@imgtec.com>
-Cc: stern@rowland.harvard.edu, gregkh@linuxfoundation.org, lars@metafoo.de,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org
-Subject: Re: [PATCH_V3 1/3] dt: usb: jz4740: Add DT binding document for OHCI
-Date: Thu, 29 Jan 2015 13:24:49 +0100
-Message-ID: <1470487.UWavdNIQX5@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1422451565-29096-2-git-send-email-Zubair.Kakakhel@imgtec.com>
-References: <1422451565-29096-1-git-send-email-Zubair.Kakakhel@imgtec.com> <1422451565-29096-2-git-send-email-Zubair.Kakakhel@imgtec.com>
+	Thu, 29 Jan 2015 07:26:15 -0500
+X-Sender-Id: abbotti@mev.co.uk
+Message-ID: <54CA26E4.5020004@mev.co.uk>
+Date: Thu, 29 Jan 2015 12:26:12 +0000
+From: Ian Abbott <abbotti@mev.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.3.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V03:K0:dcGAScbAMQM0CnAIA/uiUx9kA5IYdMNmbQlj+NJ+9dfq4+p5viD
- m55tXtGu+hDrWiI8h+hSyUOGJdNYZ1MGKOdU0noMW9chlC8KgKPOJYuADrHII+/lLrOZr1L
- 0N1ciDXzXThq3o8Ib60AXPjNCcMcDjXHCpSTdEHkxFFv3CnaF+0gz1b5XZsXitszIiQfXHh
- gQrcFmFcrzHPGW6cH8AsQ==
-X-UI-Out-Filterresults: notjunk:1;
+To: Simon Guo <wei.guo.simon@gmail.com>,
+        H Hartley Sweeten <hsweeten@visionengravers.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 01/02] STAGING: Fix pcl818.c coding style issue: code
+ indent should use tabs where possible
+References: <20150129053316.GA2508@thunderCat>
+In-Reply-To: <20150129053316.GA2508@thunderCat>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 28 January 2015 13:26:03 Zubair Lutfullah Kakakhel wrote:
-> + - clocks: Should contain a single clock specifier for the SoC UHC clock.
-> + - clock-names: Must be "uhc"
-> 
+On 29/01/15 05:33, Simon Guo wrote:
+> Correct one coding style problem(detected by checkpatch.pl) in pcl818.c.
+> - code indent should use tabs where possible
+> It is fixed by reformatting the comment block to usual comment style.
+>
+> And with the reformatting, following coding style problem is also fixed:
+> - please, no space before tabs
+>
+> Signed-off-by: Simon Guo <wei.guo.simon@gmail.com>
+> ---
+>   drivers/staging/comedi/drivers/pcl818.c | 189 +++++++++++++++-----------------
+>   1 file changed, 91 insertions(+), 98 deletions(-)
 
-Same comment as for the watchdog binding, this should probably be
-removed. See what the other ohci drivers use and pick the most
-common clock name if you must have one.
+Reviewed-by: Ian Abbott <abbotti@mev.co.uk>
 
-	Arnd
+-- 
+-=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk> )=-
+-=(                          Web: http://www.mev.co.uk/  )=-
