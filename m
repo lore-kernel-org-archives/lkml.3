@@ -1,108 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761533AbbA2KCK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 05:02:10 -0500
-Received: from mga02.intel.com ([134.134.136.20]:24232 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758035AbbA2JCO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 04:02:14 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.09,485,1418112000"; 
-   d="scan'208";a="644377745"
-From: "Wu, Feng" <feng.wu@intel.com>
-To: David Woodhouse <dwmw2@infradead.org>
-CC: "tglx@linutronix.de" <tglx@linutronix.de>,
-        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
-        "x86@kernel.org" <x86@kernel.org>, "gleb@kernel.org" <gleb@kernel.org>,
-        "pbonzini@redhat.com" <pbonzini@redhat.com>,
-        "joro@8bytes.org" <joro@8bytes.org>,
-        "alex.williamson@redhat.com" <alex.williamson@redhat.com>,
-        "jiang.liu@linux.intel.com" <jiang.liu@linux.intel.com>,
-        "eric.auger@linaro.org" <eric.auger@linaro.org>,
+	id S1753095AbbA2I65 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 03:58:57 -0500
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:55917 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751014AbbA2I6z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Jan 2015 03:58:55 -0500
+X-AuditID: cbfec7f4-b7f126d000001e9a-2e-54c9f5bcc90d
+Message-id: <54C9F64C.10505@samsung.com>
+Date: Thu, 29 Jan 2015 09:58:52 +0100
+From: Karol Wrona <k.wrona@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
+ Thunderbird/31.4.0
+MIME-version: 1.0
+To: Ulf Hansson <ulf.hansson@linaro.org>
+Cc: Seungwon Jeon <tgih.jun@samsung.com>,
+        Jaehoon Chung <jh80.chung@samsung.com>,
+        linux-mmc <linux-mmc@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "Wu, Feng" <feng.wu@intel.com>
-Subject: RE: [v3 08/26] iommu, x86: Add intel_irq_remapping_capability() for
- Intel
-Thread-Topic: [v3 08/26] iommu, x86: Add intel_irq_remapping_capability()
- for Intel
-Thread-Index: AQHQOxByI31ejjIomkibqdBFW7WQ7ZzWxs2A
-Date: Thu, 29 Jan 2015 08:57:54 +0000
-Message-ID: <E959C4978C3B6342920538CF579893F0023896B8@SHSMSX104.ccr.corp.intel.com>
-References: <1418397300-10870-1-git-send-email-feng.wu@intel.com>
-	 <1418397300-10870-9-git-send-email-feng.wu@intel.com>
- <1422459450.5293.62.camel@infradead.org>
-In-Reply-To: <1422459450.5293.62.camel@infradead.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Karol Wrona <wrona.vy@gmail.com>
+Subject: Re: [RFC PATCH 1/1] mmc: dw_mmc: Add runtime pm to dw_mmc
+References: <1421858639-14737-1-git-send-email-k.wrona@samsung.com>
+ <1421858639-14737-2-git-send-email-k.wrona@samsung.com>
+ <CAPDyKFpTT3J-D6CqPcUdcTq4d=tMy7dDSn_ZZJGD12qeey4p9A@mail.gmail.com>
+In-reply-to: <CAPDyKFpTT3J-D6CqPcUdcTq4d=tMy7dDSn_ZZJGD12qeey4p9A@mail.gmail.com>
+Content-type: text/plain; charset=utf-8
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrDLMWRmVeSWpSXmKPExsVy+t/xK7p7vp4MMViyksti44z1rBY3frWx
+	WpxtesNucXnXHDaLI//7GS0+3L/IbHF8bbjFnnVbmBw4PHbOusvucefaHjaPvi2rGD0+b5IL
+	YInisklJzcksSy3St0vgyri4+yFLwV2BiqtTH7I0MPbydjFyckgImEic+97OBmGLSVy4tx7M
+	FhJYyijx8qNoFyMXkP2JUeLJmkNMIAleAQ2JRa9vsoLYLAKqErO7Z4LZbALqEs07FjOD2KIC
+	ERLzj71mhqgXlPgx+R4LiC0C1Lvn4XlWkKHMAgeZJM6+7AcrEhZwkviyvYsNYtsRRonrK2Yx
+	giQ4BYIlPl9dApTgAOpQl5gyJRckzCwgL7F5zVvmCYwCs5DsmIVQNQtJ1QJG5lWMoqmlyQXF
+	Sem5hnrFibnFpXnpesn5uZsYISH+ZQfj4mNWhxgFOBiVeHhnbjoZIsSaWFZcmXuIUYKDWUmE
+	V/wNUIg3JbGyKrUoP76oNCe1+BAjEwenVANjJ+/OrjMndp48tUF5VvaimBsLLl/64p1ZuSsl
+	qG/a/9zN7nz/tZ1adsS9nbReYDv75yaJTb0CgrFBXksX6G7aH/i9YOvC4MSdK4MuBXZtsm3c
+	eP3za79IHkmf/wHes7vYsqRu9V/be/ypV7G63sQJrl29JzjPvZs3/1Pms8XMzdEn/zHa7xZb
+	psRSnJFoqMVcVJwIAGXTgMJPAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id t0TA2GMA014621
 
-
-
-> -----Original Message-----
-> From: David Woodhouse [mailto:dwmw2@infradead.org]
-> Sent: Wednesday, January 28, 2015 11:38 PM
-> To: Wu, Feng
-> Cc: tglx@linutronix.de; mingo@redhat.com; hpa@zytor.com; x86@kernel.org;
-> gleb@kernel.org; pbonzini@redhat.com; joro@8bytes.org;
-> alex.williamson@redhat.com; jiang.liu@linux.intel.com; eric.auger@linaro.org;
-> linux-kernel@vger.kernel.org; iommu@lists.linux-foundation.org;
-> kvm@vger.kernel.org
-> Subject: Re: [v3 08/26] iommu, x86: Add intel_irq_remapping_capability() for
-> Intel
+On 01/22/2015 10:02 AM, Ulf Hansson wrote:
+> On 21 January 2015 at 17:43, Karol Wrona <k.wrona@samsung.com> wrote:
+>> This patch adds runtime pm handling to dw_mmc and enables it for dw_mmc-exynos.
+>> It mainly uses mci_request/mci_request_end for mmc host state information.
+>>
+>> Signed-off-by: Karol Wrona <k.wrona@samsung.com>
+>> ---
+>>  drivers/mmc/host/dw_mmc-exynos.c |   69 ++++++++++++++++++++++++++++++++++++--
+>>  drivers/mmc/host/dw_mmc.c        |   65 +++++++++++++++++++++++++++++++++--
+>>  2 files changed, 130 insertions(+), 4 deletions(-)
+>>
+>> diff --git a/drivers/mmc/host/dw_mmc-exynos.c b/drivers/mmc/host/dw_mmc-exynos.c
+>> index 12a5eaa..7281c6f 100644
+>> --- a/drivers/mmc/host/dw_mmc-exynos.c
+>> +++ b/drivers/mmc/host/dw_mmc-exynos.c
+>> @@ -17,12 +17,15 @@
+[...]
+>>
+>> +#define DWMMC_AUTOSUSPEND_DELAY 200
 > 
-> On Fri, 2014-12-12 at 23:14 +0800, Feng Wu wrote:
-> > Add the Intel side implementation for capability in
-> > struct irq_remap_ops.
-> >
-> > Signed-off-by: Feng Wu <feng.wu@intel.com>
-> > Reviewed-by: Jiang Liu <jiang.liu@linux.intel.com>
+> Normally we use 50 as default. Any reason to why you can't use that?
 > 
-> > +static bool intel_irq_remapping_capability(enum irq_remap_cap cap)
-> > +{
-> > +	struct dmar_drhd_unit *drhd;
-> > +	struct intel_iommu *iommu;
-> > +
-> > +	switch (cap) {
-> > +	case IRQ_POSTING_CAP:
-> > +		/*
-> > +		 * If 1) posted-interrupts is disabled by user
-> > +		 * or 2) irq remapping is disabled, posted-interrupts
-> > +		 * is not supported.
-> > +		 */
-> > +		if (disable_irq_post || !irq_remapping_enabled)
-> > +			return 0;
-> > +
-> > +		for_each_iommu(iommu, drhd)
-> > +			if (!cap_pi_support(iommu->cap))
-> > +				return 0;
-> > +
-> 
-> If a new IOMMU is hotplugged now which doesn't support posted
-> interrupts, what happens?
+Thanks for looking at that.
+No special reason. I will check lower delay value.
 
-Good question, Just had a offline discussion with Jiang Liu, actually, there
-is the same question for IR. In the current implementation, If IR is in use
-and a new IOMMU without IR capability is hotplugged, it will reject this
-hotplugging. I think I can simple follow the same policy for PI.
+> Hmm, maybe we should have such a default defined in a common mmc host
+> header file!?
+Will do.
+> 
+>> +
+>>  /* Variations in Exynos specific dw-mshc controller */
+>>  enum dw_mci_exynos_type {
+>>         DW_MCI_TYPE_EXYNOS4210,
+>> @@ -97,6 +100,30 @@ static int dw_mci_exynos_setup_clock(struct dw_mci *host)
+>>         return 0;
+>>  }
+>>
+>> +#ifdef CONFIG_PM
+>> +static int dw_mci_exynos_runtime_suspend(struct device *dev)
+>> +{
+>> +       struct dw_mci *host = dev_get_drvdata(dev);
+>> +
+>> +       /* empty for now */
+>> +
+>> +       return 0;
+>> +}
+>> +
+>> +static int dw_mci_exynos_runtime_resume(struct device *dev)
+>> +{
+>> +       struct dw_mci *host = dev_get_drvdata(dev);
+>> +
+>> +       /* empty for now */
+>> +
+>> +       return 0;
+>> +}
+>> +#else
+>> +#define dw_mci_exynos_runtime_suspend          NULL
+>> +#define dw_mci_exynos_runtime_resume           NULL
+>> +
+>> +#endif /* CONFIG_PM */
+> 
+> I would suggest you to remove all the above code from this patch. If
+> you want to add the callbacks, let's anyway do that from a separate
+> patch.
+Will do.
 
 Thanks,
-Feng
-
-> 
-> --
-> David Woodhouse                            Open Source Technology
-> Centre
-> David.Woodhouse@intel.com                              Intel
-> Corporation
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+Karol
