@@ -1,52 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755176AbbA2Nfx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 08:35:53 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:41789 "EHLO mx1.redhat.com"
+	id S1757574AbbA2Ng5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 08:36:57 -0500
+Received: from david.siemens.de ([192.35.17.14]:44155 "EHLO david.siemens.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753428AbbA2Nfv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 08:35:51 -0500
-From: Prarit Bhargava <prarit@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Prarit Bhargava <prarit@redhat.com>
-Subject: [PATCH] time, ntp: Do not update time_state in middle of leap second
-Date: Thu, 29 Jan 2015 08:35:46 -0500
-Message-Id: <1422538546-27097-1-git-send-email-prarit@redhat.com>
+	id S1752205AbbA2Ngz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Jan 2015 08:36:55 -0500
+Message-ID: <54CA3736.4090600@siemens.com>
+Date: Thu, 29 Jan 2015 14:35:50 +0100
+From: Jan Kiszka <jan.kiszka@siemens.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
+MIME-Version: 1.0
+To: Michal Marek <mmarek@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org,
+        Daniel Thompson <daniel.thompson@linaro.org>
+CC: Thomas Gleixner <tglx@linutronix.de>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        kgdb-bugreport@lists.sourceforge.net, Andi Kleen <andi@firstfloor.org>,
+        Tom Tromey <tromey@redhat.com>, Ben Widawsky <ben@bwidawsk.net>,
+        Borislav Petkov <bp@suse.de>, linux-kbuild@vger.kernel.org
+Subject: Re: [PATCH v11 23/28] scripts/gdb: Ignore byte-compiled python files
+References: <cover.1422514006.git.jan.kiszka@siemens.com> <fd0c2a6ad6e1d021ce85798f9cd89d9e3381288e.1422514006.git.jan.kiszka@siemens.com> <54CA325F.9070906@suse.cz>
+In-Reply-To: <54CA325F.9070906@suse.cz>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-During leap second insertion testing it was noticed that a small window
-exists where the time_state could be reset such that
-time_state = TIME_OK, which then causes the leap second to not occur, or
-causes the entire leap second state machine to fail.
+On 2015-01-29 14:15, Michal Marek wrote:
+> On 2015-01-29 07:46, Jan Kiszka wrote:
+>> --- a/Makefile
+>> +++ b/Makefile
+>> @@ -1179,7 +1179,8 @@ MRPROPER_FILES += .config .config.old .version .old_version $(version_h) \
+>>  		  Module.symvers tags TAGS cscope* GPATH GTAGS GRTAGS GSYMS \
+>>  		  signing_key.priv signing_key.x509 x509.genkey		\
+>>  		  extra_certificates signing_key.x509.keyid		\
+>> -		  signing_key.x509.signer vmlinux-gdb.py
+>> +		  signing_key.x509.signer vmlinux-gdb.py		\
+>> +		  scripts/gdb/linux/*.py[co]
+> 
+> In 01/28, you already have
+> 
+> +clean-files := *.pyc $(if $(KBUILD_SRC),*.py)
+> 
+> Maybe just add *.pyo there and you don't need to add it to the toplevel
+> Makefile.
 
-While this is highly unlikely to ever happen in the real world it is
-still something we should protect against, as breaking the state machine
-is obviously bad.
+Based on a quick test, you seem right. Daniel, anything we miss?
 
-If the time_state == TIME_OOP (ie, the leap second is in progress) do not
-allow an external update to time_state.
+Thanks,
+Jan
 
-Signed-off-by: Prarit Bhargava <prarit@redhat.com>
----
- kernel/time/ntp.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
-
-diff --git a/kernel/time/ntp.c b/kernel/time/ntp.c
-index 28bf91c..f9ebf06 100644
---- a/kernel/time/ntp.c
-+++ b/kernel/time/ntp.c
-@@ -534,7 +534,8 @@ void ntp_notify_cmos_timer(void) { }
-  */
- static inline void process_adj_status(struct timex *txc, struct timespec64 *ts)
- {
--	if ((time_status & STA_PLL) && !(txc->status & STA_PLL)) {
-+	if ((time_status & STA_PLL) && !(txc->status & STA_PLL) &&
-+	    (time_state != TIME_OOP)) {
- 		time_state = TIME_OK;
- 		time_status = STA_UNSYNC;
- 		/* restart PPS frequency calibration */
 -- 
-1.7.9.3
-
+Siemens AG, Corporate Technology, CT RTC ITP SES-DE
+Corporate Competence Center Embedded Linux
