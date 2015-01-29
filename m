@@ -1,69 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752155AbbA2IHk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 03:07:40 -0500
-Received: from mx2.parallels.com ([199.115.105.18]:50490 "EHLO
-	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751005AbbA2IHi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 03:07:38 -0500
-Date: Thu, 29 Jan 2015 11:07:26 +0300
-From: Vladimir Davydov <vdavydov@parallels.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Christoph Lameter <cl@linux.com>
-CC: Joonsoo Kim <iamjoonsoo.kim@lge.com>, Pekka Enberg <penberg@kernel.org>,
-        David Rientjes <rientjes@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
-        <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH -mm v2 1/3] slub: never fail to shrink cache
-Message-ID: <20150129080726.GB11463@esperanza>
-References: <cover.1422461573.git.vdavydov@parallels.com>
- <012683fc3a0f9fb20a288986fd63fe9f6d25e8ee.1422461573.git.vdavydov@parallels.com>
- <20150128135752.afcb196d6ded7c16a79ed6fd@linux-foundation.org>
+	id S1751764AbbA2IJu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 03:09:50 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:55502 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751137AbbA2IJs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Jan 2015 03:09:48 -0500
+Message-ID: <54C9EAC3.9040509@ti.com>
+Date: Thu, 29 Jan 2015 10:09:39 +0200
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20150128135752.afcb196d6ded7c16a79ed6fd@linux-foundation.org>
+To: "S. Gilles" <sgilles@terpmail.umd.edu>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Maik Broemme <mbroemme@plusserver.de>
+CC: linux-fbdev <linux-fbdev@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Thierry Reding <thierry.reding@gmail.com>
+Subject: Re: i915 framebuffer init too slow to find logo
+References: <20150129023247.GA10967@number16>
+In-Reply-To: <20150129023247.GA10967@number16>
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature";
+	boundary="q0eQ7vntRxq811qSPhVrSQi2OgL34BqWS"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 28, 2015 at 01:57:52PM -0800, Andrew Morton wrote:
-> On Wed, 28 Jan 2015 19:22:49 +0300 Vladimir Davydov <vdavydov@parallels.com> wrote:
-> > @@ -3375,51 +3376,56 @@ int __kmem_cache_shrink(struct kmem_cache *s)
-> >  	struct kmem_cache_node *n;
-> >  	struct page *page;
-> >  	struct page *t;
-> > -	int objects = oo_objects(s->max);
-> > -	struct list_head *slabs_by_inuse =
-> > -		kmalloc(sizeof(struct list_head) * objects, GFP_KERNEL);
-> > +	LIST_HEAD(discard);
-> > +	struct list_head promote[SHRINK_PROMOTE_MAX];
-> 
-> 512 bytes of stack.  The call paths leading to __kmem_cache_shrink()
-> are many and twisty.  How do we know this isn't a problem?
+--q0eQ7vntRxq811qSPhVrSQi2OgL34BqWS
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: quoted-printable
 
-Because currently __kmem_cache_shrink is only called just from a couple
-of places, each of which isn't supposed to have a great stack depth
-AFAIU, namely:
+On 29/01/15 04:32, S. Gilles wrote:
+> Since commit 92b004d1aa9f367c372511ca0330f58216b25703 : prevent use of
+> logs after they have been freed, my i915 machine has no logo on boot
+> (reverting that commit brings it back on recent trees). My .config
+> builds nothing but wireless as =3Dm, so I think this is a genuine false=
 
-- slab_mem_going_offline_callback - MEM_GOING_OFFLINE handler
-- shrink_store - invoked upon write to /sys/kernel/slab/cache/shrink
-- acpi_os_purge_cache - only called on acpi init
-- memcg_deactivate_kmem_caches - called from cgroup_destroy_wq
+> positive (as predicted by the commit). Examining an augmented dmesg,
 
-> The logic behind choosing "32" sounds rather rubbery.  What goes wrong
-> if we use, say, "4"?
+It's not so much about modules, but when the code tries to use the
+logos. Drivers as modules might cause the use of logos to happen later,
+but that's only one possible reason.
 
-We could, but kmem_cache_shrink would cope with fragmentation less
-efficiently.
+> it appears that the framebuffer setup is too slow by about 0.3s, which
+> I wouldn't really expect from this system/driver.
+>=20
+> Is this slowness considered worth fixing, or is this issue considered
+> too cosmetic? (Or is this just PEBKAC?)
+>=20
+> Possibly useful information:
+>=20
+> $ lspci | grep VGA
+> 00:02.0 VGA compatible controller: Intel Corporation 2nd Generation Cor=
+e Processor Family Integrated Graphics Controller (rev 09)
+>=20
+> From various printk()s, it looks like the slow portion of
+> fb_console_init() is restore_fbdev_mode(), specifically
+> drm_mode_set_config_internal(), which takes about 0.45s, while the
+> fb_logo_late_init() call happens about 0.15s into that. I can give the
+> full details if requested.
 
-Come to think of it, do we really need to optimize slab placement in
-kmem_cache_shrink? None of its users except shrink_store expects it -
-they just want to purge the cache before destruction, that's it. May be,
-we'd better move slab placement optimization to a separate SLUB's
-private function that would be called only by shrink_store, where we can
-put up with kmalloc failures? Christoph, what do you think?
+When does the driver probe() happen? Does the initialization happen
+outside of the probe(), via workqueue or such? If so, then the fix is
+valid for your case also, as the work could be ran after the logos have
+been freed.
 
-Thanks,
-Vladimir
+However, it does seem that the fix seems to cause logos to disappear for
+many people. I'd be interesting to know how many of those cases were
+working by luck, either by
+
+1) an async work being ran fast enough, before the logos had been freed
+2) the use of logos happening after the logos had been freed, but if no
+one had trashed the logo memory yet, it still works
+
+I don't care so much about the logo myself but people do seem to like
+it, so perhaps we need to change the code as Thierry suggested:
+allocating memory for the logos and keeping them in memory until someone
+uses them the first time, and then free the memory.
+
+ Tomi
+
+
+
+--q0eQ7vntRxq811qSPhVrSQi2OgL34BqWS
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUyerDAAoJEPo9qoy8lh71szMP/05QLKcO6VCmD6ftyD0sCSX0
+/SKwkU+QGNp2unCsilVEZxXtlPIEnNf1qb64Osz/V/okErxDHm9Ahu4K3BiDh/i0
+ooSk0z/4XhqpshvpTPk+o2gix/luaaoxHPRwju97kg/Q0IgrlFIeciC3d+Uyr2mi
+dozO07ujQ1B17Gb3cbselGutF1ZuULhXXEH1D+Tgyg61PAzMLNhtcaUCoLrziNhO
+9C6czMYOuLSvabq+h6emxhlgCvGr8Jqllk5Hh3Nu7vMolQqJNxkSh45TGeEcmS9b
+T0g5/HBfIMWQ0vcJzXylvaomtCeml/LcTEbl/cG6fpI4kMTUGVYlUNd+yAiCwWBU
+FqHkIPr173kodrW2EU1CXQGw07vtLYx7/9IlKYGt97TI8h615GyBDNhaqbGfnP14
+/8ii/MfNJOlf4vUHwVTZF02xwEzNO/tKLIDH/R2ZQ6G3ZGy9+BF6lqTkmv14E3sV
+vTQ4O18DbaA/Y4Tl5CK1/PZ4KPDoFATX0kFY6pw0j4JbyUJOyG3Zw5OVLPJzU7yL
+N4WAXiCfA0y2S6zELG49SYLIT+JIh6mZ9nQXRTwICze8VXHDmA5SAGl1zpat1OGP
+6YzKK68noCwPROkrbOwRMiNS2I94zZR8OSEKfgXpTVuQ9pM2NHGzsqhUhw3mOPTf
+ed0AQAoFTz5V55KgjU33
+=9ijX
+-----END PGP SIGNATURE-----
+
+--q0eQ7vntRxq811qSPhVrSQi2OgL34BqWS--
