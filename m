@@ -1,164 +1,213 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758458AbbA2Fls (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 00:41:48 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:47251 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752604AbbA2Flq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 00:41:46 -0500
-Date: Wed, 28 Jan 2015 23:41:43 -0600
-From: Andy Gross <agross@codeaurora.org>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
-        devicetree@vger.kernel.org, Kumar Gala <galak@codeaurora.org>,
-        linux-soc@vger.kernel.org
-Subject: Re: [PATCH 1/6] soc: qcom: gsbi: Add support for ADM CRCI muxing
-Message-ID: <20150129054143.GD13842@qualcomm.com>
-References: <1422396644-21714-1-git-send-email-agross@codeaurora.org>
- <1422396644-21714-2-git-send-email-agross@codeaurora.org>
- <20150129021150.GC23506@codeaurora.org>
+	id S1759558AbbA2FoA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 00:44:00 -0500
+Received: from mga03.intel.com ([134.134.136.65]:52701 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755478AbbA2Fn6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Jan 2015 00:43:58 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="446840723"
+From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+To: Peter Huewe <peterhuewe@gmx.de>, Ashley Lai <ashley@ashleylai.com>,
+        Marcel Selhorst <tpmdd@selhorst.net>
+Cc: tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        josh@joshtriplett.org, christophe.ricard@gmail.com,
+        jason.gunthorpe@obsidianresearch.com, stefanb@linux.vnet.ibm.com,
+        linux-api@vger.kernel.org, trousers-tech@lists.sourceforge.net,
+        jmorris@namei.org, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+Subject: [PATCH v2] tpm: fix suspend/resume paths for TPM 2.0
+Date: Thu, 29 Jan 2015 07:43:47 +0200
+Message-Id: <1422510227-23256-1-git-send-email-jarkko.sakkinen@linux.intel.com>
+X-Mailer: git-send-email 2.1.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150129021150.GC23506@codeaurora.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 28, 2015 at 06:11:50PM -0800, Stephen Boyd wrote:
+Fixed suspend/resume paths for TPM 2.0 and consolidated all the
+associated code to the tpm_pm_suspend() and tpm_pm_resume()
+functions. Resume path should be handled by the firmware, i.e.
+Startup(CLEAR) for hibernate and Startup(STATE) for suspend.
 
-<snip>
+There might be some non-PC embedded devices in the future where
+Startup() is not the handled by the FW but fixing the code for
+those IMHO should be postponed until there is hardware available
+to test the fixes although extra Startup in the driver code is
+essentially a NOP.
 
-> >  Required properties:
-> > -- compatible: must contain "qcom,gsbi-v1.0.0" for APQ8064/IPQ8064
-> > +- compatible:	Should contain:
-> > +		"qcom,gsbi-ipq8064" for IPQ8064
-> > +		"qcom,gsbi-apq8064" for APQ8064
-> > +		"qcom,gsbi-msm8960" for MSM8960
-> > +		"qcom,gsbi-msm8660" for MSM8660
-> 
-> Hopefully this is not necessary, but if it is we should leave the
-> old compatible here and say it's deprecated or something.
+Added Shutdown(CLEAR) to the remove paths of TIS and CRB drivers.
+Changed tpm2_shutdown() to a void function because there isn't
+much you can do except print an error message if this fails with
+a system error.
 
-Right.  I went back and forth with the tcsr vs gsbi.  If change the compats I'll
-put in a deprecated.
+Reported-by: Peter Hüwe <PeterHuewe@gmx.de>
+Signed-off-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+---
+ drivers/char/tpm/tpm-interface.c |  6 ++++--
+ drivers/char/tpm/tpm.h           |  2 +-
+ drivers/char/tpm/tpm2-cmd.c      | 19 +++++++++++--------
+ drivers/char/tpm/tpm_crb.c       | 20 +++++---------------
+ drivers/char/tpm/tpm_tis.c       | 26 +++++++++++++-------------
+ 5 files changed, 34 insertions(+), 39 deletions(-)
 
-> >  - reg: Address range for GSBI registers
-> >  - clocks: required clock
-> >  - clock-names: must contain "iface" entry
-> >  - qcom,mode : indicates MUX value for configuration of the serial interface.
-> >    Please reference dt-bindings/soc/qcom,gsbi.h for valid mux values.
-> > +- qcom,gsbi-num: indicates GSBI instance number
-> 
-> Why not use DT aliases for this? Then other drivers or more
-> generic code can search for a gsbiN alias for the particular gsbi
-> node. No qcom specific property.
-
-Yeah thats cleaner.  I'll do that.
-
-> 
-> > +- syscon-tcsr: indicates phandle of TCSR syscon node
-> 
-> Make this optional but required if any child nodes use dma?
-
-To enforce that I'd have to determine that a child has a dmas.  I guess that
-isn't so bad.
-
-<snip>
-
-> >  static int gsbi_probe(struct platform_device *pdev)
-> >  {
-> >  	struct device_node *node = pdev->dev.of_node;
-> > +	const struct of_device_id *match;
-> >  	struct resource *res;
-> >  	void __iomem *base;
-> >  	struct gsbi_info *gsbi;
-> > +	u32 gsbi_num, i, val;
-> 
-> i should be int
-> 
-> > +	struct crci_config *config;
-> 
-> const?
-
-will fix both.
-
-> >  
-> >  	gsbi = devm_kzalloc(&pdev->dev, sizeof(*gsbi), GFP_KERNEL);
-> >  
-> > @@ -45,6 +152,20 @@ static int gsbi_probe(struct platform_device *pdev)
-> >  	if (IS_ERR(base))
-> >  		return PTR_ERR(base);
-> >  
-> > +	gsbi->tcsr = syscon_regmap_lookup_by_phandle(node, "syscon-tcsr");
-> > +	if (IS_ERR(gsbi->tcsr))
-> > +		return -EINVAL;
-> > +
-> > +	if (of_property_read_u32(node, "qcom,gsbi-num", &gsbi_num)) {
-> > +		dev_err(&pdev->dev, "missing gsbi instance number\n");
-> > +		return -EINVAL;
-> > +	}
-> 
-> As said before, aliases would do the job the same and not require
-> some qcom specific property.
-
-Yup. will fix.
-
-> > +
-> > +	if (!gsbi_num || gsbi_num > MAX_GSBI) {
-> > +		dev_err(&pdev->dev, "invalid gsbi number\n");
-> > +		return -EINVAL;
-> > +	}
-> > +
-> >  	if (of_property_read_u32(node, "qcom,mode", &gsbi->mode)) {
-> >  		dev_err(&pdev->dev, "missing mode configuration\n");
-> >  		return -EINVAL;
-> > @@ -64,6 +185,26 @@ static int gsbi_probe(struct platform_device *pdev)
-> >  	writel_relaxed((gsbi->mode << GSBI_PROTOCOL_SHIFT) | gsbi->crci,
-> >  				base + GSBI_CTRL_REG);
-> >  
-> > +	/*
-> > +	 * modify tcsr to reflect mode and ADM CRCI mux
-> > +	 * Each gsbi contains a pair of bits, one for RX and one for TX
-> > +	 * SPI mode requires both bits cleared, otherwise they are set
-> > +	 */
-> > +	match = of_match_node(gsbi_dt_match, node);
-> 
-> Why not match the config to the TCSR compatible string? Wouldn't
-> that more accurately reflect that we need to set different bits
-> depending on which type of TCSR we're using? The version of GSBI
-> hardware is not actually changing in every different SoC so I
-> don't see why we want to change the compatible there just because
-> the TCSR register layout changed.
-
-That is true.  However, with the gsbi compat, I avoid doing a match multiple
-times and get the table I need immediately.  The alternative is N checks or
-pulling the compat strings and comparing them to get the right table.
-
-> > +	config = (struct crci_config *)match->data;
-> 
-> Cast shouldn't be necessary if config is const?
-
-will check if that works
-
-> > +
-> > +	if (config)
-> > +		for (i = 0; i < config->num_rows; i++) {
-> > +			if (gsbi->mode == GSBI_PROT_SPI)
-> 
-> Doesn't I2C need the same treatment (anything in QUP really)?
-> Maybe the logic could be changed to check for gsbi->crci ==
-> GSBI_CRCI_QUP?
-
-Nope.  I2C doesn't support DMA when ADM is the controller.  It's only SPI or
-UART.
-
+diff --git a/drivers/char/tpm/tpm-interface.c b/drivers/char/tpm/tpm-interface.c
+index bf53a37..e85d341 100644
+--- a/drivers/char/tpm/tpm-interface.c
++++ b/drivers/char/tpm/tpm-interface.c
+@@ -901,8 +901,10 @@ int tpm_pm_suspend(struct device *dev)
+ 	if (chip == NULL)
+ 		return -ENODEV;
+ 
+-	if (chip->flags & TPM_CHIP_FLAG_TPM2)
+-		return tpm2_shutdown(chip, TPM2_SU_CLEAR);
++	if (chip->flags & TPM_CHIP_FLAG_TPM2) {
++		tpm2_shutdown(chip, TPM2_SU_STATE);
++		return 0;
++	}
+ 
+ 	/* for buggy tpm, flush pcrs with extend to selected dummy */
+ 	if (tpm_suspend_pcr) {
+diff --git a/drivers/char/tpm/tpm.h b/drivers/char/tpm/tpm.h
+index 7b0727c..a2ce379 100644
+--- a/drivers/char/tpm/tpm.h
++++ b/drivers/char/tpm/tpm.h
+@@ -432,7 +432,7 @@ ssize_t tpm2_get_tpm_pt(struct tpm_chip *chip, u32 property_id,
+ 			u32 *value, const char *desc);
+ 
+ extern int tpm2_startup(struct tpm_chip *chip, u16 startup_type);
+-extern int tpm2_shutdown(struct tpm_chip *chip, u16 shutdown_type);
++extern void tpm2_shutdown(struct tpm_chip *chip, u16 shutdown_type);
+ extern unsigned long tpm2_calc_ordinal_duration(struct tpm_chip *, u32);
+ extern int tpm2_do_selftest(struct tpm_chip *chip);
+ extern int tpm2_gen_interrupt(struct tpm_chip *chip, bool quiet);
+diff --git a/drivers/char/tpm/tpm2-cmd.c b/drivers/char/tpm/tpm2-cmd.c
+index 1abe650..f2f38a5 100644
+--- a/drivers/char/tpm/tpm2-cmd.c
++++ b/drivers/char/tpm/tpm2-cmd.c
+@@ -456,20 +456,23 @@ static const struct tpm_input_header tpm2_shutdown_header = {
+  * @chip:		TPM chip to use.
+  * @shutdown_type	shutdown type. The value is either
+  *			TPM_SU_CLEAR or TPM_SU_STATE.
+- *
+- * 0 is returned when the operation is successful. If a negative number is
+- * returned it remarks a POSIX error code. If a positive number is returned
+- * it remarks a TPM error.
+  */
+-int tpm2_shutdown(struct tpm_chip *chip, u16 shutdown_type)
++void tpm2_shutdown(struct tpm_chip *chip, u16 shutdown_type)
+ {
+ 	struct tpm2_cmd cmd;
++	int rc;
+ 
+ 	cmd.header.in = tpm2_shutdown_header;
+-
+ 	cmd.params.startup_in.startup_type = cpu_to_be16(shutdown_type);
+-	return tpm_transmit_cmd(chip, &cmd, sizeof(cmd),
+-				"stopping the TPM");
++
++	rc = tpm_transmit_cmd(chip, &cmd, sizeof(cmd), "stopping the TPM");
++
++	/* In places where shutdown command is sent there's no much we can do
++	 * except print the error code on a system failure.
++	 */
++	if (rc < 0)
++		dev_warn(chip->pdev, "transmit returned %d while stopping the TPM",
++			 rc);
+ }
+ EXPORT_SYMBOL_GPL(tpm2_shutdown);
+ 
+diff --git a/drivers/char/tpm/tpm_crb.c b/drivers/char/tpm/tpm_crb.c
+index 3dd23cf..b26ceee 100644
+--- a/drivers/char/tpm/tpm_crb.c
++++ b/drivers/char/tpm/tpm_crb.c
+@@ -95,21 +95,7 @@ struct crb_priv {
+ 	u8 __iomem *rsp;
+ };
+ 
+-#ifdef CONFIG_PM_SLEEP
+-static int crb_resume(struct device *dev)
+-{
+-	int rc;
+-	struct tpm_chip *chip = dev_get_drvdata(dev);
+-
+-	rc = tpm2_shutdown(chip, TPM2_SU_STATE);
+-	if (!rc)
+-		rc = tpm2_do_selftest(chip);
+-
+-	return rc;
+-}
+-#endif
+-
+-static SIMPLE_DEV_PM_OPS(crb_pm, tpm_pm_suspend, crb_resume);
++static SIMPLE_DEV_PM_OPS(crb_pm, tpm_pm_suspend, tpm_pm_resume);
+ 
+ static u8 crb_status(struct tpm_chip *chip)
+ {
+@@ -326,6 +312,10 @@ static int crb_acpi_remove(struct acpi_device *device)
+ 	struct tpm_chip *chip = dev_get_drvdata(dev);
+ 
+ 	tpm_chip_unregister(chip);
++
++	if (chip->flags & TPM_CHIP_FLAG_TPM2)
++		tpm2_shutdown(chip, TPM2_SU_CLEAR);
++
+ 	return 0;
+ }
+ 
+diff --git a/drivers/char/tpm/tpm_tis.c b/drivers/char/tpm/tpm_tis.c
+index 6725bef..e12b3ab 100644
+--- a/drivers/char/tpm/tpm_tis.c
++++ b/drivers/char/tpm/tpm_tis.c
+@@ -588,6 +588,9 @@ MODULE_PARM_DESC(interrupts, "Enable interrupts");
+ 
+ static void tpm_tis_remove(struct tpm_chip *chip)
+ {
++	if (chip->flags & TPM_CHIP_FLAG_TPM2)
++		tpm2_shutdown(chip, TPM2_SU_CLEAR);
++
+ 	iowrite32(~TPM_GLOBAL_INT_ENABLE &
+ 		  ioread32(chip->vendor.iobase +
+ 			   TPM_INT_ENABLE(chip->vendor.
+@@ -865,25 +868,22 @@ static void tpm_tis_reenable_interrupts(struct tpm_chip *chip)
+ static int tpm_tis_resume(struct device *dev)
+ {
+ 	struct tpm_chip *chip = dev_get_drvdata(dev);
+-	int ret = 0;
++	int ret;
+ 
+ 	if (chip->vendor.irq)
+ 		tpm_tis_reenable_interrupts(chip);
+ 
+-	if (chip->flags & TPM_CHIP_FLAG_TPM2) {
+-		/* NOP if firmware properly does this. */
+-		tpm2_startup(chip, TPM2_SU_STATE);
++	ret = tpm_pm_resume(dev);
++	if (ret)
++		return ret;
+ 
+-		ret = tpm2_shutdown(chip, TPM2_SU_STATE);
+-		if (!ret)
+-			ret = tpm2_do_selftest(chip);
+-	} else {
+-		ret = tpm_pm_resume(dev);
+-		if (!ret)
+-			tpm_do_selftest(chip);
+-	}
++	/* TPM 1.2 requires self-test on resume. This function actually returns
++	 * an error code but for unknown reason it isn't handled.
++	 */
++	if (!(chip->flags & TPM_CHIP_FLAG_TPM2))
++		tpm_do_selftest(chip);
+ 
+-	return ret;
++	return 0;
+ }
+ #endif
+ 
 -- 
-Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-a Linux Foundation Collaborative Project
+2.1.4
 
