@@ -1,63 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754089AbbA2EsW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 23:48:22 -0500
-Received: from mail-oi0-f53.google.com ([209.85.218.53]:55212 "EHLO
-	mail-oi0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751095AbbA2EsV (ORCPT
+	id S1755103AbbA2ExJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 23:53:09 -0500
+Received: from e33.co.us.ibm.com ([32.97.110.151]:39035 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751265AbbA2ExG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 23:48:21 -0500
-From: Brian Norris <computersforpeace@gmail.com>
-To: Michal Marek <mmarek@suse.cz>
-Cc: <linux-kernel@vger.kernel.org>, linux-kbuild@vger.kernel.org,
-        Brian Norris <computersforpeace@gmail.com>,
-        David Howells <dhowells@redhat.com>, Borislav Petkov <bp@suse.de>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Sam Ravnborg <sam@ravnborg.org>
-Subject: [PATCH] tools: unbreak 'make tools/*'
-Date: Wed, 28 Jan 2015 20:47:36 -0800
-Message-Id: <1422506856-28631-1-git-send-email-computersforpeace@gmail.com>
-X-Mailer: git-send-email 2.3.0.rc1
+	Wed, 28 Jan 2015 23:53:06 -0500
+Message-ID: <54C9BCA3.2020102@linux.vnet.ibm.com>
+Date: Thu, 29 Jan 2015 10:22:51 +0530
+From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Richard Cochran <richardcochran@gmail.com>
+CC: Thomas Gleixner <tglx@linutronix.de>, aik@ozlabs.ru,
+        shreyas@linux.vnet.ibm.com, LKML <linux-kernel@vger.kernel.org>,
+        michael@ellerman.id.au, Peter Zijlstra <peterz@infradead.org>,
+        Anton Blanchard <anton@samba.org>, linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH V3] tick/broadcast: Make movement of broadcast hrtimer
+ robust against hotplug
+References: <20150120103559.8430.50933.stgit@preeti.in.ibm.com> <alpine.DEB.2.11.1501211243270.5526@nanos> <54C09391.9080202@linux.vnet.ibm.com> <alpine.DEB.2.11.1501221209260.5526@nanos> <54C7068B.3050108@linux.vnet.ibm.com> <54C8B3D2.3070608@linux.vnet.ibm.com> <20150128213123.GA27411@localhost.localdomain>
+In-Reply-To: <20150128213123.GA27411@localhost.localdomain>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 15012904-0009-0000-0000-000008577626
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following targets should be supported from the top-level source
-directory, but were broken by commit 7e1c04779efd ("kbuild: Use relative
-path for $(objtree)"):
+On 01/29/2015 03:01 AM, Richard Cochran wrote:
+> On Wed, Jan 28, 2015 at 03:32:58PM +0530, Preeti U Murthy wrote:
+>> Thomas ping. Would you be posting this patch?
+> 
+> FYI, Thomas is temporarily out of action, in bed with the flu.
 
- $ make tools/
- $ make tools/perf
- $ make O=$(BUILDDIR) tools/perf
+Oh I am sorry to hear that! Let me post out a patch based on Thomas's
+suggestions around this.
 
-The tools/ and tools/% targets are passing the top-level build directory
-as an O= argument, so we need a full path, not a relative one, as the
-$(O) variable will be reinterpreted by the sub-makefile.
+Wishing him a speedy recovery.
 
-Signed-off-by: Brian Norris <computersforpeace@gmail.com>
-Cc: Michal Marek <mmarek@suse.cz>
----
- Makefile | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/Makefile b/Makefile
-index 95a0e827ecd3..59033c8bf93a 100644
---- a/Makefile
-+++ b/Makefile
-@@ -1496,11 +1496,11 @@ image_name:
- # Clear a bunch of variables before executing the submake
- tools/: FORCE
- 	$(Q)mkdir -p $(objtree)/tools
--	$(Q)$(MAKE) LDFLAGS= MAKEFLAGS="$(filter --j% -j,$(MAKEFLAGS))" O=$(objtree) subdir=tools -C $(src)/tools/
-+	$(Q)$(MAKE) LDFLAGS= MAKEFLAGS="$(filter --j% -j,$(MAKEFLAGS))" O=$(CURDIR) subdir=tools -C $(src)/tools/
- 
- tools/%: FORCE
- 	$(Q)mkdir -p $(objtree)/tools
--	$(Q)$(MAKE) LDFLAGS= MAKEFLAGS="$(filter --j% -j,$(MAKEFLAGS))" O=$(objtree) subdir=tools -C $(src)/tools/ $*
-+	$(Q)$(MAKE) LDFLAGS= MAKEFLAGS="$(filter --j% -j,$(MAKEFLAGS))" O=$(CURDIR) subdir=tools -C $(src)/tools/ $*
- 
- # Single targets
- # ---------------------------------------------------------------------------
--- 
-2.3.0.rc1
+Regards
+Preeti U Murthy
+> 
+> Thanks,
+> Richard
+> 
 
