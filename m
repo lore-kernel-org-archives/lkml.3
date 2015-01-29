@@ -1,57 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760426AbbA2Jr0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 04:47:26 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:50280 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757491AbbA2JrX (ORCPT
+	id S1761886AbbA2Jsj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 04:48:39 -0500
+Received: from mail-ie0-f170.google.com ([209.85.223.170]:59281 "EHLO
+	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761740AbbA2Jsf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 04:47:23 -0500
-Date: Thu, 29 Jan 2015 12:47:04 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Nicholas Mc Guire <der.herr@hofr.at>
-Cc: Tomi Valkeinen <tomi.valkeinen@ti.com>, devel@linuxdriverproject.org,
-        Haiyang Zhang <haiyangz@microsoft.com>, linux-fbdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3 v2] hyperv: hyperv_fb.c: match
- wait_for_completion_timeout return type
-Message-ID: <20150129094704.GT6456@mwanda>
-References: <1422197222-7967-1-git-send-email-der.herr@hofr.at>
- <54C62D07.3040603@ti.com>
- <20150129093839.GB23666@opentech.at>
+	Thu, 29 Jan 2015 04:48:35 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150129093839.GB23666@opentech.at>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+In-Reply-To: <1421822591-10536-1-git-send-email-cw00.choi@samsung.com>
+References: <1421822591-10536-1-git-send-email-cw00.choi@samsung.com>
+Date: Thu, 29 Jan 2015 10:48:34 +0100
+Message-ID: <CACRpkdYq-1ztF5baHjB9aBUNspD5vRXrpnEd1zdWsADmwrhuWw@mail.gmail.com>
+Subject: Re: [PATCH v3] pinctrl: exynos: Add support for Exynos5433
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Chanwoo Choi <cw00.choi@samsung.com>, Tomasz Figa <tomasz.figa@gmail.com>
+Cc: Thomas Abraham <thomas.abraham@linaro.org>, Kukjin Kim <kgene@kernel.org>,
+        Inki Dae <inki.dae@samsung.com>,
+        Chanho Park <chanho61.park@samsung.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 29, 2015 at 10:38:39AM +0100, Nicholas Mc Guire wrote:
-> On Mon, 26 Jan 2015, Tomi Valkeinen wrote:
-> 
-> > Hi,
-> > 
-> > On 25/01/15 16:47, Nicholas Mc Guire wrote:
-> > > Signed-off-by: Nicholas Mc Guire <der.herr@hofr.at>
-> > > ---
-> > > 
-> > > v2: fixed subject line
-> > > 
-> > > The return type of wait_for_completion_timeout is unsigned long not
-> > > int. This patch fixes up the declarations only.
-> > >
+On Wed, Jan 21, 2015 at 7:43 AM, Chanwoo Choi <cw00.choi@samsung.com> wrote:
 
-This line is relevant for the patch description.
- 
-> > > Patch was compile tested only for x86_64_defconfig + CONFIG_X86_VSMP=y
-> > > CONFIG_HYPERV=m, CONFIG_FB_HYPERV=m
+> This patch adds driver data for Exynos5433 SoC. Exynos5433 includes 228 multi-
+> functional input/output port pins and 135 memory port pins. There are 41 general
+> port groups and 2 memory port groups.
+>
+> Cc: Tomasz Figa <tomasz.figa@gmail.com>
+> Cc: Thomas Abraham <thomas.abraham@linaro.org>
+> Cc: Linus Walleij <linus.walleij@linaro.org>
+> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+> Acked-by: Inki Dae <inki.dae@samsung.com>
+> ---
+> Changes from v2:
+> - Rebase it on v3.19-rc5
 
-This line is not relevant.
+Waiting for Tomasz to review this.
 
-regards,
-dan carpenter
-
-
+Yours,
+Linus Walleij
