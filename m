@@ -1,999 +1,225 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756626AbbA2MT6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 07:19:58 -0500
-Received: from mailapp01.imgtec.com ([195.59.15.196]:29282 "EHLO
-	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756243AbbA2MTy (ORCPT
+	id S1756667AbbA2MWZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 07:22:25 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:45880 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752205AbbA2MWY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 07:19:54 -0500
-From: Zubair Lutfullah Kakakhel <Zubair.Kakakhel@imgtec.com>
-To: <vinod.koul@intel.com>, <dan.j.williams@intel.com>
-CC: <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <dmaengine@vger.kernel.org>, <Zubair.Kakakhel@imgtec.com>
-Subject: [PATCH 2/2] dma: jz4780: add driver for the Ingenic JZ4780 DMA controller
-Date: Thu, 29 Jan 2015 12:19:39 +0000
-Message-ID: <1422533980-42761-3-git-send-email-Zubair.Kakakhel@imgtec.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1422533980-42761-1-git-send-email-Zubair.Kakakhel@imgtec.com>
-References: <1422533980-42761-1-git-send-email-Zubair.Kakakhel@imgtec.com>
+	Thu, 29 Jan 2015 07:22:24 -0500
+Date: Thu, 29 Jan 2015 12:22:23 +0000
+From: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+To: "Yang, Wenyou" <Wenyou.Yang@atmel.com>
+Cc: "Ferre, Nicolas" <Nicolas.FERRE@atmel.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "alexandre.belloni@free-electrons.com" 
+	<alexandre.belloni@free-electrons.com>,
+        "sylvain.rochet@finsecur.com" <sylvain.rochet@finsecur.com>,
+        "peda@axentia.se" <peda@axentia.se>,
+        "Vilchez, Patrice" <Patrice.VILCHEZ@atmel.com>
+Subject: Re: [PATCH 2/7] pm: at91: pm_suspend: add the WFI support for ARMv7
+Message-ID: <20150129122223.GA3937@red-moon>
+References: <1422266617-24381-1-git-send-email-wenyou.yang@atmel.com>
+ <1422266761-24487-1-git-send-email-wenyou.yang@atmel.com>
+ <20150128112551.GA13253@e102568-lin.cambridge.arm.com>
+ <B256D81BAE5131468A838E5D7A243641BFD38E3C@penmbx01>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [192.168.154.89]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <B256D81BAE5131468A838E5D7A243641BFD38E3C@penmbx01>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alex Smith <alex.smith@imgtec.com>
+On Thu, Jan 29, 2015 at 02:36:01AM +0000, Yang, Wenyou wrote:
+> Hi Lorenzo,
+> 
+> Thank you for your review.
+> 
+> > -----Original Message-----
+> > From: Lorenzo Pieralisi [mailto:lorenzo.pieralisi@arm.com]
+> > Sent: Wednesday, January 28, 2015 7:26 PM
+> > To: Yang, Wenyou
+> > Cc: Ferre, Nicolas; linux@arm.linux.org.uk; linux-arm-kernel@lists.infradead.org;
+> > linux-kernel@vger.kernel.org; alexandre.belloni@free-electrons.com;
+> > sylvain.rochet@finsecur.com; peda@axentia.se; Vilchez, Patrice
+> > Subject: Re: [PATCH 2/7] pm: at91: pm_suspend: add the WFI support for ARMv7
+> > 
+> > On Mon, Jan 26, 2015 at 10:06:01AM +0000, Wenyou Yang wrote:
+> > 
+> > Commit log please.
+> Added in the v2.0
+> 
+> > 
+> > > Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
+> > > ---
+> > >  arch/arm/mach-at91/pm_suspend.S |   54
+> > ++++++++++++++++++++++++++++++++++++++-
+> > >  1 file changed, 53 insertions(+), 1 deletion(-)
+> > >
+> > > diff --git a/arch/arm/mach-at91/pm_suspend.S
+> > > b/arch/arm/mach-at91/pm_suspend.S index 122a3f1..e796722 100644
+> > > --- a/arch/arm/mach-at91/pm_suspend.S
+> > > +++ b/arch/arm/mach-at91/pm_suspend.S
+> > > @@ -53,6 +53,58 @@ mode	.req	r6
+> > >  	beq	1b
+> > >  	.endm
+> > >
+> > > +/*
+> > > + * Put the processor to enter the WFI state  */
+> > > +	.macro _do_wfi
+> > 
+> > You will have to explain why you need this, really.
+> I don't understand your meaning.
 
-This patch adds a driver for the DMA controller found in the Ingenic
-JZ4780.
+I want to understand why this assembly snippet (that can be rewritten
+in C BTW):
 
-It currently does not implement any support for the programmable firmware
-feature of the controller - this is not necessary for most uses. It also
-does not take priority into account when allocating channels, it just
-allocates the first available channel. This can be implemented later.
+/* Disable the processor's clock */
+mov	tmp1, #AT91_PMC_PCK
+str	tmp1, [pmc, #AT91_PMC_SCDR]
 
-Signed-off-by: Alex Smith <alex.smith@imgtec.com>
----
- drivers/dma/Kconfig                  |  10 +
- drivers/dma/Makefile                 |   1 +
- drivers/dma/dma-jz4780.c             | 856 +++++++++++++++++++++++++++++++++++
- include/dt-bindings/dma/jz4780-dma.h |  49 ++
- 4 files changed, 916 insertions(+)
- create mode 100644 drivers/dma/dma-jz4780.c
- create mode 100644 include/dt-bindings/dma/jz4780-dma.h
++
 
-diff --git a/drivers/dma/Kconfig b/drivers/dma/Kconfig
-index f2b2c4e..379509e 100644
---- a/drivers/dma/Kconfig
-+++ b/drivers/dma/Kconfig
-@@ -358,6 +358,16 @@ config DMA_JZ4740
- 	select DMA_ENGINE
- 	select DMA_VIRTUAL_CHANNELS
- 
-+config DMA_JZ4780
-+	tristate "JZ4780 DMA support"
-+	depends on MACH_JZ4780
-+	select DMA_ENGINE
-+	select DMA_VIRTUAL_CHANNELS
-+	help
-+	  This selects support for the DMA controller in Ingenic JZ4780 SoCs.
-+	  If you have a board based on such a SoC and wish to use DMA for
-+	  devices which can use the DMA controller, say Y or M here.
-+
- config K3_DMA
- 	tristate "Hisilicon K3 DMA support"
- 	depends on ARCH_HI3xxx
-diff --git a/drivers/dma/Makefile b/drivers/dma/Makefile
-index 2022b54..609026c 100644
---- a/drivers/dma/Makefile
-+++ b/drivers/dma/Makefile
-@@ -41,6 +41,7 @@ obj-$(CONFIG_DMA_OMAP) += omap-dma.o
- obj-$(CONFIG_DMA_BCM2835) += bcm2835-dma.o
- obj-$(CONFIG_MMP_PDMA) += mmp_pdma.o
- obj-$(CONFIG_DMA_JZ4740) += dma-jz4740.o
-+obj-$(CONFIG_DMA_JZ4780) += dma-jz4780.o
- obj-$(CONFIG_TI_CPPI41) += cppi41.o
- obj-$(CONFIG_K3_DMA) += k3dma.o
- obj-$(CONFIG_MOXART_DMA) += moxart-dma.o
-diff --git a/drivers/dma/dma-jz4780.c b/drivers/dma/dma-jz4780.c
-new file mode 100644
-index 0000000..2488e32
---- /dev/null
-+++ b/drivers/dma/dma-jz4780.c
-@@ -0,0 +1,856 @@
-+/*
-+ * Ingenic JZ4780 DMA controller
-+ *
-+ * Copyright (c) 2013 Imagination Technologies
-+ * Author: Alex Smith <alex.smith@imgtec.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms of the GNU General Public License as published by the
-+ * Free Software Foundation;  either version 2 of the  License, or (at your
-+ * option) any later version.
-+ */
-+
-+#include <linux/clk.h>
-+#include <linux/dmapool.h>
-+#include <linux/init.h>
-+#include <linux/interrupt.h>
-+#include <linux/module.h>
-+#include <linux/of.h>
-+#include <linux/of_dma.h>
-+#include <linux/platform_device.h>
-+#include <linux/slab.h>
-+
-+#include "dmaengine.h"
-+#include "virt-dma.h"
-+
-+#define JZ_DMA_NR_CHANNELS	32
-+
-+/* Global registers. */
-+#define JZ_DMA_REG_DMAC		0x1000
-+#define JZ_DMA_REG_DIRQP	0x1004
-+#define JZ_DMA_REG_DDR		0x1008
-+#define JZ_DMA_REG_DDRS		0x100c
-+#define JZ_DMA_REG_DMACP	0x101c
-+#define JZ_DMA_REG_DSIRQP	0x1020
-+#define JZ_DMA_REG_DSIRQM	0x1024
-+#define JZ_DMA_REG_DCIRQP	0x1028
-+#define JZ_DMA_REG_DCIRQM	0x102c
-+
-+/* Per-channel registers. */
-+#define JZ_DMA_REG_DSA(n)	(0x00 + (n) * 0x20)
-+#define JZ_DMA_REG_DTA(n)	(0x04 + (n) * 0x20)
-+#define JZ_DMA_REG_DTC(n)	(0x08 + (n) * 0x20)
-+#define JZ_DMA_REG_DRT(n)	(0x0c + (n) * 0x20)
-+#define JZ_DMA_REG_DCS(n)	(0x10 + (n) * 0x20)
-+#define JZ_DMA_REG_DCM(n)	(0x14 + (n) * 0x20)
-+#define JZ_DMA_REG_DDA(n)	(0x18 + (n) * 0x20)
-+#define JZ_DMA_REG_DSD(n)	(0x1c + (n) * 0x20)
-+
-+#define JZ_DMA_DMAC_DMAE	BIT(0)
-+#define JZ_DMA_DMAC_AR		BIT(2)
-+#define JZ_DMA_DMAC_HLT		BIT(3)
-+#define JZ_DMA_DMAC_FMSC	BIT(31)
-+
-+#define JZ_DMA_DRT_AUTO		0x8
-+
-+#define JZ_DMA_DCS_CTE		BIT(0)
-+#define JZ_DMA_DCS_HLT		BIT(2)
-+#define JZ_DMA_DCS_TT		BIT(3)
-+#define JZ_DMA_DCS_AR		BIT(4)
-+#define JZ_DMA_DCS_DES8		BIT(30)
-+
-+#define JZ_DMA_DCM_LINK		BIT(0)
-+#define JZ_DMA_DCM_TIE		BIT(1)
-+#define JZ_DMA_DCM_STDE		BIT(2)
-+#define JZ_DMA_DCM_TSZ_SHIFT	8
-+#define JZ_DMA_DCM_TSZ_MASK	(0x7 << JZ_DMA_DCM_TSZ_SHIFT)
-+#define JZ_DMA_DCM_DP_SHIFT	12
-+#define JZ_DMA_DCM_SP_SHIFT	14
-+#define JZ_DMA_DCM_DAI		BIT(22)
-+#define JZ_DMA_DCM_SAI		BIT(23)
-+
-+#define JZ_DMA_SIZE_4_BYTE	0x0
-+#define JZ_DMA_SIZE_1_BYTE	0x1
-+#define JZ_DMA_SIZE_2_BYTE	0x2
-+#define JZ_DMA_SIZE_16_BYTE	0x3
-+#define JZ_DMA_SIZE_32_BYTE	0x4
-+#define JZ_DMA_SIZE_64_BYTE	0x5
-+#define JZ_DMA_SIZE_128_BYTE	0x6
-+
-+#define JZ_DMA_WIDTH_32_BIT	0x0
-+#define JZ_DMA_WIDTH_8_BIT	0x1
-+#define JZ_DMA_WIDTH_16_BIT	0x2
-+
-+/**
-+ * struct jz4780_dma_hwdesc - descriptor structure read by the DMA controller.
-+ * @dcm: value for the DCM (channel command) register
-+ * @dsa: source address
-+ * @dta: target address
-+ * @dtc: transfer count (number of blocks of the transfer size specified in DCM
-+ * to transfer) in the low 24 bits, offset of the next descriptor from the
-+ * descriptor base address in the upper 8 bits.
-+ * @sd: target/source stride difference (in stride transfer mode).
-+ * @drt: request type
-+ */
-+struct jz4780_dma_hwdesc {
-+	uint32_t dcm;
-+	uint32_t dsa;
-+	uint32_t dta;
-+	uint32_t dtc;
-+	uint32_t sd;
-+	uint32_t drt;
-+	uint32_t reserved[2];
-+};
-+
-+/* Size of allocations for hardware descriptor blocks. */
-+#define JZ_DMA_DESC_BLOCK_SIZE	PAGE_SIZE
-+#define JZ_DMA_MAX_DESC		\
-+	(JZ_DMA_DESC_BLOCK_SIZE / sizeof(struct jz4780_dma_hwdesc))
-+
-+struct jz4780_dma_desc {
-+	struct virt_dma_desc vdesc;
-+
-+	struct jz4780_dma_hwdesc *desc;
-+	dma_addr_t desc_phys;
-+	unsigned int count;
-+	enum dma_transaction_type type;
-+	uint32_t status;
-+};
-+
-+struct jz4780_dma_chan {
-+	struct virt_dma_chan vchan;
-+	unsigned int id;
-+	struct dma_pool *desc_pool;
-+
-+	uint32_t tx_type;
-+	uint32_t rx_type;
-+
-+	struct dma_slave_config	config;
-+
-+	struct jz4780_dma_desc *desc;
-+	unsigned int curr_hwdesc;
-+};
-+
-+struct jz4780_dma_dev {
-+	struct dma_device dma_device;
-+	void __iomem *base;
-+	struct clk *clk;
-+	unsigned int irq;
-+
-+	uint32_t chan_reserved;
-+	struct jz4780_dma_chan chan[JZ_DMA_NR_CHANNELS];
-+};
-+
-+struct jz4780_dma_data {
-+	uint32_t tx_type;
-+	uint32_t rx_type;
-+	int channel;
-+};
-+
-+static inline struct jz4780_dma_chan *to_jz4780_dma_chan(struct dma_chan *chan)
-+{
-+	return container_of(chan, struct jz4780_dma_chan, vchan.chan);
-+}
-+
-+static inline struct jz4780_dma_desc *to_jz4780_dma_desc(
-+	struct virt_dma_desc *vdesc)
-+{
-+	return container_of(vdesc, struct jz4780_dma_desc, vdesc);
-+}
-+
-+static inline struct jz4780_dma_dev *jz4780_dma_chan_parent(
-+	struct jz4780_dma_chan *jzchan)
-+{
-+	return container_of(jzchan->vchan.chan.device, struct jz4780_dma_dev,
-+			    dma_device);
-+}
-+
-+static inline uint32_t jz4780_dma_readl(struct jz4780_dma_dev *jzdma,
-+	unsigned int reg)
-+{
-+	return readl(jzdma->base + reg);
-+}
-+
-+static inline void jz4780_dma_writel(struct jz4780_dma_dev *jzdma,
-+	unsigned int reg, uint32_t val)
-+{
-+	writel(val, jzdma->base + reg);
-+}
-+
-+static struct jz4780_dma_desc *jz4780_dma_desc_alloc(
-+	struct jz4780_dma_chan *jzchan, unsigned int count,
-+	enum dma_transaction_type type)
-+{
-+	struct jz4780_dma_desc *desc;
-+
-+	if (count > JZ_DMA_MAX_DESC)
-+		return NULL;
-+
-+	desc = kzalloc(sizeof(*desc), GFP_ATOMIC);
-+	if (!desc)
-+		return NULL;
-+
-+	desc->desc = dma_pool_alloc(jzchan->desc_pool, GFP_ATOMIC,
-+				    &desc->desc_phys);
-+	if (!desc->desc) {
-+		kfree(desc);
-+		return NULL;
-+	}
-+
-+	desc->count = count;
-+	desc->type = type;
-+	return desc;
-+}
-+
-+static void jz4780_dma_desc_free(struct virt_dma_desc *vdesc)
-+{
-+	struct jz4780_dma_desc *desc = to_jz4780_dma_desc(vdesc);
-+	struct jz4780_dma_chan *jzchan = to_jz4780_dma_chan(vdesc->tx.chan);
-+
-+	dma_pool_free(jzchan->desc_pool, desc->desc, desc->desc_phys);
-+	kfree(desc);
-+}
-+
-+static uint32_t jz4780_dma_width(enum dma_slave_buswidth width)
-+{
-+	switch (width) {
-+	case DMA_SLAVE_BUSWIDTH_1_BYTE:
-+		return JZ_DMA_WIDTH_8_BIT;
-+	case DMA_SLAVE_BUSWIDTH_2_BYTES:
-+		return JZ_DMA_WIDTH_16_BIT;
-+	default:
-+		return JZ_DMA_WIDTH_32_BIT;
-+	}
-+}
-+
-+static uint32_t jz4780_dma_transfer_size(unsigned long val, int *ord)
-+{
-+	*ord = ffs(val) - 1;
-+
-+	/* 8 byte transfer sizes unsupported so fall back on 4. */
-+	if (*ord == 3)
-+		*ord = 2;
-+	else if (*ord > 7)
-+		*ord = 7;
-+
-+	switch (*ord) {
-+	case 0:
-+		return JZ_DMA_SIZE_1_BYTE;
-+	case 1:
-+		return JZ_DMA_SIZE_2_BYTE;
-+	case 2:
-+		return JZ_DMA_SIZE_4_BYTE;
-+	case 4:
-+		return JZ_DMA_SIZE_16_BYTE;
-+	case 5:
-+		return JZ_DMA_SIZE_32_BYTE;
-+	case 6:
-+		return JZ_DMA_SIZE_64_BYTE;
-+	default:
-+		return JZ_DMA_SIZE_128_BYTE;
-+	}
-+}
-+
-+static void jz4780_dma_setup_hwdesc(struct jz4780_dma_chan *jzchan,
-+	struct jz4780_dma_hwdesc *desc, dma_addr_t addr, size_t len)
-+{
-+	struct dma_slave_config *config = &jzchan->config;
-+	uint32_t width, maxburst, tsz;
-+	int ord;
-+
-+	if (config->direction == DMA_MEM_TO_DEV) {
-+		desc->dcm = JZ_DMA_DCM_SAI;
-+		desc->dsa = addr;
-+		desc->dta = config->dst_addr;
-+		desc->drt = jzchan->tx_type;
-+
-+		width = config->dst_addr_width;
-+		maxburst = config->dst_maxburst;
-+	} else {
-+		desc->dcm = JZ_DMA_DCM_DAI;
-+		desc->dsa = config->src_addr;
-+		desc->dta = addr;
-+		desc->drt = jzchan->rx_type;
-+
-+		width = config->src_addr_width;
-+		maxburst = config->src_maxburst;
-+	}
-+
-+	/*
-+	 * This calculates the maximum transfer size that can be used with the
-+	 * given address, length, width and maximum burst size. The address
-+	 * must be aligned to the transfer size, the total length must be
-+	 * divisible by the transfer size, and we must not use more than the
-+	 * maximum burst specified by the user.
-+	 */
-+	tsz = jz4780_dma_transfer_size(addr | len | (width * maxburst), &ord);
-+	width = jz4780_dma_width(width);
-+
-+	desc->dcm |= tsz << JZ_DMA_DCM_TSZ_SHIFT;
-+	desc->dcm |= width << JZ_DMA_DCM_SP_SHIFT;
-+	desc->dcm |= width << JZ_DMA_DCM_DP_SHIFT;
-+
-+	desc->dtc = len >> ord;
-+}
-+
-+static struct dma_async_tx_descriptor *jz4780_dma_prep_slave_sg(
-+	struct dma_chan *chan, struct scatterlist *sgl, unsigned int sg_len,
-+	enum dma_transfer_direction direction, unsigned long flags,
-+	void *context)
-+{
-+	struct jz4780_dma_chan *jzchan = to_jz4780_dma_chan(chan);
-+	struct jz4780_dma_desc *desc;
-+	unsigned int i;
-+
-+	desc = jz4780_dma_desc_alloc(jzchan, sg_len, DMA_SLAVE);
-+	if (!desc)
-+		return NULL;
-+
-+	for (i = 0; i < sg_len; i++) {
-+		jz4780_dma_setup_hwdesc(jzchan, &desc->desc[i],
-+					sg_dma_address(&sgl[i]),
-+					sg_dma_len(&sgl[i]));
-+
-+		desc->desc[i].dcm |= JZ_DMA_DCM_TIE;
-+
-+		if (i != (sg_len - 1)) {
-+			/* Automatically proceeed to the next descriptor. */
-+			desc->desc[i].dcm |= JZ_DMA_DCM_LINK;
-+
-+			/*
-+			 * The upper 8 bits of the DTC field in the descriptor
-+			 * must be set to (offset from descriptor base of next
-+			 * descriptor >> 4).
-+			 */
-+			desc->desc[i].dtc |=
-+				(((i + 1) * sizeof(*desc->desc)) >> 4) << 24;
-+		}
-+	}
-+
-+	return vchan_tx_prep(&jzchan->vchan, &desc->vdesc, flags);
-+}
-+
-+static struct dma_async_tx_descriptor *jz4780_dma_prep_dma_cyclic(
-+	struct dma_chan *chan, dma_addr_t buf_addr, size_t buf_len,
-+	size_t period_len, enum dma_transfer_direction direction,
-+	unsigned long flags, void *context)
-+{
-+	struct jz4780_dma_chan *jzchan = to_jz4780_dma_chan(chan);
-+	struct jz4780_dma_desc *desc;
-+	unsigned int periods, i;
-+
-+	if (buf_len % period_len)
-+		return NULL;
-+
-+	periods = buf_len / period_len;
-+
-+	desc = jz4780_dma_desc_alloc(jzchan, periods, DMA_CYCLIC);
-+	if (!desc)
-+		return NULL;
-+
-+	for (i = 0; i < periods; i++) {
-+		jz4780_dma_setup_hwdesc(jzchan, &desc->desc[i], buf_addr,
-+					period_len);
-+		buf_addr += period_len;
-+
-+		/*
-+		 * Set the link bit to indicate that the controller should
-+		 * automatically proceed to the next descriptor. In
-+		 * jz4780_dma_begin(), this will be cleared if we need to issue
-+		 * an interrupt after each period.
-+		 */
-+		desc->desc[i].dcm |= JZ_DMA_DCM_TIE | JZ_DMA_DCM_LINK;
-+
-+		/*
-+		 * The upper 8 bits of the DTC field in the descriptor must be
-+		 * set to (offset from descriptor base of next descriptor >> 4).
-+		 * If this is the last descriptor, link it back to the first,
-+		 * i.e. leave offset set to 0, otherwise point to the next one.
-+		 */
-+		if (i != (periods - 1)) {
-+			desc->desc[i].dtc |=
-+				(((i + 1) * sizeof(*desc->desc)) >> 4) << 24;
-+		}
-+	}
-+
-+	return vchan_tx_prep(&jzchan->vchan, &desc->vdesc, flags);
-+}
-+
-+struct dma_async_tx_descriptor *jz4780_dma_prep_dma_memcpy(
-+	struct dma_chan *chan, dma_addr_t dest, dma_addr_t src,
-+	size_t len, unsigned long flags)
-+{
-+	struct jz4780_dma_chan *jzchan = to_jz4780_dma_chan(chan);
-+	struct jz4780_dma_desc *desc;
-+	uint32_t tsz;
-+	int ord;
-+
-+	desc = jz4780_dma_desc_alloc(jzchan, 1, DMA_MEMCPY);
-+	if (!desc)
-+		return NULL;
-+
-+	tsz = jz4780_dma_transfer_size(dest | src | len, &ord);
-+
-+	desc->desc[0].dsa = src;
-+	desc->desc[0].dta = dest;
-+	desc->desc[0].drt = JZ_DMA_DRT_AUTO;
-+	desc->desc[0].dcm = JZ_DMA_DCM_TIE | JZ_DMA_DCM_SAI | JZ_DMA_DCM_DAI |
-+			    tsz << JZ_DMA_DCM_TSZ_SHIFT |
-+			    JZ_DMA_WIDTH_32_BIT << JZ_DMA_DCM_SP_SHIFT |
-+			    JZ_DMA_WIDTH_32_BIT << JZ_DMA_DCM_DP_SHIFT;
-+	desc->desc[0].dtc = len >> ord;
-+
-+	return vchan_tx_prep(&jzchan->vchan, &desc->vdesc, flags);
-+}
-+
-+static void jz4780_dma_begin(struct jz4780_dma_chan *jzchan)
-+{
-+	struct jz4780_dma_dev *jzdma = jz4780_dma_chan_parent(jzchan);
-+	struct virt_dma_desc *vdesc;
-+	unsigned int i;
-+	dma_addr_t desc_phys;
-+
-+	if (!jzchan->desc) {
-+		vdesc = vchan_next_desc(&jzchan->vchan);
-+		if (!vdesc)
-+			return;
-+
-+		list_del(&vdesc->node);
-+
-+		jzchan->desc = to_jz4780_dma_desc(vdesc);
-+		jzchan->curr_hwdesc = 0;
-+
-+		if (jzchan->desc->type == DMA_CYCLIC && vdesc->tx.callback) {
-+			/*
-+			 * The DMA controller doesn't support triggering an
-+			 * interrupt after processing each descriptor, only
-+			 * after processing an entire terminated list of
-+			 * descriptors. For a cyclic DMA setup the list of
-+			 * descriptors is not terminated so we can never get an
-+			 * interrupt.
-+			 *
-+			 * If the user requested a callback for a cyclic DMA
-+			 * setup then we workaround this hardware limitation
-+			 * here by degrading to a set of unlinked descriptors
-+			 * which we will submit in sequence in response to the
-+			 * completion of processing the previous descriptor.
-+			 */
-+			for (i = 0; i < jzchan->desc->count; i++)
-+				jzchan->desc->desc[i].dcm &= ~JZ_DMA_DCM_LINK;
-+		}
-+	} else {
-+		/*
-+		 * There is an existing transfer, therefore this must be one
-+		 * for which we unlinked the descriptors above. Advance to the
-+		 * next one in the list.
-+		 */
-+		jzchan->curr_hwdesc =
-+			(jzchan->curr_hwdesc + 1) % jzchan->desc->count;
-+	}
-+
-+	/* Use 8-word descriptors. */
-+	jz4780_dma_writel(jzdma, JZ_DMA_REG_DCS(jzchan->id), JZ_DMA_DCS_DES8);
-+
-+	/* Write descriptor address and initiate descriptor fetch. */
-+	desc_phys = jzchan->desc->desc_phys +
-+		    (jzchan->curr_hwdesc * sizeof(*jzchan->desc->desc));
-+	jz4780_dma_writel(jzdma, JZ_DMA_REG_DDA(jzchan->id), desc_phys);
-+	jz4780_dma_writel(jzdma, JZ_DMA_REG_DDRS, BIT(jzchan->id));
-+
-+	/* Enable the channel. */
-+	jz4780_dma_writel(jzdma, JZ_DMA_REG_DCS(jzchan->id),
-+			  JZ_DMA_DCS_DES8 | JZ_DMA_DCS_CTE);
-+}
-+
-+static void jz4780_dma_issue_pending(struct dma_chan *chan)
-+{
-+	struct jz4780_dma_chan *jzchan = to_jz4780_dma_chan(chan);
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&jzchan->vchan.lock, flags);
-+
-+	if (vchan_issue_pending(&jzchan->vchan) && !jzchan->desc)
-+		jz4780_dma_begin(jzchan);
-+
-+	spin_unlock_irqrestore(&jzchan->vchan.lock, flags);
-+}
-+
-+static int jz4780_dma_terminate_all(struct jz4780_dma_chan *jzchan)
-+{
-+	struct jz4780_dma_dev *jzdma = jz4780_dma_chan_parent(jzchan);
-+	unsigned long flags;
-+	LIST_HEAD(head);
-+
-+	spin_lock_irqsave(&jzchan->vchan.lock, flags);
-+
-+	/* Clear the DMA status and stop the transfer. */
-+	jz4780_dma_writel(jzdma, JZ_DMA_REG_DCS(jzchan->id), 0);
-+	if (jzchan->desc) {
-+		jz4780_dma_desc_free(&jzchan->desc->vdesc);
-+		jzchan->desc = NULL;
-+	}
-+
-+	vchan_get_all_descriptors(&jzchan->vchan, &head);
-+
-+	spin_unlock_irqrestore(&jzchan->vchan.lock, flags);
-+
-+	vchan_dma_desc_free_list(&jzchan->vchan, &head);
-+	return 0;
-+}
-+
-+static int jz4780_dma_slave_config(struct jz4780_dma_chan *jzchan,
-+	const struct dma_slave_config *config)
-+{
-+	if ((config->src_addr_width == DMA_SLAVE_BUSWIDTH_8_BYTES)
-+	   || (config->dst_addr_width == DMA_SLAVE_BUSWIDTH_8_BYTES))
-+		return -EINVAL;
-+
-+	if ((config->src_addr_width == DMA_SLAVE_BUSWIDTH_UNDEFINED)
-+	   && (config->dst_addr_width == DMA_SLAVE_BUSWIDTH_UNDEFINED))
-+		return -EINVAL;
-+
-+	/* Copy the reset of the slave configuration, it is used later. */
-+	memcpy(&jzchan->config, config, sizeof(jzchan->config));
-+
-+	return 0;
-+}
-+
-+static int jz4780_dma_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
-+	unsigned long arg)
-+{
-+	struct jz4780_dma_chan *jzchan = to_jz4780_dma_chan(chan);
-+	struct dma_slave_config *config = (void *)arg;
-+
-+	switch (cmd) {
-+	case DMA_TERMINATE_ALL:
-+		return jz4780_dma_terminate_all(jzchan);
-+	case DMA_SLAVE_CONFIG:
-+		return jz4780_dma_slave_config(jzchan, config);
-+	default:
-+		return -ENOSYS;
-+	}
-+}
-+
-+static enum dma_status jz4780_dma_tx_status(struct dma_chan *chan,
-+	dma_cookie_t cookie, struct dma_tx_state *txstate)
-+{
-+	struct jz4780_dma_chan *jzchan = to_jz4780_dma_chan(chan);
-+	struct virt_dma_desc *vdesc;
-+	enum dma_status status;
-+	unsigned long flags;
-+
-+	status = dma_cookie_status(chan, cookie, txstate);
-+	if (status == DMA_COMPLETE)
-+		return status;
-+
-+	spin_lock_irqsave(&jzchan->vchan.lock, flags);
-+
-+	vdesc = vchan_find_desc(&jzchan->vchan, cookie);
-+	if (vdesc && jzchan->desc && vdesc == &jzchan->desc->vdesc
-+		&& jzchan->desc->status & (JZ_DMA_DCS_AR | JZ_DMA_DCS_HLT))
-+			status = DMA_ERROR;
-+
-+	spin_unlock_irqrestore(&jzchan->vchan.lock, flags);
-+	return status;
-+}
-+
-+static void jz4780_dma_chan_irq(struct jz4780_dma_dev *jzdma,
-+	struct jz4780_dma_chan *jzchan)
-+{
-+	uint32_t dcs;
-+
-+	spin_lock(&jzchan->vchan.lock);
-+
-+	dcs = jz4780_dma_readl(jzdma, JZ_DMA_REG_DCS(jzchan->id));
-+	jz4780_dma_writel(jzdma, JZ_DMA_REG_DCS(jzchan->id), 0);
-+
-+	if (dcs & JZ_DMA_DCS_AR) {
-+		dev_warn(&jzchan->vchan.chan.dev->device,
-+			 "address error (DCS=0x%x)\n", dcs);
-+	}
-+
-+	if (dcs & JZ_DMA_DCS_HLT) {
-+		dev_warn(&jzchan->vchan.chan.dev->device,
-+			 "channel halt (DCS=0x%x)\n", dcs);
-+	}
-+
-+	if (jzchan->desc) {
-+		jzchan->desc->status = dcs;
-+
-+		if ((dcs & (JZ_DMA_DCS_AR | JZ_DMA_DCS_HLT)) == 0) {
-+			if (jzchan->desc->type == DMA_CYCLIC) {
-+				vchan_cyclic_callback(&jzchan->desc->vdesc);
-+			} else {
-+				vchan_cookie_complete(&jzchan->desc->vdesc);
-+				jzchan->desc = NULL;
-+			}
-+
-+			jz4780_dma_begin(jzchan);
-+		}
-+	} else {
-+		dev_err(&jzchan->vchan.chan.dev->device,
-+			"channel IRQ with no active transfer\n");
-+	}
-+
-+	spin_unlock(&jzchan->vchan.lock);
-+}
-+
-+static irqreturn_t jz4780_dma_irq(int irq, void *data)
-+{
-+	struct jz4780_dma_dev *jzdma = data;
-+	uint32_t pending, dmac;
-+	int i;
-+
-+	pending = jz4780_dma_readl(jzdma, JZ_DMA_REG_DIRQP);
-+
-+	for (i = 0; i < JZ_DMA_NR_CHANNELS; i++) {
-+		if (!(pending & (1<<i)))
-+			continue;
-+
-+		jz4780_dma_chan_irq(jzdma, &jzdma->chan[i]);
-+	}
-+
-+	/* Clear halt and address error status of all channels. */
-+	dmac = jz4780_dma_readl(jzdma, JZ_DMA_REG_DMAC);
-+	dmac &= ~(JZ_DMA_DMAC_HLT | JZ_DMA_DMAC_AR);
-+	jz4780_dma_writel(jzdma, JZ_DMA_REG_DMAC, dmac);
-+
-+	/* Clear interrupt pending status. */
-+	jz4780_dma_writel(jzdma, JZ_DMA_REG_DIRQP, 0);
-+
-+	return IRQ_HANDLED;
-+}
-+
-+static int jz4780_dma_alloc_chan_resources(struct dma_chan *chan)
-+{
-+	struct jz4780_dma_chan *jzchan = to_jz4780_dma_chan(chan);
-+
-+	jzchan->desc_pool = dma_pool_create(dev_name(&chan->dev->device),
-+					    chan->device->dev,
-+					    JZ_DMA_DESC_BLOCK_SIZE,
-+					    PAGE_SIZE, 0);
-+	if (!jzchan->desc_pool) {
-+		dev_err(&chan->dev->device,
-+			"failed to allocate descriptor pool\n");
-+		return -ENOMEM;
-+	}
-+
-+	return 0;
-+}
-+
-+static void jz4780_dma_free_chan_resources(struct dma_chan *chan)
-+{
-+	struct jz4780_dma_chan *jzchan = to_jz4780_dma_chan(chan);
-+
-+	vchan_free_chan_resources(&jzchan->vchan);
-+	dma_pool_destroy(jzchan->desc_pool);
-+	jzchan->desc_pool = NULL;
-+}
-+
-+static bool jz4780_dma_filter_fn(struct dma_chan *chan, void *param)
-+{
-+	struct jz4780_dma_chan *jzchan = to_jz4780_dma_chan(chan);
-+	struct jz4780_dma_dev *jzdma = jz4780_dma_chan_parent(jzchan);
-+	struct jz4780_dma_data *data = param;
-+
-+	if (data->channel > -1) {
-+		if (data->channel != jzchan->id)
-+			return false;
-+	} else if (jzdma->chan_reserved & BIT(jzchan->id)) {
-+		return false;
-+	}
-+
-+	jzchan->tx_type = data->tx_type;
-+	jzchan->rx_type = data->rx_type;
-+
-+	return true;
-+}
-+
-+static struct dma_chan *jz4780_of_dma_xlate(struct of_phandle_args *dma_spec,
-+	struct of_dma *ofdma)
-+{
-+	struct jz4780_dma_dev *jzdma = ofdma->of_dma_data;
-+	dma_cap_mask_t mask = jzdma->dma_device.cap_mask;
-+	struct jz4780_dma_data data;
-+
-+	if (dma_spec->args_count != 3)
-+		return NULL;
-+
-+	data.tx_type = dma_spec->args[0];
-+	data.rx_type = dma_spec->args[1];
-+	data.channel = dma_spec->args[2];
-+
-+	if (data.channel > -1) {
-+		if (data.channel >= JZ_DMA_NR_CHANNELS) {
-+			dev_err(jzdma->dma_device.dev,
-+				"device requested non-existant channel %u\n",
-+				data.channel);
-+			return NULL;
-+		}
-+
-+		/* Can only select a channel marked as reserved. */
-+		if (!(jzdma->chan_reserved & BIT(data.channel))) {
-+			dev_err(jzdma->dma_device.dev,
-+				"device requested unreserved channel %u\n",
-+				data.channel);
-+			return NULL;
-+		}
-+	}
-+
-+	return dma_request_channel(mask, jz4780_dma_filter_fn, &data);
-+}
-+
-+static int jz4780_dma_probe(struct platform_device *pdev)
-+{
-+	struct device *dev = &pdev->dev;
-+	struct jz4780_dma_dev *jzdma;
-+	struct jz4780_dma_chan *jzchan;
-+	struct dma_device *dd;
-+	struct resource *res;
-+	int i, ret;
-+
-+	jzdma = devm_kzalloc(dev, sizeof(*jzdma), GFP_KERNEL);
-+	if (!jzdma) {
-+		dev_err(dev, "failed to allocate DMA controller data\n");
-+		return -ENOMEM;
-+	}
-+
-+	platform_set_drvdata(pdev, jzdma);
-+
-+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	if (!res) {
-+		dev_err(dev, "failed to get I/O memory\n");
-+		return -EINVAL;
-+	}
-+
-+	jzdma->base = devm_ioremap_resource(dev, res);
-+	if (IS_ERR(jzdma->base))
-+		return PTR_ERR(jzdma->base);
-+
-+	jzdma->irq = platform_get_irq(pdev, 0);
-+	if (jzdma->irq < 0) {
-+		dev_err(dev, "failed to get IRQ: %d\n", ret);
-+		return jzdma->irq;
-+	}
-+
-+	ret = devm_request_irq(dev, jzdma->irq, jz4780_dma_irq, 0,
-+			       dev_name(dev), jzdma);
-+	if (ret) {
-+		dev_err(dev, "failed to request IRQ %u!\n", jzdma->irq);
-+		return -EINVAL;
-+	}
-+
-+	jzdma->clk = devm_clk_get(dev, NULL);
-+	if (IS_ERR(jzdma->clk)) {
-+		dev_err(dev, "failed to get clock\n");
-+		return PTR_ERR(jzdma->clk);
-+	}
-+
-+	clk_prepare_enable(jzdma->clk);
-+
-+	/* Property is optional, if it doesn't exist the value will remain 0. */
-+	of_property_read_u32_index(dev->of_node, "ingenic,reserved-channels",
-+				   0, &jzdma->chan_reserved);
-+
-+	dd = &jzdma->dma_device;
-+
-+	dma_cap_set(DMA_MEMCPY, dd->cap_mask);
-+	dma_cap_set(DMA_SLAVE, dd->cap_mask);
-+	dma_cap_set(DMA_CYCLIC, dd->cap_mask);
-+
-+	dd->dev = dev;
-+	dd->chancnt = JZ_DMA_NR_CHANNELS;
-+	dd->copy_align = 2; /* 2^2 = 4 byte alignment */
-+	dd->device_alloc_chan_resources = jz4780_dma_alloc_chan_resources;
-+	dd->device_free_chan_resources = jz4780_dma_free_chan_resources;
-+	dd->device_prep_slave_sg = jz4780_dma_prep_slave_sg;
-+	dd->device_prep_dma_cyclic = jz4780_dma_prep_dma_cyclic;
-+	dd->device_prep_dma_memcpy = jz4780_dma_prep_dma_memcpy;
-+	dd->device_control = jz4780_dma_control;
-+	dd->device_tx_status = jz4780_dma_tx_status;
-+	dd->device_issue_pending = jz4780_dma_issue_pending;
-+
-+	/*
-+	 * Enable DMA controller, mark all channels as not programmable.
-+	 * Also set the FMSC bit - it increases MSC performance, so it makes
-+	 * little sense not to enable it.
-+	 */
-+	jz4780_dma_writel(jzdma, JZ_DMA_REG_DMAC,
-+			  JZ_DMA_DMAC_DMAE | JZ_DMA_DMAC_FMSC);
-+	jz4780_dma_writel(jzdma, JZ_DMA_REG_DMACP, 0);
-+
-+	INIT_LIST_HEAD(&dd->channels);
-+
-+	for (i = 0; i < JZ_DMA_NR_CHANNELS; i++) {
-+		jzchan = &jzdma->chan[i];
-+		jzchan->id = i;
-+
-+		vchan_init(&jzchan->vchan, dd);
-+		jzchan->vchan.desc_free = jz4780_dma_desc_free;
-+	}
-+
-+	ret = dma_async_device_register(dd);
-+	if (ret) {
-+		dev_err(dev, "failed to register device\n");
-+		goto err_disable_clk;
-+	}
-+
-+	/* Register with OF DMA helpers. */
-+	ret = of_dma_controller_register(dev->of_node, jz4780_of_dma_xlate,
-+					 jzdma);
-+	if (ret) {
-+		dev_err(dev, "failed to register OF DMA controller\n");
-+		goto err_unregister_dev;
-+	}
-+
-+	dev_info(dev, "JZ4780 DMA controller initialised\n");
-+	return 0;
-+
-+err_unregister_dev:
-+	dma_async_device_unregister(dd);
-+
-+err_disable_clk:
-+	clk_disable_unprepare(jzdma->clk);
-+	return ret;
-+}
-+
-+static int jz4780_dma_remove(struct platform_device *pdev)
-+{
-+	struct jz4780_dma_dev *jzdma = platform_get_drvdata(pdev);
-+
-+	of_dma_controller_free(pdev->dev.of_node);
-+	dma_async_device_unregister(&jzdma->dma_device);
-+	return 0;
-+}
-+
-+static const struct of_device_id jz4780_dma_dt_match[] = {
-+	{ .compatible = "ingenic,jz4780-dma", .data = NULL },
-+	{},
-+};
-+MODULE_DEVICE_TABLE(of, jz4780_dma_dt_match);
-+
-+static struct platform_driver jz4780_dma_driver = {
-+	.probe		= jz4780_dma_probe,
-+	.remove		= jz4780_dma_remove,
-+	.driver	= {
-+		.name	= "jz4780-dma",
-+		.owner	= THIS_MODULE,
-+		.of_match_table = of_match_ptr(jz4780_dma_dt_match),
-+	},
-+};
-+
-+static int __init jz4780_dma_init(void)
-+{
-+	return platform_driver_register(&jz4780_dma_driver);
-+}
-+subsys_initcall(jz4780_dma_init);
-+
-+static void __exit jz4780_dma_exit(void)
-+{
-+	platform_driver_unregister(&jz4780_dma_driver);
-+}
-+module_exit(jz4780_dma_exit);
-+
-+MODULE_AUTHOR("Alex Smith <alex.smith@imgtec.com>");
-+MODULE_DESCRIPTION("Ingenic JZ4780 DMA controller driver");
-+MODULE_LICENSE("GPL");
-diff --git a/include/dt-bindings/dma/jz4780-dma.h b/include/dt-bindings/dma/jz4780-dma.h
-new file mode 100644
-index 0000000..df017fd
---- /dev/null
-+++ b/include/dt-bindings/dma/jz4780-dma.h
-@@ -0,0 +1,49 @@
-+#ifndef __DT_BINDINGS_DMA_JZ4780_DMA_H__
-+#define __DT_BINDINGS_DMA_JZ4780_DMA_H__
-+
-+/*
-+ * Request type numbers for the JZ4780 DMA controller (written to the DRTn
-+ * register for the channel).
-+ */
-+#define JZ4780_DMA_I2S1_TX	0x4
-+#define JZ4780_DMA_I2S1_RX	0x5
-+#define JZ4780_DMA_I2S0_TX	0x6
-+#define JZ4780_DMA_I2S0_RX	0x7
-+#define JZ4780_DMA_AUTO		0x8
-+#define JZ4780_DMA_SADC_RX	0x9
-+#define JZ4780_DMA_UART4_TX	0xc
-+#define JZ4780_DMA_UART4_RX	0xd
-+#define JZ4780_DMA_UART3_TX	0xe
-+#define JZ4780_DMA_UART3_RX	0xf
-+#define JZ4780_DMA_UART2_TX	0x10
-+#define JZ4780_DMA_UART2_RX	0x11
-+#define JZ4780_DMA_UART1_TX	0x12
-+#define JZ4780_DMA_UART1_RX	0x13
-+#define JZ4780_DMA_UART0_TX	0x14
-+#define JZ4780_DMA_UART0_RX	0x15
-+#define JZ4780_DMA_SSI0_TX	0x16
-+#define JZ4780_DMA_SSI0_RX	0x17
-+#define JZ4780_DMA_SSI1_TX	0x18
-+#define JZ4780_DMA_SSI1_RX	0x19
-+#define JZ4780_DMA_MSC0_TX	0x1a
-+#define JZ4780_DMA_MSC0_RX	0x1b
-+#define JZ4780_DMA_MSC1_TX	0x1c
-+#define JZ4780_DMA_MSC1_RX	0x1d
-+#define JZ4780_DMA_MSC2_TX	0x1e
-+#define JZ4780_DMA_MSC2_RX	0x1f
-+#define JZ4780_DMA_PCM0_TX	0x20
-+#define JZ4780_DMA_PCM0_RX	0x21
-+#define JZ4780_DMA_SMB0_TX	0x24
-+#define JZ4780_DMA_SMB0_RX	0x25
-+#define JZ4780_DMA_SMB1_TX	0x26
-+#define JZ4780_DMA_SMB1_RX	0x27
-+#define JZ4780_DMA_SMB2_TX	0x28
-+#define JZ4780_DMA_SMB2_RX	0x29
-+#define JZ4780_DMA_SMB3_TX	0x2a
-+#define JZ4780_DMA_SMB3_RX	0x2b
-+#define JZ4780_DMA_SMB4_TX	0x2c
-+#define JZ4780_DMA_SMB4_RX	0x2d
-+#define JZ4780_DMA_DES_TX	0x2e
-+#define JZ4780_DMA_DES_RX	0x2f
-+
-+#endif /* __DT_BINDINGS_DMA_JZ4780_DMA_H__ */
--- 
-1.9.1
+cpu_do_idle()
 
+is not sufficient for you, or put it differently, why do you need
+this macro.
+
+> 
+> > 
+> > > +
+> > > +#if defined(CONFIG_CPU_V7)
+> > > +	/*
+> > > +	 * Execute an ISB instruction to flush the pipeline to ensure
+> > > +	 * that all of operations have beem completed.
+> > 
+> > s/beem/been
+> Thanks.
+> 
+> > 
+> > > +	 */
+> > > +	isb
+
+This isb should not be there, unless you know a reason why it should
+and you explain it to me.
+
+> > > +
+> > > +	/*
+> > > +	 * Execute an ISB instruction to ensure that all of the
+> > > +	 * CP15 register changes have been committed.
+> > > +	 */
+> > > +	dsb
+> > 
+> > This is a dsb not an isb.
+> Changed in the v2.0
+
+Yes, but I still do not understand why you want to execute it before
+disabling the clocks (I really hope that by "disabling the clocks" you
+mean "set the power controller to a state when, on wfi execution, the
+clocks are gated").
+
+> 
+> > 
+> > > +	dmb
+> > 
+> > You have to explain why you need every single one of these barriers, otherwise I
+> > am NAKing this patch.
+> No need this one?
+
+No, remove it.
+
+> 
+> > 
+> > > +
+> > > +	/* Disable the processor's clock */
+> > > +	mov	tmp1, #AT91_PMC_PCK
+> > > +	str	tmp1, [pmc, #AT91_PMC_SCDR]
+> > > +
+> > > +	/* Execute a WFI instruction */
+> > > +	wfi	@ Wait For Interrupt
+> > 
+> > This one looks ok :)
+> > 
+> > > +
+> > > +	/*
+> > > +	 * CPU can specualatively prefetch the instructions
+> > > +	 * so add NOPs after WFI. Sixteen NOPs as Cortex-A5 pipeline.
+> > 
+> > So what ? I suspect your issue is related to wfi completion on pending IRQ. I
+> > would like to know the details that describe the issue you are trying to solve here
+> > please.
+> Honestly, I referred to others, I will dig more, and test it.
+
+You should not copy and paste code, because:
+
+1) it might be broken
+2) and/or unoptimized
+3) and/or does not apply to your platform
+
+See my suggestion above, if it does not work for you, you will report the
+issue and we will take it from there.
+
+Thanks,
+Lorenzo
+
+> 
+> > 
+> > > +	 */
+> > > +	nop
+> > > +	nop
+> > > +	nop
+> > > +	nop
+> > > +	nop
+> > > +	nop
+> > > +	nop
+> > > +	nop
+> > > +	nop
+> > > +	nop
+> > > +	nop
+> > > +	nop
+> > > +	nop
+> > > +	nop
+> > > +	nop
+> > > +	nop
+> > > +#else
+> > > +	mcr	p15, 0, tmp1, c7, c0, 4
+> > > +#endif
+> > 
+> > Tell us what's the problem you have to solve, first, then we will see how to fix it.
+> > 
+> > Thanks,
+> > Lorenzo
+> > 
+> > > +
+> > > +	.endm
+> > > +
+> > >  	.text
+> > >
+> > >  /*
+> > > @@ -181,7 +233,7 @@ sdr_sr_done:
+> > >
+> > >  skip_disable_main_clock:
+> > >  	/* Wait for interrupt */
+> > > -	mcr	p15, 0, tmp1, c7, c0, 4
+> > > +	_do_wfi
+> > >
+> > >  	tst	mode, #AT91_PM_SLOW_CLOCK
+> > >  	beq	skip_enable_main_clock
+> > > --
+> > > 1.7.9.5
+> > >
+> > > --
+> > > To unsubscribe from this list: send the line "unsubscribe
+> > > linux-kernel" in the body of a message to majordomo@vger.kernel.org
+> > > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > > Please read the FAQ at  http://www.tux.org/lkml/
+> > >
+> 
+> Best Regards,
+> Wenyou Yang
+> 
