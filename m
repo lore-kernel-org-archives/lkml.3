@@ -1,104 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760548AbbA2CBZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 21:01:25 -0500
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:54474 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760517AbbA2CBU (ORCPT
+	id S1760590AbbA2CBt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 21:01:49 -0500
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:40126 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756017AbbA2CBr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 21:01:20 -0500
-Message-ID: <54C9946D.508@gmail.com>
-Date: Thu, 29 Jan 2015 10:01:17 +0800
-From: Peter Hung <hpeter@gmail.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
+	Wed, 28 Jan 2015 21:01:47 -0500
+Date: Thu, 29 Jan 2015 11:01:40 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux-MM <linux-mm@kvack.org>, Nitin Gupta <ngupta@vflare.org>,
+        Jerome Marchand <jmarchan@redhat.com>,
+        Ganesh Mahendran <opensource.ganesh@gmail.com>,
+        sergey.senozhatsky.work@gmail.com
+Subject: Re: [PATCH v1 2/2] zram: remove init_lock in zram_make_request
+Message-ID: <20150129020139.GB9672@blaptop>
+References: <1422432945-6764-1-git-send-email-minchan@kernel.org>
+ <1422432945-6764-2-git-send-email-minchan@kernel.org>
+ <20150128145651.GB965@swordfish>
+ <20150128233343.GC4706@blaptop>
+ <CAHqPoqKZFDSjO1pL+ixYe_m_L0nGNcu04qSNp-jd1fUixKtHnw@mail.gmail.com>
 MIME-Version: 1.0
-To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>, johan@kernel.org
-CC: gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, tom_tsai@fintek.com.tw,
-        peter_hong@fintek.com.tw, Peter Hung <hpeter+linux_kernel@gmail.com>
-Subject: Re: [PATCH v3 5/5] usb: serial: implement CMSPAR for F81232
-References: <1422424712-7561-1-git-send-email-hpeter+linux_kernel@gmail.com> <54C8D68B.6010607@cogentembedded.com>
-In-Reply-To: <54C8D68B.6010607@cogentembedded.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAHqPoqKZFDSjO1pL+ixYe_m_L0nGNcu04qSNp-jd1fUixKtHnw@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On Thu, Jan 29, 2015 at 10:57:38AM +0900, Sergey Senozhatsky wrote:
+> On Thu, Jan 29, 2015 at 8:33 AM, Minchan Kim <minchan@kernel.org> wrote:
+> 
+> > On Wed, Jan 28, 2015 at 11:56:51PM +0900, Sergey Senozhatsky wrote:
+> > > I don't like re-introduced ->init_done.
+> > > another idea... how about using `zram->disksize == 0' instead of
+> > > `->init_done' (previously `->meta != NULL')? should do the trick.
+> >
+> > It could be.
+> >
+> >
+> care to change it?
 
-I had using "scripts/checkpatch.pl -f" to scan original f81232.c.
-It reported with "quoted string split across lines", so I merge these
-2 strings into 1 in patch 1/5. But it still warning with "line over 80 
-character", so I had shorted string with this line.
+Will try!
 
-I will refine my patch set again with more attention.
-Thanks for your advice.
+> 
+> 
+> 
+> > >
+> > >
+> > > and I'm not sure I get this rmb...
+> >
+> > What makes you not sure?
+> > I think it's clear and common pattern for smp_[wmb|rmb]. :)
+> >
+> 
+> 
+> well... what that "if (ret)" gives? it's almost always true, because the
+> device is initialized during read/write operations (in 99.99% of cases).
 
-Sergei Shtylyov 於 2015/1/28 下午 08:31 寫道:
-> Hello.
->
-> On 1/28/2015 8:58 AM, Peter Hung wrote:
->
->> This patch implement CMSPAR in set_termios,
->> and fix some warnning from checkpatch.pl
->
->      Please don't try to do 2 unrelated things in one patch.
->
->> Signed-off-by: Peter Hung <hpeter+linux_kernel@gmail.com>
->> ---
->>   drivers/usb/serial/f81232.c | 21 +++++++++++++++------
->>   1 file changed, 15 insertions(+), 6 deletions(-)
->
->> diff --git a/drivers/usb/serial/f81232.c b/drivers/usb/serial/f81232.c
->> index 11a236b..79592d6 100644
->> --- a/drivers/usb/serial/f81232.c
->> +++ b/drivers/usb/serial/f81232.c
-> [...]
->> @@ -361,12 +361,21 @@ static void f81232_set_termios(struct tty_struct
->> *tty,
->>
->>
->>       if (cflag & PARENB) {
->> -        if (cflag & PARODD)
->> -            new_lcr |= UART_LCR_PARITY; /* odd */
->> -        else
->> -            new_lcr |= SERIAL_EVEN_PARITY; /* even */
->> +        if (cflag & CMSPAR) {
->> +            if (cflag & PARODD)
->> +                new_lcr |= (UART_LCR_PARITY | UART_LCR_SPAR);
->> +            else
->> +                new_lcr |= (SERIAL_EVEN_PARITY
->> +                            | UART_LCR_SPAR);
->> +        } else {
->> +            if (cflag & PARODD)
->> +                new_lcr |= UART_LCR_PARITY; /* odd */
->> +            else
->> +                new_lcr |= SERIAL_EVEN_PARITY; /* even */
->> +        }
->>       }
->>
->> +
->
->     Not needed at all.
->
->>       if (cflag & CSTOPB)
->>           new_lcr |= UART_LCR_STOP;
->>       else
->> @@ -445,7 +454,7 @@ static int f81232_open(struct tty_struct *tty,
->> struct usb_serial_port *port)
->>
->>       result = usb_submit_urb(port->interrupt_in_urb, GFP_KERNEL);
->>       if (result) {
->> -        dev_err(&port->dev, "failed submitting interrupt urb, error
->> %d\n",
->> +        dev_err(&port->dev, "failed submitting urb, error %d\n",
->
->     What are you fixing here?
->
-> WBR, Sergei
->
+If it was your concern, I'm happy to remove the check.(ie, actually,
+I realized that after I push the button to send). Thanks!
+
+> 
+> -ss
 
 -- 
-With Best Regards,
-Peter Hung
+Kind regards,
+Minchan Kim
