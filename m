@@ -1,47 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755559AbbA2PNX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 10:13:23 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:45490 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752169AbbA2PNV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 10:13:21 -0500
-From: Murali Karicheri <m-karicheri2@ti.com>
-To: <linux@arm.linux.org.uk>, <ssantosh@kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-CC: Murali Karicheri <m-karicheri2@ti.com>
-Subject: [PATCH] ARM: keystone: defconfig: add DEVTMPFS option by default.
-Date: Thu, 29 Jan 2015 10:12:48 -0500
-Message-ID: <1422544368-15861-1-git-send-email-m-karicheri2@ti.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1755821AbbA2PPO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 10:15:14 -0500
+Received: from smtp121.iad3a.emailsrvr.com ([173.203.187.121]:48243 "EHLO
+	smtp121.iad3a.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753065AbbA2PPA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Jan 2015 10:15:00 -0500
+X-Sender-Id: abbotti@mev.co.uk
+Message-ID: <54CA4E69.7070506@mev.co.uk>
+Date: Thu, 29 Jan 2015 15:14:49 +0000
+From: Ian Abbott <abbotti@mev.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        H Hartley Sweeten <hsweeten@visionengravers.com>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Chase Southwood <chase.southwood@gmail.com>,
+        Marcin Kostrzewa <marckostrzewa@gmail.com>,
+        Fred Akers <knivey@botops.net>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging: comedi: drivers: addi-data: hwdrv_apci3501:
+ Removed variables that is never used
+References: <1422481914-31418-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+In-Reply-To: <1422481914-31418-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When using network driver on keystone and nfs rootfs is used following
-error displayed and device halts.
+On 28/01/15 21:51, Rickard Strandqvist wrote:
+> Variable ar assigned a value that is never used.
+> I have also removed all the code that thereby serves no purpose.
+>
+> This was found using a static code analysis program called cppcheck
+>
+> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+> ---
+>   drivers/staging/comedi/drivers/addi-data/hwdrv_apci3501.c |    3 +--
+>   1 file changed, 1 insertion(+), 2 deletions(-)
+>
+> diff --git a/drivers/staging/comedi/drivers/addi-data/hwdrv_apci3501.c b/drivers/staging/comedi/drivers/addi-data/hwdrv_apci3501.c
+> index 339519a..24126e3 100644
+> --- a/drivers/staging/comedi/drivers/addi-data/hwdrv_apci3501.c
+> +++ b/drivers/staging/comedi/drivers/addi-data/hwdrv_apci3501.c
+> @@ -93,7 +93,6 @@ static int apci3501_write_insn_timer(struct comedi_device *dev,
+>   {
+>   	struct apci3501_private *devpriv = dev->private;
+>   	unsigned int ul_Command1 = 0;
+> -	int i_Temp;
+>
+>   	if (devpriv->b_TimerSelectMode == ADDIDATA_WATCHDOG) {
+>
+> @@ -135,7 +134,7 @@ static int apci3501_write_insn_timer(struct comedi_device *dev,
+>   		}
+>   	}
+>
+> -	i_Temp = inl(dev->iobase + APCI3501_TIMER_STATUS_REG) & 0x1;
+> +	inl(dev->iobase + APCI3501_TIMER_STATUS_REG) & 0x1;
 
-Missing devtmpfs, which is required for udev to run
-Halting...
+The ' & 0x1' part produces compiler warnings and should be removed.
 
-Add the DEVTMPFS option by default to fix this
+I don't know if the inl() call has any side-effects or not, but since 
+it's part of the watchdog functionality of this board, it's safest to 
+leave it in.
 
-Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
----
- arch/arm/configs/keystone_defconfig |    1 +
- 1 file changed, 1 insertion(+)
+>   	return insn->n;
+>   }
+>
+>
 
-diff --git a/arch/arm/configs/keystone_defconfig b/arch/arm/configs/keystone_defconfig
-index 4446621..f9ebe61 100644
---- a/arch/arm/configs/keystone_defconfig
-+++ b/arch/arm/configs/keystone_defconfig
-@@ -209,3 +209,4 @@ CONFIG_KEYSTONE_IRQ=y
- CONFIG_GPIO_SYSCON=y
- CONFIG_TI_DAVINCI_MDIO=y
- CONFIG_MARVELL_PHY=y
-+CONFIG_DEVTMPFS=y
 -- 
-1.7.9.5
-
+-=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk> )=-
+-=(                          Web: http://www.mev.co.uk/  )=-
