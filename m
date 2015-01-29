@@ -1,39 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757503AbbA2LVw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 06:21:52 -0500
-Received: from smtp2.provo.novell.com ([137.65.250.81]:34989 "EHLO
-	smtp2.provo.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753180AbbA2LVu (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:0:0>);
-	Thu, 29 Jan 2015 06:21:50 -0500
-X-Greylist: delayed 470 seconds by postgrey-1.27 at vger.kernel.org; Thu, 29 Jan 2015 06:21:50 EST
-Message-ID: <1422530501.4604.34.camel@stgolabs.net>
-Subject: Re: [PATCH v5] media: au0828 - convert to use videobuf2
-From: Davidlohr Bueso <dave@stgolabs.net>
-To: Hans Verkuil <hansverk@cisco.com>
-Cc: Shuah Khan <shuahkh@osg.samsung.com>, m.chehab@samsung.com,
-        hans.verkuil@cisco.com, dheitmueller@kernellabs.com,
-        prabhakar.csengg@gmail.com, sakari.ailus@linux.intel.com,
-        laurent.pinchart@ideasonboard.com, ttmesterr@gmail.com,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Thu, 29 Jan 2015 03:21:41 -0800
-In-Reply-To: <54CA166B.6000101@cisco.com>
-References: <1422042075-7320-1-git-send-email-shuahkh@osg.samsung.com>
-	 <54C96D4C.6070200@osg.samsung.com> <1422530027.4604.32.camel@stgolabs.net>
-	 <54CA166B.6000101@cisco.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.7 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1758561AbbA2LWM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 06:22:12 -0500
+Received: from mail.lysator.liu.se ([130.236.254.3]:60101 "EHLO
+	mail.lysator.liu.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754759AbbA2LWJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Jan 2015 06:22:09 -0500
+From: Peter Rosin <peda@lysator.liu.se>
+To: alsa-devel@alsa-project.org
+Cc: Peter Rosin <peda@axentia.se>, Liam Girdwood <lgirdwood@gmail.com>,
+        Mark Brown <broonie@kernel.org>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>, Lars-Peter Clausen <lars@metafoo.de>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 0/2] ASoC: pcm512x: Fixups for the Clock master modes series
+Date: Thu, 29 Jan 2015 12:21:54 +0100
+Message-Id: <1422530516-21779-1-git-send-email-peda@lysator.liu.se>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2015-01-29 at 12:15 +0100, Hans Verkuil wrote:
-> You can't split this up, it's one of those changes that is all or
-> nothing.
+From: Peter Rosin <peda@axentia.se>
 
-Fair enough. With changes that large, it should be mentioned, though.
-Thanks.
+These fixups can either be squashed in with 5/7 from the Clock master mode
+series, or they can be added on top of the current topic/pcm512x. Sorry for
+the trouble.
+
+I can squash them, and resend the Clock master modes series if that helps.
+Let me know how you'd like it.
+
+Cheers,
+Peter
+
+Peter Rosin (2):
+  ASoC: pcm512x: Fixup warning splat
+  ASoC: pcm512x: Use the correct range constraints for S24_LE
+
+ sound/soc/codecs/pcm512x.c |   41 +++++++++++++++++++++--------------------
+ 1 file changed, 21 insertions(+), 20 deletions(-)
+
+-- 
+1.7.10.4
 
