@@ -1,105 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932140AbbA2Blt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 20:41:49 -0500
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:40039 "EHLO
-	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932115AbbA2Blq (ORCPT
+	id S932350AbbA2Bq3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 20:46:29 -0500
+Received: from faui03.informatik.uni-erlangen.de ([131.188.30.103]:33047 "EHLO
+	faui03.informatik.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757711AbbA2BqY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 20:41:46 -0500
-X-Original-SENDERIP: 10.177.220.203
-X-Original-MAILFROM: namhyung@kernel.org
-Date: Thu, 29 Jan 2015 10:39:14 +0900
-From: Namhyung Kim <namhyung@kernel.org>
-To: Victor Kamensky <victor.kamensky@linaro.org>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Russell King <linux@arm.linux.org.uk>, David Ahern <dsahern@gmail.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Adrian Hunter <adrian.hunter@intel.com>, Jiri Olsa <jolsa@redhat.com>,
-        Avi Kivity <avi@cloudius-systems.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Anton Blanchard <anton@samba.org>, Dave Martin <Dave.Martin@arm.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH V3 1/2] perf symbols: Ignore mapping symbols on aarch64
-Message-ID: <20150129013914.GC24182@sejong>
-References: <1422340442-4673-1-git-send-email-victor.kamensky@linaro.org>
- <1422340442-4673-2-git-send-email-victor.kamensky@linaro.org>
+	Wed, 28 Jan 2015 20:46:24 -0500
+X-Greylist: delayed 422 seconds by postgrey-1.27 at vger.kernel.org; Wed, 28 Jan 2015 20:46:23 EST
+Date: Thu, 29 Jan 2015 02:39:18 +0100
+From: Alexander Wuerstlein <arw@cs.fau.de>
+To: Jonathan Corbet <corbet@lwn.net>
+Cc: Julian Brost <linux-kernel@0x4a42.net>, linux-mei@linux.intel.com,
+        linux-kernel@i4.cs.fau.de, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, fabian.hofmann@fau.de,
+        tomas.winkler@intel.com
+Subject: Re: [i4passt] [PATCH 1/4] Documentation/misc-devices/mei: Fix
+ formatting of headings.
+Message-ID: <20150129013918.GB11151@cip.informatik.uni-erlangen.de>
+References: <1421020689-28332-1-git-send-email-linux-kernel@0x4a42.net>
+ <1421020689-28332-2-git-send-email-linux-kernel@0x4a42.net>
+ <20150128121709.5b6afb11@lwn.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1422340442-4673-2-git-send-email-victor.kamensky@linaro.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20150128121709.5b6afb11@lwn.net>
+X-Echelon-Scan: plutonium bomb osama revenge dirty allah satan iran victory
+ dimona cocaine guantanamo centrifuge holy war pigs mossad nsa
+X-Echelon-Result: Belligerent
+Organization: FAU Department of Computer Science IV
+X-URL: http://www4.cs.fau.de/~arw/
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 26, 2015 at 10:34:01PM -0800, Victor Kamensky wrote:
-> Aarch64 ELF files use mapping symbols with special names $x, $d
-> to identify regions of Aarch64 code (see Aarch64 ELF ABI - "ARM
-> IHI 0056B", section "4.5.4 Mapping symbols").
+On 2015-01-28T20:17, Jonathan Corbet <corbet@lwn.net> wrote:
+> On Mon, 12 Jan 2015 00:58:06 +0100
+> Julian Brost <linux-kernel@0x4a42.net> wrote:
 > 
-> The patch filters out these symbols at load time, similar to
-> "696b97a perf symbols: Ignore mapping symbols on ARM" changes
-> done for ARM before V8.
+> > Make the heading underlines fit the length of the heading, remove colons
+> > at the end of headings and consistently place an empty line after each
+> > heading and two empty lines before each that is preceded by a paragraph.
+> > 
+> > Signed-off-by: Julian Brost <linux-kernel@0x4a42.net>
+> > Signed-off-by: Fabian Hofmann <fabian.hofmann@fau.de>
 > 
-> Also added handling of mapping symbols that has format
-> "$d.<any>" and similar for both cases.
+> [Finally catching up with stuff after a long travel]
 > 
-> Note we are not making difference between EM_ARM and
-> EM_AARCH64 mapping symbols instead code handles superset
-> of both.
-> 
-> Signed-off-by: Victor Kamensky <victor.kamensky@linaro.org>
-> Acked-by: Will Deacon <will.deacon@arm.com>
-> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Cc: Paul Mackerras <paulus@samba.org>
-> Cc: Ingo Molnar <mingo@redhat.com>
-> Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
-> Cc: Adrian Hunter <adrian.hunter@intel.com>
-> Cc: Jiri Olsa <jolsa@redhat.com>
-> Cc: Avi Kivity <avi@cloudius-systems.com>
-> Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-> Cc: Anton Blanchard <anton@samba.org>
-> Cc: David Ahern <dsahern@gmail.com>
-> Cc: Will Deacon <will.deacon@arm.com>
-> Cc: Russell King <linux@arm.linux.org.uk>
-> Cc: Dave Martin <Dave.Martin@arm.com>
+> These changes look fine, but what's with the two signoffs?  Who is the
+> actual author of these patches, and why is the second signoff there?
 
-Acked-by: Namhyung Kim <namhyung@kernel.org>
+I'm not an author of this patch, but I can explain that: Julian and
+Fabian are students of mine and as part of classwork they are supposed
+to submit a patch to the linux kernel. Since we require our students to
+work in groups of two and to collaborate on producing and submitting the
+patch, we also strongly urge them to submit with two signed-off-by-lines
+to properly attribute the patch to both students.
 
-Thanks,
-Namhyung
+I hope this doesn't cause any confusion or misbehaving tools or
+anything.
+
+If you are interested in further information on the course you can visit
+https://www4.cs.fau.de/Lehre/WS14/P_PASST/ (unfortunately only in
+german) or ask me by email. There is also a (not up-to-date for this
+semester) list of previously accepted patches that were produced in
+earlier iterations of this course:
+https://www4.cs.fau.de/Lehre/WS14/P_PASST/kernel-commits-all.shtml
 
 
-> ---
->  tools/perf/util/symbol-elf.c | 7 +++----
->  1 file changed, 3 insertions(+), 4 deletions(-)
-> 
-> diff --git a/tools/perf/util/symbol-elf.c b/tools/perf/util/symbol-elf.c
-> index 06fcd1b..8fc6e2f 100644
-> --- a/tools/perf/util/symbol-elf.c
-> +++ b/tools/perf/util/symbol-elf.c
-> @@ -856,10 +856,9 @@ int dso__load_sym(struct dso *dso, struct map *map,
->  		/* Reject ARM ELF "mapping symbols": these aren't unique and
->  		 * don't identify functions, so will confuse the profile
->  		 * output: */
-> -		if (ehdr.e_machine == EM_ARM) {
-> -			if (!strcmp(elf_name, "$a") ||
-> -			    !strcmp(elf_name, "$d") ||
-> -			    !strcmp(elf_name, "$t"))
-> +		if (ehdr.e_machine == EM_ARM || ehdr.e_machine == EM_AARCH64) {
-> +			if (elf_name[0] == '$' && strchr("adtx", elf_name[1])
-> +			    && (elf_name[2] == '\0' || elf_name[2] == '.'))
->  				continue;
->  		}
->  
-> -- 
-> 1.9.3
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Greetings,
+
+Alexander Wuerstlein.
+
+----
+Alexander Wuerstlein         Informatik 4            Univ. of Erlangen
+Martensstrasse 1            91058 Erlangen           +49-9131-85-27824
+arw@arw.name  arw@cs.fau.de   3CD3D074014E217A745FC4A34E2CCA53C746347D
+snalwuer@cip.cs.fau.de                     https://www4.cs.fau.de/~arw
