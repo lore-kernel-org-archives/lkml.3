@@ -1,611 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762678AbbA2Kgf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 05:36:35 -0500
-Received: from down.free-electrons.com ([37.187.137.238]:59806 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1762469AbbA2Kdt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 05:33:49 -0500
-From: Boris Brezillon <boris.brezillon@free-electrons.com>
-To: Thomas Gleixner <tglx@linutronix.de>, Jason Cooper <jason@lakedaemon.net>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Rob Herring <robh+dt@kernel.org>
-Cc: Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Boris Brezillon <boris.brezillon@free-electrons.com>
-Subject: [PATCH v4 5/5] ARM: at91/dt: define a virtual irq demultiplexer chip connected on irq1
-Date: Thu, 29 Jan 2015 11:33:40 +0100
-Message-Id: <1422527620-8308-6-git-send-email-boris.brezillon@free-electrons.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1422527620-8308-1-git-send-email-boris.brezillon@free-electrons.com>
-References: <1422527620-8308-1-git-send-email-boris.brezillon@free-electrons.com>
+	id S1762625AbbA2Ke4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 05:34:56 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:60619 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757595AbbA2Key (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Jan 2015 05:34:54 -0500
+Message-ID: <54CA0CBA.6030900@ti.com>
+Date: Thu, 29 Jan 2015 12:34:34 +0200
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
+MIME-Version: 1.0
+To: Nicholas Mc Guire <der.herr@hofr.at>
+CC: "K. Y. Srinivasan" <kys@microsoft.com>,
+        Haiyang Zhang <haiyangz@microsoft.com>, <devel@linuxdriverproject.org>,
+        <linux-fbdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/3 v2] hyperv: hyperv_fb.c: match wait_for_completion_timeout
+ return type
+References: <1422197222-7967-1-git-send-email-der.herr@hofr.at> <54C62D07.3040603@ti.com> <20150129093839.GB23666@opentech.at>
+In-Reply-To: <20150129093839.GB23666@opentech.at>
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature";
+	boundary="aG4kRQ1HqL8vvduNhbRM2jPhmD9vB0A0d"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-IRQ1 is multiplexing several peripheral IRQs, but there's no way to
-properly demultiplex those IRQs.
-Use a virtual irq demux chip to achieve this demultiplexing operation.
+--aG4kRQ1HqL8vvduNhbRM2jPhmD9vB0A0d
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Boris Brezillon <boris.brezillon@free-electrons.com>
----
- arch/arm/boot/dts/at91rm9200.dtsi  | 20 +++++++++++++++++---
- arch/arm/boot/dts/at91sam9260.dtsi | 26 +++++++++++++++++++++-----
- arch/arm/boot/dts/at91sam9261.dtsi | 26 +++++++++++++++++++++-----
- arch/arm/boot/dts/at91sam9263.dtsi | 29 +++++++++++++++++++++++------
- arch/arm/boot/dts/at91sam9g45.dtsi | 29 +++++++++++++++++++++++------
- arch/arm/boot/dts/at91sam9n12.dtsi | 25 +++++++++++++++++++++----
- arch/arm/boot/dts/at91sam9rl.dtsi  | 29 +++++++++++++++++++++++------
- arch/arm/boot/dts/at91sam9x5.dtsi  | 26 +++++++++++++++++++++-----
- 8 files changed, 170 insertions(+), 40 deletions(-)
+On 29/01/15 11:38, Nicholas Mc Guire wrote:
+> On Mon, 26 Jan 2015, Tomi Valkeinen wrote:
+>=20
+>> Hi,
+>>
+>> On 25/01/15 16:47, Nicholas Mc Guire wrote:
+>>> Signed-off-by: Nicholas Mc Guire <der.herr@hofr.at>
+>>> ---
+>>>
+>>> v2: fixed subject line
+>>>
+>>> The return type of wait_for_completion_timeout is unsigned long not
+>>> int. This patch fixes up the declarations only.
+>>>
+>>> Patch was compile tested only for x86_64_defconfig + CONFIG_X86_VSMP=3D=
+y
+>>> CONFIG_HYPERV=3Dm, CONFIG_FB_HYPERV=3Dm
+>>
+>> Why didn't you set the text above as the patch description (which is
+>> empty at the moment)?
+>>
+> basically because the one-line is sufficient to understand the patch
 
-diff --git a/arch/arm/boot/dts/at91rm9200.dtsi b/arch/arm/boot/dts/at91rm9200.dtsi
-index 6c97d4a..c5f673b 100644
---- a/arch/arm/boot/dts/at91rm9200.dtsi
-+++ b/arch/arm/boot/dts/at91rm9200.dtsi
-@@ -94,7 +94,7 @@
- 			pmc: pmc@fffffc00 {
- 				compatible = "atmel,at91rm9200-pmc";
- 				reg = <0xfffffc00 0x100>;
--				interrupts = <1 IRQ_TYPE_LEVEL_HIGH 7>;
-+				interrupts-extended = <&virt_irq1_demux 0>;
- 				interrupt-controller;
- 				#address-cells = <1>;
- 				#size-cells = <0>;
-@@ -353,7 +353,7 @@
- 			st: timer@fffffd00 {
- 				compatible = "atmel,at91rm9200-st";
- 				reg = <0xfffffd00 0x100>;
--				interrupts = <1 IRQ_TYPE_LEVEL_HIGH 7>;
-+				interrupts-extended = <&virt_irq1_demux 1>;
- 			};
- 
- 			tcb0: timer@fffa0000 {
-@@ -820,7 +820,7 @@
- 			dbgu: serial@fffff200 {
- 				compatible = "atmel,at91rm9200-usart";
- 				reg = <0xfffff200 0x200>;
--				interrupts = <1 IRQ_TYPE_LEVEL_HIGH 7>;
-+				interrupts-extended = <&virt_irq1_demux 2>;
- 				pinctrl-names = "default";
- 				pinctrl-0 = <&pinctrl_dbgu>;
- 				clocks = <&mck>;
-@@ -944,4 +944,18 @@
- 		#size-cells = <0>;
- 		status = "disabled";
- 	};
-+
-+	virt_irq1_demux: virt-irq-demux@1 {
-+		compatible = "virtual,irq-demux";
-+		interrupt-controller;
-+		#interrupt-cells = <1>;
-+		interrupts = <1 IRQ_TYPE_LEVEL_HIGH 7>;
-+		/*
-+		 * Interrupt lines:
-+		 * 0: PMC
-+		 * 1: ST
-+		 * 2: DBGU
-+		 */
-+		irqs = <0x7>;
-+	};
- };
-diff --git a/arch/arm/boot/dts/at91sam9260.dtsi b/arch/arm/boot/dts/at91sam9260.dtsi
-index dd1313c..bf7a6a2 100644
---- a/arch/arm/boot/dts/at91sam9260.dtsi
-+++ b/arch/arm/boot/dts/at91sam9260.dtsi
-@@ -97,7 +97,7 @@
- 			pmc: pmc@fffffc00 {
- 				compatible = "atmel,at91sam9260-pmc";
- 				reg = <0xfffffc00 0x100>;
--				interrupts = <1 IRQ_TYPE_LEVEL_HIGH 7>;
-+				interrupts-extended = <&virt_irq1_demux 0>;
- 				interrupt-controller;
- 				#address-cells = <1>;
- 				#size-cells = <0>;
-@@ -364,7 +364,7 @@
- 			pit: timer@fffffd30 {
- 				compatible = "atmel,at91sam9260-pit";
- 				reg = <0xfffffd30 0xf>;
--				interrupts = <1 IRQ_TYPE_LEVEL_HIGH 7>;
-+				interrupts-extended = <&virt_irq1_demux 1>;
- 				clocks = <&mck>;
- 			};
- 
-@@ -750,7 +750,7 @@
- 			dbgu: serial@fffff200 {
- 				compatible = "atmel,at91sam9260-usart";
- 				reg = <0xfffff200 0x200>;
--				interrupts = <1 IRQ_TYPE_LEVEL_HIGH 7>;
-+				interrupts-extended = <&virt_irq1_demux 2>;
- 				pinctrl-names = "default";
- 				pinctrl-0 = <&pinctrl_dbgu>;
- 				clocks = <&mck>;
-@@ -959,7 +959,7 @@
- 			rtc@fffffd20 {
- 				compatible = "atmel,at91sam9260-rtt";
- 				reg = <0xfffffd20 0x10>;
--				interrupts = <1 IRQ_TYPE_LEVEL_HIGH 7>;
-+				interrupts-extended = <&virt_irq1_demux 3>;
- 				clocks = <&clk32k>;
- 				status = "disabled";
- 			};
-@@ -967,7 +967,7 @@
- 			watchdog@fffffd40 {
- 				compatible = "atmel,at91sam9260-wdt";
- 				reg = <0xfffffd40 0x10>;
--				interrupts = <1 IRQ_TYPE_LEVEL_HIGH 7>;
-+				interrupts-extended = <&virt_irq1_demux 4>;
- 				atmel,watchdog-type = "hardware";
- 				atmel,reset-type = "all";
- 				atmel,dbg-halt;
-@@ -1010,6 +1010,22 @@
- 		};
- 	};
- 
-+	virt_irq1_demux: virt-irq-demux@1 {
-+		compatible = "virtual,irq-demux";
-+		interrupt-controller;
-+		#interrupt-cells = <1>;
-+		interrupts = <1 IRQ_TYPE_LEVEL_HIGH 7>;
-+		/*
-+		 * Interrupt lines:
-+		 * 0: PMC
-+		 * 1: PIT
-+		 * 2: DBGU
-+		 * 3: RTT
-+		 * 4: WATCHDOG
-+		 */
-+		irqs = <0x1f>;
-+	};
-+
- 	i2c@0 {
- 		compatible = "i2c-gpio";
- 		gpios = <&pioA 23 GPIO_ACTIVE_HIGH /* sda */
-diff --git a/arch/arm/boot/dts/at91sam9261.dtsi b/arch/arm/boot/dts/at91sam9261.dtsi
-index cdb9ed6..6eaa5f6 100644
---- a/arch/arm/boot/dts/at91sam9261.dtsi
-+++ b/arch/arm/boot/dts/at91sam9261.dtsi
-@@ -272,7 +272,7 @@
- 			dbgu: serial@fffff200 {
- 				compatible = "atmel,at91sam9260-usart";
- 				reg = <0xfffff200 0x200>;
--				interrupts = <1 IRQ_TYPE_LEVEL_HIGH 7>;
-+				interrupts-extended = <&virt_irq1_demux 2>;
- 				pinctrl-names = "default";
- 				pinctrl-0 = <&pinctrl_dbgu>;
- 				clocks = <&mck>;
-@@ -564,7 +564,7 @@
- 			pmc: pmc@fffffc00 {
- 				compatible = "atmel,at91rm9200-pmc";
- 				reg = <0xfffffc00 0x100>;
--				interrupts = <1 IRQ_TYPE_LEVEL_HIGH 7>;
-+				interrupts-extended = <&virt_irq1_demux 0>;
- 				interrupt-controller;
- 				#address-cells = <1>;
- 				#size-cells = <0>;
-@@ -824,14 +824,14 @@
- 			pit: timer@fffffd30 {
- 				compatible = "atmel,at91sam9260-pit";
- 				reg = <0xfffffd30 0xf>;
--				interrupts = <1 IRQ_TYPE_LEVEL_HIGH 7>;
-+				interrupts-extended = <&virt_irq1_demux 1>;
- 				clocks = <&mck>;
- 			};
- 
- 			rtc@fffffd20 {
- 				compatible = "atmel,at91sam9260-rtt";
- 				reg = <0xfffffd20 0x10>;
--				interrupts = <1 IRQ_TYPE_LEVEL_HIGH 7>;
-+				interrupts-extended = <&virt_irq1_demux 3>;
- 				clocks = <&slow_xtal>;
- 				status = "disabled";
- 			};
-@@ -839,7 +839,7 @@
- 			watchdog@fffffd40 {
- 				compatible = "atmel,at91sam9260-wdt";
- 				reg = <0xfffffd40 0x10>;
--				interrupts = <1 IRQ_TYPE_LEVEL_HIGH 7>;
-+				interrupts-extended = <&virt_irq1_demux 4>;
- 				status = "disabled";
- 			};
- 
-@@ -864,4 +864,20 @@
- 		#size-cells = <0>;
- 		status = "disabled";
- 	};
-+
-+	virt_irq1_demux: virt-irq-demux@1 {
-+		compatible = "virtual,irq-demux";
-+		interrupt-controller;
-+		#interrupt-cells = <1>;
-+		interrupts = <1 IRQ_TYPE_LEVEL_HIGH 7>;
-+		/*
-+		 * Interrupt lines:
-+		 * 0: PMC
-+		 * 1: ST
-+		 * 2: DBGU
-+		 * 3: RTT
-+		 * 4: WATCHDOG
-+		 */
-+		irqs = <0x1f>;
-+	};
- };
-diff --git a/arch/arm/boot/dts/at91sam9263.dtsi b/arch/arm/boot/dts/at91sam9263.dtsi
-index e8c6c60..70986b5 100644
---- a/arch/arm/boot/dts/at91sam9263.dtsi
-+++ b/arch/arm/boot/dts/at91sam9263.dtsi
-@@ -85,7 +85,7 @@
- 			pmc: pmc@fffffc00 {
- 				compatible = "atmel,at91rm9200-pmc";
- 				reg = <0xfffffc00 0x100>;
--				interrupts = <1 IRQ_TYPE_LEVEL_HIGH 7>;
-+				interrupts-extended = <&virt_irq1_demux 0>;
- 				interrupt-controller;
- 				#address-cells = <1>;
- 				#size-cells = <0>;
-@@ -359,7 +359,7 @@
- 			pit: timer@fffffd30 {
- 				compatible = "atmel,at91sam9260-pit";
- 				reg = <0xfffffd30 0xf>;
--				interrupts = <1 IRQ_TYPE_LEVEL_HIGH 7>;
-+				interrupts-extended = <&virt_irq1_demux 1>;
- 				clocks = <&mck>;
- 			};
- 
-@@ -744,7 +744,7 @@
- 			dbgu: serial@ffffee00 {
- 				compatible = "atmel,at91sam9260-usart";
- 				reg = <0xffffee00 0x200>;
--				interrupts = <1 IRQ_TYPE_LEVEL_HIGH 7>;
-+				interrupts-extended = <&virt_irq1_demux 2>;
- 				pinctrl-names = "default";
- 				pinctrl-0 = <&pinctrl_dbgu>;
- 				clocks = <&mck>;
-@@ -870,7 +870,7 @@
- 			watchdog@fffffd40 {
- 				compatible = "atmel,at91sam9260-wdt";
- 				reg = <0xfffffd40 0x10>;
--				interrupts = <1 IRQ_TYPE_LEVEL_HIGH 7>;
-+				interrupts-extended = <&virt_irq1_demux 4>;
- 				atmel,watchdog-type = "hardware";
- 				atmel,reset-type = "all";
- 				atmel,dbg-halt;
-@@ -927,7 +927,7 @@
- 			rtc@fffffd20 {
- 				compatible = "atmel,at91sam9260-rtt";
- 				reg = <0xfffffd20 0x10>;
--				interrupts = <1 IRQ_TYPE_LEVEL_HIGH 7>;
-+				interrupts-extended = <&virt_irq1_demux 3>;
- 				clocks = <&slow_xtal>;
- 				status = "disabled";
- 			};
-@@ -935,7 +935,7 @@
- 			rtc@fffffd50 {
- 				compatible = "atmel,at91sam9260-rtt";
- 				reg = <0xfffffd50 0x10>;
--				interrupts = <1 IRQ_TYPE_LEVEL_HIGH 7>;
-+				interrupts-extended = <&virt_irq1_demux 5>;
- 				clocks = <&slow_xtal>;
- 				status = "disabled";
- 			};
-@@ -998,4 +998,21 @@
- 		#size-cells = <0>;
- 		status = "disabled";
- 	};
-+
-+	virt_irq1_demux: virt-irq-demux@1 {
-+		compatible = "virtual,irq-demux";
-+		interrupt-controller;
-+		#interrupt-cells = <1>;
-+		interrupts = <1 IRQ_TYPE_LEVEL_HIGH 7>;
-+		/*
-+		 * Interrupt lines:
-+		 * 0: PMC
-+		 * 1: PIT
-+		 * 2: DBGU
-+		 * 3: RTT1
-+		 * 4: WATCHDOG
-+		 * 5: RTT2
-+		 */
-+		irqs = <0x3f>;
-+	};
- };
-diff --git a/arch/arm/boot/dts/at91sam9g45.dtsi b/arch/arm/boot/dts/at91sam9g45.dtsi
-index 2a8da8a..487400d 100644
---- a/arch/arm/boot/dts/at91sam9g45.dtsi
-+++ b/arch/arm/boot/dts/at91sam9g45.dtsi
-@@ -111,7 +111,7 @@
- 			pmc: pmc@fffffc00 {
- 				compatible = "atmel,at91sam9g45-pmc";
- 				reg = <0xfffffc00 0x100>;
--				interrupts = <1 IRQ_TYPE_LEVEL_HIGH 7>;
-+				interrupts-extended = <&virt_irq1_demux 0>;
- 				interrupt-controller;
- 				#address-cells = <1>;
- 				#size-cells = <0>;
-@@ -387,7 +387,7 @@
- 			pit: timer@fffffd30 {
- 				compatible = "atmel,at91sam9260-pit";
- 				reg = <0xfffffd30 0xf>;
--				interrupts = <1 IRQ_TYPE_LEVEL_HIGH 7>;
-+				interrupts-extended = <&virt_irq1_demux 1>;
- 				clocks = <&mck>;
- 			};
- 
-@@ -890,7 +890,7 @@
- 			dbgu: serial@ffffee00 {
- 				compatible = "atmel,at91sam9260-usart";
- 				reg = <0xffffee00 0x200>;
--				interrupts = <1 IRQ_TYPE_LEVEL_HIGH 7>;
-+				interrupts-extended = <&virt_irq1_demux 2>;
- 				pinctrl-names = "default";
- 				pinctrl-0 = <&pinctrl_dbgu>;
- 				clocks = <&mck>;
-@@ -1107,7 +1107,7 @@
- 			watchdog@fffffd40 {
- 				compatible = "atmel,at91sam9260-wdt";
- 				reg = <0xfffffd40 0x10>;
--				interrupts = <1 IRQ_TYPE_LEVEL_HIGH 7>;
-+				interrupts-extended = <&virt_irq1_demux 4>;
- 				atmel,watchdog-type = "hardware";
- 				atmel,reset-type = "all";
- 				atmel,dbg-halt;
-@@ -1234,7 +1234,7 @@
- 			rtc@fffffd20 {
- 				compatible = "atmel,at91sam9260-rtt";
- 				reg = <0xfffffd20 0x10>;
--				interrupts = <1 IRQ_TYPE_LEVEL_HIGH 7>;
-+				interrupts-extended = <&virt_irq1_demux 3>;
- 				clocks = <&clk32k>;
- 				status = "disabled";
- 			};
-@@ -1242,7 +1242,7 @@
- 			rtc@fffffdb0 {
- 				compatible = "atmel,at91rm9200-rtc";
- 				reg = <0xfffffdb0 0x30>;
--				interrupts = <1 IRQ_TYPE_LEVEL_HIGH 7>;
-+				interrupts-extended = <&virt_irq1_demux 5>;
- 				status = "disabled";
- 			};
- 
-@@ -1316,4 +1316,21 @@
- 		#size-cells = <0>;
- 		status = "disabled";
- 	};
-+
-+	virt_irq1_demux: virt-irq-demux@1 {
-+		compatible = "virtual,irq-demux";
-+		interrupt-controller;
-+		#interrupt-cells = <1>;
-+		interrupts = <1 IRQ_TYPE_LEVEL_HIGH 7>;
-+		/*
-+		 * Interrupt lines:
-+		 * 0: PMC
-+		 * 1: PIT
-+		 * 2: DBGU
-+		 * 3: RTT
-+		 * 4: WATCHDOG
-+		 * 5: RTC
-+		 */
-+		irqs = <0x3f>;
-+	};
- };
-diff --git a/arch/arm/boot/dts/at91sam9n12.dtsi b/arch/arm/boot/dts/at91sam9n12.dtsi
-index 68eb9ad..6067040 100644
---- a/arch/arm/boot/dts/at91sam9n12.dtsi
-+++ b/arch/arm/boot/dts/at91sam9n12.dtsi
-@@ -94,7 +94,7 @@
- 			pmc: pmc@fffffc00 {
- 				compatible = "atmel,at91sam9n12-pmc";
- 				reg = <0xfffffc00 0x200>;
--				interrupts = <1 IRQ_TYPE_LEVEL_HIGH 7>;
-+				interrupts-extended = <&virt_irq1_demux 0>;
- 				interrupt-controller;
- 				#address-cells = <1>;
- 				#size-cells = <0>;
-@@ -376,7 +376,7 @@
- 			pit: timer@fffffe30 {
- 				compatible = "atmel,at91sam9260-pit";
- 				reg = <0xfffffe30 0xf>;
--				interrupts = <1 IRQ_TYPE_LEVEL_HIGH 7>;
-+				interrupts-extended = <&virt_irq1_demux 1>;
- 				clocks = <&mck>;
- 			};
- 
-@@ -754,7 +754,7 @@
- 			dbgu: serial@fffff200 {
- 				compatible = "atmel,at91sam9260-usart";
- 				reg = <0xfffff200 0x200>;
--				interrupts = <1 IRQ_TYPE_LEVEL_HIGH 7>;
-+				interrupts-extended = <&virt_irq1_demux 2>;
- 				pinctrl-names = "default";
- 				pinctrl-0 = <&pinctrl_dbgu>;
- 				clocks = <&mck>;
-@@ -885,7 +885,8 @@
- 			watchdog@fffffe40 {
- 				compatible = "atmel,at91sam9260-wdt";
- 				reg = <0xfffffe40 0x10>;
--				interrupts = <1 IRQ_TYPE_LEVEL_HIGH 7>;
-+				interrupts = <1 IRQ_TYPE_LEVEL_HIGH 4>;
-+				interrupts-extended = <&virt_irq1_demux 4>;
- 				atmel,watchdog-type = "hardware";
- 				atmel,reset-type = "all";
- 				atmel,dbg-halt;
-@@ -948,4 +949,20 @@
- 		#size-cells = <0>;
- 		status = "disabled";
- 	};
-+
-+	virt_irq1_demux: virt-irq-demux@1 {
-+		compatible = "virtual,irq-demux";
-+		interrupt-controller;
-+		#interrupt-cells = <1>;
-+		interrupts = <1 IRQ_TYPE_LEVEL_HIGH 7>;
-+		/*
-+		 * Interrupt lines:
-+		 * 0: PMC
-+		 * 1: PIT
-+		 * 2: DBGU
-+		 * 3: RTC
-+		 * 4: WATCHDOG
-+		 */
-+		irqs = <0x1f>;
-+	};
- };
-diff --git a/arch/arm/boot/dts/at91sam9rl.dtsi b/arch/arm/boot/dts/at91sam9rl.dtsi
-index 7242437..becd94a 100644
---- a/arch/arm/boot/dts/at91sam9rl.dtsi
-+++ b/arch/arm/boot/dts/at91sam9rl.dtsi
-@@ -374,7 +374,7 @@
- 			dbgu: serial@fffff200 {
- 				compatible = "atmel,at91sam9260-usart";
- 				reg = <0xfffff200 0x200>;
--				interrupts = <1 IRQ_TYPE_LEVEL_HIGH 7>;
-+				interrupts-extended = <&virt_irq1_demux 2>;
- 				pinctrl-names = "default";
- 				pinctrl-0 = <&pinctrl_dbgu>;
- 				clocks = <&mck>;
-@@ -811,7 +811,7 @@
- 			pmc: pmc@fffffc00 {
- 				compatible = "atmel,at91sam9g45-pmc";
- 				reg = <0xfffffc00 0x100>;
--				interrupts = <1 IRQ_TYPE_LEVEL_HIGH 7>;
-+				interrupts-extended = <&virt_irq1_demux 0>;
- 				interrupt-controller;
- 				#address-cells = <1>;
- 				#size-cells = <0>;
-@@ -1023,14 +1023,14 @@
- 			pit: timer@fffffd30 {
- 				compatible = "atmel,at91sam9260-pit";
- 				reg = <0xfffffd30 0xf>;
--				interrupts = <1 IRQ_TYPE_LEVEL_HIGH 7>;
-+				interrupts-extended = <&virt_irq1_demux 1>;
- 				clocks = <&mck>;
- 			};
- 
- 			watchdog@fffffd40 {
- 				compatible = "atmel,at91sam9260-wdt";
- 				reg = <0xfffffd40 0x10>;
--				interrupts = <1 IRQ_TYPE_LEVEL_HIGH 7>;
-+				interrupts-extended = <&virt_irq1_demux 4>;
- 				status = "disabled";
- 			};
- 
-@@ -1063,14 +1063,14 @@
- 			rtc@fffffeb0 {
- 				compatible = "atmel,at91rm9200-rtc";
- 				reg = <0xfffffeb0 0x40>;
--				interrupts = <1 IRQ_TYPE_LEVEL_HIGH 7>;
-+				interrupts-extended = <&virt_irq1_demux 5>;
- 				status = "disabled";
- 			};
- 
- 			rtc@fffffd20 {
- 				compatible = "atmel,at91sam9260-rtt";
- 				reg = <0xfffffd20 0x10>;
--				interrupts = <1 IRQ_TYPE_LEVEL_HIGH 7>;
-+				interrupts-extended = <&virt_irq1_demux 3>;
- 				clocks = <&clk32k>;
- 				status = "disabled";
- 			};
-@@ -1110,4 +1110,21 @@
- 		pinctrl-0 = <&pinctrl_i2c_gpio1>;
- 		status = "disabled";
- 	};
-+
-+	virt_irq1_demux: virt-irq-demux@1 {
-+		compatible = "virtual,irq-demux";
-+		interrupt-controller;
-+		#interrupt-cells = <1>;
-+		interrupts = <1 IRQ_TYPE_LEVEL_HIGH 7>;
-+		/*
-+		 * Interrupt lines:
-+		 * 0: PMC
-+		 * 1: PIT
-+		 * 2: DBGU
-+		 * 3: RTT
-+		 * 4: WATCHDOG
-+		 * 5: RTC
-+		 */
-+		irqs = <0x3f>;
-+	};
- };
-diff --git a/arch/arm/boot/dts/at91sam9x5.dtsi b/arch/arm/boot/dts/at91sam9x5.dtsi
-index bbb3ba6..d4bc3cc 100644
---- a/arch/arm/boot/dts/at91sam9x5.dtsi
-+++ b/arch/arm/boot/dts/at91sam9x5.dtsi
-@@ -102,7 +102,7 @@
- 			pmc: pmc@fffffc00 {
- 				compatible = "atmel,at91sam9x5-pmc";
- 				reg = <0xfffffc00 0x100>;
--				interrupts = <1 IRQ_TYPE_LEVEL_HIGH 7>;
-+				interrupts-extended = <&virt_irq1_demux 0>;
- 				interrupt-controller;
- 				#address-cells = <1>;
- 				#size-cells = <0>;
-@@ -381,7 +381,7 @@
- 			pit: timer@fffffe30 {
- 				compatible = "atmel,at91sam9260-pit";
- 				reg = <0xfffffe30 0xf>;
--				interrupts = <1 IRQ_TYPE_LEVEL_HIGH 7>;
-+				interrupts-extended = <&virt_irq1_demux 1>;
- 				clocks = <&mck>;
- 			};
- 
-@@ -857,7 +857,7 @@
- 			dbgu: serial@fffff200 {
- 				compatible = "atmel,at91sam9260-usart";
- 				reg = <0xfffff200 0x200>;
--				interrupts = <1 IRQ_TYPE_LEVEL_HIGH 7>;
-+				interrupts-extended = <&virt_irq1_demux 2>;
- 				pinctrl-names = "default";
- 				pinctrl-0 = <&pinctrl_dbgu>;
- 				dmas = <&dma1 1 AT91_DMA_CFG_PER_ID(8)>,
-@@ -1121,7 +1121,7 @@
- 			watchdog@fffffe40 {
- 				compatible = "atmel,at91sam9260-wdt";
- 				reg = <0xfffffe40 0x10>;
--				interrupts = <1 IRQ_TYPE_LEVEL_HIGH 7>;
-+				interrupts-extended = <&virt_irq1_demux 4>;
- 				atmel,watchdog-type = "hardware";
- 				atmel,reset-type = "all";
- 				atmel,dbg-halt;
-@@ -1132,7 +1132,7 @@
- 			rtc@fffffeb0 {
- 				compatible = "atmel,at91sam9x5-rtc";
- 				reg = <0xfffffeb0 0x40>;
--				interrupts = <1 IRQ_TYPE_LEVEL_HIGH 7>;
-+				interrupts-extended = <&virt_irq1_demux 3>;
- 				status = "disabled";
- 			};
- 
-@@ -1231,4 +1231,20 @@
- 		pinctrl-0 = <&pinctrl_i2c_gpio2>;
- 		status = "disabled";
- 	};
-+
-+	virt_irq1_demux: virt-irq-demux@1 {
-+		compatible = "virtual,irq-demux";
-+		interrupt-controller;
-+		#interrupt-cells = <1>;
-+		interrupts = <1 IRQ_TYPE_LEVEL_HIGH 7>;
-+		/*
-+		 * Interrupt lines:
-+		 * 0: PMC
-+		 * 1: PIT
-+		 * 2: DBGU
-+		 * 3: RTC
-+		 * 4: WATCHDOG
-+		 */
-+		irqs = <0x1f>;
-+	};
- };
--- 
-1.9.1
+You didn't have one line, you had no description. Patch subject is not
+patch description. In the minimal case, the description should have the
+same text as the subject, but usually it's better to have a bit more
+text in the description.
 
+> and the rest of the information is not relevant for the git log but onl=
+y
+> for the review
+>=20
+> if you think it is necessary to understand the patch I'll move it and
+> resubmit.
+
+Well, a good description is not only about understanding the code in the
+patch. It may contain information like which platform/setup this issue
+happened on, are the any possible side effects, or whatever might be
+relevant for someone looking at the patch years later.
+
+ Tomi
+
+
+
+--aG4kRQ1HqL8vvduNhbRM2jPhmD9vB0A0d
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUygy6AAoJEPo9qoy8lh71NWgP+gLLs+7sFxXI+gX1xnRhajkR
+iTMCTGHr0yExoFSHd6U9S57x6uPJ+GtxZZMQUMfZbvveg/GEwg/9byXtkR5LrcQk
+GmRab0D+T2iB1GdGWszmCm1is2X+kD2ZLwYxYLwoyPtcowYpmPwF8f2eIvQTG65l
+qv5z/M3maFcepNFRmAkP/zWRvlPa+g1V1kRXbhcqx1OlylytqyntW1Ms8qV7R6/j
+dsOEzPJrx386o7UlYHELRBg1swwuSEbWpPNMQ6cdQZU/97iGy/v5SVu16h0+x3Nd
+54Oxrq4drXZYsqrkdLTdphi7XjeYtqQZ1hGGJI5HnRDmp9FhmAlt3i0Xtks5gW2I
+WpwVQ+Y1Db7iya1GqadPcd9TABOS7w7+TY0VWeyKn2fCrTcmrCT1BDXVJM46RfwJ
+en/Bm94H6eDpRu/lM+ZPyc2MIQhBhjIpn51/XyVsE2d5qPFsbvc2tZAUPCck4Mhf
+cnK9Lrf6VXEY0lMe4uL6F1Maoh93El+shZFg9DR2fAk4Krm4u+q05kF1GmtV9bLU
+Uk7UL9yoA4ylpXTPBWb7x12CxtMVm3qzNbLsRRjfwd5cDafKgEFBeewtru51QDiy
+fI7tjxUnU2tgcQrHMDQUYmm8Qkc6yP5bHvx2qJaOtUqXHJNdcVo1BpqJjkYnGNTs
+P2iCKtuaEiJU+WYoZRJG
+=A2UJ
+-----END PGP SIGNATURE-----
+
+--aG4kRQ1HqL8vvduNhbRM2jPhmD9vB0A0d--
