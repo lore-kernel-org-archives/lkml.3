@@ -1,61 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758286AbbA2L0k (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 06:26:40 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:37648 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754452AbbA2LZs (ORCPT
+	id S1757798AbbA2L0G (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 06:26:06 -0500
+Received: from mail-lb0-f176.google.com ([209.85.217.176]:47692 "EHLO
+	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754831AbbA2LZu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 06:25:48 -0500
-X-AuditID: cbfee61a-f79c06d000004e71-fb-54ca18b96b96
-From: Chao Yu <chao2.yu@samsung.com>
-To: "'Jaegeuk Kim'" <jaegeuk@kernel.org>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net
-References: <1422401503-4769-1-git-send-email-jaegeuk@kernel.org>
-In-reply-to: <1422401503-4769-1-git-send-email-jaegeuk@kernel.org>
-Subject: RE: [PATCH 1/5] f2fs: fix not to drop mount options when retrying
- fill_super
-Date: Thu, 29 Jan 2015 19:24:59 +0800
-Message-id: <002a01d03bb6$530c8340$f92589c0$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: AQKDs63B3JtDSVeEmIqjDxgyUQN23JtwArDw
-Content-language: zh-cn
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrNLMWRmVeSWpSXmKPExsVy+t9jQd2dEqdCDG6eNbF4sn4Ws8WlRe4W
-	e/aeZLG4vGsOmwOLx6ZVnWweuxd8ZvL4vEkugDmKyyYlNSezLLVI3y6BK+PA+v2sBe9ZK/pb
-	2tgbGN+xdDFyckgImEjMm7uJCcIWk7hwbz1bFyMXh5DAdEaJN0uWQTk/GCX23F7ICFLFJqAi
-	sbzjPxNIQkSgl1Hix5l+ZpCEkICjxOr5Z1hBbE4BJ4kLy5aCrRAWCJf4+aWRHcRmEVCVOL/z
-	INg6XgFLib6nn9ggbEGJH5PvgdUzC2hJrN95nAnClpfYvOYtM8R5ChI7zr4GO0JEwEji+boZ
-	UDXiEhuP3GKZwCg4C8moWUhGzUIyahaSlgWMLKsYRVMLkguKk9JzDfWKE3OLS/PS9ZLzczcx
-	goP8mdQOxpUNFocYBTgYlXh4OepPhgixJpYVV+YeYpTgYFYS4RUTOBUixJuSWFmVWpQfX1Sa
-	k1p8iFGag0VJnFfJvi1ESCA9sSQ1OzW1ILUIJsvEwSnVwGgxda3ZkbL7a5/V2G9raQ8I1Vg3
-	ZypXp9ivnmNh6fsdX4l+nC9zT3fZsQOvtisGf/fNObBdbpf+hmk3SxbdzD14Km/atC0HLzLa
-	KBedUrPZJ612N03yidVshmXX7657kDGl7eYL8bAbZi9drvX/7m9SSjJpiLm4almQ7/JjuRlV
-	cnN4Th5eauSgxFKckWioxVxUnAgAaph2n24CAAA=
+	Thu, 29 Jan 2015 06:25:50 -0500
+MIME-Version: 1.0
+In-Reply-To: <54C9F525.4040703@zonque.org>
+References: <1421435777-25306-1-git-send-email-gregkh@linuxfoundation.org>
+ <1421435777-25306-2-git-send-email-gregkh@linuxfoundation.org>
+ <54BE5DC8.70706@gmail.com> <54BE9D08.7010804@zonque.org> <54BF805B.4000609@gmail.com>
+ <54BFDAAA.50203@zonque.org> <54C0CE8A.5080805@gmail.com> <CANq1E4S=3qNw599L85uj-8aXwxeV+mcurB_Nu_rHH8opAeePjw@mail.gmail.com>
+ <54C10DDC.9000503@gmail.com> <20150123160854.GA5210@kroah.com>
+ <54C65346.5070504@gmail.com> <CANq1E4SkHhs1pWUe-TzG7bzk1M-Q++mB2vmQGuYx0RMF53wg4Q@mail.gmail.com>
+ <CALCETrU1O6LjhrXSH2aXWFt2WGh=ssrq4K9HD10f_Z55iT=Otw@mail.gmail.com> <54C9F525.4040703@zonque.org>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Thu, 29 Jan 2015 03:25:28 -0800
+Message-ID: <CALCETrV6P+Lx5FRLyDNubG18tqCTLprkXJf=82aa5DsRHjkuKA@mail.gmail.com>
+Subject: Re: [PATCH 01/13] kdbus: add documentation
+To: Daniel Mack <daniel@zonque.org>
+Cc: Michael Kerrisk <mtk.manpages@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
+        "Theodore T'so" <tytso@mit.edu>, Linux API <linux-api@vger.kernel.org>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Austin S Hemmelgarn <ahferroin7@gmail.com>,
+        Tom Gundersen <teg@jklm.no>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        David Herrmann <dh.herrmann@gmail.com>,
+        Djalal Harouni <tixxdz@opendz.org>, Johannes Stezenbach <js@sig21.net>,
+        Christoph Hellwig <hch@infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jaegeuk,
+On Jan 29, 2015 3:53 AM, "Daniel Mack" <daniel@zonque.org> wrote:
+>
+> Hi Andy,
+>
+> On 01/27/2015 05:03 PM, Andy Lutomirski wrote:
+> > On Tue, Jan 27, 2015 at 7:05 AM, David Herrmann <dh.herrmann@gmail.com> wrote:
+>
+> >> A 16byte copy does not affect the performance of kdbus message
+> >> transactions in any way that matters.
+>
+> > What are the performance goals of kdbus?  How fast is it ever intended
+> > to be?
+>
+> One of the design goals of kdbus is to speed up a typical D-Bus message
+> turnaround. That is, to minimize the number of context switches it
+> currently takes to get a message across the bus, and to avoid
+> unnecessary extra payload copies.
+>
+> Even though I'm sure there's still room for future improvement, the
+> benchmark test we provided in the kernel self-tests shows that basic
+> data transmission performance is roughly comparable to that of UDS for
+> smaller payloads. For payloads of bigger sizes (>128kb), kdbus is
+> actually faster due to its zero-copy mechanism.
+>
+> > The reason I ask is that, in the current design, kdbus
+> > collects "metadata" (credentials and other identifying information,
+> > collected in kdbus_meta_proc_collect) from the sender of every message
+> > *at send time*. [1]  This is slow, and it will always be slow.  The
+> > slowness of this operation will, in my personal system performance
+> > crystal ball, overshadow the cost of a 16 byte copy by several orders
+> > of magnitude.
+>
+> That's certainly true, but that's not a contradiction to the performance
+> argument. Please keep in mind that if a receiving peer does not request
+> any metadata, the kernel doesn't collect and attach any. We know that
+> gathering of some of the metadata comes at a price, which is why we
+> split up the information is such fine-grained pieces.
+>
+> Also note that if a receiving peer opts in for a certain piece of
+> metadata, it should do that that for a good reason, because it needs
+> that data to process a request. Letting kdbus do the work of providing
+> such information is still a lot faster than having the receiving peer
+> gather it itself, as that would involve more syscalls and more context
+> switches (let alone the fact that doing so is inherently racy, as
+> explained in earlier threads).
 
-> -----Original Message-----
-> From: linux-fsdevel-owner@vger.kernel.org [mailto:linux-fsdevel-owner@vger.kernel.org] On
-> Behalf Of Jaegeuk Kim
-> Sent: Wednesday, January 28, 2015 7:32 AM
-> To: linux-kernel@vger.kernel.org; linux-fsdevel@vger.kernel.org;
-> linux-f2fs-devel@lists.sourceforge.net
-> Cc: Jaegeuk Kim
-> Subject: [PATCH 1/5] f2fs: fix not to drop mount options when retrying fill_super
-> 
-> If wrong mount option was requested, f2fs tries to fill_super again.
-> But, during the next trial, f2fs has no valid mount options, since
-> parse_options deleted all the separators in the original string.
+All this is true, but if you used connect-time metadata, this would be
+a non-issue.
 
-Nice catch!
+Given that I see almost no advantage to send-time metadata, and I see
+three disadvantages (slower, inconsistent with the basic POSIX model,
+and inconsistent with existing user-space dbus), I still don't see why
+you designed it this way.
 
-But couldn't we encounter memory leak for options if we did not fail to fill super.
+There's an added disadvantage of the current design: if a kdbus user
+is communicating with a traditional d-bus user using the proxy, then
+IIUC the credentials at the time of connection get used.
 
-Thanks,
+In summary, the current design is (a) unlike almost everything else
+that uses file descriptors, (b) much slower, (c) different from
+traditional d-bus, and (d) gives inconsistent behavior to new clients
+depending on what server they're connecting to.
 
+--Andy
+
+>
+> So, yes, collecting metadata can slow down message exchange, but after
+> all, that's an optional feature that has to be used with sense. I'll add
+> some words on that to the man-pages.
+>
+>
+> HTH,
+> Daniel
+>
