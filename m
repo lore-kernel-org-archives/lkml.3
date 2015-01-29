@@ -1,80 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756031AbbA2PdD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 10:33:03 -0500
-Received: from mga11.intel.com ([192.55.52.93]:57797 "EHLO mga11.intel.com"
+	id S1754752AbbA2Pfr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 10:35:47 -0500
+Received: from mta-out1.inet.fi ([62.71.2.227]:54311 "EHLO jenni1.inet.fi"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755787AbbA2PdA convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 10:33:00 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.09,486,1418112000"; 
-   d="scan'208";a="669751459"
-From: "Ong, Boon Leong" <boon.leong.ong@intel.com>
-To: "Bryan O'Donoghue" <pure.logic@nexus-software.ie>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>,
-        "dvhart@infradead.org" <dvhart@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andy Shevchenko <andy.shevchenko@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: RE: [PATCH 1/2] x86: Add Isolated Memory Regions for Quark X1000
-Thread-Topic: [PATCH 1/2] x86: Add Isolated Memory Regions for Quark X1000
-Thread-Index: AQHQOylqnLZVjTv+WEq44p1GA6waZpzWMk6AgAAoNgCAAAEsAIAAwdXQ//+UzICAAIb+4A==
-Date: Thu, 29 Jan 2015 15:32:55 +0000
-Message-ID: <AF233D1473C1364ABD51D28909A1B1B732715B43@PGSMSX105.gar.corp.intel.com>
-References: <1422470186-7860-1-git-send-email-pure.logic@nexus-software.ie>
-	<1422470186-7860-2-git-send-email-pure.logic@nexus-software.ie>
-	<20150129074411.GA4817@gmail.com>
- <CAHp75Vfff-C++LWyyK+FWLnot=jO4kQvbDaN9hJ2_VrhG8n2Qg@mail.gmail.com>
- <54CA0782.8000807@nexus-software.ie>
- <AF233D1473C1364ABD51D28909A1B1B7327158BE@PGSMSX105.gar.corp.intel.com>
- <54CA502D.9030307@nexus-software.ie>
-In-Reply-To: <54CA502D.9030307@nexus-software.ie>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.30.20.206]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1753603AbbA2Pfq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Jan 2015 10:35:46 -0500
+Date: Thu, 29 Jan 2015 17:35:10 +0200
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: linux-kernel@vger.kernel.org
+Cc: kirill.shutemov@linux.intel.com, gxt@mprc.pku.edu.cn,
+        james.hogan@imgtec.com, linux@arm.linux.org.uk, nm@ti.com,
+        tyler.baker@linaro.org, mm-commits@vger.kernel.org
+Subject: Re: + mm-fix-false-positive-warning-on-exit-due-mm_nr_pmdsmm.patch
+ added to -mm tree
+Message-ID: <20150129153510.GA21698@node.dhcp.inet.fi>
+References: <54c69dbb.9IbFgxgVUFfaIvqP%akpm@linux-foundation.org>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54c69dbb.9IbFgxgVUFfaIvqP%akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.23.1 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Jan 26, 2015 at 12:04:11PM -0800, akpm@linux-foundation.org wrote:
+> diff -puN arch/unicore32/mm/pgd.c~mm-fix-false-positive-warning-on-exit-due-mm_nr_pmdsmm arch/unicore32/mm/pgd.c
+> --- a/arch/unicore32/mm/pgd.c~mm-fix-false-positive-warning-on-exit-due-mm_nr_pmdsmm
+> +++ a/arch/unicore32/mm/pgd.c
+> @@ -69,6 +69,7 @@ pgd_t *get_pgd_slow(struct mm_struct *mm
+>  
+>  no_pte:
+>  	pmd_free(mm, new_pmd);
+> +	mm_dec_nr_pmds(mm);
+>  no_pmd:
+>  	free_pages((unsigned long)new_pgd, 0);
+>  no_pgd:
+> @@ -96,7 +97,9 @@ void free_pgd_slow(struct mm_struct *mm,
+>  	pte = pmd_pgtable(*pmd);
+>  	pmd_clear(pmd);
+>  	pte_free(mm, pte);
+> +	atomic_long_dec(&mm->nr_ptes);
+>  	pmd_free(mm, pmd);
+> +	mm_dec_nr_pmds(mm)
+>  free:
+>  	free_pages((unsigned long) pgd, 0);
+>  }
 
+>From 77c258a2489f67a5019a29469650e9bca70645d9 Mon Sep 17 00:00:00 2001
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Date: Thu, 29 Jan 2015 14:39:17 +0200
+Subject: [PATCH] unicore32: add missed semicolon
 
->-----Original Message-----
->From: Bryan O'Donoghue [mailto:pure.logic@nexus-software.ie]
->Sent: Thursday, January 29, 2015 11:22 PM
->To: Ong, Boon Leong
->Cc: Thomas Gleixner; Ingo Molnar; H. Peter Anvin; x86@kernel.org;
->dvhart@infradead.org; linux-kernel@vger.kernel.org; Andy Shevchenko; Ingo
->Molnar
->Subject: Re: [PATCH 1/2] x86: Add Isolated Memory Regions for Quark X1000
->
->On 29/01/15 13:47, Ong, Boon Leong wrote:
->> Bryan,
->>
->> Once you have the next revision ready, I would like to test it on my end across
->both Galileo Gen v1 & v2.
->>
->> Cheers,
->> BL
->
->Andy/BL - thanks for taking the time to test.
->
->I may end up dropping the imr_del_range() tests based on index as a result of
->changing the external interface as suggested by Ingo.
-It would be nice to have two variants (1) index based & (2) address based. 
+---
+ arch/unicore32/mm/pgd.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
->
->If you guys have a clear preference to keep those tests shout now and I'll re-
->merge the imr_selftest code into the main chunk of IMR code.
-Ok, once you have that ready, I will re-run the test on my end. 
-
->
->--
->BOD
-
+diff --git a/arch/unicore32/mm/pgd.c b/arch/unicore32/mm/pgd.c
+index 1bc00d0305d4..2ade20d8eab3 100644
+--- a/arch/unicore32/mm/pgd.c
++++ b/arch/unicore32/mm/pgd.c
+@@ -99,7 +99,7 @@ void free_pgd_slow(struct mm_struct *mm, pgd_t *pgd)
+ 	pte_free(mm, pte);
+ 	atomic_long_dec(&mm->nr_ptes);
+ 	pmd_free(mm, pmd);
+-	mm_dec_nr_pmds(mm)
++	mm_dec_nr_pmds(mm);
+ free:
+ 	free_pages((unsigned long) pgd, 0);
+ }
+-- 
+ Kirill A. Shutemov
