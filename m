@@ -1,55 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753883AbbA2GeI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 01:34:08 -0500
-Received: from pb-smtp1.int.icgroup.com ([208.72.237.35]:60770 "EHLO
-	sasl.smtp.pobox.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752736AbbA2GeF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 01:34:05 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=from:to:cc
-	:subject:references:date:in-reply-to:message-id:mime-version
-	:content-type; q=dns; s=sasl; b=hIUWnQMJO5SKjB1g0PnE+j64Ghr7qZF6
-	DzjWo5WNQrrUULZ37NZdMfxFmBHP5CUhld4I3JRkgqbzGhlvUlo4ofhTlK7Nq/RZ
-	US6V17J5AfvimDAOrod5wAM7eeWfyKreY/YKCM1ydX51V1XGc+VBfctjHXikRTyN
-	yP+4B/ENHpQ=
-From: Junio C Hamano <gitster@pobox.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Jeff King <peff@peff.net>, Josh Boyer <jwboyer@fedoraproject.org>,
-        "Linux-Kernel\@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
-        twaugh@redhat.com, Git Mailing List <git@vger.kernel.org>
-Subject: Re: patch-2.7.3 no longer applies relative symbolic link patches
-References: <CA+5PVA7rVy6Li_1haj1QmGG0D6avLB5Xej=2YGt6K-11kKHR5A@mail.gmail.com>
-	<CA+5PVA4bs6CYU8MHn1JqBjnb-5wYJT2Tjqa65=v2uSPL8c7dYw@mail.gmail.com>
-	<CA+55aFxbY21vBbPs5qCFPT1HSBbaeS+Z2Fr9So1r3rXrMWe_ZQ@mail.gmail.com>
-	<xmqqzj94lx7z.fsf@gitster.dls.corp.google.com>
-	<xmqqa914klg0.fsf@gitster.dls.corp.google.com>
-	<xmqqfvauf7ej.fsf@gitster.dls.corp.google.com>
-Date: Wed, 28 Jan 2015 22:34:03 -0800
-In-Reply-To: <xmqqfvauf7ej.fsf@gitster.dls.corp.google.com> (Junio C. Hamano's
-	message of "Wed, 28 Jan 2015 22:05:56 -0800")
-Message-ID: <xmqqtwzadrj8.fsf@gitster.dls.corp.google.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	id S1754579AbbA2GfG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 01:35:06 -0500
+Received: from ni.piap.pl ([195.187.100.4]:42287 "EHLO ni.piap.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752222AbbA2GfE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Jan 2015 01:35:04 -0500
+From: khalasa@piap.pl (Krzysztof =?utf-8?Q?Ha=C5=82asa?=)
+To: Nicholas Krause <xerofoify@gmail.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <1422143181-4479-1-git-send-email-xerofoify@gmail.com>
+Date: Thu, 29 Jan 2015 07:35:02 +0100
+In-Reply-To: <1422143181-4479-1-git-send-email-xerofoify@gmail.com> (Nicholas
+	Krause's message of "Sat, 24 Jan 2015 18:46:21 -0500")
 MIME-Version: 1.0
+Message-ID: <m3386uxfft.fsf@t19.piap.pl>
 Content-Type: text/plain
-X-Pobox-Relay-ID: D1C71494-A780-11E4-A367-7BA29F42C9D4-77302942!pb-smtp1.pobox.com
+Subject: Re: [PATCH] net:wan:Change location of debug printk statement in the function,hss_hdlc_poll
+X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.44/RELEASE,
+	 bases: 20140401 #7726142, check: 20150129 clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Junio C Hamano <gitster@pobox.com> writes:
+Nicholas Krause <xerofoify@gmail.com> writes:
 
-> Subject: [PATCH] apply: refuse touching a file beyond symlink
->
-> Because Git tracks symbolic links as symbolic links, a path that has
-> a symbolic link in its leading part (e.g. path/to/dir being a
-> symbolic link to somewhere else, be it inside or outside the working
-> tree) can never appear in a patch that validly apply, unless the
-> same patch first removes the symbolic link.
+> This changes the location of the printk for montioring if the stucture pointer
+> desc of type structure desc has a error count due to failing in the switch
+> statement for checking it's status from the default switch case in this switch
+> to the area of the function for checking if there is a error count. Due to this
+> this part of the function can now be uncommented as it's now needed for printing
+> out important information if the structure pointer,desc has a error count for
+> debugging purposes.
 
-I should rephrase the above to make it more readable.
+This error count seems to be secondary to the desc->status. It's isn't
+normally logged (RX errors on serial links are quite normal) and only
+the "default" case, normally not seen, would be logged (to indicate
+unhandled condition). In the "normal" error path, the driver ignores
+error count, because there could be several errors counted for a single
+erroneous frame (or non-frame).
 
-    ... its leading part (e.g. path/to/dir/file, where path/to/dir is a
-    symbolic link to somewhere else, ...
+Also the patch seems to remove the beginning of a preprocessor directive
+(#if) without removing its end (#endif). I'd be surprised if it compiles.
 
-is what I meant to say.
+> --- a/drivers/net/wan/ixp4xx_hss.c
+> +++ b/drivers/net/wan/ixp4xx_hss.c
+> @@ -697,7 +697,6 @@ static int hss_hdlc_poll(struct napi_struct *napi, int budget)
+>  		}
+>  
+>  		desc = rx_desc_ptr(port, n);
+> -#if 0 /* FIXME - error_count counts modulo 256, perhaps we should use it */
+>  		if (desc->error_count)
+>  			printk(KERN_DEBUG "%s: hss_hdlc_poll status 0x%02X"
+>  			       " errors %u\n", dev->name, desc->status,
+> @@ -735,9 +734,7 @@ static int hss_hdlc_poll(struct napi_struct *napi, int budget)
+>  			dev->stats.rx_length_errors++;
+>  			dev->stats.rx_errors++;
+>  			break;
+> -		default:	/* FIXME - remove printk */
+> -			netdev_err(dev, "hss_hdlc_poll: status 0x%02X errors %u\n",
+> -				   desc->status, desc->error_count);
+> +		default:
+>  			dev->stats.rx_errors++;
+>  		}
+
+-- 
+Krzysztof Halasa
+
+Research Institute for Automation and Measurements PIAP
+Al. Jerozolimskie 202, 02-486 Warsaw, Poland
