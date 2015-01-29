@@ -1,60 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1764174AbbA2DX3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 22:23:29 -0500
-Received: from mail-ie0-f181.google.com ([209.85.223.181]:48200 "EHLO
-	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755731AbbA2DX0 (ORCPT
+	id S933201AbbA2Dxw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 22:53:52 -0500
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:48250 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932533AbbA2Dxu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 22:23:26 -0500
-From: Frederic Jacob <frederic.jacob.78@gmail.com>
-To: thomas.petazzoni@free-electrons.com, noralf@tronnes.org,
-        gregkh@linuxfoundation.org
-Cc: linux-kernel@vger.kernel.org, Frederic Jacob <frederic.jacob.78@gmail.com>
-Subject: [PATCH] Staging: fbtft: Fix Sparse warnings
-Date: Wed, 28 Jan 2015 22:22:26 -0500
-Message-Id: <1422501746-9242-1-git-send-email-frederic.jacob.78@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	Wed, 28 Jan 2015 22:53:50 -0500
+MIME-Version: 1.0
+In-Reply-To: <A9667DDFB95DB7438FA9D7D576C3D87E0AC2E2AF@SHSMSX104.ccr.corp.intel.com>
+References: <CACzj_yXSy9NwBFWkvN+y=5oZfJTM5AaoLZ08O-G2+hXtZLqH0Q@mail.gmail.com>
+ <A9667DDFB95DB7438FA9D7D576C3D87E0AC2E2AF@SHSMSX104.ccr.corp.intel.com>
+From: Wincy Van <fanwenyi0529@gmail.com>
+Date: Thu, 29 Jan 2015 11:53:28 +0800
+Message-ID: <CACzj_yXbEirXExiC3p2m_zf9AGLYGKU5fLGHdizPN10eL4Q5Ug@mail.gmail.com>
+Subject: Re: [PATCH v4 2/6] KVM: nVMX: Enable nested virtualize x2apic mode
+To: "Zhang, Yang Z" <yang.z.zhang@intel.com>
+Cc: Paolo Bonzini <pbonzini@redhat.com>, "gleb@kernel.org" <gleb@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        Wanpeng Li <wanpeng.li@linux.intel.com>,
+        Jan Kiszka <jan.kiszka@web.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- Fix Sparse warnings for undeclared symbols
+On Thu, Jan 29, 2015 at 10:54 AM, Zhang, Yang Z <yang.z.zhang@intel.com> wrote:
+>> -8646,7 +8750,8 @@ static void prepare_vmcs02(struct kvm_vcpu *vcpu,
+>> struct vmcs12 *vmcs12)
+>>                         else
+>>                                 vmcs_write64(APIC_ACCESS_ADDR,
+>>
+>> page_to_phys(vmx->nested.apic_access_page));
+>> -               } else if
+>> (vm_need_virtualize_apic_accesses(vmx->vcpu.kvm)) {
+>> +               } else if (!(nested_cpu_has_virt_x2apic_mode(vmcs12)) &&
+>> +
+>> + (vm_need_virtualize_apic_accesses(vmx->vcpu.kvm))) {
+>>                         exec_control |=
+>
+> You don't load L2's apic_page in your patch correctly when x2apic mode is used. Here is the right change for prepare_vmcs02()(maybe other place also need change too):
+>
+> @@ -8585,7 +8585,8 @@ static void prepare_vmcs02(struct kvm_vcpu *vcpu, struct vmcs12 *vmcs12)
+>                                 CPU_BASED_ACTIVATE_SECONDARY_CONTROLS))
+>                         exec_control |= vmcs12->secondary_vm_exec_control;
+>
+> -               if (exec_control & SECONDARY_EXEC_VIRTUALIZE_APIC_ACCESSES) {
+> +               if (exec_control & (SECONDARY_EXEC_VIRTUALIZE_APIC_ACCESSES |
+> +                                   SECONDARY_EXEC_VIRTUALIZE_X2APIC_MODE)) {
+>                         /*
+>                          * If translation failed, no matter: This feature asks
+>                          * to exit when accessing the given address, and if it
+> @@ -8594,7 +8595,8 @@ static void prepare_vmcs02(struct kvm_vcpu *vcpu, struct vmcs12 *vmcs12)
+>                          */
+>                         if (!vmx->nested.apic_access_page)
+>                                 exec_control &=
+> -                                 ~SECONDARY_EXEC_VIRTUALIZE_APIC_ACCESSES;
+> +                                 ~ (SECONDARY_EXEC_VIRTUALIZE_APIC_ACCESSES |
+> +                                    SECONDARY_EXEC_VIRTUALIZE_X2APIC_MODE);
+>                         else
+>                                 vmcs_write64(APIC_ACCESS_ADDR,
+>                                   page_to_phys(vmx->nested.apic_access_page));
+>
 
-Signed-off-by: Frederic Jacob <frederic.jacob.78@gmail.com>
----
- drivers/staging/fbtft/fb_hx8340bn.c  | 2 +-
- drivers/staging/fbtft/fbtft_device.c | 4 ++--
- 2 files changed, 3 insertions(+), 3 deletions(-)
+I think we don't need to do this, if L1 enables x2apic mode, we have
+already checked that the
+vmcs12->SECONDARY_EXEC_VIRTUALIZE_APIC_ACCESSES is 0. "exec_control |=
+vmcs12->secondary_vm_exec_control;" merged L1's settings, including
+x2apic mode. the special case is vm_need_virtualize_apic_accesses, if
+vm_need_virtualize_apic_accesses returns true, the
+nested_cpu_has_virt_x2apic_mode will prevent us to set the apic access
+bit.
 
-diff --git a/drivers/staging/fbtft/fb_hx8340bn.c b/drivers/staging/fbtft/fb_hx8340bn.c
-index 3939502..26a987a 100644
---- a/drivers/staging/fbtft/fb_hx8340bn.c
-+++ b/drivers/staging/fbtft/fb_hx8340bn.c
-@@ -108,7 +108,7 @@ static int init_display(struct fbtft_par *par)
- 	return 0;
- }
- 
--void set_addr_win(struct fbtft_par *par, int xs, int ys, int xe, int ye)
-+static void set_addr_win(struct fbtft_par *par, int xs, int ys, int xe, int ye)
- {
- 	fbtft_par_dbg(DEBUG_SET_ADDR_WIN, par,
- 		"%s(xs=%d, ys=%d, xe=%d, ye=%d)\n", __func__, xs, ys, xe, ye);
-diff --git a/drivers/staging/fbtft/fbtft_device.c b/drivers/staging/fbtft/fbtft_device.c
-index b9f4c30..157f79c 100644
---- a/drivers/staging/fbtft/fbtft_device.c
-+++ b/drivers/staging/fbtft/fbtft_device.c
-@@ -29,8 +29,8 @@
- 
- #define MAX_GPIOS 32
- 
--struct spi_device *spi_device;
--struct platform_device *p_device;
-+static struct spi_device *spi_device;
-+static struct platform_device *p_device;
- 
- static char *name;
- module_param(name, charp, 0);
--- 
-1.9.1
 
+Thanks,
+Wincy
