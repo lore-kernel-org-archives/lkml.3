@@ -1,154 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759249AbbA2LTE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 06:19:04 -0500
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.140]:39379 "EHLO
-	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755471AbbA2LTB (ORCPT
+	id S1759442AbbA2LUe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 06:20:34 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:54887 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752259AbbA2LUb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 06:19:01 -0500
-From: Punit Agrawal <punit.agrawal@arm.com>
-To: Eduardo Valentin <edubezval@gmail.com>
-Cc: Javi Merino <javi.merino@arm.com>, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, broonie@kernel.org,
-        Zhang Rui <rui.zhang@intel.com>
-Subject: Re: [RFC PATCH v6 6/9] thermal: cpu_cooling: implement the power cooling device API
-References: <1417806260-9264-1-git-send-email-javi.merino@arm.com>
-	<1417806260-9264-7-git-send-email-javi.merino@arm.com>
-	<20150128052330.GD29600@developer.hsd1.ca.comcast.net>
-Date: Thu, 29 Jan 2015 11:19:21 +0000
-In-Reply-To: <20150128052330.GD29600@developer.hsd1.ca.comcast.net> (Eduardo
-	Valentin's message of "Wed, 28 Jan 2015 01:23:33 -0400")
-Message-ID: <9hhh9v9ltqe.fsf@e105922-lin.cambridge.arm.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.4 (gnu/linux)
+	Thu, 29 Jan 2015 06:20:31 -0500
+Message-ID: <54CA173F.1070301@ti.com>
+Date: Thu, 29 Jan 2015 13:19:27 +0200
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Jarkko Nikula <jarkko.nikula@bitmer.com>, Pavel Machek <pavel@ucw.cz>
+CC: <pali.rohar@gmail.com>, <sre@debian.org>, <sre@ring0.de>,
+        kernel list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        <linux-omap@vger.kernel.org>, <tony@atomide.com>, <khilman@kernel.org>,
+        <aaro.koskinen@iki.fi>, <ivo.g.dimitrov.75@gmail.com>
+Subject: Re: 3.19 on Nokia n900: audio quality awful
+References: <20150106170433.GA5408@amd> <20150118120139.GA1509@amd> <54C63F1C.6010703@ti.com> <54C92752.9000004@bitmer.com> <20150128224144.GA28956@amd> <20150129073529.GA19122@bitmer.com>
+In-Reply-To: <20150129073529.GA19122@bitmer.com>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Eduardo,
-
-Eduardo Valentin <edubezval@gmail.com> writes:
-
-> Hello Javi,
->
-> On Fri, Dec 05, 2014 at 07:04:17PM +0000, Javi Merino wrote:
->> Add a basic power model to the cpu cooling device to implement the
->> power cooling device API.  The power model uses the current frequency,
->> current load and OPPs for the power calculations.  The cpus must have
->> registered their OPPs using the OPP library.
->> 
->> Cc: Zhang Rui <rui.zhang@intel.com>
->> Cc: Eduardo Valentin <edubezval@gmail.com>
->> Signed-off-by: Punit Agrawal <punit.agrawal@arm.com>
->> Signed-off-by: Javi Merino <javi.merino@arm.com>
->
-> <big cut>
->
+On 01/29/2015 09:35 AM, Jarkko Nikula wrote:
+> On Wed, Jan 28, 2015 at 11:41:44PM +0100, Pavel Machek wrote:
+>> On Wed 2015-01-28 20:15:46, Jarkko Nikula wrote:
+>>> On 01/26/2015 03:20 PM, Peter Ujfalusi wrote:
+>>>> On 01/18/2015 02:01 PM, Pavel Machek wrote:
+>>> No need to go that far. N900 has been supported in mainline since 2.6.39
+>>> or so. Part A of AIC34 (which is basically dual AIC33 in a same package)
+>>> drives 2 V for the digital microphone bias and part B 2.5 V for the headset.
+>>
+>> Let me try... Umm, no change here :-(
+>>
+>> root@n900:/tmp# arecord delme
+>> Recording WAVE 'delme' : Unsigned 8 bit, Rate 8000 Hz, Mono
+>> ^CAborted by signal Interrupt...
+>> root@n900:/tmp# hexdump delme
+>> 0000000 4952 4646 987c 0000 4157 4556 6d66 2074
+>> 0000010 0010 0000 0001 0001 1f40 0000 1f40 0000
+>> 0000020 0001 0008 6164 6174 9858 0000 8080 8080
+>> 0000030 8080 8080 8080 8080 8080 8080 8080 8080
+>> *
+>> 0009880
+>> root@n900:/tmp# aplay delme
+>> Playing WAVE 'delme' : Unsigned 8 bit, Rate 8000 Hz, Mono
+>> root@n900:/tmp#
+>>
+>> I did this:
+>>
+>> I'm not sure which one is "main" microphone and which is headset, but
+>> I guess 2V should be "close enough" to 2.5V to produce something
+>> different from zeros..?
+>>
+> Main or integrated is digital microphone which does AD conversion itself
+> and headset is analogue. If DMIC is without bias codec will sample plain
+> zeros from DMIC input but analogue input should always produce some random
+> LSB bits from codec's AD converter.
+> 
+> If codec produces zeros also from analogue input then I suppose codec
+> ADC is not powered up or similar. One way to hunt regression if
+> bisecting is not possible due reason or another is to dump and diff codec
+> registers from /sys/kernel/debug/regmap/ using both working commit and head.
+> 
+>> diff --git a/arch/arm/boot/dts/omap3-n900.dts b/arch/arm/boot/dts/omap3-n900.dts
+>> index 48b0987..f18a5b0 100644
+>> --- a/arch/arm/boot/dts/omap3-n900.dts
+>> +++ b/arch/arm/boot/dts/omap3-n900.dts
+>> @@ -491,6 +491,8 @@
+>>  		DRVDD-supply = <&vmmc2>;
+>>  		IOVDD-supply = <&vio>;
+>>  		DVDD-supply = <&vio>;
 >> +
->> +/**
->> + * get_load() - get load for a cpu since last updated
->> + * @cpufreq_device:	&struct cpufreq_cooling_device for this cpu
->> + * @cpu:	cpu number
->> + *
->> + * Return: The average load of cpu @cpu in percentage since this
->> + * function was last called.
->> + */
->> +static u32 get_load(struct cpufreq_cooling_device *cpufreq_device, int cpu)
->> +{
->> +	u32 load;
->> +	u64 now, now_idle, delta_time, delta_idle;
->> +
->> +	now_idle = get_cpu_idle_time(cpu, &now, 0);
->> +	delta_idle = now_idle - cpufreq_device->time_in_idle[cpu];
->> +	delta_time = now - cpufreq_device->time_in_idle_timestamp[cpu];
->> +
->> +	if (delta_time <= delta_idle)
->> +		load = 0;
->> +	else
->> +		load = div64_u64(100 * (delta_time - delta_idle), delta_time);
->> +
->> +	cpufreq_device->time_in_idle[cpu] = now_idle;
->> +	cpufreq_device->time_in_idle_timestamp[cpu] = now;
->> +
->> +	return load;
->> +}
->
-> <cut>
->
+>> +		ai3x-micbias-vg = <1>;
+>>  	};
+> Looks ok for digital mic.
+> 
 >>  
->> +/**
->> + * cpufreq_get_actual_power() - get the current power
->> + * @cdev:	&thermal_cooling_device pointer
->> + *
->> + * Return the current power consumption of the cpus in milliwatts.
->> + */
->> +static u32 cpufreq_get_actual_power(struct thermal_cooling_device *cdev)
->> +{
->> +	unsigned long freq;
->> +	int cpu;
->> +	u32 static_power, dynamic_power, total_load = 0;
->> +	struct cpufreq_cooling_device *cpufreq_device = cdev->devdata;
+>>  	tlv320aic3x_aux: tlv320aic3x@19 {
+>> @@ -502,6 +504,8 @@
+>>  		DRVDD-supply = <&vmmc2>;
+>>  		IOVDD-supply = <&vio>;
+>>  		DVDD-supply = <&vio>;
 >> +
->> +	freq = cpufreq_quick_get(cpumask_any(&cpufreq_device->allowed_cpus));
->> +
->> +	for_each_cpu(cpu, &cpufreq_device->allowed_cpus) {
->> +		u32 load;
->> +
->> +		if (cpu_online(cpu))
->> +			load = get_load(cpufreq_device, cpu);
->> +		else
->> +			load = 0;
->> +
->> +		total_load += load;
->> +	}
->> +
->> +	cpufreq_device->last_load = total_load;
->> +
->> +	static_power = get_static_power(cpufreq_device, freq);
->> +	dynamic_power = get_dynamic_power(cpufreq_device, freq);
->> +
->> +	return static_power + dynamic_power;
->> +}
->
-> With respect to load computation vs. frequency usage vs. power
-> estimation, while getting actual power for a given interval T. What if
-> in interval T, we have used, say, 3 different cpu frequencies, and the
-> load on the first was 50%, on the second 80%, and on the last frequency,
-> the load was 60%, what should be the right load value for computing the
-> actual power? 
->
-> I mean, we are using the total idle time for a given interval, but 1 -
-> idle not always seams to reflect actual load on different opps, if opps
-> change over time within T time interval window.
+>> +		ai3x-micbias-vg = <1>;
+>>  	};
+> This should be 2, i.e. 2.5 V according to
+> Documentation/devicetree/bindings/sound/tlv320aic3x.txt. I think 2 V is
+> too low for some headset mics and that was the reason for 2.5 V.
 
-The value returned by cpufreq_get_actual_power is used as a proxy for
-the estimate of the requested power of the actor for the next window
-duration. Even though the frequency might have changed in the previous
-period, the current frequency reflects the latest information about the
-required performance. As it is an estimate, and to avoid making the
-power calculations more complicated, we used utilisation (1 - idle time)
-to calculate the request. The estimate for the T+1 period becomes more
-accurate as the load stabilises.
+Can you also try this patch to correct the DAPM route for the rx51:
 
-In our testing on different workloads using 100ms as the polling period
-for thermal control, we didn't see any problems arising from the use of
-this definition of utilisation.
+diff --git a/sound/soc/omap/rx51.c b/sound/soc/omap/rx51.c
+index 04896d6252a2..7f299357c2d2 100644
+--- a/sound/soc/omap/rx51.c
++++ b/sound/soc/omap/rx51.c
+@@ -250,14 +250,14 @@ static const struct snd_soc_dapm_route audio_map[] = {
+ 	{"FM Transmitter", NULL, "LLOUT"},
+ 	{"FM Transmitter", NULL, "RLOUT"},
 
-Having said that, there are a number of ways to improve the accuracy of
-the power calculations. As part of investigating the effects of
-improving model accuracy and it's effect on thermal control and
-performance, we plan to look at fine-grained frequency and load tracking
-once the initial set of patches are merged.
+-	{"DMic Rate 64", NULL, "Mic Bias"},
+-	{"Mic Bias", NULL, "DMic"},
++	{"DMic Rate 64", NULL, "DMic"},
++	{"DMic", NULL, "Mic Bias"},
 
-Cheers,
-Punit
+ 	{"b LINE2R", NULL, "MONO_LOUT"},
+ 	{"Earphone", NULL, "b HPLOUT"},
 
->
-> BR,
->
->
-> BR,
->
-> Eduardo Valentin
+-	{"LINE1L", NULL, "b Mic Bias"},
+-	{"b Mic Bias", NULL, "HS Mic"}
++	{"LINE1L", NULL, "HS Mic"},
++	{"HS Mic", NULL, "b Mic Bias"},
+ };
+
+ static const char * const spk_function[] = {"Off", "On"};
+
+-- 
+Péter
