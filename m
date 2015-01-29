@@ -1,47 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755506AbbA2MwT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 07:52:19 -0500
-Received: from smtp113.iad3a.emailsrvr.com ([173.203.187.113]:50592 "EHLO
-	smtp113.iad3a.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753049AbbA2MwS (ORCPT
+	id S1755806AbbA2Mxg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 07:53:36 -0500
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:62467 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751851AbbA2Mxe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 07:52:18 -0500
-X-Sender-Id: abbotti@mev.co.uk
-Message-ID: <54CA2CFF.7080203@mev.co.uk>
-Date: Thu, 29 Jan 2015 12:52:15 +0000
-From: Ian Abbott <abbotti@mev.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.3.0
-MIME-Version: 1.0
-To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        H Hartley Sweeten <hsweeten@visionengravers.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: comedi: drivers: dt2814: Removed variables that
- is never used
-References: <1422484430-8686-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-In-Reply-To: <1422484430-8686-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+	Thu, 29 Jan 2015 07:53:34 -0500
+X-AuditID: cbfec7f5-b7fc86d0000066b7-29-54ca2cb9b9fa
+Message-id: <54CA2D3D.3070908@samsung.com>
+Date: Thu, 29 Jan 2015 13:53:17 +0100
+From: Sylwester Nawrocki <s.nawrocki@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
+ Thunderbird/31.1.2
+MIME-version: 1.0
+To: cw00.choi@samsung.com
+Cc: Tomasz Figa <tomasz.figa@gmail.com>,
+        Mike Turquette <mturquette@linaro.org>, Kukjin Kim <kgene@kernel.org>,
+        "pankaj.dubey@samsung.com" <pankaj.dubey@samsung.com>,
+        "inki.dae@samsung.com" <inki.dae@samsung.com>,
+        "chanho61.park@samsung.com" <chanho61.park@samsung.com>,
+        Seung-Woo Kim <sw0312.kim@samsung.com>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 01/12] clk: samsung: exynos5433: Add clocks using common
+ clock framework
+References: <1421821618-8627-1-git-send-email-cw00.choi@samsung.com>
+ <1421821618-8627-2-git-send-email-cw00.choi@samsung.com>
+ <54C287A0.50407@samsung.com>
+ <CAGTfZH0nXzDgFoMF4eSW71Sey44aY9gYRzX+uWP39ut2jY_Pfg@mail.gmail.com>
+In-reply-to: <CAGTfZH0nXzDgFoMF4eSW71Sey44aY9gYRzX+uWP39ut2jY_Pfg@mail.gmail.com>
+Content-type: text/plain; charset=utf-8
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrBLMWRmVeSWpSXmKPExsVy+t/xq7o7dU6FGBzfzWdxeb+2xfUvz1kt
+	Jt2fwGLR//g1s8XlXXPYLGac38dk8XTCRTaLRVu/sFvMmPySzWLVrj+MDlweO2fdZffYtKqT
+	zePOtT1sHn1bVjF6fN4kF8AaxWWTkpqTWZZapG+XwJVx/ltRwUP+io6z/SwNjI08XYycHBIC
+	JhJzTp1mgbDFJC7cW8/WxcjFISSwlFHiVfcjVgjnE6PEjGVX2ECqeAW0JM5+ucMKYrMIqErM
+	b9wBFmcTMJToPdrHCGKLCkRInLy7hx2iXlDix+R7QBs4OEQEJCVa9pmBzGQWWM4scX1zG1hc
+	WCBRYvc6LpByIYGnjBK/fiSC2JwCwRIr96xjBSlhFlCXmDIlFyTMLCAvsXnNW+YJjAKzkCyY
+	hVA1C0nVAkbmVYyiqaXJBcVJ6blGesWJucWleel6yfm5mxghof91B+PSY1aHGAU4GJV4eGds
+	OhkixJpYVlyZe4hRgoNZSYS3UOlUiBBvSmJlVWpRfnxRaU5q8SFGJg5OqQZG6ZNinUxvb7X2
+	tavLHnnH8n3CqZLHOjLp+nOZpm8oveylZOknm/nAKH6ZmmC+kPnPPyKGvUu3vxcNq/xy6nys
+	vgJnudP20IAf03cYdsec3nJl2rJPq/eVpRdN373ktFLNV9fgsz7ZMtNN3r/Re//7oWxY3936
+	ysxzp1ctYG9kjJOcqqJte/CDEktxRqKhFnNRcSIA5uDfRlsCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 28/01/15 22:33, Rickard Strandqvist wrote:
-> Variable ar assigned a value that is never used.
-> I have also removed all the code that thereby serves no purpose.
->
-> This was found using a static code analysis program called cppcheck
->
-> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-> ---
->   drivers/staging/comedi/drivers/dt2814.c |   13 ++++---------
->   1 file changed, 4 insertions(+), 9 deletions(-)
+Hi Chanwoo,
 
-Good, apart from the bad English!
+On 23/01/15 21:54, Chanwoo Choi wrote:
+> On Sat, Jan 24, 2015 at 2:40 AM, Sylwester Nawrocki
+> <s.nawrocki@samsung.com> wrote:
+>> On 21/01/15 07:26, Chanwoo Choi wrote:
+>>> +/* list of all parent clock list */
+>>
+>>> +PNAME(mout_bus_pll_user_p)   = { "fin_pll", "sclk_bus_pll", };
+>> ...
+>>> +
+>>> +static struct samsung_mux_clock top_mux_clks[] __initdata = {
+>>
+>>> +     MUX(CLK_MOUT_BUS_PLL_USER, "mout_bus_pll_user", mout_bus_pll_user_p,
+>>> +                     MUX_SEL_TOP1, 0, 1),
+>> ...
+>>> +};
+>>> +
+>>> +static struct samsung_div_clock top_div_clks[] __initdata = {
+>> ...
+>>> +     /* DIV_TOP3 */
+>>> +     DIV(CLK_DIV_ACLK_IMEM_SSSX_266, "div_aclk_imem_sssx_266",
+>>> +                     "mout_bus_pll_user", DIV_TOP3, 24, 3),
+>>
+>> Shouldn't "fin_pll" be renamed to "oscclk" ? In the documentation
+>> the root clock (from XXTI input pin) seems to be referred as OSCCLK.
+>> And I can't see "fin_pll" clock registered anywhere. Shouldn't there
+>> be a "fixed-rate-clock" as a parent of at least CMU_TOP? e.g.
+> 
+> Right,
+> I added "fin_pll" fixed clock in DT as following:
+> When I registered "fin_pll" fixed clock, I could use "fin_pll" clock
+> for exynos5433 cmu without adding additional dt node.
+> 
+> fin_pll: xxti {
+>         compatible = "fixed-clock";
+>         clock-output-names = "fin_pll";
+>         #clock-cells = <0>;
+> };
+> 
+> I'll add the example of "fin_pll" dt node to documentation for exynos5433 cmu.
 
-Reviewed-by: Ian Abbott <abbotti@mev.co.uk>
+OK, thanks. But I think it needs to be named "oscclk", FIN_PLL is almost
+not existent in the SoC's documentation.
+I'd suggest to define the root oscillator clock (XXTI/OSCCLK) as "oscclk"
+in DT, rather than registering "fin_pll" fixed clock in the driver.
 
--- 
--=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk> )=-
--=(                          Web: http://www.mev.co.uk/  )=-
+>> xxti: xxti {
+>>         compatible = "fixed-clock";
+>>         #clock-cells = <0>;
+>>         clock-output-names = "oscclk";
+>>         clock-frequency = <24000000>;
+>> };
+>>
+>> &cmu_top {
+>>         clocks = <&xxti>;
+>> };
+
+--
+Regards,
+Sylwester
