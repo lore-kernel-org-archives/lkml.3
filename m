@@ -1,98 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754706AbbA2GfT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 01:35:19 -0500
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:45733 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753275AbbA2GfP (ORCPT
+	id S1753261AbbA2GhD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 01:37:03 -0500
+Received: from eusmtp01.atmel.com ([212.144.249.242]:48282 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752025AbbA2GhB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 01:35:15 -0500
-Date: Thu, 29 Jan 2015 15:35:05 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Sergey Senozhatsky <sergey.senozhatsky.work@gmail.com>
-Cc: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux-MM <linux-mm@kvack.org>, Nitin Gupta <ngupta@vflare.org>,
-        Jerome Marchand <jmarchan@redhat.com>,
-        Ganesh Mahendran <opensource.ganesh@gmail.com>
-Subject: Re: [PATCH v1 2/2] zram: remove init_lock in zram_make_request
-Message-ID: <20150129063505.GA32331@blaptop>
-References: <1422432945-6764-1-git-send-email-minchan@kernel.org>
- <1422432945-6764-2-git-send-email-minchan@kernel.org>
- <20150128145651.GB965@swordfish>
- <20150128233343.GC4706@blaptop>
- <CAHqPoqKZFDSjO1pL+ixYe_m_L0nGNcu04qSNp-jd1fUixKtHnw@mail.gmail.com>
- <20150129020139.GB9672@blaptop>
- <20150129022241.GA2555@swordfish>
- <20150129052827.GB25462@blaptop>
- <20150129060604.GC2555@swordfish>
+	Thu, 29 Jan 2015 01:37:01 -0500
+From: Wenyou Yang <wenyou.yang@atmel.com>
+To: <nicolas.ferre@atmel.com>, <linux@arm.linux.org.uk>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <alexandre.belloni@free-electrons.com>, <sylvain.rochet@finsecur.com>,
+        <peda@axentia.se>, <sergei.shtylyov@cogentembedded.com>,
+        <linux@maxim.org.za>, <wenyou.yang@atmel.com>
+Subject: [PATCH v5 00/13] AT91 pm cleanup for 3.20
+Date: Thu, 29 Jan 2015 14:35:15 +0800
+Message-ID: <1422513316-21509-1-git-send-email-wenyou.yang@atmel.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150129060604.GC2555@swordfish>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 29, 2015 at 03:06:04PM +0900, Sergey Senozhatsky wrote:
-> On (01/29/15 14:28), Minchan Kim wrote:
-> > > I'm still concerned about performance numbers that I see on my x86_64.
-> > > it's not always, but mostly slower. I'll give it another try (disable
-> > > lockdep, etc.), but if we lose 10% on average then, sorry, I'm not so
-> > > positive about srcu change and will tend to vote for your initial commit
-> > > that simply moved meta free() out of init_lock and left locking as is
-> > > (lockdep warning would have been helpful there, because otherwise it
-> > > just looked like we change code w/o any reason).
-> > > 
-> > > what do you thunk?
-> > 
-> > Surely I agreee with you. If it suffers from 10% performance regression,
-> > it's absolutely no go.
-> > 
-> > However, I believe it should be no loss because that's one of the reason
-> > from RCU birth which should be really win in read-side lock path compared
-> > to other locking.
-> > 
-> > Please test it with dd or something for block-based test for removing
-> > noise from FS. I also will test it to confirm that with real machine.
-> > 
-> 
-> do you test with a single dd thread/process?  just dd if=foo of=bar -c... or
-> you start N `dd &' processes?
+Hi Nicolas,
 
-I tested it with multiple dd processes.
+This version is rebased on the branch: at91-3.20-cleanup of the repository
+	git://git.kernel.org/pub/scm/linux/kernel/git/nferre/linux-at91.git
 
-> 
-> for a single writer there should be no difference, no doubt. I'm more
-> interested in multi-writer/multi-reader/mixed use cases.
-> 
-> the options that I use are: iozone -t 3 -R -r 16K -s 60M -I +Z
-> and -I is:
-> 	-I  Use VxFS VX_DIRECT, O_DIRECT,or O_DIRECTIO for all file operations
-> 
-> with O_DIRECT I don't think there is a lot of noise, but I'll try to use
-> different benchmarks a bit later.
-> 
+It is purpose to clean up the PM code, includes the patches from Peter Rosin and Sylvain Rochet.
 
-As you told, the data was not stable.
-Anyway, when I read down_read implementation, it's one atomic instruction.
-Hmm, it seems te be better for srcu_read_lock which does more things.
-But I guessed most of overhead are from [de]compression, memcpy, clear_page
-That's why I guessed we don't have measurable difference from that.
-What's the data pattern if you use iozone? I guess it's really simple
-pattern compressor can do fast. I used /dev/sda for dd write so
-more realistic data. Anyway, if we has 10% regression even if the data
-is simple, I never want to merge it.
-I will test it carefully and if it turns out lots regression,
-surely, I will not go with this and send the original patch again.
+Since verifying the USB clock and USB PLL disabling before suspending to memory,
+it aslo depends on the following patch serials from Sylvain:
+	[PATCHv6 0/5] USB: gadget: atmel_usba_udc: Driver improvements
+	[PATCHv7 0/6] USB: host: Atmel OHCI and EHCI drivers improvements
 
-Thanks.
+Removes CONFIG_AT91_SLOW_CLOCK config item to simply the PM config,
+The suspend to standby mode uses the same sram function as the suspend to memory mode.
+Remove some unused code.
 
-> 
-> 	-ss
+Alexandr & Sylvain, Thank you very much for so many feedbacks.
+
+Changes in v5:
+ - Rebase the branch: at91-3.20-cleanup HEAD:fa9df37
+
+Changes in v4:
+ - Clear unused state argument in at91_pm_verify_clocks()
+ - Remove pr_info("AT91:... slow_clock ? ..") in patch 07/13.
+
+Changes in v3
+ - Sylvain splits the patch in two
+ - Add handling if no sram allocated for PM
+ - Retain the STANDBY and SUSPEND_MEM select in at91_pm_enter.
+
+Changes in v2:
+ - Rebase on the at91-3.20-cleanup branch
+ - Recover the verify clock condition, only for suspend to memory.
+ - Collect ACK from Alexandre
+ - Add the macro for PM mode
+
+Peter Rosin (1):
+  pm: at91: Workaround DDRSDRC self-refresh bug with LPDDR1 memories.
+
+Sylvain Rochet (2):
+  pm: at91: pm_slowclock: fix suspend/resume hang up in timeouts
+  pm: at91: pm_slowclock: remove clocks which are already stopped when
+    entering slow clock mode
+
+Wenyou Yang (10):
+  pm: at91: pm_slowclock: remove the unused code related with
+    SLOWDOWN_MASTER_CLOCK
+  pm: at91: move the copying the sram function to the sram
+    initializationi phase
+  ARM: at91: move select SRAM to ARCH_AT91
+  pm: at91: remove the config item CONFIG_AT91_SLOW_CLOCK
+  pm: at91: the standby mode uses the same sram function as the suspend
+    to memory mode
+  pm: at91: rename file name: pm_slowclock.S -->pm_suspend.S
+  pm: at91: rename function name:
+    at91_slow_clock()-->at91_pm_suspend_sram_fn
+  pm: at91: remove the at91_xxx_standby() function definitions in the
+    pm.h
+  pm: at91: remove the data member at91_xxx_standby() of struct
+    ramc_ids
+  pm: at91: amend the pm_suspend entry for at91_cpuidle_device
+
+ arch/arm/mach-at91/Kconfig         |   17 +-
+ arch/arm/mach-at91/Makefile        |    2 +-
+ arch/arm/mach-at91/pm.c            |  166 +++++++++---------
+ arch/arm/mach-at91/pm.h            |  100 +----------
+ arch/arm/mach-at91/pm_slowclock.S  |  323 ------------------------------------
+ arch/arm/mach-at91/pm_suspend.S    |  277 +++++++++++++++++++++++++++++++
+ include/soc/at91/at91sam9_ddrsdr.h |    2 +-
+ 7 files changed, 366 insertions(+), 521 deletions(-)
+ delete mode 100644 arch/arm/mach-at91/pm_slowclock.S
+ create mode 100644 arch/arm/mach-at91/pm_suspend.S
 
 -- 
-Kind regards,
-Minchan Kim
+1.7.9.5
+
