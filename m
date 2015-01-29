@@ -1,106 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753067AbbA2BVJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 20:21:09 -0500
-Received: from mail-ie0-f179.google.com ([209.85.223.179]:55707 "EHLO
-	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752708AbbA2BVD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 20:21:03 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAPDyKFqjG=yxDcwnk4jbXMZ05hMkWR2x37uVpRNd_11-eB4G7w@mail.gmail.com>
-References: <1422271175-19445-1-git-send-email-addy.ke@rock-chips.com>
-	<1422271175-19445-2-git-send-email-addy.ke@rock-chips.com>
-	<CAPDyKFp=5epMggHu0+u_LU7ETujcoeP2xOpB7iD6JF2bs8BnEA@mail.gmail.com>
-	<CAD=FV=X9x0gW5TyLi4ERm8nxixQB__Y=5bRAtOax-_w+T33rCg@mail.gmail.com>
-	<CAPDyKFqjG=yxDcwnk4jbXMZ05hMkWR2x37uVpRNd_11-eB4G7w@mail.gmail.com>
-Date: Wed, 28 Jan 2015 16:55:28 -0800
-X-Google-Sender-Auth: QsjzPaToXWOu4OxagdDhZOtXP4Y
-Message-ID: <CAD=FV=VQg+sQUpgbKw7Zz=-f+jPM=6O-+3gUpohWhj8JeSPu6Q@mail.gmail.com>
-Subject: Re: [PATCH 1/2] mmc: core: use card pointer as the first parameter of execute_tuning()
-From: Doug Anderson <dianders@chromium.org>
-To: Ulf Hansson <ulf.hansson@linaro.org>
-Cc: Addy Ke <addy.ke@rock-chips.com>, Rob Herring <robh+dt@kernel.org>,
-        =?UTF-8?Q?Pawe=C5=82_Moll?= <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        "tgih.jun@samsung.com" <tgih.jun@samsung.com>,
-        Jaehoon Chung <jh80.chung@samsung.com>, Chris Ball <chris@printf.net>,
-        Dinh Nguyen <dinguyen@altera.com>,
-        =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
-        Olof Johansson <olof@lixom.net>, Sonny Rao <sonnyrao@chromium.org>,
-        Alexandru Stan <amstan@chromium.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-mmc <linux-mmc@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
-        "zhenfu.fang" <zhenfu.fang@rock-chips.com>,
-        Eddie Cai <cf@rock-chips.com>, lintao <lintao@rock-chips.com>,
-        chenfen <chenfen@rock-chips.com>, zyf <zyf@rock-chips.com>,
-        Jianqun Xu <xjq@rock-chips.com>, Tao Huang <huangtao@rock-chips.com>,
-        Chris Zhong <zyw@rock-chips.com>,
-        =?UTF-8?B?5aea5pm65oOF?= <yzq@rock-chips.com>,
-        Han Jiang <hj@rock-chips.com>, Kever Yang <kever.yang@rock-chips.com>,
-        zhangqing <zhangqing@rock-chips.com>, Lin Huang <hl@rock-chips.com>
-Content-Type: text/plain; charset=UTF-8
+	id S1752752AbbA2BKr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 20:10:47 -0500
+Received: from smtp2.provo.novell.com ([137.65.250.81]:49064 "EHLO
+	smtp2.provo.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751548AbbA2BKZ (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:0:0>);
+	Wed, 28 Jan 2015 20:10:25 -0500
+Message-ID: <1422493812.4604.29.camel@stgolabs.net>
+Subject: Re: [PATCH 4/6] locking/rwsem: Avoid deceiving lock spinners
+From: Davidlohr Bueso <dave@stgolabs.net>
+To: Jason Low <jason.low2@hp.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Michel Lespinasse <walken@google.com>,
+        Tim Chen <tim.c.chen@linux.intel.com>, linux-kernel@vger.kernel.org
+Date: Wed, 28 Jan 2015 17:10:12 -0800
+In-Reply-To: <1422479028.4111.34.camel@j-VirtualBox>
+References: <1422257769-14083-1-git-send-email-dave@stgolabs.net>
+	 <1422257769-14083-5-git-send-email-dave@stgolabs.net>
+	 <1422379430.6710.6.camel@j-VirtualBox>
+	 <1422417294.4604.15.camel@stgolabs.net>
+	 <1422479028.4111.34.camel@j-VirtualBox>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.7 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ulf,
+On Wed, 2015-01-28 at 13:03 -0800, Jason Low wrote:
+> On Tue, 2015-01-27 at 19:54 -0800, Davidlohr Bueso wrote:
+> > On Tue, 2015-01-27 at 09:23 -0800, Jason Low wrote:
+> > > On Sun, 2015-01-25 at 23:36 -0800, Davidlohr Bueso wrote:
+> > > > When readers hold the semaphore, the ->owner is nil. As such,
+> > > > and unlike mutexes, '!owner' does not necessarily imply that
+> > > > the lock is free. This will cause writer spinners to potentially
+> > > > spin excessively as they've been mislead to thinking they have
+> > > > a chance of acquiring the lock, instead of blocking.
+> > > > 
+> > > > This patch therefore replaces this bogus check to solely rely on
+> > > > the counter to know if the lock is available. Because we don't
+> > > > hold the wait lock, we can obviously do this in an unqueued
+> > > > manner.
+> > > > 
+> > > > Signed-off-by: Davidlohr Bueso <dbueso@suse.de>
+> > > > ---
+> > > >  kernel/locking/rwsem-xadd.c | 8 ++++++--
+> > > >  1 file changed, 6 insertions(+), 2 deletions(-)
+> > > > 
+> > > > diff --git a/kernel/locking/rwsem-xadd.c b/kernel/locking/rwsem-xadd.c
+> > > > index 5e425d8..18a50da 100644
+> > > > --- a/kernel/locking/rwsem-xadd.c
+> > > > +++ b/kernel/locking/rwsem-xadd.c
+> > > > @@ -335,6 +335,8 @@ static inline bool owner_running(struct rw_semaphore *sem,
+> > > >  static noinline
+> > > >  bool rwsem_spin_on_owner(struct rw_semaphore *sem, struct task_struct *owner)
+> > > >  {
+> > > > +	long count;
+> > > > +
+> > > >  	rcu_read_lock();
+> > > >  	while (owner_running(sem, owner)) {
+> > > >  		if (need_resched())
+> > > > @@ -347,9 +349,11 @@ bool rwsem_spin_on_owner(struct rw_semaphore *sem, struct task_struct *owner)
+> > > >  	/*
+> > > >  	 * We break out the loop above on need_resched() or when the
+> > > >  	 * owner changed, which is a sign for heavy contention. Return
+> > > > -	 * success only when sem->owner is NULL.
+> > > > +	 * success only when the lock is available in order to attempt
+> > > > +	 * another trylock.
+> > > >  	 */
+> > > > -	return sem->owner == NULL;
+> > > > +	count = READ_ONCE(sem->count);
+> > > > +	return count == 0 || count == RWSEM_WAITING_BIAS;
+> > > 
+> > > If we clear the owner field right before unlocking, would this cause
+> > > some situations where we spin until the owner is cleared (about to
+> > > release the lock), and then the spinner return false from
+> > > rwsem_spin_on_owner?
+> > 
+> > I'm not sure I understand your concern ;) could you rephrase that? 
+> 
+> Sure, let me try to elaborate on that  :)
+> 
+> Since the unlocker clears the owner field before actually unlocking, I'm
+> thinking that with this patch, the spinner in rwsem_spin_on_owner()
+> would often read the count before the unlocker sets count.
+> 
+> When the owner releases the lock, it sets the owner field to NULL. This
+> causes the spinner to break out of the loop as the owner changed. The
+> spinner would then proceed to read sem->count, but before the owner
+> modifies sem->count.
+> 
+> Thread 1(owner)		Thread 2 (spinning on owner)
+> ---------------		----------------------------
+> up_write()
+>   rwsem_clear_owner()
+> 			owner_running() // returns false
+> 			count = READ_ONCE(sem->count)
+>   __up_write()
+> 			return (count == 0 || count == RWSEM_WAITING_BIAS) // returns false
+> 			// going to slowpath
 
-On Tue, Jan 27, 2015 at 7:18 AM, Ulf Hansson <ulf.hansson@linaro.org> wrote:
->> I asked Addy to post upstream against mmc_send_tuning(), but I guess
->> he didn't (he posted against Alex's NAKed patch instead).
->>
->> ...when I talked to him about it, Addy was asserting that when tuning
->> fails it is important (at least on dw_mmc on rk3288) that we wait for
->> the card to stop being busy and that the way to detect was using
->> mmc_send_status().
->
-> So, could that be due to the internal logic of the error handling in
-> dw_mmc driver? Or you think this is a generic issue?
->
-> According to the specifications (eMMC and SD) both states that the
-> tuning command has an R1 response. So, there shouldn't be any busy
-> signalling involved - at least according to spec.
+Yeah, I think that's something we'll just have to life with. Dealing
+with owner and counter state will inevitable be unperfect at some point.
+I think the race window is still quite small, and the change still deals
+with a much more concerning problem.
 
-I did a bit of digging into this issue myself.  What I found was that
-a "response CRC" and "end of transfer".  This was why I posted up
-<https://patchwork.kernel.org/patch/5623071/>.  From that patch:
+After taking another look at the patch, I do think we should account for
+owner before returning, though: When owner is set by the time we break
+out of the loop, there's a new owner then (ie lock stolen), so we should
+return true as we want to continue spinning. In this patch it would
+return false. We can also return immediately when need_resched, making
+rwsem_spin_on_owner() less ambiguous. What do you think of having this
+instead?
 
-> Specifically it looks like in certain error conditions (I saw this
-> with Response CRC errors) that data keeps showing up in the FIFO even
-> after the error is reported and the CD (command done) bit is set.  If
-> we don't wait for this data to finish transferring then it confuses
-> the next transaction.  In the specific failure case I ran into I found
-> that I could monitor the data_state_mc_busy bit and wait for it to
-> clear, but in other failure cases this bit was stuck at busy when we
-> saw an error.  Hence a generic big delay seems like the only option.
+bool rwsem_spin_on_owner(struct rw_semaphore *sem, struct task_struct *owner)
+{
+	long count;
 
-...Addy instead fixed the problem using mmc_send_status() to try to
-detect when the transfer was all done and it apparently worked, but it
-seemed odd to me.  My MMC "expertise" pretty much ends with looking
-for simple logic errors in the MMC driver, so my hope was that one of
-you guys would know this better...
+	rcu_read_lock();
+	while (owner_running(sem, owner)) {
+		/* abort spinning when need_resched */
+		if (need_resched()) {
+			rcu_read_unlock();
+			return false;
+		}
+		
+		cpu_relax_lowlatency();
+	}
+	rcu_read_unlock();
 
+	if (READ_ONCE(sem->owner))
+		return true; /* new owner, continue spinning */
+	
+	/*
+	 * When the owner is not set, the lock could be free or
+	 * held by readers. Check the counter to verify the
+	 * state.
+	 */
+	count = READ_ONCE(sem->count);
+	return (count == 0 || count == RWSEM_WAITING_BIAS);
+}
 
->> That would mean that against upstream you'd need to change
->> mmc_send_tuning() to take in the card as well (or move the "host->card
->> = card" assignment to before UHS init, which seems less desirable?)
->>
->> What do you think about that?  Is there a better solution?
->
-> Why do we need to change mmc_send_tuning()? I thought the issue was
-> that mmc_send_status(), which currently takes "card" as a parameter.
-
-Well, if mmc_send_tuning() needed to call mmc_send_status() then
-mmc_send_tuning() would need the card parameter, right?
+Thanks,
+Davidlohd
 
 
-Doug
