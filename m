@@ -1,99 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750872AbbA2FCt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 00:02:49 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:51767 "EHLO bear.ext.ti.com"
+	id S1753004AbbA2FEI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 00:04:08 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:48193 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750707AbbA2FCs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 00:02:48 -0500
-Date: Wed, 28 Jan 2015 23:02:37 -0600
+	id S1751381AbbA2FEG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Jan 2015 00:04:06 -0500
+Date: Wed, 28 Jan 2015 23:03:55 -0600
 From: Felipe Balbi <balbi@ti.com>
 To: Heikki Krogerus <heikki.krogerus@linux.intel.com>
 CC: Felipe Balbi <balbi@ti.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Baolu Lu <baolu.lu@linux.intel.com>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/8] usb: add bus type for USB ULPI
-Message-ID: <20150129050237.GA9098@saruman.tx.rr.com>
+        <linux-kernel@vger.kernel.org>, Kishon Vijay Abraham I <kishon@ti.com>
+Subject: Re: [PATCH 7/8] phy: helpers for USB ULPI PHY registering
+Message-ID: <20150129050355.GB9098@saruman.tx.rr.com>
 Reply-To: <balbi@ti.com>
 References: <1422025978-178336-1-git-send-email-heikki.krogerus@linux.intel.com>
- <1422025978-178336-2-git-send-email-heikki.krogerus@linux.intel.com>
+ <1422025978-178336-8-git-send-email-heikki.krogerus@linux.intel.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="a8Wt8u1KmwUX3Y2C"
+	protocol="application/pgp-signature"; boundary="v9Ux+11Zm5mwPlX6"
 Content-Disposition: inline
-In-Reply-To: <1422025978-178336-2-git-send-email-heikki.krogerus@linux.intel.com>
+In-Reply-To: <1422025978-178336-8-git-send-email-heikki.krogerus@linux.intel.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---a8Wt8u1KmwUX3Y2C
-Content-Type: text/plain; charset=iso-8859-1
+--v9Ux+11Zm5mwPlX6
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-Hi,
-
-On Fri, Jan 23, 2015 at 05:12:51PM +0200, Heikki Krogerus wrote:
-> @@ -6,4 +6,5 @@ obj-$(CONFIG_USB_COMMON)	  +=3D usb-common.o
->  usb-common-y			  +=3D common.o
->  usb-common-$(CONFIG_USB_LED_TRIG) +=3D led.o
-> =20
-> -obj-$(CONFIG_USB_OTG_FSM) +=3D usb-otg-fsm.o
-> +obj-$(CONFIG_USB_OTG_FSM)	+=3D usb-otg-fsm.o
-
-a bit of unrelated change here.
-
-> diff --git a/drivers/usb/core/Kconfig b/drivers/usb/core/Kconfig
-> index cc0ced0..c0fc3b5 100644
-> --- a/drivers/usb/core/Kconfig
-> +++ b/drivers/usb/core/Kconfig
-> @@ -84,3 +84,11 @@ config USB_OTG_FSM
->  	  Implements OTG Finite State Machine as specified in On-The-Go
->  	  and Embedded Host Supplement to the USB Revision 2.0 Specification.
-> =20
-> +config USB_ULPI_BUS
-> +	bool "USB ULPI PHY interface support"
-> +	depends on USB ||=A0USB_GADGET
-
-depends on USB_SUPPORT ?
-
-> +int ulpi_register_driver(struct ulpi_driver *drv);
-> +void ulpi_unregister_driver(struct ulpi_driver *drv);
+On Fri, Jan 23, 2015 at 05:12:57PM +0200, Heikki Krogerus wrote:
+> ULPI PHYs need to be bound to their controllers with a
+> lookup. This adds helpers that the ULPI drivers can use to
+> do both, the registration of the PHY and the lookup, at the
+> same time.
+>=20
+> Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+> Cc: Kishon Vijay Abraham I <kishon@ti.com>
+> ---
+>  drivers/phy/ulpi_phy.h | 31 +++++++++++++++++++++++++++++++
+>  1 file changed, 31 insertions(+)
+>  create mode 100644 drivers/phy/ulpi_phy.h
+>=20
+> diff --git a/drivers/phy/ulpi_phy.h b/drivers/phy/ulpi_phy.h
+> new file mode 100644
+> index 0000000..ac49fb6
+> --- /dev/null
+> +++ b/drivers/phy/ulpi_phy.h
+> @@ -0,0 +1,31 @@
+> +#include <linux/phy/phy.h>
 > +
-> +#define module_ulpi_driver(__ulpi_driver) \
-> +	module_driver(__ulpi_driver, ulpi_register_driver, \
-> +		      ulpi_unregister_driver)
+> +/**
+> + * Helper that registers PHY for a ULPI device and adds a lookup for bin=
+ding it
+> + * and it's controller, which is always the parent.
+> + */
+> +static inline struct phy
+> +*ulpi_phy_create(struct ulpi *ulpi, struct phy_ops *ops)
+> +{
+> +	struct phy *phy;
+> +	int ret;
 > +
-> +int ulpi_read(struct ulpi *ulpi, u8 addr);
-> +int ulpi_write(struct ulpi *ulpi, u8 addr, u8 val);
+> +	phy =3D phy_create(&ulpi->dev, NULL, ops);
+> +	if (IS_ERR(phy))
+> +		return phy;
+> +
+> +	ret =3D phy_create_lookup(phy, "usb2-phy", dev_name(ulpi->dev.parent));
 
-no stubs ?
+I wonder if this would break DT-based boot where PHY phandle is
+available. Kishon ?
 
 --=20
 balbi
 
---a8Wt8u1KmwUX3Y2C
+--v9Ux+11Zm5mwPlX6
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1
 
-iQIcBAEBAgAGBQJUyb7tAAoJEIaOsuA1yqRENBAP/3BQrjcUu9QJ4beCjvJCcOg/
-BfyCSguo4bQMc3FjGZDA33dZY9S+pGEtnz20pSyy4tpngDx8rsIAKkK91w2Ug7xe
-Dnou/jMj5FmXnvZgPEwcUdM5JvInIwbtPjgMOAeFysKjb57B49iP69u0JLj6sMx7
-CqIcSjMYg3LJ6/1fwfrN6+QO5vtTn7NlvO528aN+9xRuyO12BRYjQtNrgU8yblAX
-JpOQV+u+ytUR09asIUiDOmvd4+f94yMZdqqbeQP7k5WK4NabI6oW9tyZMZlduOG5
-r9KQgsWl4pMIe483zkULFnU/0il+Oxu4hY6iiMdXUl/KOsp9KNg7M0r3sQDKsItw
-hOo/R5zTFvdg9S/wyoxhEfsSKl5NAOB+8SiYGonl8+veU6a/Q0k6LccWQnl5JPlW
-yvXBVDyEmaDFF8d46tyNyEIGa85fh1LNU1AvMLAJ2AYL0SHOFnqj5tubKH7KvYF2
-1Zdp357TIVF80wheyiY8DdJjuhxID2kfPtYZAnD6//lACkAsAWRUzKIvfw7SYsij
-BQpz1WEoVM9Oc11B1eEFnnXURHupaOnI7dkiFR4wbkAoPZ7VY8yLpb2gAq2m5WCw
-ujeeueIeWEQZmTSqynYeojHGitvQqzEueRikDgIq18Y5LSNRk7xuzNxoExpVr0gH
-0eLQlGRkrdEE0HpzN+bc
-=8/Hx
+iQIcBAEBAgAGBQJUyb87AAoJEIaOsuA1yqREPhIP/0xy+K1RSgkhYrDIFEL3zRjD
+Cs2l7VnYQlVxP+Wl3+VuTk/g+HaSvIjwTlkY4AuEo6w8qZ8YA58mqcUFU4H/FbXC
+iC30pYAlskRgsTUwxU5Oty6aADcpoYT2UlxCbMgYzrZRU4nbAIRwU3Pq+7cWE/Sr
+IxTQIe7ixwyXdafFDKWTEQVRFLPIvo9hlGwY1rSlXwOQN5W+uxD2/zvBW7TgIsHT
+sdo4a66OJnYdwx2wqMuNcDb5+L25fTV0U+lVVAecD/L2vorgPnsyQq52RDnlSCz4
+nArCqeq1sMUDpHWqXoHw3C/anViqea9iie7rUKI3pyVfTn79PMlVSQYheJ8tRlte
+TX1gerzLfCG4PrlhpLH7Kll/3lFZTa6HRqcx6B1Wv8tFwHF1tyqf4+Zy3QecBcdW
+xHuxoe3jSYmSsZGs3oJf+XR0UrF2hour0iZUIJqaAMc36KdBCyY/VRtRGkYCp7Aa
+hKQm4tMN4dwCpYnLbXjIpPbLtZAnOv0qZnMaqy+P0Mb30TRd4c5AJzdZXhymfK2i
+J0J+Zh9VhjbVZkB2oHTuyAJV3BDdPwTqloE7OQ7tNkOfiuxHuOR5STTiQ7thwA94
+CErtJXLCAmLZNhURpAHGGz36Alh9IK9NSgDBghuIlHdQkVf16Kguglmil0jHN+Km
+lVr46LCGwox841chgIvC
+=216y
 -----END PGP SIGNATURE-----
 
---a8Wt8u1KmwUX3Y2C--
+--v9Ux+11Zm5mwPlX6--
