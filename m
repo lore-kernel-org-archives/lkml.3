@@ -1,88 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752082AbbA2HnV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 02:43:21 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:34248 "EHLO
-	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751269AbbA2HnU (ORCPT
+	id S1753146AbbA2HqP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 02:46:15 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:31849 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751615AbbA2HqN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 02:43:20 -0500
-X-Original-SENDERIP: 10.177.222.153
-X-Original-MAILFROM: iamjoonsoo.kim@lge.com
-Date: Thu, 29 Jan 2015 16:44:43 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: akpm@linuxfoundation.org, LKML <linux-kernel@vger.kernel.org>,
-        Linux Memory Management List <linux-mm@kvack.org>,
-        Pekka Enberg <penberg@kernel.org>, iamjoonsoo@lge.com,
-        Jesper Dangaard Brouer <brouer@redhat.com>
-Subject: Re: [RFC 1/3] Slab infrastructure for array operations
-Message-ID: <20150129074443.GA19607@js1304-P5Q-DELUXE>
-References: <20150123213727.142554068@linux.com>
- <20150123213735.590610697@linux.com>
- <20150127082132.GE11358@js1304-P5Q-DELUXE>
- <alpine.DEB.2.11.1501271054310.25124@gentwo.org>
- <CAAmzW4MzNfcRucHeTxJtXLks5T-Def=O1sRpQY6fo5ybTzKsBA@mail.gmail.com>
- <alpine.DEB.2.11.1501280923410.31753@gentwo.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.11.1501280923410.31753@gentwo.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 29 Jan 2015 02:46:13 -0500
+X-AuditID: cbfee61b-f79d76d0000024d6-43-54c9e542b29c
+Date: Thu, 29 Jan 2015 08:45:49 +0100
+From: Lukasz Majewski <l.majewski@samsung.com>
+To: Eduardo Valentin <edubezval@gmail.com>
+Cc: Abhilash Kesavan <kesavan.abhilash@gmail.com>,
+        Zhang Rui <rui.zhang@intel.com>, Kukjin Kim <kgene.kim@samsung.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Amit Kachhap <amit.daniel@samsung.com>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>
+Subject: Re: [PATCH v4 1/2] dts: Documentation: Add documentation for Exynos7
+ SoC thermal bindings
+Message-id: <20150129084549.56300738@amdc2363>
+In-reply-to: <20150128172319.GG29600@developer.hsd1.ca.comcast.net>
+References: <1422337703-11289-1-git-send-email-a.kesavan@samsung.com>
+ <CAM4voan-aoVQtRCFaB2rLLOgm+CEXg+Mc2gwfokUTu5eeQDo+g@mail.gmail.com>
+ <20150128172319.GG29600@developer.hsd1.ca.comcast.net>
+Organization: SPRC Poland
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+MIME-version: 1.0
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrDLMWRmVeSWpSXmKPExsVy+t9jQV2npydDDCYd17VouBpisXHGelaL
+	+VeusVqs+atk0bvgKpvF5V1z2Cw+9x5htJhxfh+TxZOHfWwOnB47Z91l91i85yWTR9+WVYwe
+	nzfJBbBEcdmkpOZklqUW6dslcGV8un2ctWCTSMW/VWvZGhgv8XcxcnBICJhIvH7k2sXICWSK
+	SVy4t56ti5GLQ0hgOqPE0Q8vmSGcX4wSUz/cZwSpYhFQlVi3ZAsTiM0moCfx+e5TMFtEQEvi
+	xKXtTCANzAK9zBIdH14zgySEBVIkbrxqBLN5gRqOze4Aa+AUcJaYvvMYO8SGo4wSm5qfs4Mk
+	+AUkJdr//WCGuMlO4tynDewQzYISPybfYwGxmYG2bd7WxAphy0tsXvOWeQKj4CwkZbOQlM1C
+	UraAkXkVo2hqQXJBcVJ6rpFecWJucWleul5yfu4mRnAcPJPewbiqweIQowAHoxIPb0LjyRAh
+	1sSy4srcQ4wSHMxKIrzXm4FCvCmJlVWpRfnxRaU5qcWHGKU5WJTEeZXs20KEBNITS1KzU1ML
+	UotgskwcnFINjDJKvYs2MQS/3/ZF4d2pzB+SmzLmpE7asehK4OLfi+qyHimmh1h19m++kO/+
+	9/4ak09X9GWvWoXsu/dsmbr+zxm3zszQnpr37dzhwuueUUXV7dNW3GSdpSGyOWSBwgGG41Pb
+	m2L+z173+ahcQWl236Xr3rO/zWsRmBHXX7Okpt8wYJaRkY/l2SglluKMREMt5qLiRACrU5NP
+	fwIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 28, 2015 at 09:30:56AM -0600, Christoph Lameter wrote:
-> On Wed, 28 Jan 2015, Joonsoo Kim wrote:
-> 
-> > > GFP_SLAB_ARRAY new is best for large quantities in either allocator since
-> > > SLAB also has to construct local metadata structures.
-> >
-> > In case of SLAB, there is just a little more work to construct local metadata so
-> > GFP_SLAB_ARRAY_NEW would not show better performance
-> > than GFP_SLAB_ARRAY_LOCAL, because it would cause more overhead due to
-> > more page allocations. Because of this characteristic, I said that
-> > which option is
-> > the best is implementation specific and therefore we should not expose it.
-> 
-> For large amounts of objects (hundreds or higher) GFP_SLAB_ARRAY_LOCAL
-> will never have enough objects. GFP_SLAB_ARRAY_NEW will go to the page
-> allocator and bypass free table creation and all the queuing that objects
-> go through normally in SLAB. AFAICT its going to be a significant win.
-> 
-> A similar situation is true for the freeing operation. If the freeing
-> operation results in all objects in a page being freed then we can also
-> bypass that and put the page directly back into the page allocator (to be
-> implemented once we agree on an approach).
-> 
-> > Even if we narrow down the problem to the SLUB, choosing correct option is
-> > difficult enough. User should know how many objects are cached in this
-> > kmem_cache
-> > in order to choose best option since relative quantity would make
-> > performance difference.
-> 
-> Ok we can add a function call to calculate the number of objects cached
-> per cpu and per node? But then that is rather fluid and could change any
-> moment.
-> 
-> > And, how many objects are cached in this kmem_cache could be changed
-> > whenever implementation changed.
-> 
-> The default when no options are specified is to first exhaust the node
-> partial objects, then allocate new slabs as long as we have more than
-> objects per page left and only then satisfy from cpu local object. I think
-> that is satisfactory for the majority of the cases.
-> 
-> The detailed control options were requested at the meeting in Auckland at
-> the LCA. I am fine with dropping those if they do not make sense. Makes
-> the API and implementation simpler. Jesper, are you ok with this?
+Hi Eduardo,
 
-IMHO, it'd be better to choose a proper way of allocation by slab itself
-and not to expose options to API user. We could decide the best option
-according to current status of kmem_cache and requested object number
-and internal implementation.
+> On Wed, Jan 28, 2015 at 04:21:49PM +0530, Abhilash Kesavan wrote:
+> > Hi Eduardo,
+> > 
+> > On Tue, Jan 27, 2015 at 11:18 AM, Abhilash Kesavan
+> > <a.kesavan@samsung.com> wrote:
+> > > Add documentation for exynos7 thermal bindings including
+> > > compatible name and special clock properties.
+> > >
+> > > Signed-off-by: Abhilash Kesavan <a.kesavan@samsung.com>
+> > > ---
+> > >  .../devicetree/bindings/thermal/exynos-thermal.txt |    4 ++++
+> > >  1 file changed, 4 insertions(+)
+> > >
+> > > diff --git
+> > > a/Documentation/devicetree/bindings/thermal/exynos-thermal.txt
+> > > b/Documentation/devicetree/bindings/thermal/exynos-thermal.txt
+> > > index 0f44932..695150a 100644 ---
+> > > a/Documentation/devicetree/bindings/thermal/exynos-thermal.txt
+> > > +++
+> > > b/Documentation/devicetree/bindings/thermal/exynos-thermal.txt @@
+> > > -12,6 +12,7 @@ "samsung,exynos5420-tmu-ext-triminfo" for TMU
+> > > channels 2, 3 and 4 Exynos5420 (Must pass triminfo base and
+> > > triminfo clock) "samsung,exynos5440-tmu"
+> > > +              "samsung,exynos7-tmu"
+> > >  - interrupt-parent : The phandle for the interrupt controller
+> > >  - reg : Address range of the thermal registers. For soc's which
+> > > has multiple instances of TMU and some registers are shared
+> > > across all TMU's like @@ -32,10 +33,13 @@
+> > >  - clocks : The main clocks for TMU device
+> > >         -- 1. operational clock for TMU channel
+> > >         -- 2. optional clock to access the shared registers of
+> > > TMU channel
+> > > +       -- 3. optional special clock for functional operation
+> > >  - clock-names : Thermal system clock name
+> > >         -- "tmu_apbif" operational clock for current TMU channel
+> > >         -- "tmu_triminfo_apbif" clock to access the shared
+> > > triminfo register for current TMU channel
+> > > +       -- "tmu_sclk" clock for functional operation of the
+> > > current TMU
+> > > +               channel
+> > >  - vtmu-supply: This entry is optional and provides the regulator
+> > > node supplying voltage to TMU. If needed this entry can be placed
+> > > inside board/platform specific dts file.
+> > 
+> > Can you kindly consider applying these two patches to your next tree
+> > if they look OK ?
+> 
+> Abhilash, can you please get at least one Reviewed-by from one of the
+> active developers of exynos thermal driver?
 
-Is there any obvious example these option are needed for user?
+I will review your patches. :-)
 
-Thanks.
+> 
+> 
+> > 
+> > Regards,
+> > Abhilash
+> > > --
+> > > 1.7.9.5
+> > >
+
+
+
+-- 
+Best regards,
+
+Lukasz Majewski
+
+Samsung R&D Institute Poland (SRPOL) | Linux Platform Group
