@@ -1,72 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755407AbbA2NxD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 08:53:03 -0500
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:56473 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752205AbbA2NxB (ORCPT
+	id S1757331AbbA2NxT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 08:53:19 -0500
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:47235 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755610AbbA2NxR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 08:53:01 -0500
-Message-ID: <54CA3B38.507@linaro.org>
-Date: Thu, 29 Jan 2015 14:52:56 +0100
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Thu, 29 Jan 2015 08:53:17 -0500
+Message-ID: <54CA3B46.20204@collabora.co.uk>
+Date: Thu, 29 Jan 2015 14:53:10 +0100
+From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
 MIME-Version: 1.0
-To: Paul Bolle <pebolle@tiscali.nl>
-CC: tglx@linutronix.de, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, Barry.Song@csr.com,
-        baruch@tkos.co.il, linux@rempel-privat.de, rob.herring@linaro.org,
-        thierry.reding@gmail.com
-Subject: Re: [PATCH 6/9] clocksource: Driver for Conexant Digicolor SoC timer
-References: <54CA3044.6070501@linaro.org>	 <1422536899-16609-1-git-send-email-daniel.lezcano@linaro.org>	 <1422536899-16609-6-git-send-email-daniel.lezcano@linaro.org> <1422538656.32520.4.camel@x220>
-In-Reply-To: <1422538656.32520.4.camel@x220>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 8bit
+To: Ulf Hansson <ulf.hansson@linaro.org>
+CC: Kukjin Kim <kgene@kernel.org>, Doug Anderson <dianders@chromium.org>,
+        Olof Johansson <olof@lixom.net>, Arend van Spriel <arend@broadcom.com>,
+        Srinivas Kandagatla <srinivas.kandagatla@linaro.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-mmc <linux-mmc@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 4/6] mmc: pwrseq_simple: Add optional reference clock
+ support
+References: <1422468953-7594-1-git-send-email-javier.martinez@collabora.co.uk>	<1422468953-7594-5-git-send-email-javier.martinez@collabora.co.uk> <CAPDyKFommNu7oscgmhwMpT-5KYN9b6d1xvt513_0qWE=HEGbow@mail.gmail.com>
+In-Reply-To: <CAPDyKFommNu7oscgmhwMpT-5KYN9b6d1xvt513_0qWE=HEGbow@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/29/2015 02:37 PM, Paul Bolle wrote:
-> On Thu, 2015-01-29 at 14:08 +0100, Daniel Lezcano wrote:
->> From: Baruch Siach <baruch@tkos.co.il>
+Hello Ulf,
+
+Thanks a lot for your feedback.
+
+On 01/29/2015 02:05 PM, Ulf Hansson wrote:
 >>
->> Add clocksource driver to the Conexant CX92755 SoC, part of the Digicolor SoCs
->> series. Hardware provides 8 timers, A to H. Timer A is dedicated to a future
->> watchdog driver so we don't use it here. Use timer B for sched_clock, and timer
->> C for clock_event.
->>
->> Signed-off-by: Baruch Siach <baruch@tkos.co.il>
->> Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
->> ---
->>   drivers/clocksource/Kconfig           |   3 +
->>   drivers/clocksource/Makefile          |   1 +
->>   drivers/clocksource/timer-digicolor.c | 199 ++++++++++++++++++++++++++++++++++
->>   3 files changed, 203 insertions(+)
->>   create mode 100644 drivers/clocksource/timer-digicolor.c
->>
->> diff --git a/drivers/clocksource/Kconfig b/drivers/clocksource/Kconfig
->> index a89120b..72a3827 100644
->> --- a/drivers/clocksource/Kconfig
->> +++ b/drivers/clocksource/Kconfig
->> @@ -18,6 +18,9 @@ config CLKBLD_I8253
->>   config CLKSRC_MMIO
->>   	bool
->>
->> +config DIGICOLOR_TIMER
->> +	bool
->> +
+>>  struct mmc_pwrseq_simple {
+>>         struct mmc_pwrseq pwrseq;
+>> +       struct clk *ext_clk;
+> 
+> You need to add a bool, maybe call it clk_enabled;  See why below.
 >
-> And the select for this symbol (see https://lkml.org/lkml/2015/1/26/360)
-> will be provided in a separate patch? Because this patch, by itself,
-> won't allow DIGICOLOR_TIMER to be set, will it?
 
-You are right, that should be done in a separate patch. I believe Baruch 
-should have done that.
+Ok
+ 
+>>         int nr_gpios;
+>>         struct gpio_desc *reset_gpios[0];
+>>  };
+>> @@ -39,6 +41,9 @@ static void mmc_pwrseq_simple_pre_power_on(struct mmc_host *host)
+>>         struct mmc_pwrseq_simple *pwrseq = container_of(host->pwrseq,
+>>                                         struct mmc_pwrseq_simple, pwrseq);
+>>
+>> +       if (!IS_ERR(pwrseq->ext_clk))
+>> +               clk_prepare_enable(pwrseq->ext_clk);
+>> +
+> 
+> There are no guarantee that the ->mmc_pwrseq_simple_pre_power_on()
+> will be invoked prior ->mmc_pwrseq_simple_power_off().
+>
 
--- 
-  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+Got it, I didn't know that mmc_pwrseq_simple_power_off() could be invoked.
+without mmc_pwrseq_simple_pre_power_on() not being called before.
 
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
+> That means you need to keep track of if you have gated/ungated the
+> clock. In other words check pwrseq->clk_enabled. That will prevent
+> potential clk unbalance issues.
 
+Yes, I'll change to check for the boolean in _simple_power_off() and
+_post_power_on() then.
+
+>> @@ -85,6 +104,14 @@ int mmc_pwrseq_simple_alloc(struct mmc_host *host, struct device *dev)
+>>         if (!pwrseq)
+>>                 return -ENOMEM;
+>>
+>> +       pwrseq->ext_clk = clk_get(dev, "ext_clock");
+>> +       if (IS_ERR(pwrseq->ext_clk) &&
+>> +           PTR_ERR(pwrseq->ext_clk) != -ENOENT &&
+>> +           PTR_ERR(pwrseq->ext_clk) != -ENOSYS) {
+> 
+> I don't think you can get -ENOSYS.
+> 
+
+You are right, I'll remove that.
+
+Best regards,
+Javier
