@@ -1,75 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757710AbbA2CPy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 21:15:54 -0500
-Received: from mail-qg0-f54.google.com ([209.85.192.54]:56323 "EHLO
-	mail-qg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752243AbbA2CPv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 21:15:51 -0500
-From: Vince Weaver <vincent.weaver@maine.edu>
-X-Google-Original-From: Vince Weaver <vince@vincent-weaver-1.umelst.maine.edu>
-Date: Wed, 28 Jan 2015 21:16:49 -0500 (EST)
-To: Vince Weaver <vincent.weaver@maine.edu>
-cc: Peter Zijlstra <peterz@infradead.org>, mingo@kernel.org,
-        linux-kernel@vger.kernel.org, Stephane Eranian <eranian@gmail.com>,
-        jolsa@redhat.com, mark.rutland@arm.com, torvalds@linux-foundation.org,
-        tglx@linutronix.de
-Subject: Re: [RFC][PATCH 2/3] perf: Add a bit of paranoia
-In-Reply-To: <alpine.DEB.2.11.1501271621550.5038@vincent-weaver-1.umelst.maine.edu>
-Message-ID: <alpine.DEB.2.11.1501282114320.8031@vincent-weaver-1.umelst.maine.edu>
-References: <20150123125159.696530128@infradead.org> <20150123125834.150481799@infradead.org> <20150126162639.GA21418@twins.programming.kicks-ass.net> <alpine.DEB.2.11.1501271621550.5038@vincent-weaver-1.umelst.maine.edu>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+	id S933630AbbA2CR1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 21:17:27 -0500
+Received: from ozlabs.org ([103.22.144.67]:39577 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757719AbbA2CRZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jan 2015 21:17:25 -0500
+Date: Thu, 29 Jan 2015 13:17:18 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Dave Airlie <airlied@linux.ie>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Oded Gabbay <oded.gabbay@amd.com>, Ben Goz <ben.goz@amd.com>
+Subject: linux-next: manual merge of the drm tree with Linus' tree
+Message-ID: <20150129131718.645dbb99@canb.auug.org.au>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/S9vo1trcbAYX6d7HJA79wce"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 27 Jan 2015, Vince Weaver wrote:
+--Sig_/S9vo1trcbAYX6d7HJA79wce
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-> On Mon, 26 Jan 2015, Peter Zijlstra wrote:
-> 
-> > I think the below should cure this; if we install a group leader it will
-> > iterate the (still intact) group list and find its siblings and try and
-> > install those too -- even though those still have the old event->ctx --
-> > in the new ctx.
-> 
-> I've been fuzzing 24 hours (despite the blizzard) with this patch
-> plus the original series on top of 3.19-rc6 on the Haswell machine and it 
-> is looking good.
+Hi Dave,
 
-OK it took about 48 hours but I managed to generate this:
+Today's linux-next merge of the drm tree got conflicts in
+drivers/gpu/drm/amd/amdkfd/kfd_device_queue_manager.c and
+drivers/gpu/drm/amd/amdkfd/kfd_device_queue_manager.h between commits
+b8cbab042cd6 ("drm/amdkfd: Allow user to limit only queues per device")
+and 9fa843e76d90 ("drm/amdkfd: Fix bug in call to init_pipelines()")
+from Linus' tree and commits bcea30817574 ("drm/amdkfd: Add SDMA
+user-mode queues support to QCM") and fe502804205e ("drm/amdkfd: Remove
+call to deprecated init_memory interface") from the drm tree.
 
-[162118.235829] ------------[ cut here ]------------
-[162118.241388] WARNING: CPU: 5 PID: 13571 at kernel/events/core.c:1644 perf_remove_from_context+0xf5/0x120()
-[162118.252183] Modules linked in: fuse x86_pkg_temp_thermal intel_powerclamp intel_rapl iosf_mbi coretemp kvm crct10dif_pclmul snd_hda_codec_realtek snd_hda_codec_hdmi snd_hda_codec_generic crc32_pclmul snd_hda_intel ghash_clmulni_intel snd_hda_controller aesni_intel snd_hda_codec aes_x86_64 snd_hwdep lrw gf128mul snd_pcm ppdev glue_helper xhci_pci mei_me iTCO_wdt iTCO_vendor_support i915 snd_timer drm_kms_helper snd drm ablk_helper lpc_ich mfd_core evdev pcspkr parport_pc psmouse cryptd soundcore i2c_i801 serio_raw parport xhci_hcd mei wmi tpm_tis tpm video battery button processor i2c_algo_bit sg sr_mod sd_mod cdrom ahci libahci e1000e ehci_pci libata ptp ehci_hcd crc32c_intel usbcore scsi_mod usb_common pps_core thermal fan thermal_sys
-[162118.325574] CPU: 5 PID: 13571 Comm: perf_fuzzer Tainted: G        W      3.19.0-rc6+ #126
-[162118.334984] Hardware name: LENOVO 10AM000AUS/SHARKBAY, BIOS FBKT72AUS 01/26/2014
-[162118.343581]  ffffffff81a3f194 ffff8800c8463b48 ffffffff816b6761 0000000000000000
-[162118.352277]  0000000000000000 ffff8800c8463b88 ffffffff8106dcda ffff8800c9286c40
-[162118.360962]  ffff8800c8c01800 ffff8800c8c3a090 ffff8800c8c3a090 ffff8800c71b4800
-[162118.369669] Call Trace:
-[162118.372984]  [<ffffffff816b6761>] dump_stack+0x45/0x57
-[162118.379170]  [<ffffffff8106dcda>] warn_slowpath_common+0x8a/0xc0
-[162118.386267]  [<ffffffff8106ddca>] warn_slowpath_null+0x1a/0x20
-[162118.393160]  [<ffffffff811554b5>] perf_remove_from_context+0xf5/0x120
-[162118.400706]  [<ffffffff811571c5>] put_event+0x115/0x170
-[162118.407004]  [<ffffffff81157101>] ? put_event+0x51/0x170
-[162118.413340]  [<ffffffff816bc06e>] ? mutex_unlock+0xe/0x10
-[162118.419792]  [<ffffffff81157255>] perf_release+0x15/0x20
-[162118.426144]  [<ffffffff811e234f>] __fput+0xdf/0x1f0
-[162118.432009]  [<ffffffff811e24ae>] ____fput+0xe/0x10
-[162118.437895]  [<ffffffff8108bbc7>] task_work_run+0xa7/0xe0
-[162118.444377]  [<ffffffff81070799>] do_exit+0x319/0xac0
-[162118.450443]  [<ffffffff8107cc99>] ? get_signal+0xe9/0x770
-[162118.456906]  [<ffffffff8107cf09>] ? get_signal+0x359/0x770
-[162118.463427]  [<ffffffff81070fe4>] do_group_exit+0x54/0xe0
-[162118.469887]  [<ffffffff8107ce46>] get_signal+0x296/0x770
-[162118.476237]  [<ffffffff8105ded2>] ? __do_page_fault+0x1f2/0x580
-[162118.483251]  [<ffffffff81013578>] do_signal+0x28/0xbb0
-[162118.489392]  [<ffffffff8105e282>] ? do_page_fault+0x22/0x30
-[162118.496055]  [<ffffffff81014170>] do_notify_resume+0x70/0x90
-[162118.502811]  [<ffffffff816bf662>] retint_signal+0x48/0x86
-[162118.509272] ---[ end trace 55752a03ec8ab978 ]---
+I fixed it up (hopefully - see below) and can carry the fix as
+necessary (no action is required).
 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc drivers/gpu/drm/amd/amdkfd/kfd_device_queue_manager.c
+index 0d8694f015c1,b189f9791c90..000000000000
+--- a/drivers/gpu/drm/amd/amdkfd/kfd_device_queue_manager.c
++++ b/drivers/gpu/drm/amd/amdkfd/kfd_device_queue_manager.c
+@@@ -213,15 -161,8 +168,18 @@@ static int create_queue_nocpsch(struct=20
+ =20
+  	list_add(&q->list, &qpd->queues_list);
+  	dqm->queue_count++;
+ +
+ +	/*
+ +	 * Unconditionally increment this counter, regardless of the queue's
+ +	 * type or whether the queue is active.
+ +	 */
+ +	dqm->total_queue_count++;
+ +	pr_debug("Total of %d queues are accountable so far\n",
+ +			dqm->total_queue_count);
+ +
+++
++ 	if (q->properties.type =3D=3D KFD_QUEUE_TYPE_SDMA)
++ 		dqm->sdma_queue_count++;
+  	mutex_unlock(&dqm->lock);
+  	return 0;
+  }
+@@@ -588,11 -488,7 +518,7 @@@ static int init_scheduler(struct device
+ =20
+  	pr_debug("kfd: In %s\n", __func__);
+ =20
+ -	retval =3D init_pipelines(dqm, get_pipes_num(dqm), KFD_DQM_FIRST_PIPE);
+ +	retval =3D init_pipelines(dqm, get_pipes_num(dqm), get_first_pipe(dqm));
+- 	if (retval !=3D 0)
+- 		return retval;
+-=20
+- 	retval =3D init_memory(dqm);
+ =20
+  	return retval;
+  }
+@@@ -843,14 -793,12 +845,19 @@@ static int create_queue_cpsch(struct de
+ =20
+  	mutex_lock(&dqm->lock);
+ =20
+ +	if (dqm->total_queue_count >=3D max_num_of_queues_per_device) {
+ +		pr_warn("amdkfd: Can't create new usermode queue because %d queues were=
+ already created\n",
+ +				dqm->total_queue_count);
+ +		retval =3D -EPERM;
+ +		goto out;
+ +	}
+ +
+- 	mqd =3D dqm->get_mqd_manager(dqm, KFD_MQD_TYPE_CIK_CP);
++ 	if (q->properties.type =3D=3D KFD_QUEUE_TYPE_SDMA)
++ 		select_sdma_engine_id(q);
++=20
++ 	mqd =3D dqm->ops.get_mqd_manager(dqm,
++ 			get_mqd_type_from_queue_type(q->properties.type));
++=20
+  	if (mqd =3D=3D NULL) {
+  		mutex_unlock(&dqm->lock);
+  		return -ENOMEM;
+@@@ -867,15 -815,9 +874,18 @@@
+  		retval =3D execute_queues_cpsch(dqm, false);
+  	}
+ =20
+ +	/*
+ +	 * Unconditionally increment this counter, regardless of the queue's
+ +	 * type or whether the queue is active.
+ +	 */
+ +	dqm->total_queue_count++;
+ +
+ +	pr_debug("Total of %d queues are accountable so far\n",
+ +			dqm->total_queue_count);
+ +
++ 	if (q->properties.type =3D=3D KFD_QUEUE_TYPE_SDMA)
++ 			dqm->sdma_queue_count++;
++=20
+  out:
+  	mutex_unlock(&dqm->lock);
+  	return retval;
+diff --cc drivers/gpu/drm/amd/amdkfd/kfd_device_queue_manager.h
+index 52035bf0c1cb,e7b17b28330e..000000000000
+--- a/drivers/gpu/drm/amd/amdkfd/kfd_device_queue_manager.h
++++ b/drivers/gpu/drm/amd/amdkfd/kfd_device_queue_manager.h
+@@@ -130,9 -143,10 +143,11 @@@ struct device_queue_manager=20
+  	struct list_head	queues;
+  	unsigned int		processes_count;
+  	unsigned int		queue_count;
+ +	unsigned int		total_queue_count;
++ 	unsigned int		sdma_queue_count;
+  	unsigned int		next_pipe_to_allocate;
+  	unsigned int		*allocated_queues;
++ 	unsigned int		sdma_bitmap;
+  	unsigned int		vmid_bitmap;
+  	uint64_t		pipelines_addr;
+  	struct kfd_mem_obj	*pipeline_mem;
+
+--Sig_/S9vo1trcbAYX6d7HJA79wce
+Content-Type: application/pgp-signature
+Content-Description: OpenPGP digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJUyZgzAAoJEMDTa8Ir7ZwVhBYQAJdBgmBOL70vAc1YStor/Kfz
+hG/9aXR1jOnEi73yzVgBrOp685QY1dN7dQAkliRc64KCGLcE4NXXHqRzUsKgXEqz
+OYomOt1OILOw9c2PFchTVMZ6rJRDb29T4SSzzH2RWruX2+awYTF+IU2RfYNtoeV9
+vbXmDPuMxWITYQ+xuDfhnU/+bjYP0NBfW1EQ7tFUi/+0BLDx27yIXeEshgHL5q2l
+NTvQ0DYKoVKwtKsGInoRXYl34bGFvmAbEP9dLOIKZYsb7/UKO5+73WRsTKlIz2BP
+ZASUhH7hFtDw1XQegTTTl3Gm5I8fWAp9tmDsyb5g6fu3KPF5CE1KOKbiQNcUQO8N
+TcCVVRa5AwHmyrSjyFytw+g5fxka2X40EqTPG0lhhE6NY/gpVJUN9pS/P5N6YNPV
+H56yQQq+HUvpGTamnjNJSKiNUrsxyfhRa9b17i4s2II8nDVa9qCPmL2i5KrJqZWU
+i6veNEvao9N6qZSy9abz34IBaFUjw46J+k9H9mhkPVCcFZDhYkbRGWzUCCbXHji1
+gGbgSTsydkV3pUtJ3831Rboj0pU8UDN+mgL6KQX3J/K5nUlNg5leSVAhsZJmkIu+
+uFy2YCxHr3mTK41rOB/qsWDPi9UQJvg8kBF0MiICo/7wUktJ56qxpN7JIdT6EclM
+4+hX7LtNndB897bCTKKK
+=xNR8
+-----END PGP SIGNATURE-----
+
+--Sig_/S9vo1trcbAYX6d7HJA79wce--
