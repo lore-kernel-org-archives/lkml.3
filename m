@@ -1,73 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932696AbbA2Jf2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 04:35:28 -0500
-Received: from utopia.booyaka.com ([74.50.51.50]:37989 "EHLO
-	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932625AbbA2JfY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 04:35:24 -0500
-Date: Thu, 29 Jan 2015 09:35:23 +0000 (UTC)
-From: Paul Walmsley <paul@pwsan.com>
-To: linux-tegra@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-cc: Paul Walmsley <pwalmsley@nvidia.com>, Allen Martin <amartin@nvidia.com>,
-        Thierry Reding <treding@nvidia.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Paul Bolle <pebolle@tiscali.it>
-Subject: [PATCH] arm64: Kconfig: clean up two no-op Kconfig options from
- CONFIG_ARCH_TEGRA*
-Message-ID: <alpine.DEB.2.02.1501290928230.19947@utopia.booyaka.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S932778AbbA2Jfu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 04:35:50 -0500
+Received: from ozlabs.org ([103.22.144.67]:53323 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932705AbbA2Jfn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Jan 2015 04:35:43 -0500
+Date: Thu, 29 Jan 2015 20:35:34 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Oded Gabbay <oded.gabbay@amd.com>
+Cc: Dave Airlie <airlied@linux.ie>, <linux-next@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Ben Goz <ben.goz@amd.com>
+Subject: Re: linux-next: build failure after merge of the drm tree
+Message-ID: <20150129203534.7fff65c3@canb.auug.org.au>
+In-Reply-To: <54C9ED70.1020803@amd.com>
+References: <20150129133857.2bdbb86d@canb.auug.org.au>
+	<54C9ED70.1020803@amd.com>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/jtFap7wBvK1zauDMs4nAFOG"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--Sig_/jtFap7wBvK1zauDMs4nAFOG
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Paul Bolle pointed out that commit
-d035fdfa27ac124bc8f94c3d7dc82ad069802170 ("arm64: Add Tegra132
-support") included two Kconfig symbols that are now no-ops:
-USB_ARCH_HAS_EHCI and HAVE_SMP.  So, drop the two symbols.
+Hi Oded,
 
-Signed-off-by: Paul Walmsley <paul@pwsan.com>
-Cc: Paul Walmsley <pwalmsley@nvidia.com>
-Cc: Allen Martin <amartin@nvidia.com>
-Cc: Thierry Reding <treding@nvidia.com>
-Cc: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Will Deacon <will.deacon@arm.com>
-Cc: Mark Rutland <mark.rutland@arm.com>
-Cc: Paul Bolle <pebolle@tiscali.it>
----
+On Thu, 29 Jan 2015 10:21:04 +0200 Oded Gabbay <oded.gabbay@amd.com> wrote:
+>
+> So I think that Dave's drm-next now contains the correct code.
+> Will you merge it again, or do you do it daily anyway ? I fear I'm entire=
+ly=20
+> clear with the details of the linux-next process.
 
-Boot-tested on NVIDIA Tegra132 Norrin64 FFD with a extra DTS page for the 
-board data (not yet posted upstream).
+I fetch all the trees again each morning and then merge them, so
+tomorrow all will be well.
 
- arch/arm64/Kconfig | 2 --
- 1 file changed, 2 deletions(-)
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
-index 3b97e725ebfc..ae18c3d2bb3b 100644
---- a/arch/arm64/Kconfig
-+++ b/arch/arm64/Kconfig
-@@ -180,7 +180,6 @@ config ARCH_TEGRA
- 	select CLKSRC_OF
- 	select GENERIC_CLOCKEVENTS
- 	select HAVE_CLK
--	select HAVE_SMP
- 	select PINCTRL
- 	select RESET_CONTROLLER
- 	help
-@@ -190,7 +189,6 @@ config ARCH_TEGRA_132_SOC
- 	bool "NVIDIA Tegra132 SoC"
- 	depends on ARCH_TEGRA
- 	select PINCTRL_TEGRA124
--	select USB_ARCH_HAS_EHCI if USB_SUPPORT
- 	select USB_ULPI if USB_PHY
- 	select USB_ULPI_VIEWPORT if USB_PHY
- 	help
--- 
-2.1.4
+--Sig_/jtFap7wBvK1zauDMs4nAFOG
+Content-Type: application/pgp-signature
+Content-Description: OpenPGP digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJUyf7sAAoJEMDTa8Ir7ZwVDZEP/2ZpRBos6gz0acDbR7VvL197
+W71Uz9ZjQ6hWG7hqlvq178EikhFqOfuUFC92gOabfU89H+7/nMat5PrSIleZEq9a
+Q3adDj6oFYmI7AiSKz6qfjD8BOYPLIyIQZ9BBATSmQyg+sXFfECOe82ZJybhs3Dj
+swaJ9uo1AEA9MCvQnDE8WrlIvXD8x43tAiyM3Lf0f9ZZdwP2hcDtSCahGIwpYgBR
+I4IwUhuKjBRxIa54sHEHpreKB5K0Z6UqBGByWLOpoBC5JWWnLaJ5AbyuLfuOLVoB
+ezAQlLLfTMyJJWBXiIJQFKVeDjvmUdNGygy+uhpqZiDU59xj3af84hHGcrdEmv7U
+Qb2GhQD1bneytLr/gpS3kxub+SS3wBiZaIjfm6BZs/lX6I3ksL3a4gwGtc/8MT5x
+/5efLASi5jp9xuTBhFVJ5453585AhqyFsALqjNCWejKak7kFcuxmeSEYCctTq6hl
+BynOM0dIAji74ZrQFpMjX9NAKnudBn2CBfeQNUcbDwOaaHFLTunbwk0q1N+PPM7U
+VpxIuwEU8eco0GIOE7cx9lObj7ovamDPx/mx2JBI6VF6IjkkBjW6Ck/x1liJT2g7
+sH6Mch9Ss0rElfDPNv+g1dxJJPAEPuZ3iBwhqetYCoyb9+136iyXEpkrDLc/XEdE
+Ud85+cKYNgWGW/BUeSR0
+=kLJk
+-----END PGP SIGNATURE-----
+
+--Sig_/jtFap7wBvK1zauDMs4nAFOG--
