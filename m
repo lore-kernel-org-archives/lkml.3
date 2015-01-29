@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753831AbbA2PA0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 10:00:26 -0500
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:47364 "EHLO
+	id S1754019AbbA2PA2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 10:00:28 -0500
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:47372 "EHLO
 	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751751AbbA2PAY (ORCPT
+	with ESMTP id S1753166AbbA2PAZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 10:00:24 -0500
+	Thu, 29 Jan 2015 10:00:25 -0500
 From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
 To: Ulf Hansson <ulf.hansson@linaro.org>
 Cc: Kukjin Kim <kgene@kernel.org>, Doug Anderson <dianders@chromium.org>,
@@ -16,52 +16,49 @@ Cc: Kukjin Kim <kgene@kernel.org>, Doug Anderson <dianders@chromium.org>,
         linux-arm-kernel@lists.infradead.org, linux-mmc@vger.kernel.org,
         devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
         Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Subject: [PATCH v3 0/6] Add multiple GPIO and external clock to MMC pwrseq_simple
-Date: Thu, 29 Jan 2015 16:00:02 +0100
-Message-Id: <1422543608-24704-1-git-send-email-javier.martinez@collabora.co.uk>
+Subject: [PATCH v3 1/6] mmc: pwrseq: Document that simple sequence support more than one GPIO
+Date: Thu, 29 Jan 2015 16:00:03 +0100
+Message-Id: <1422543608-24704-2-git-send-email-javier.martinez@collabora.co.uk>
 X-Mailer: git-send-email 2.1.3
+In-Reply-To: <1422543608-24704-1-git-send-email-javier.martinez@collabora.co.uk>
+References: <1422543608-24704-1-git-send-email-javier.martinez@collabora.co.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Ulf,
+Many SDIO/MMC attached WLAN chips need more than one ping for their reset
+sequence. Extend the pwrseq_simple binding to support more than one pin.
 
-Many WLAN chips attached to an SDIO interface needs more than one GPIO
-for their reset sequence and also an external clock to be operational.
+Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+---
 
-Since this is very common, this series extend the simple MMC power sequence
-to support more than one reset GPIO and also an optional external clock.
+Changes since v2: None.
 
-This is the third version of the series that addressed issues pointed out
-in the previous versions.
+Changes since v1:
+ - Make the explanation clearer by adding an explicit "they".
+   Suggested by Srinivas Kandagatla.
+---
+ Documentation/devicetree/bindings/mmc/mmc-pwrseq-simple.txt | 7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
-The series depend on v4 "mmc: core: Add support for MMC power sequences":
+diff --git a/Documentation/devicetree/bindings/mmc/mmc-pwrseq-simple.txt b/Documentation/devicetree/bindings/mmc/mmc-pwrseq-simple.txt
+index da333d9ed94c..eaae652213ae 100644
+--- a/Documentation/devicetree/bindings/mmc/mmc-pwrseq-simple.txt
++++ b/Documentation/devicetree/bindings/mmc/mmc-pwrseq-simple.txt
+@@ -8,9 +8,10 @@ Required properties:
+ - compatible : contains "mmc-pwrseq-simple".
+ 
+ Optional properties:
+-- reset-gpios : contains a GPIO specifier. The reset GPIO is asserted at
+-	initialization and prior we start the power up procedure of the card. It
+-	will be de-asserted right after the power has been provided to the card.
++- reset-gpios : contains a list of GPIO specifiers. The reset GPIOs are asserted
++	at initialization and prior we start the power up procedure of the card.
++	They will be de-asserted right after the power has been provided to the
++	card.
+ 
+ Example:
+ 
+-- 
+2.1.3
 
-http://comments.gmane.org/gmane.linux.kernel.mmc/30665
-
-Javier Martinez Canillas (6):
-  mmc: pwrseq: Document that simple sequence support more than one GPIO
-  mmc: pwrseq_simple: Extend to support more pins
-  mmc: pwrseq: Document optional clock for the simple power sequence
-  mmc: pwrseq_simple: Add optional reference clock support
-  ARM: dts: exynos5250-snow: Enable wifi power-on
-  ARM: dts: exynos5250-snow: Add cap-sdio-irq to wifi mmc node
-
- .../devicetree/bindings/mmc/mmc-pwrseq-simple.txt  | 11 ++-
- arch/arm/boot/dts/exynos5250-snow.dts              | 26 ++++++-
- drivers/mmc/core/pwrseq_simple.c                   | 89 ++++++++++++++++++----
- 3 files changed, 107 insertions(+), 19 deletions(-)
-
-Patch #1 extends the simple MMC power sequence DT binding to support more
-than one GPIO and patch #2 adds the actual implementation.
-
-In the same way, patch #3 and #4 extend the simple MMC power sequence DT
-binding and pwrseq_simple driver to support an optional external clock.
-
-Finally as an example, patch #5 and patch #6 adds support for the wifi
-chip in the Exynos5250 Snow that needs all these resources. These two
-patches were added to the series only for completeness and should be
-picked by Kukjin through his linux-samsung tree.
-
-Best regards,
-Javier
