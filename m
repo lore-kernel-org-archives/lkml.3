@@ -1,67 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754997AbbA2PYw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 10:24:52 -0500
-Received: from smtp89.iad3a.emailsrvr.com ([173.203.187.89]:40956 "EHLO
-	smtp89.iad3a.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752674AbbA2PYu (ORCPT
+	id S1755287AbbA2P0q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 10:26:46 -0500
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:63851 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751759AbbA2P0n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 10:24:50 -0500
-X-Sender-Id: abbotti@mev.co.uk
-Message-ID: <54CA50BC.8030403@mev.co.uk>
-Date: Thu, 29 Jan 2015 15:24:44 +0000
-From: Ian Abbott <abbotti@mev.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.3.0
+	Thu, 29 Jan 2015 10:26:43 -0500
+Message-ID: <54CA5128.8050500@gmail.com>
+Date: Thu, 29 Jan 2015 20:56:32 +0530
+From: Varka Bhadram <varkabhadram@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        H Hartley Sweeten <hsweeten@visionengravers.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: comedi: drivers: dyna_pci10xx: Removed variables
- that is never used
-References: <1422484507-8925-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-In-Reply-To: <1422484507-8925-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+To: Chunyan Zhang <chunyan.zhang@spreadtrum.com>, gregkh@linuxfoundation.org
+CC: robh+dt@kernel.org, mark.rutland@arm.com, arnd@arndb.de,
+        gnomes@lxorguk.ukuu.org.uk, peter@hurleysoftware.com,
+        pawel.moll@arm.com, ijc+devicetree@hellion.org.uk,
+        galak@codeaurora.org, grant.likely@linaro.org, jslaby@suse.cz,
+        heiko@sntech.de, jason@lakedaemon.net, florian.vaussard@epfl.ch,
+        andrew@lunn.ch, hytszk@gmail.com, antonynpavlov@gmail.com,
+        shawn.guo@linaro.org, orsonzhai@gmail.com, geng.ren@spreadtrum.com,
+        zhizhou.zhang@spreadtrum.com, lanqing.liu@spreadtrum.com,
+        zhang.lyra@gmail.com, wei.qiao@spreadtrum.com,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-serial@vger.kernel.org, linux-api@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v10 2/2] tty/serial: Add Spreadtrum sc9836-uart driver
+ support
+References: <sc9836-serial-v10> <1422443324-25082-1-git-send-email-chunyan.zhang@spreadtrum.com> <1422443324-25082-3-git-send-email-chunyan.zhang@spreadtrum.com>
+In-Reply-To: <1422443324-25082-3-git-send-email-chunyan.zhang@spreadtrum.com>
 Content-Type: text/plain; charset=windows-1252; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 28/01/15 22:35, Rickard Strandqvist wrote:
-> Variable ar assigned a value that is never used.
-> I have also removed all the code that thereby serves no purpose.
+Hi,
+
+On Wednesday 28 January 2015 04:38 PM, Chunyan Zhang wrote:
+> Add a full sc9836-uart driver for SC9836 SoC which is based on the
+> spreadtrum sharkl64 platform.
+> This driver also support earlycon.
 >
-> This was found using a static code analysis program called cppcheck
->
-> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+> Originally-by: Lanqing Liu <lanqing.liu@spreadtrum.com>
+> Signed-off-by: Orson Zhai <orson.zhai@spreadtrum.com>
+> Signed-off-by: Chunyan Zhang <chunyan.zhang@spreadtrum.com>
+> Acked-by: Arnd Bergmann <arnd@arndb.de>
+> Reviewed-by: Peter Hurley <peter@hurleysoftware.com>
 > ---
->   drivers/staging/comedi/drivers/dyna_pci10xx.c |    5 ++---
->   1 file changed, 2 insertions(+), 3 deletions(-)
+>   drivers/tty/serial/Kconfig       |   18 +
+>   drivers/tty/serial/Makefile      |    1 +
+>   drivers/tty/serial/sprd_serial.c |  793 ++++++++++++++++++++++++++++++++++++++
+>   include/uapi/linux/serial_core.h |    3 +
+>   4 files changed, 815 insertions(+)
+>   create mode 100644 drivers/tty/serial/sprd_serial.c
 >
-> diff --git a/drivers/staging/comedi/drivers/dyna_pci10xx.c b/drivers/staging/comedi/drivers/dyna_pci10xx.c
-> index 1b6324c..8882423 100644
-> --- a/drivers/staging/comedi/drivers/dyna_pci10xx.c
-> +++ b/drivers/staging/comedi/drivers/dyna_pci10xx.c
-> @@ -115,10 +115,9 @@ static int dyna_pci10xx_insn_write_ao(struct comedi_device *dev,
->   {
->   	struct dyna_pci10xx_private *devpriv = dev->private;
->   	int n;
-> -	unsigned int chan, range;
->
-> -	chan = CR_CHAN(insn->chanspec);
-> -	range = range_codes_pci1050_ai[CR_RANGE((insn->chanspec))];
-> +	CR_CHAN(insn->chanspec);
-> +	range_codes_pci1050_ai[CR_RANGE((insn->chanspec))];
+(...)
 
-Both those lines produce compiler warnings, are not needed, don't belong 
-here and should be removed.  The AO subdevice has a single, fixed range.
+> +static int sprd_probe(struct platform_device *pdev)
+> +{
+> +	struct resource *res;
+> +	struct uart_port *up;
+> +	struct clk *clk;
+> +	int irq;
+> +	int index;
+> +	int ret;
+> +
+> +	for (index = 0; index < ARRAY_SIZE(sprd_port); index++)
+> +		if (sprd_port[index] == NULL)
+> +			break;
+> +
+> +	if (index == ARRAY_SIZE(sprd_port))
+> +		return -EBUSY;
+> +
+> +	index = sprd_probe_dt_alias(index, &pdev->dev);
+> +
+> +	sprd_port[index] = devm_kzalloc(&pdev->dev,
+> +		sizeof(*sprd_port[index]), GFP_KERNEL);
+> +	if (!sprd_port[index])
+> +		return -ENOMEM;
+> +
+> +	up = &sprd_port[index]->port;
+> +	up->dev = &pdev->dev;
+> +	up->line = index;
+> +	up->type = PORT_SPRD;
+> +	up->iotype = SERIAL_IO_PORT;
+> +	up->uartclk = SPRD_DEF_RATE;
+> +	up->fifosize = SPRD_FIFO_SIZE;
+> +	up->ops = &serial_sprd_ops;
+> +	up->flags = UPF_BOOT_AUTOCONF;
+> +
+> +	clk = devm_clk_get(&pdev->dev, NULL);
+> +	if (!IS_ERR(clk))
+> +		up->uartclk = clk_get_rate(clk);
+> +
+> +	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> +	if (!res) {
+> +		dev_err(&pdev->dev, "not provide mem resource\n");
+> +		return -ENODEV;
+> +	}
 
->
->   	mutex_lock(&devpriv->mutex);
->   	for (n = 0; n < insn->n; n++) {
->
+This check is not required. It will be done by devm_ioremap_resource()
 
+> +	up->mapbase = res->start;
+> +	up->membase = devm_ioremap_resource(&pdev->dev, res);
+> +	if (IS_ERR(up->membase))
+> +		return PTR_ERR(up->membase);
+> +
+>
 
 -- 
--=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk> )=-
--=(                          Web: http://www.mev.co.uk/  )=-
+Thanks,
+Varka Bhadram.
+
