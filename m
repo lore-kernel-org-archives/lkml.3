@@ -1,109 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754286AbbA2HwO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 02:52:14 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:41739 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750784AbbA2HwM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 02:52:12 -0500
-Date: Thu, 29 Jan 2015 08:51:26 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Vince Weaver <vincent.weaver@maine.edu>
-Cc: Peter Zijlstra <peterz@infradead.org>, mingo@kernel.org,
-        linux-kernel@vger.kernel.org, Stephane Eranian <eranian@gmail.com>,
-        mark.rutland@arm.com, torvalds@linux-foundation.org,
-        tglx@linutronix.de
-Subject: Re: [RFC][PATCH 2/3] perf: Add a bit of paranoia
-Message-ID: <20150129075126.GC7781@krava.brq.redhat.com>
-References: <20150123125159.696530128@infradead.org>
- <20150123125834.150481799@infradead.org>
- <20150126162639.GA21418@twins.programming.kicks-ass.net>
- <alpine.DEB.2.11.1501271621550.5038@vincent-weaver-1.umelst.maine.edu>
- <alpine.DEB.2.11.1501282114320.8031@vincent-weaver-1.umelst.maine.edu>
+	id S1753344AbbA2HuM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 02:50:12 -0500
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:44643 "EHLO
+	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750842AbbA2HuK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Jan 2015 02:50:10 -0500
+X-Original-SENDERIP: 10.177.222.153
+X-Original-MAILFROM: iamjoonsoo.kim@lge.com
+Date: Thu, 29 Jan 2015 16:51:31 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: linux-kernel@vger.kernel.org, m.szyprowski@samsung.com,
+        akpm@linux-foundation.org, lauraa@codeaurora.org
+Subject: Re: [PATCH v3 3/3] mm: cma: release trigger
+Message-ID: <20150129075130.GB19607@js1304-P5Q-DELUXE>
+References: <1422411777-22332-1-git-send-email-sasha.levin@oracle.com>
+ <1422411777-22332-4-git-send-email-sasha.levin@oracle.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.11.1501282114320.8031@vincent-weaver-1.umelst.maine.edu>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1422411777-22332-4-git-send-email-sasha.levin@oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 28, 2015 at 09:16:49PM -0500, Vince Weaver wrote:
-> On Tue, 27 Jan 2015, Vince Weaver wrote:
+On Tue, Jan 27, 2015 at 09:22:57PM -0500, Sasha Levin wrote:
+> Provides a userspace interface to trigger a CMA release.
 > 
-> > On Mon, 26 Jan 2015, Peter Zijlstra wrote:
-> > 
-> > > I think the below should cure this; if we install a group leader it will
-> > > iterate the (still intact) group list and find its siblings and try and
-> > > install those too -- even though those still have the old event->ctx --
-> > > in the new ctx.
-> > 
-> > I've been fuzzing 24 hours (despite the blizzard) with this patch
-> > plus the original series on top of 3.19-rc6 on the Haswell machine and it 
-> > is looking good.
+> Usage:
 > 
-> OK it took about 48 hours but I managed to generate this:
+> 	echo [pages] > free
 > 
-> [162118.235829] ------------[ cut here ]------------
-> [162118.241388] WARNING: CPU: 5 PID: 13571 at kernel/events/core.c:1644 perf_remove_from_context+0xf5/0x120()
-> [162118.252183] Modules linked in: fuse x86_pkg_temp_thermal intel_powerclamp intel_rapl iosf_mbi coretemp kvm crct10dif_pclmul snd_hda_codec_realtek snd_hda_codec_hdmi snd_hda_codec_generic crc32_pclmul snd_hda_intel ghash_clmulni_intel snd_hda_controller aesni_intel snd_hda_codec aes_x86_64 snd_hwdep lrw gf128mul snd_pcm ppdev glue_helper xhci_pci mei_me iTCO_wdt iTCO_vendor_support i915 snd_timer drm_kms_helper snd drm ablk_helper lpc_ich mfd_core evdev pcspkr parport_pc psmouse cryptd soundcore i2c_i801 serio_raw parport xhci_hcd mei wmi tpm_tis tpm video battery button processor i2c_algo_bit sg sr_mod sd_mod cdrom ahci libahci e1000e ehci_pci libata ptp ehci_hcd crc32c_intel usbcore scsi_mod usb_common pps_core thermal fan thermal_sys
-> [162118.325574] CPU: 5 PID: 13571 Comm: perf_fuzzer Tainted: G        W      3.19.0-rc6+ #126
-> [162118.334984] Hardware name: LENOVO 10AM000AUS/SHARKBAY, BIOS FBKT72AUS 01/26/2014
-> [162118.343581]  ffffffff81a3f194 ffff8800c8463b48 ffffffff816b6761 0000000000000000
-> [162118.352277]  0000000000000000 ffff8800c8463b88 ffffffff8106dcda ffff8800c9286c40
-> [162118.360962]  ffff8800c8c01800 ffff8800c8c3a090 ffff8800c8c3a090 ffff8800c71b4800
-> [162118.369669] Call Trace:
-> [162118.372984]  [<ffffffff816b6761>] dump_stack+0x45/0x57
-> [162118.379170]  [<ffffffff8106dcda>] warn_slowpath_common+0x8a/0xc0
-> [162118.386267]  [<ffffffff8106ddca>] warn_slowpath_null+0x1a/0x20
-> [162118.393160]  [<ffffffff811554b5>] perf_remove_from_context+0xf5/0x120
-> [162118.400706]  [<ffffffff811571c5>] put_event+0x115/0x170
-> [162118.407004]  [<ffffffff81157101>] ? put_event+0x51/0x170
-> [162118.413340]  [<ffffffff816bc06e>] ? mutex_unlock+0xe/0x10
-> [162118.419792]  [<ffffffff81157255>] perf_release+0x15/0x20
-> [162118.426144]  [<ffffffff811e234f>] __fput+0xdf/0x1f0
-> [162118.432009]  [<ffffffff811e24ae>] ____fput+0xe/0x10
-> [162118.437895]  [<ffffffff8108bbc7>] task_work_run+0xa7/0xe0
-> [162118.444377]  [<ffffffff81070799>] do_exit+0x319/0xac0
-> [162118.450443]  [<ffffffff8107cc99>] ? get_signal+0xe9/0x770
-> [162118.456906]  [<ffffffff8107cf09>] ? get_signal+0x359/0x770
-> [162118.463427]  [<ffffffff81070fe4>] do_group_exit+0x54/0xe0
-> [162118.469887]  [<ffffffff8107ce46>] get_signal+0x296/0x770
-> [162118.476237]  [<ffffffff8105ded2>] ? __do_page_fault+0x1f2/0x580
-> [162118.483251]  [<ffffffff81013578>] do_signal+0x28/0xbb0
-> [162118.489392]  [<ffffffff8105e282>] ? do_page_fault+0x22/0x30
-> [162118.496055]  [<ffffffff81014170>] do_notify_resume+0x70/0x90
-> [162118.502811]  [<ffffffff816bf662>] retint_signal+0x48/0x86
-> [162118.509272] ---[ end trace 55752a03ec8ab978 ]---
+> This would provide testing/fuzzing access to the CMA release paths.
 > 
+> Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+> ---
+>  mm/cma_debug.c |   56 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+>  1 file changed, 56 insertions(+)
+> 
+> diff --git a/mm/cma_debug.c b/mm/cma_debug.c
+> index 5bd6863..c29f029 100644
+> --- a/mm/cma_debug.c
+> +++ b/mm/cma_debug.c
+> @@ -39,6 +39,59 @@ static void cma_add_to_cma_mem_list(struct cma *cma, struct cma_mem *mem)
+>  	spin_unlock(&cma->mem_head_lock);
+>  }
+>  
+> +static struct cma_mem *cma_get_entry_from_list(struct cma *cma)
+> +{
+> +	struct cma_mem *mem = NULL;
+> +
+> +	spin_lock(&cma->mem_head_lock);
+> +	if (!hlist_empty(&cma->mem_head)) {
+> +		mem = hlist_entry(cma->mem_head.first, struct cma_mem, node);
+> +		hlist_del_init(&mem->node);
+> +	}
+> +	spin_unlock(&cma->mem_head_lock);
+> +
+> +	return mem;
+> +}
+> +
+> +static int cma_free_mem(struct cma *cma, int count)
+> +{
+> +	struct cma_mem *mem = NULL;
+> +
+> +	while (count) {
+> +		mem = cma_get_entry_from_list(cma);
+> +		if (mem == NULL)
+> +			return 0;
+> +
+> +		if (mem->n <= count) {
+> +			cma_release(cma, mem->p, mem->n);
+> +			count -= mem->n;
+> +			kfree(mem);
+> +		} else if (cma->order_per_bit == 0) {
+> +			cma_release(cma, mem->p, count);
+> +			mem->p += count;
+> +			mem->n -= count;
+> +			count = 0;
+> +			cma_add_to_cma_mem_list(cma, mem);
+> +		} else {
+> +			cma_add_to_cma_mem_list(cma, mem);
+> +			break;
+> +		}
+> +	}
 
+Hmm... I'm not sure we need to deal with "mem->m < count" case.
+It is not suitable for any cma_alloc/release usecase.
+And, I'd like to insert some error log to last case rather than
+silently ignoring the request.
 
-hum, I dont see a way how the event->ctx could be changed once the task is
-already in exit, but should we access the event->ctx after the refcnt check?
-
-jirka
-
-
----
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index 66c1da1ddc2c..0507e3dd6955 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -3572,7 +3572,7 @@ static void perf_remove_from_owner(struct perf_event *event)
-  */
- static void put_event(struct perf_event *event)
- {
--	struct perf_event_context *ctx = event->ctx;
-+	struct perf_event_context *ctx;
- 
- 	if (!atomic_long_dec_and_test(&event->refcount))
- 		return;
-@@ -3580,6 +3580,7 @@ static void put_event(struct perf_event *event)
- 	if (!is_kernel_event(event))
- 		perf_remove_from_owner(event);
- 
-+	ctx = event->ctx;
- 	WARN_ON_ONCE(ctx->parent_ctx);
- 	/*
- 	 * There are two ways this annotation is useful:
+Thanks.
