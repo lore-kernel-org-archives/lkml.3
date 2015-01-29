@@ -1,68 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753411AbbA2MDX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 07:03:23 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:38925 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751300AbbA2MDV (ORCPT
+	id S1753602AbbA2MGx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 07:06:53 -0500
+Received: from mail-qg0-f43.google.com ([209.85.192.43]:51671 "EHLO
+	mail-qg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751644AbbA2MGw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 07:03:21 -0500
-Date: Thu, 29 Jan 2015 12:02:51 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Peter Rosin <peda@lysator.liu.se>
-Cc: alsa-devel@alsa-project.org, Peter Rosin <peda@axentia.se>,
-        Liam Girdwood <lgirdwood@gmail.com>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, Lars-Peter Clausen <lars@metafoo.de>,
-        linux-kernel@vger.kernel.org
-Message-ID: <20150129120251.GF21293@sirena.org.uk>
-References: <1422530516-21779-1-git-send-email-peda@lysator.liu.se>
+	Thu, 29 Jan 2015 07:06:52 -0500
+Message-ID: <54CA2256.9000209@hurleysoftware.com>
+Date: Thu, 29 Jan 2015 07:06:46 -0500
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
-	protocol="application/pgp-signature"; boundary="B2MJsc1fKeYMtnH+"
-Content-Disposition: inline
-In-Reply-To: <1422530516-21779-1-git-send-email-peda@lysator.liu.se>
-X-Cookie: My LESLIE GORE record is BROKEN ...
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 0/2] ASoC: pcm512x: Fixups for the Clock master modes
- series
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+To: Dave Airlie <airlied@redhat.com>, torvalds@linux-foundation.org
+CC: linux-kernel@vger.kernel.org, dri-devel@lists.sf.net
+Subject: Re: [PATCH] vt_buffer: drop console buffer copying optimisations
+References: <1422504685-7864-1-git-send-email-airlied@redhat.com>
+In-Reply-To: <1422504685-7864-1-git-send-email-airlied@redhat.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 01/28/2015 11:11 PM, Dave Airlie wrote:
+> These two copy to/from VGA memory, however on the Silicon
+> Motion SMI750 VGA card on a 64-bit system cause console corruption.
+> 
+> This is due to the hw being buggy and not handling a 64-bit transaction
+> correctly.
+> 
+> We could try and create a 32-bit version of these routines,
+> but I'm not sure the optimisation is worth much today.
+> 
+> Fixes https://bugzilla.redhat.com/show_bug.cgi?id=1132826
 
---B2MJsc1fKeYMtnH+
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Restricted link.
 
-On Thu, Jan 29, 2015 at 12:21:54PM +0100, Peter Rosin wrote:
-> From: Peter Rosin <peda@axentia.se>
->=20
-> These fixups can either be squashed in with 5/7 from the Clock master mode
-> series, or they can be added on top of the current topic/pcm512x. Sorry f=
-or
-> the trouble.
 
-applied, thanks.
+> Tested-by: Huawei engineering.
+> Signed-off-by: Dave Airlie <airlied@redhat.com>
+> ---
+> 
+> Linus, this came up a while back I finally got some confirmation
+> that it fixes those servers.
+> 
+>  include/linux/vt_buffer.h | 4 ----
+>  1 file changed, 4 deletions(-)
+> 
+> diff --git a/include/linux/vt_buffer.h b/include/linux/vt_buffer.h
+> index 057db7d..f38c10b 100644
+> --- a/include/linux/vt_buffer.h
+> +++ b/include/linux/vt_buffer.h
+> @@ -21,10 +21,6 @@
+>  #ifndef VT_BUF_HAVE_RW
+>  #define scr_writew(val, addr) (*(addr) = (val))
+>  #define scr_readw(addr) (*(addr))
+> -#define scr_memcpyw(d, s, c) memcpy(d, s, c)
+> -#define scr_memmovew(d, s, c) memmove(d, s, c)
+> -#define VT_BUF_HAVE_MEMCPYW
+> -#define VT_BUF_HAVE_MEMMOVEW
+>  #endif
+>  
+>  #ifndef VT_BUF_HAVE_MEMSETW
+> 
 
---B2MJsc1fKeYMtnH+
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBCAAGBQJUyiFqAAoJECTWi3JdVIfQBbEH/AhX0nQvkDlc1MAlfAKNdkzC
-luvkMyzmyTjrCb2iIJlIdZatJPDEEkOyaHK6CvJeOISH/UMRT4hpee4E2eIN2hXq
-aSISws/77gLEO8w6Hi1FdXEcdiMMMqd+lHtN2nqroOtPx8HOqQAqMDszG3KYIRgK
-cVY+1gOJpq25dxThei1aALXzJxkNr7ieh70ja26msV/G2E684FkYiErb5opuwFTH
-YhpzLn24JgVHCEXbcXxSZiVr0gtx20cQCQGnaf46/LEUy/hTbWIacWQIEg7WHPwY
-oHBojQYc/zBRX36PdldBTR22nzHqI0xySy43okGPWt+qbX/DhRrgK1Vj+dqPrHk=
-=BNLG
------END PGP SIGNATURE-----
-
---B2MJsc1fKeYMtnH+--
