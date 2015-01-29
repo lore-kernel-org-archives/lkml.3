@@ -1,80 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757808AbbA2NMw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 08:12:52 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:33100 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753173AbbA2NMu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 08:12:50 -0500
-From: Vitaly Kuznetsov <vkuznets@redhat.com>
-To: Dexuan Cui <decui@microsoft.com>
-Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        driverdev-devel@linuxdriverproject.org, olaf@aepfle.de,
-        apw@canonical.com, jasowang@redhat.com, kys@microsoft.com,
-        haiyangz@microsoft.com
-Subject: Re: [PATCH 1/3] hv: hv_util: move vmbus_open() to a later place
-References: <1422529347-28192-1-git-send-email-decui@microsoft.com>
-Date: Thu, 29 Jan 2015 14:12:33 +0100
-In-Reply-To: <1422529347-28192-1-git-send-email-decui@microsoft.com> (Dexuan
-	Cui's message of "Thu, 29 Jan 2015 03:02:27 -0800")
-Message-ID: <87k3057mta.fsf@vitty.brq.redhat.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1758049AbbA2NM7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 08:12:59 -0500
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:54190 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757844AbbA2NMz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Jan 2015 08:12:55 -0500
+Message-ID: <1422537172.1835.4.camel@gmail.com>
+Subject: Re: [PATCH v2] samsung-laptop: enable better lid handling
+From: Julijonas Kikutis <julijonas.kikutis@gmail.com>
+To: Darren Hart <dvhart@infradead.org>
+Cc: Corentin Chary <corentin.chary@gmail.com>,
+        "open list:ABI/API" <linux-api@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>,
+        "open list:SAMSUNG LAPTOP DR..." 
+	<platform-driver-x86@vger.kernel.org>
+Date: Thu, 29 Jan 2015 13:12:52 +0000
+In-Reply-To: <20150129052021.GA115032@vmdeb7>
+References: <1418332715-10547-1-git-send-email-julijonas.kikutis@gmail.com>
+	 <1422365168-2428-1-git-send-email-julijonas.kikutis@gmail.com>
+	 <20150129052021.GA115032@vmdeb7>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.10 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dexuan Cui <decui@microsoft.com> writes:
+> Patch is generally fine, thanks for addressing my comments. Prior to merging I
+> always run checkpatch.pl just in case I missed anything obvious:
+> 
+> $ scripts/checkpatch.pl ~/samsung/01-lid-handling.patch 
+> WARNING: Prefer kstrto<type> to single variable sscanf
+> #219: FILE: drivers/platform/x86/samsung-laptop.c:900:
+> +       if (!count || sscanf(buf, "%i", &value) != 1)
+> +               return -EINVAL;
+> 
+> total: 0 errors, 1 warnings, 219 lines checked
+> 
+> Please always run checkpatch.pl. It isn't sufficient and doesn't catch
+> everything, but it is a minimum bar kind of thing.
 
-> Before the line vmbus_open() returns, srv->util_cb can be already running
-> and the variablies, like util_fw_version, are needed by the srv->util_cb.
->
-> So we have to make sure the variables are initialized before the vmbus_open().
->
-> CC: "K. Y. Srinivasan" <kys@microsoft.com>
-> Signed-off-by: Dexuan Cui <decui@microsoft.com>
+I did run checkpatch.pl but left sscanf to be consistent with
+set_battery_life_extender and set_usb_charge functions. Nevertheless, I
+have just sent the third version of the patch with sscanf changed to
+kstrtoint.
 
-It is not said in the description but moving hv_set_drvdata() before
-vmbus_open() make sense in case probe and remove can collide (can
-they?).
+Thank you.
 
-Reviewed-by: Vitaly Kuznetsov <vkuznets@redhat.com>
+Julijonas
 
-> ---
->  drivers/hv/hv_util.c | 11 ++++++-----
->  1 file changed, 6 insertions(+), 5 deletions(-)
->
-> diff --git a/drivers/hv/hv_util.c b/drivers/hv/hv_util.c
-> index 3b9c9ef..c5be773 100644
-> --- a/drivers/hv/hv_util.c
-> +++ b/drivers/hv/hv_util.c
-> @@ -340,12 +340,8 @@ static int util_probe(struct hv_device *dev,
->
->  	set_channel_read_state(dev->channel, false);
->
-> -	ret = vmbus_open(dev->channel, 4 * PAGE_SIZE, 4 * PAGE_SIZE, NULL, 0,
-> -			srv->util_cb, dev->channel);
-> -	if (ret)
-> -		goto error;
-> -
->  	hv_set_drvdata(dev, srv);
-> +
->  	/*
->  	 * Based on the host; initialize the framework and
->  	 * service version numbers we will negotiate.
-> @@ -365,6 +361,11 @@ static int util_probe(struct hv_device *dev,
->  		hb_srv_version = HB_VERSION;
->  	}
->
-> +	ret = vmbus_open(dev->channel, 4 * PAGE_SIZE, 4 * PAGE_SIZE, NULL, 0,
-> +			srv->util_cb, dev->channel);
-> +	if (ret)
-> +		goto error;
-> +
->  	return 0;
->
->  error:
-
--- 
-  Vitaly
