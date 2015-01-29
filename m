@@ -1,213 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759558AbbA2FoA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 00:44:00 -0500
-Received: from mga03.intel.com ([134.134.136.65]:52701 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755478AbbA2Fn6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 00:43:58 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="446840723"
-From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-To: Peter Huewe <peterhuewe@gmx.de>, Ashley Lai <ashley@ashleylai.com>,
-        Marcel Selhorst <tpmdd@selhorst.net>
-Cc: tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        josh@joshtriplett.org, christophe.ricard@gmail.com,
-        jason.gunthorpe@obsidianresearch.com, stefanb@linux.vnet.ibm.com,
-        linux-api@vger.kernel.org, trousers-tech@lists.sourceforge.net,
-        jmorris@namei.org, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Subject: [PATCH v2] tpm: fix suspend/resume paths for TPM 2.0
-Date: Thu, 29 Jan 2015 07:43:47 +0200
-Message-Id: <1422510227-23256-1-git-send-email-jarkko.sakkinen@linux.intel.com>
-X-Mailer: git-send-email 2.1.4
+	id S1755737AbbA2Fx4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 00:53:56 -0500
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:40151 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755049AbbA2Fxy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Jan 2015 00:53:54 -0500
+Date: Thu, 29 Jan 2015 11:23:10 +0530
+From: Tina Ruchandani <ruchandani.tina@gmail.com>
+To: linux-afs@lists.infradead.org
+Cc: Arnd Bergmann <arnd@arndb.de>, David Howells <dhowells@redhat.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] AFS: Correctly use 64-bit time for UUID
+Message-ID: <20150129055310.GA3033@tinar>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixed suspend/resume paths for TPM 2.0 and consolidated all the
-associated code to the tpm_pm_suspend() and tpm_pm_resume()
-functions. Resume path should be handled by the firmware, i.e.
-Startup(CLEAR) for hibernate and Startup(STATE) for suspend.
+UUID calculation uses 'struct timespec' whose seconds will overflow
+in year 2038 and beyond for 32-bit systems. This patch removes the
+dependency on 'struct timespec' by using ktime_get_real_ns().
+While the patch does not fix a 'bug' as such, it is part of a larger
+effort to remove instances of 'struct timespec' and other data-structures
+suffering from y2038 problem from the kernel.
 
-There might be some non-PC embedded devices in the future where
-Startup() is not the handled by the FW but fixing the code for
-those IMHO should be postponed until there is hardware available
-to test the fixes although extra Startup in the driver code is
-essentially a NOP.
-
-Added Shutdown(CLEAR) to the remove paths of TIS and CRB drivers.
-Changed tpm2_shutdown() to a void function because there isn't
-much you can do except print an error message if this fails with
-a system error.
-
-Reported-by: Peter Hüwe <PeterHuewe@gmx.de>
-Signed-off-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+Suggested-by: Arnd Bergmann <arnd@arndb.de>
+Signed-off-by: Tina Ruchandani <ruchandani.tina@gmail.com>
 ---
- drivers/char/tpm/tpm-interface.c |  6 ++++--
- drivers/char/tpm/tpm.h           |  2 +-
- drivers/char/tpm/tpm2-cmd.c      | 19 +++++++++++--------
- drivers/char/tpm/tpm_crb.c       | 20 +++++---------------
- drivers/char/tpm/tpm_tis.c       | 26 +++++++++++++-------------
- 5 files changed, 34 insertions(+), 39 deletions(-)
+ fs/afs/main.c | 6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/char/tpm/tpm-interface.c b/drivers/char/tpm/tpm-interface.c
-index bf53a37..e85d341 100644
---- a/drivers/char/tpm/tpm-interface.c
-+++ b/drivers/char/tpm/tpm-interface.c
-@@ -901,8 +901,10 @@ int tpm_pm_suspend(struct device *dev)
- 	if (chip == NULL)
- 		return -ENODEV;
+diff --git a/fs/afs/main.c b/fs/afs/main.c
+index 35de0c0..7a9c2e6 100644
+--- a/fs/afs/main.c
++++ b/fs/afs/main.c
+@@ -14,6 +14,7 @@
+ #include <linux/init.h>
+ #include <linux/completion.h>
+ #include <linux/sched.h>
++#include <linux/ktime.h>
+ #include "internal.h"
  
--	if (chip->flags & TPM_CHIP_FLAG_TPM2)
--		return tpm2_shutdown(chip, TPM2_SU_CLEAR);
-+	if (chip->flags & TPM_CHIP_FLAG_TPM2) {
-+		tpm2_shutdown(chip, TPM2_SU_STATE);
-+		return 0;
-+	}
- 
- 	/* for buggy tpm, flush pcrs with extend to selected dummy */
- 	if (tpm_suspend_pcr) {
-diff --git a/drivers/char/tpm/tpm.h b/drivers/char/tpm/tpm.h
-index 7b0727c..a2ce379 100644
---- a/drivers/char/tpm/tpm.h
-+++ b/drivers/char/tpm/tpm.h
-@@ -432,7 +432,7 @@ ssize_t tpm2_get_tpm_pt(struct tpm_chip *chip, u32 property_id,
- 			u32 *value, const char *desc);
- 
- extern int tpm2_startup(struct tpm_chip *chip, u16 startup_type);
--extern int tpm2_shutdown(struct tpm_chip *chip, u16 shutdown_type);
-+extern void tpm2_shutdown(struct tpm_chip *chip, u16 shutdown_type);
- extern unsigned long tpm2_calc_ordinal_duration(struct tpm_chip *, u32);
- extern int tpm2_do_selftest(struct tpm_chip *chip);
- extern int tpm2_gen_interrupt(struct tpm_chip *chip, bool quiet);
-diff --git a/drivers/char/tpm/tpm2-cmd.c b/drivers/char/tpm/tpm2-cmd.c
-index 1abe650..f2f38a5 100644
---- a/drivers/char/tpm/tpm2-cmd.c
-+++ b/drivers/char/tpm/tpm2-cmd.c
-@@ -456,20 +456,23 @@ static const struct tpm_input_header tpm2_shutdown_header = {
-  * @chip:		TPM chip to use.
-  * @shutdown_type	shutdown type. The value is either
-  *			TPM_SU_CLEAR or TPM_SU_STATE.
-- *
-- * 0 is returned when the operation is successful. If a negative number is
-- * returned it remarks a POSIX error code. If a positive number is returned
-- * it remarks a TPM error.
+ MODULE_DESCRIPTION("AFS Client File System");
+@@ -37,7 +38,6 @@ struct workqueue_struct *afs_wq;
   */
--int tpm2_shutdown(struct tpm_chip *chip, u16 shutdown_type)
-+void tpm2_shutdown(struct tpm_chip *chip, u16 shutdown_type)
+ static int __init afs_get_client_UUID(void)
  {
- 	struct tpm2_cmd cmd;
-+	int rc;
+-	struct timespec ts;
+ 	u64 uuidtime;
+ 	u16 clockseq;
+ 	int ret;
+@@ -48,9 +48,7 @@ static int __init afs_get_client_UUID(void)
+ 	if (ret < 0)
+ 		return ret;
  
- 	cmd.header.in = tpm2_shutdown_header;
--
- 	cmd.params.startup_in.startup_type = cpu_to_be16(shutdown_type);
--	return tpm_transmit_cmd(chip, &cmd, sizeof(cmd),
--				"stopping the TPM");
-+
-+	rc = tpm_transmit_cmd(chip, &cmd, sizeof(cmd), "stopping the TPM");
-+
-+	/* In places where shutdown command is sent there's no much we can do
-+	 * except print the error code on a system failure.
-+	 */
-+	if (rc < 0)
-+		dev_warn(chip->pdev, "transmit returned %d while stopping the TPM",
-+			 rc);
- }
- EXPORT_SYMBOL_GPL(tpm2_shutdown);
- 
-diff --git a/drivers/char/tpm/tpm_crb.c b/drivers/char/tpm/tpm_crb.c
-index 3dd23cf..b26ceee 100644
---- a/drivers/char/tpm/tpm_crb.c
-+++ b/drivers/char/tpm/tpm_crb.c
-@@ -95,21 +95,7 @@ struct crb_priv {
- 	u8 __iomem *rsp;
- };
- 
--#ifdef CONFIG_PM_SLEEP
--static int crb_resume(struct device *dev)
--{
--	int rc;
--	struct tpm_chip *chip = dev_get_drvdata(dev);
--
--	rc = tpm2_shutdown(chip, TPM2_SU_STATE);
--	if (!rc)
--		rc = tpm2_do_selftest(chip);
--
--	return rc;
--}
--#endif
--
--static SIMPLE_DEV_PM_OPS(crb_pm, tpm_pm_suspend, crb_resume);
-+static SIMPLE_DEV_PM_OPS(crb_pm, tpm_pm_suspend, tpm_pm_resume);
- 
- static u8 crb_status(struct tpm_chip *chip)
- {
-@@ -326,6 +312,10 @@ static int crb_acpi_remove(struct acpi_device *device)
- 	struct tpm_chip *chip = dev_get_drvdata(dev);
- 
- 	tpm_chip_unregister(chip);
-+
-+	if (chip->flags & TPM_CHIP_FLAG_TPM2)
-+		tpm2_shutdown(chip, TPM2_SU_CLEAR);
-+
- 	return 0;
- }
- 
-diff --git a/drivers/char/tpm/tpm_tis.c b/drivers/char/tpm/tpm_tis.c
-index 6725bef..e12b3ab 100644
---- a/drivers/char/tpm/tpm_tis.c
-+++ b/drivers/char/tpm/tpm_tis.c
-@@ -588,6 +588,9 @@ MODULE_PARM_DESC(interrupts, "Enable interrupts");
- 
- static void tpm_tis_remove(struct tpm_chip *chip)
- {
-+	if (chip->flags & TPM_CHIP_FLAG_TPM2)
-+		tpm2_shutdown(chip, TPM2_SU_CLEAR);
-+
- 	iowrite32(~TPM_GLOBAL_INT_ENABLE &
- 		  ioread32(chip->vendor.iobase +
- 			   TPM_INT_ENABLE(chip->vendor.
-@@ -865,25 +868,22 @@ static void tpm_tis_reenable_interrupts(struct tpm_chip *chip)
- static int tpm_tis_resume(struct device *dev)
- {
- 	struct tpm_chip *chip = dev_get_drvdata(dev);
--	int ret = 0;
-+	int ret;
- 
- 	if (chip->vendor.irq)
- 		tpm_tis_reenable_interrupts(chip);
- 
--	if (chip->flags & TPM_CHIP_FLAG_TPM2) {
--		/* NOP if firmware properly does this. */
--		tpm2_startup(chip, TPM2_SU_STATE);
-+	ret = tpm_pm_resume(dev);
-+	if (ret)
-+		return ret;
- 
--		ret = tpm2_shutdown(chip, TPM2_SU_STATE);
--		if (!ret)
--			ret = tpm2_do_selftest(chip);
--	} else {
--		ret = tpm_pm_resume(dev);
--		if (!ret)
--			tpm_do_selftest(chip);
--	}
-+	/* TPM 1.2 requires self-test on resume. This function actually returns
-+	 * an error code but for unknown reason it isn't handled.
-+	 */
-+	if (!(chip->flags & TPM_CHIP_FLAG_TPM2))
-+		tpm_do_selftest(chip);
- 
--	return ret;
-+	return 0;
- }
- #endif
- 
+-	getnstimeofday(&ts);
+-	uuidtime = (u64) ts.tv_sec * 1000 * 1000 * 10;
+-	uuidtime += ts.tv_nsec / 100;
++	uuidtime = ktime_get_real_ns() / 100;
+ 	uuidtime += AFS_UUID_TO_UNIX_TIME;
+ 	afs_uuid.time_low = uuidtime;
+ 	afs_uuid.time_mid = uuidtime >> 32;
 -- 
-2.1.4
+2.2.0.rc0.207.ga3a616c
 
