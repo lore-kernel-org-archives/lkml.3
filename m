@@ -1,94 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761018AbbA2JQf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 04:16:35 -0500
-Received: from mail-lb0-f169.google.com ([209.85.217.169]:35568 "EHLO
-	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758105AbbA2JQW (ORCPT
+	id S1761749AbbA2Jbc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 04:31:32 -0500
+Received: from e23smtp08.au.ibm.com ([202.81.31.141]:34512 "EHLO
+	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761224AbbA2JWV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 04:16:22 -0500
-From: Rasmus Villemoes <linux@rasmusvillemoes.dk>
-To: Finn Thain <fthain@telegraphics.com.au>
-Cc: "James E.J. Bottomley" <JBottomley@parallels.com>,
-        linux-fsdevel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH v2 0/6] scsi: Some seq_file cleanups/optimizations
-Organization: D03
-References: <1417221258-4937-1-git-send-email-linux@rasmusvillemoes.dk>
-	<1417561854-17188-1-git-send-email-linux@rasmusvillemoes.dk>
-	<alpine.LNX.2.00.1501291636140.7510@nippy.intranet>
-X-Hashcash: 1:20:150129:linux-scsi@vger.kernel.org::7JjVLZ8p4EVrpEPM:000000000000000000000000000000000000RRq
-X-Hashcash: 1:20:150129:jbottomley@parallels.com::VoirpqHRMl0e2HwI:000000000000000000000000000000000000034ZB
-X-Hashcash: 1:20:150129:linux-fsdevel@vger.kernel.org::2vvOfL9B3u1BzrtW:000000000000000000000000000000003Yh0
-X-Hashcash: 1:20:150129:linux-kernel@vger.kernel.org::WnKXoCN2FgcB4/U6:0000000000000000000000000000000004a+n
-X-Hashcash: 1:20:150129:fthain@telegraphics.com.au::T5bBFSlzu3l0X7bs:00000000000000000000000000000000000FyEo
-Date: Thu, 29 Jan 2015 10:16:16 +0100
-In-Reply-To: <alpine.LNX.2.00.1501291636140.7510@nippy.intranet> (Finn Thain's
-	message of "Thu, 29 Jan 2015 17:56:37 +1100 (AEDT)")
-Message-ID: <87wq46aqvz.fsf@rasmusvillemoes.dk>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+	Thu, 29 Jan 2015 04:22:21 -0500
+From: Alexey Kardashevskiy <aik@ozlabs.ru>
+To: linuxppc-dev@lists.ozlabs.org
+Cc: Alexey Kardashevskiy <aik@ozlabs.ru>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Michael Ellerman <mpe@ellerman.id.au>,
+        Gavin Shan <gwshan@linux.vnet.ibm.com>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        Alexander Graf <agraf@suse.de>,
+        Alexander Gordeev <agordeev@redhat.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH v3 00/24] powerpc/iommu/vfio: Enable Dynamic DMA windows
+Date: Thu, 29 Jan 2015 20:21:41 +1100
+Message-Id: <1422523325-1389-1-git-send-email-aik@ozlabs.ru>
+X-Mailer: git-send-email 2.0.0
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 15012909-0029-0000-0000-0000010FD5B1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 29 2015, Finn Thain <fthain@telegraphics.com.au> wrote:
 
-> I have one reservation about this patch series.
->
-> For example, the changes,
->
-> -	seq_printf(m, "%s", p);
-> +	seq_puts(m, p);
->
-> These calls are not equivalent because the bounds check is not the same. 
-> seq_puts will fail when m->count + strlen(p) == m->size.
->
+This enables PAPR defined feature called Dynamic DMA windows (DDW).
 
-So will seq_printf:
+Each Partitionable Endpoint (IOMMU group) has a separate DMA window on
+a PCI bus where devices are allows to perform DMA. By default there is
+1 or 2GB window allocated at the host boot time and these windows are
+used when an IOMMU group is passed to the userspace (guest). These windows
+are mapped at zero offset on a PCI bus.
 
-int seq_vprintf(struct seq_file *m, const char *f, va_list args)
-{
-	int len;
+Hi-speed devices may suffer from limited size of this window. On the host
+side a TCE bypass mode is enabled on POWER8 CPU which implements
+direct mapping of the host memory to a PCI bus at 1<<59.
 
-	if (m->count < m->size) {
-		len = vsnprintf(m->buf + m->count, m->size - m->count, f, args);
-		if (m->count + len < m->size) {
-			m->count += len;
-			return 0;
-		}
-	}
-	seq_set_overflow(m);
-	return -1;
-}
+For the guest, PAPR defines a DDW RTAS API which allows the pseries guest
+to query the hypervisor if it supports DDW and what are the parameters
+of possible windows.
 
-The return value from vsnprintf("%s", p) is by definition the length of
-the string p. Yes, vsnprintf may write some of the bytes from the
-string to the buffer, but those are effectively discarded if they don't
-all fit, since m->count is not updated.
+Currently POWER8 supports 2 DMA windows per PE - already mentioned and used
+small 32bit window and 64bit window which can only start from 1<<59 and
+can support various page sizes.
 
-> There's a similar situation with the changes,
->
-> -	seq_puts(m, "x");
-> +	seq_putc(m, 'x');
+This patchset reworks PPC IOMMU code and adds necessary structures
+to extend it to support big windows.
 
-It's true that this may cause 'x' to be printed which it might not have
-been before. I think this is a bug in seq_puts - it should use <= for
-its bounds check. OTOH, seq_printf probably needs to continue using <,
-because if the return value is == m->size-m->count, vsnprintf will have
-truncated the output, overwriting the last byte with a '\0'.
+When the guest detectes the feature and the PE is capable of 64bit DMA,
+it does:
+1. query to hypervisor about number of available windows and page masks;
+2. creates a window with the biggest possible page size (current guests can do
+64K or 16MB TCEs);
+3. maps the entire guest RAM via H_PUT_TCE* hypercalls
+4. switches dma_ops to direct_dma_ops on the selected PE.
 
-> Have you considered what the implications might be? Are there any?
+Once this is done, H_PUT_TCE is not called anymore and the guest gets
+maximum performance.
 
-I must admit I hadn't thought that deeply about it before, but now it
-seems that my patches can only end up utilizing m->buf a bit better
-(well, 8 bits, to be precise). If I understand the whole seq_*
-interface, overflow will just cause a larger buffer to be allocated and
-all the print functions to be called again.
+Changes:
+v3:
+* (!) redesigned the whole thing
+* multiple IOMMU groups per PHB -> one PHB is needed for VFIO in the guest ->
+no problems with locked_vm counting; also we save memory on actual tables
+* guest RAM preregistration is required for DDW
+* PEs (IOMMU groups) are passed to VFIO with no DMA windows at all so
+we do not bother with iommu_table::it_map anymore
+* added multilevel TCE tables support to support really huge guests
 
-Steven, you've been doing some cleanup in this area, among other things
-trying to make all the seq_* functions return void. Could you fill me in
-on the status of that?
+v2:
+* added missing __pa() in "powerpc/powernv: Release replaced TCE"
+* reposted to make some noise
 
-Rasmus
+
+
+
+Alexey Kardashevskiy (24):
+  vfio: powerpc/spapr: Move page pinning from arch code to VFIO IOMMU
+    driver
+  vfio: powerpc/iommu: Check that TCE page size is equal to it_page_size
+  powerpc/powernv: Do not set "read" flag if direction==DMA_NONE
+  vfio: powerpc/spapr: Use it_page_size
+  vfio: powerpc/spapr: Move locked_vm accounting to helpers
+  powerpc/iommu: Move tce_xxx callbacks from ppc_md to iommu_table
+  powerpc/iommu: Introduce iommu_table_alloc() helper
+  powerpc/spapr: vfio: Switch from iommu_table to new powerpc_iommu
+  powerpc/iommu: Fix IOMMU ownership control functions
+  powerpc/powernv/ioda2: Rework IOMMU ownership control
+  powerpc/powernv/ioda/ioda2: Rework tce_build()/tce_free()
+  powerpc/iommu/powernv: Release replaced TCE
+  powerpc/pseries/lpar: Enable VFIO
+  vfio: powerpc/spapr: Register memory
+  poweppc/powernv/ioda2: Rework iommu_table creation
+  powerpc/powernv/ioda2: Introduce pnv_pci_ioda2_create_table
+  powerpc/powernv/ioda2: Introduce pnv_pci_ioda2_set_window
+  powerpc/iommu: Split iommu_free_table into 2 helpers
+  powerpc/powernv: Implement multilevel TCE tables
+  powerpc/powernv: Change prototypes to receive iommu
+  powerpc/powernv/ioda: Define and implement DMA table/window management
+    callbacks
+  powerpc/iommu: Get rid of ownership helpers
+  vfio/spapr: Enable multiple groups in a container
+  vfio: powerpc/spapr: Support Dynamic DMA windows
+
+ arch/powerpc/include/asm/iommu.h            | 107 +++-
+ arch/powerpc/include/asm/machdep.h          |  25 -
+ arch/powerpc/kernel/eeh.c                   |   2 +-
+ arch/powerpc/kernel/iommu.c                 | 282 +++------
+ arch/powerpc/kernel/vio.c                   |   5 +
+ arch/powerpc/platforms/cell/iommu.c         |   8 +-
+ arch/powerpc/platforms/pasemi/iommu.c       |   7 +-
+ arch/powerpc/platforms/powernv/pci-ioda.c   | 470 ++++++++++++---
+ arch/powerpc/platforms/powernv/pci-p5ioc2.c |  21 +-
+ arch/powerpc/platforms/powernv/pci.c        | 130 +++--
+ arch/powerpc/platforms/powernv/pci.h        |  14 +-
+ arch/powerpc/platforms/pseries/iommu.c      |  99 +++-
+ arch/powerpc/sysdev/dart_iommu.c            |  12 +-
+ drivers/vfio/vfio_iommu_spapr_tce.c         | 874 ++++++++++++++++++++++++----
+ include/uapi/linux/vfio.h                   |  53 +-
+ 15 files changed, 1584 insertions(+), 525 deletions(-)
+
+-- 
+2.0.0
+
