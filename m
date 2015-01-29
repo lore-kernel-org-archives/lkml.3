@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755184AbbA2IRv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 03:17:51 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:51244 "EHLO
+	id S1755056AbbA2IRf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 03:17:35 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:51261 "EHLO
 	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752810AbbA2IKI (ORCPT
+	with ESMTP id S1752923AbbA2IKJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 03:10:08 -0500
+	Thu, 29 Jan 2015 03:10:09 -0500
 X-Original-SENDERIP: 10.177.220.203
 X-Original-MAILFROM: namhyung@kernel.org
 From: Namhyung Kim <namhyung@kernel.org>
@@ -18,9 +18,9 @@ Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Andi Kleen <andi@firstfloor.org>,
         Stephane Eranian <eranian@google.com>,
         Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [PATCH 16/42] perf tools: Pass session arg to perf_event__preprocess_sample()
-Date: Thu, 29 Jan 2015 17:06:57 +0900
-Message-Id: <1422518843-25818-17-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 17/42] perf script: Pass session arg to ->process_event callback
+Date: Thu, 29 Jan 2015 17:06:58 +0900
+Message-Id: <1422518843-25818-18-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <1422518843-25818-1-git-send-email-namhyung@kernel.org>
 References: <1422518843-25818-1-git-send-email-namhyung@kernel.org>
@@ -28,348 +28,244 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The perf_event__preprocess_sample() translates a given ip into a
-matching symbol.  To do that, it first finds a corresponding thread
-and map in the current thread tree.  But for indexed data files, it
-needs to find a thread (and map) with slightly different APIs using
-timestamp.  So it needs a way to know whether this session deals with
-an indexed data file or not.
+Sometimes it needs to retrieve symbol info inside a script engine so
+we need to pass the session pointer to find the symbol correctly as
+with previous patch.
 
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/builtin-annotate.c     |  3 ++-
- tools/perf/builtin-diff.c         | 13 +++++++++----
- tools/perf/builtin-mem.c          |  6 +++++-
- tools/perf/builtin-report.c       |  3 ++-
- tools/perf/builtin-script.c       | 20 +++++++++++---------
- tools/perf/builtin-timechart.c    | 10 +++++++---
- tools/perf/builtin-top.c          |  3 ++-
- tools/perf/tests/hists_cumulate.c |  2 +-
- tools/perf/tests/hists_filter.c   |  2 +-
- tools/perf/tests/hists_link.c     |  4 ++--
- tools/perf/tests/hists_output.c   |  2 +-
- tools/perf/util/event.c           |  3 ++-
- tools/perf/util/event.h           |  4 +++-
- 13 files changed, 48 insertions(+), 27 deletions(-)
+ tools/perf/builtin-script.c                        | 23 ++++++++++++----------
+ tools/perf/util/db-export.c                        |  6 ++++--
+ tools/perf/util/db-export.h                        |  4 +++-
+ tools/perf/util/event.c                            |  3 ++-
+ tools/perf/util/event.h                            |  3 ++-
+ .../perf/util/scripting-engines/trace-event-perl.c |  3 ++-
+ .../util/scripting-engines/trace-event-python.c    |  5 +++--
+ tools/perf/util/trace-event-scripting.c            |  3 ++-
+ tools/perf/util/trace-event.h                      |  3 ++-
+ 9 files changed, 33 insertions(+), 20 deletions(-)
 
-diff --git a/tools/perf/builtin-annotate.c b/tools/perf/builtin-annotate.c
-index 747f86103599..b89e4c6ed488 100644
---- a/tools/perf/builtin-annotate.c
-+++ b/tools/perf/builtin-annotate.c
-@@ -85,7 +85,8 @@ static int process_sample_event(struct perf_tool *tool,
- 	struct perf_annotate *ann = container_of(tool, struct perf_annotate, tool);
- 	struct addr_location al;
- 
--	if (perf_event__preprocess_sample(event, machine, &al, sample) < 0) {
-+	if (perf_event__preprocess_sample(event, machine, &al, sample,
-+					  ann->session) < 0) {
- 		pr_warning("problem processing %d event, skipping it.\n",
- 			   event->header.type);
- 		return -1;
-diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
-index 74aada554b12..3e2229227062 100644
---- a/tools/perf/builtin-diff.c
-+++ b/tools/perf/builtin-diff.c
-@@ -42,6 +42,7 @@ struct diff_hpp_fmt {
- };
- 
- struct data__file {
-+	struct perf_tool	tool;
- 	struct perf_session	*session;
- 	struct perf_data_file	file;
- 	int			 idx;
-@@ -320,16 +321,18 @@ static int hists__add_entry(struct hists *hists,
- 	return -ENOMEM;
- }
- 
--static int diff__process_sample_event(struct perf_tool *tool __maybe_unused,
-+static int diff__process_sample_event(struct perf_tool *tool,
- 				      union perf_event *event,
- 				      struct perf_sample *sample,
- 				      struct perf_evsel *evsel,
- 				      struct machine *machine)
- {
- 	struct addr_location al;
-+	struct data__file *d = container_of(tool, struct data__file, tool);
- 	struct hists *hists = evsel__hists(evsel);
- 
--	if (perf_event__preprocess_sample(event, machine, &al, sample) < 0) {
-+	if (perf_event__preprocess_sample(event, machine, &al, sample,
-+					  d->session) < 0) {
- 		pr_warning("problem processing %d event, skipping it.\n",
- 			   event->header.type);
- 		return -1;
-@@ -740,14 +743,16 @@ static int __cmd_diff(void)
- 	int ret = -EINVAL, i;
- 
- 	data__for_each_file(i, d) {
--		d->session = perf_session__new(&d->file, false, &tool);
-+		memcpy(&d->tool, &tool, sizeof(tool));
-+
-+		d->session = perf_session__new(&d->file, false, &d->tool);
- 		if (!d->session) {
- 			pr_err("Failed to open %s\n", d->file.path);
- 			ret = -1;
- 			goto out_delete;
- 		}
- 
--		ret = perf_session__process_events(d->session, &tool);
-+		ret = perf_session__process_events(d->session, &d->tool);
- 		if (ret) {
- 			pr_err("Failed to process %s\n", d->file.path);
- 			goto out_delete;
-diff --git a/tools/perf/builtin-mem.c b/tools/perf/builtin-mem.c
-index 9b5663950a4d..21d46918860e 100644
---- a/tools/perf/builtin-mem.c
-+++ b/tools/perf/builtin-mem.c
-@@ -12,6 +12,7 @@
- 
- struct perf_mem {
- 	struct perf_tool	tool;
-+	struct perf_session	*session;
- 	char const		*input_name;
- 	bool			hide_unresolved;
- 	bool			dump_raw;
-@@ -66,7 +67,8 @@ dump_raw_samples(struct perf_tool *tool,
- 	struct addr_location al;
- 	const char *fmt;
- 
--	if (perf_event__preprocess_sample(event, machine, &al, sample) < 0) {
-+	if (perf_event__preprocess_sample(event, machine, &al, sample,
-+					  mem->session) < 0) {
- 		fprintf(stderr, "problem processing %d event, skipping it.\n",
- 				event->header.type);
- 		return -1;
-@@ -129,6 +131,8 @@ static int report_raw_events(struct perf_mem *mem)
- 	if (session == NULL)
- 		return -1;
- 
-+	mem->session = session;
-+
- 	if (mem->cpu_list) {
- 		ret = perf_session__cpu_bitmap(session, mem->cpu_list,
- 					       mem->cpu_bitmap);
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index 4cac79ad3085..68d06bc02266 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -142,7 +142,8 @@ static int process_sample_event(struct perf_tool *tool,
- 	};
- 	int ret;
- 
--	if (perf_event__preprocess_sample(event, machine, &al, sample) < 0) {
-+	if (perf_event__preprocess_sample(event, machine, &al, sample,
-+					  rep->session) < 0) {
- 		pr_debug("problem processing %d event, skipping it.\n",
- 			 event->header.type);
- 		return -1;
 diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
-index ce304dfd962a..ab920f8cded6 100644
+index ab920f8cded6..4a007110d2f7 100644
 --- a/tools/perf/builtin-script.c
 +++ b/tools/perf/builtin-script.c
-@@ -542,13 +542,21 @@ static int cleanup_scripting(void)
- 	return scripting_ops->stop_script();
+@@ -377,9 +377,10 @@ static void print_sample_start(struct perf_sample *sample,
  }
  
--static int process_sample_event(struct perf_tool *tool __maybe_unused,
-+struct perf_script {
-+	struct perf_tool	tool;
-+	struct perf_session	*session;
-+	bool			show_task_events;
-+	bool			show_mmap_events;
-+};
-+
-+static int process_sample_event(struct perf_tool *tool,
- 				union perf_event *event,
- 				struct perf_sample *sample,
- 				struct perf_evsel *evsel,
- 				struct machine *machine)
+ static void print_sample_addr(union perf_event *event,
+-			  struct perf_sample *sample,
+-			  struct thread *thread,
+-			  struct perf_event_attr *attr)
++			      struct perf_sample *sample,
++			      struct thread *thread,
++			      struct perf_event_attr *attr,
++			      struct perf_session *session)
  {
  	struct addr_location al;
-+	struct perf_script *script = container_of(tool, struct perf_script, tool);
- 	struct thread *thread = machine__findnew_thread(machine, sample->pid,
- 							sample->tid);
  
-@@ -569,7 +577,8 @@ static int process_sample_event(struct perf_tool *tool __maybe_unused,
- 		return 0;
- 	}
- 
--	if (perf_event__preprocess_sample(event, machine, &al, sample) < 0) {
-+	if (perf_event__preprocess_sample(event, machine, &al, sample,
-+					  script->session) < 0) {
- 		pr_err("problem processing %d event, skipping it.\n",
- 		       event->header.type);
- 		return -1;
-@@ -586,13 +595,6 @@ static int process_sample_event(struct perf_tool *tool __maybe_unused,
- 	return 0;
- }
- 
--struct perf_script {
--	struct perf_tool	tool;
--	struct perf_session	*session;
--	bool			show_task_events;
--	bool			show_mmap_events;
--};
--
- static int process_attr(struct perf_tool *tool, union perf_event *event,
- 			struct perf_evlist **pevlist)
- {
-diff --git a/tools/perf/builtin-timechart.c b/tools/perf/builtin-timechart.c
-index f3bb1a4bf060..4178727be12c 100644
---- a/tools/perf/builtin-timechart.c
-+++ b/tools/perf/builtin-timechart.c
-@@ -48,6 +48,7 @@ struct wake_event;
- 
- struct timechart {
- 	struct perf_tool	tool;
-+	struct perf_session	*session;
- 	struct per_pid		*all_data;
- 	struct power_event	*power_events;
- 	struct wake_event	*wake_events;
-@@ -469,7 +470,8 @@ static void sched_switch(struct timechart *tchart, int cpu, u64 timestamp,
- 
- static const char *cat_backtrace(union perf_event *event,
- 				 struct perf_sample *sample,
--				 struct machine *machine)
-+				 struct machine *machine,
-+				 struct perf_session *session)
- {
- 	struct addr_location al;
- 	unsigned int i;
-@@ -488,7 +490,8 @@ static const char *cat_backtrace(union perf_event *event,
- 	if (!chain)
- 		goto exit;
- 
--	if (perf_event__preprocess_sample(event, machine, &al, sample) < 0) {
-+	if (perf_event__preprocess_sample(event, machine, &al, sample,
-+					  session) < 0) {
- 		fprintf(stderr, "problem processing %d event, skipping it.\n",
- 			event->header.type);
- 		goto exit;
-@@ -567,7 +570,7 @@ static int process_sample_event(struct perf_tool *tool,
- 	if (evsel->handler != NULL) {
- 		tracepoint_handler f = evsel->handler;
- 		return f(tchart, evsel, sample,
--			 cat_backtrace(event, sample, machine));
-+			 cat_backtrace(event, sample, machine, tchart->session));
- 	}
- 
- 	return 0;
-@@ -1623,6 +1626,7 @@ static int __cmd_timechart(struct timechart *tchart, const char *output_name)
- 		goto out_delete;
- 	}
- 
-+	tchart->session = session;
- 	ret = perf_session__process_events(session, &tchart->tool);
- 	if (ret)
- 		goto out_delete;
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index c4c7eac69de4..69a0badfb745 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -723,7 +723,8 @@ static void perf_event__process_sample(struct perf_tool *tool,
- 	if (event->header.misc & PERF_RECORD_MISC_EXACT_IP)
- 		top->exact_samples++;
- 
--	if (perf_event__preprocess_sample(event, machine, &al, sample) < 0)
-+	if (perf_event__preprocess_sample(event, machine, &al, sample,
-+					  top->session) < 0)
+@@ -388,7 +389,7 @@ static void print_sample_addr(union perf_event *event,
+ 	if (!sample_addr_correlates_sym(attr))
  		return;
  
- 	if (!top->kptr_restrict_warned &&
-diff --git a/tools/perf/tests/hists_cumulate.c b/tools/perf/tests/hists_cumulate.c
-index 18619966454c..60682e62d9de 100644
---- a/tools/perf/tests/hists_cumulate.c
-+++ b/tools/perf/tests/hists_cumulate.c
-@@ -101,7 +101,7 @@ static int add_hist_entries(struct hists *hists, struct machine *machine)
- 		sample.callchain = (struct ip_callchain *)fake_callchains[i];
+-	perf_event__preprocess_sample_addr(event, sample, thread, &al);
++	perf_event__preprocess_sample_addr(event, sample, thread, &al, session);
  
- 		if (perf_event__preprocess_sample(&event, machine, &al,
--						  &sample) < 0)
-+						  &sample, NULL) < 0)
- 			goto out;
- 
- 		if (hist_entry_iter__add(&iter, &al, evsel, &sample,
-diff --git a/tools/perf/tests/hists_filter.c b/tools/perf/tests/hists_filter.c
-index 59e53db7914c..1c4e495d5137 100644
---- a/tools/perf/tests/hists_filter.c
-+++ b/tools/perf/tests/hists_filter.c
-@@ -78,7 +78,7 @@ static int add_hist_entries(struct perf_evlist *evlist,
- 			sample.ip = fake_samples[i].ip;
- 
- 			if (perf_event__preprocess_sample(&event, machine, &al,
--							  &sample) < 0)
-+							  &sample, NULL) < 0)
- 				goto out;
- 
- 			if (hist_entry_iter__add(&iter, &al, evsel, &sample,
-diff --git a/tools/perf/tests/hists_link.c b/tools/perf/tests/hists_link.c
-index 278ba8344c23..a731a531a3e2 100644
---- a/tools/perf/tests/hists_link.c
-+++ b/tools/perf/tests/hists_link.c
-@@ -86,7 +86,7 @@ static int add_hist_entries(struct perf_evlist *evlist, struct machine *machine)
- 			sample.tid = fake_common_samples[k].pid;
- 			sample.ip = fake_common_samples[k].ip;
- 			if (perf_event__preprocess_sample(&event, machine, &al,
--							  &sample) < 0)
-+							  &sample, NULL) < 0)
- 				goto out;
- 
- 			he = __hists__add_entry(hists, &al, NULL,
-@@ -110,7 +110,7 @@ static int add_hist_entries(struct perf_evlist *evlist, struct machine *machine)
- 			sample.tid = fake_samples[i][k].pid;
- 			sample.ip = fake_samples[i][k].ip;
- 			if (perf_event__preprocess_sample(&event, machine, &al,
--							  &sample) < 0)
-+							  &sample, NULL) < 0)
- 				goto out;
- 
- 			he = __hists__add_entry(hists, &al, NULL,
-diff --git a/tools/perf/tests/hists_output.c b/tools/perf/tests/hists_output.c
-index b52c9faea224..f4e3286cd496 100644
---- a/tools/perf/tests/hists_output.c
-+++ b/tools/perf/tests/hists_output.c
-@@ -67,7 +67,7 @@ static int add_hist_entries(struct hists *hists, struct machine *machine)
- 		sample.ip = fake_samples[i].ip;
- 
- 		if (perf_event__preprocess_sample(&event, machine, &al,
--						  &sample) < 0)
-+						  &sample, NULL) < 0)
- 			goto out;
- 
- 		if (hist_entry_iter__add(&iter, &al, evsel, &sample,
-diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
-index 6c6d044e959a..7a90c62ad07a 100644
---- a/tools/perf/util/event.c
-+++ b/tools/perf/util/event.c
-@@ -822,7 +822,8 @@ void thread__find_addr_location(struct thread *thread,
- int perf_event__preprocess_sample(const union perf_event *event,
- 				  struct machine *machine,
- 				  struct addr_location *al,
--				  struct perf_sample *sample)
-+				  struct perf_sample *sample,
-+				  struct perf_session *session __maybe_unused)
+ 	if (PRINT_FIELD(SYM)) {
+ 		printf(" ");
+@@ -409,7 +410,8 @@ static void print_sample_bts(union perf_event *event,
+ 			     struct perf_sample *sample,
+ 			     struct perf_evsel *evsel,
+ 			     struct thread *thread,
+-			     struct addr_location *al)
++			     struct addr_location *al,
++			     struct perf_session *session)
  {
- 	u8 cpumode = event->header.misc & PERF_RECORD_MISC_CPUMODE_MASK;
- 	struct thread *thread = machine__findnew_thread(machine, sample->pid,
-diff --git a/tools/perf/util/event.h b/tools/perf/util/event.h
-index c4ffe2bd0738..19814f70292b 100644
---- a/tools/perf/util/event.h
-+++ b/tools/perf/util/event.h
-@@ -353,11 +353,13 @@ int perf_event__process(struct perf_tool *tool,
- 			struct machine *machine);
+ 	struct perf_event_attr *attr = &evsel->attr;
+ 	bool print_srcline_last = false;
+@@ -436,7 +438,7 @@ static void print_sample_bts(union perf_event *event,
+ 	    ((evsel->attr.sample_type & PERF_SAMPLE_ADDR) &&
+ 	     !output[attr->type].user_set)) {
+ 		printf(" => ");
+-		print_sample_addr(event, sample, thread, attr);
++		print_sample_addr(event, sample, thread, attr, session);
+ 	}
  
- struct addr_location;
+ 	if (print_srcline_last)
+@@ -447,7 +449,7 @@ static void print_sample_bts(union perf_event *event,
+ 
+ static void process_event(union perf_event *event, struct perf_sample *sample,
+ 			  struct perf_evsel *evsel, struct thread *thread,
+-			  struct addr_location *al)
++			  struct addr_location *al, struct perf_session *session)
+ {
+ 	struct perf_event_attr *attr = &evsel->attr;
+ 
+@@ -465,7 +467,7 @@ static void process_event(union perf_event *event, struct perf_sample *sample,
+ 	}
+ 
+ 	if (is_bts_event(attr)) {
+-		print_sample_bts(event, sample, evsel, thread, al);
++		print_sample_bts(event, sample, evsel, thread, al, session);
+ 		return;
+ 	}
+ 
+@@ -473,7 +475,7 @@ static void process_event(union perf_event *event, struct perf_sample *sample,
+ 		event_format__print(evsel->tp_format, sample->cpu,
+ 				    sample->raw_data, sample->raw_size);
+ 	if (PRINT_FIELD(ADDR))
+-		print_sample_addr(event, sample, thread, attr);
++		print_sample_addr(event, sample, thread, attr, session);
+ 
+ 	if (PRINT_FIELD(IP)) {
+ 		if (!symbol_conf.use_callchain)
+@@ -590,7 +592,8 @@ static int process_sample_event(struct perf_tool *tool,
+ 	if (cpu_list && !test_bit(sample->cpu, cpu_bitmap))
+ 		return 0;
+ 
+-	scripting_ops->process_event(event, sample, evsel, thread, &al);
++	scripting_ops->process_event(event, sample, evsel, thread, &al,
++				     script->session);
+ 
+ 	return 0;
+ }
+diff --git a/tools/perf/util/db-export.c b/tools/perf/util/db-export.c
+index c81dae399763..e9ad11fe2e16 100644
+--- a/tools/perf/util/db-export.c
++++ b/tools/perf/util/db-export.c
+@@ -282,7 +282,8 @@ int db_export__branch_type(struct db_export *dbe, u32 branch_type,
+ 
+ int db_export__sample(struct db_export *dbe, union perf_event *event,
+ 		      struct perf_sample *sample, struct perf_evsel *evsel,
+-		      struct thread *thread, struct addr_location *al)
++		      struct thread *thread, struct addr_location *al,
++		      struct perf_session *session)
+ {
+ 	struct export_sample es = {
+ 		.event = event,
+@@ -328,7 +329,8 @@ int db_export__sample(struct db_export *dbe, union perf_event *event,
+ 	    sample_addr_correlates_sym(&evsel->attr)) {
+ 		struct addr_location addr_al;
+ 
+-		perf_event__preprocess_sample_addr(event, sample, thread, &addr_al);
++		perf_event__preprocess_sample_addr(event, sample, thread,
++						   &addr_al, session);
+ 		err = db_ids_from_al(dbe, &addr_al, &es.addr_dso_db_id,
+ 				     &es.addr_sym_db_id, &es.addr_offset);
+ 		if (err)
+diff --git a/tools/perf/util/db-export.h b/tools/perf/util/db-export.h
+index adbd22d66798..b994f1041d19 100644
+--- a/tools/perf/util/db-export.h
++++ b/tools/perf/util/db-export.h
+@@ -29,6 +29,7 @@ struct addr_location;
+ struct call_return_processor;
+ struct call_path;
+ struct call_return;
 +struct perf_session;
  
- int perf_event__preprocess_sample(const union perf_event *event,
- 				  struct machine *machine,
- 				  struct addr_location *al,
--				  struct perf_sample *sample);
-+				  struct perf_sample *sample,
-+				  struct perf_session *session);
+ struct export_sample {
+ 	union perf_event	*event;
+@@ -97,7 +98,8 @@ int db_export__branch_type(struct db_export *dbe, u32 branch_type,
+ 			   const char *name);
+ int db_export__sample(struct db_export *dbe, union perf_event *event,
+ 		      struct perf_sample *sample, struct perf_evsel *evsel,
+-		      struct thread *thread, struct addr_location *al);
++		      struct thread *thread, struct addr_location *al,
++		      struct perf_session *session);
  
- struct thread;
+ int db_export__branch_types(struct db_export *dbe);
+ 
+diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
+index 7a90c62ad07a..186960a09024 100644
+--- a/tools/perf/util/event.c
++++ b/tools/perf/util/event.c
+@@ -904,7 +904,8 @@ bool sample_addr_correlates_sym(struct perf_event_attr *attr)
+ void perf_event__preprocess_sample_addr(union perf_event *event,
+ 					struct perf_sample *sample,
+ 					struct thread *thread,
+-					struct addr_location *al)
++					struct addr_location *al,
++					struct perf_session *session __maybe_unused)
+ {
+ 	u8 cpumode = event->header.misc & PERF_RECORD_MISC_CPUMODE_MASK;
+ 
+diff --git a/tools/perf/util/event.h b/tools/perf/util/event.h
+index 19814f70292b..27261320249a 100644
+--- a/tools/perf/util/event.h
++++ b/tools/perf/util/event.h
+@@ -368,7 +368,8 @@ bool sample_addr_correlates_sym(struct perf_event_attr *attr);
+ void perf_event__preprocess_sample_addr(union perf_event *event,
+ 					struct perf_sample *sample,
+ 					struct thread *thread,
+-					struct addr_location *al);
++					struct addr_location *al,
++					struct perf_session *session);
+ 
+ const char *perf_event__name(unsigned int id);
+ 
+diff --git a/tools/perf/util/scripting-engines/trace-event-perl.c b/tools/perf/util/scripting-engines/trace-event-perl.c
+index 22ebc46226e7..dd69fbaf03b8 100644
+--- a/tools/perf/util/scripting-engines/trace-event-perl.c
++++ b/tools/perf/util/scripting-engines/trace-event-perl.c
+@@ -356,7 +356,8 @@ static void perl_process_event(union perf_event *event,
+ 			       struct perf_sample *sample,
+ 			       struct perf_evsel *evsel,
+ 			       struct thread *thread,
+-			       struct addr_location *al __maybe_unused)
++			       struct addr_location *al __maybe_unused,
++			       struct perf_session *session __maybe_unused)
+ {
+ 	perl_process_tracepoint(sample, evsel, thread);
+ 	perl_process_event_generic(event, sample, evsel);
+diff --git a/tools/perf/util/scripting-engines/trace-event-python.c b/tools/perf/util/scripting-engines/trace-event-python.c
+index 0c815a40a6e8..802def46af7b 100644
+--- a/tools/perf/util/scripting-engines/trace-event-python.c
++++ b/tools/perf/util/scripting-engines/trace-event-python.c
+@@ -839,7 +839,8 @@ static void python_process_event(union perf_event *event,
+ 				 struct perf_sample *sample,
+ 				 struct perf_evsel *evsel,
+ 				 struct thread *thread,
+-				 struct addr_location *al)
++				 struct addr_location *al,
++				 struct perf_session *session)
+ {
+ 	struct tables *tables = &tables_global;
+ 
+@@ -851,7 +852,7 @@ static void python_process_event(union perf_event *event,
+ 	default:
+ 		if (tables->db_export_mode)
+ 			db_export__sample(&tables->dbe, event, sample, evsel,
+-					  thread, al);
++					  thread, al, session);
+ 		else
+ 			python_process_general_event(sample, evsel, thread, al);
+ 	}
+diff --git a/tools/perf/util/trace-event-scripting.c b/tools/perf/util/trace-event-scripting.c
+index 5c9bdd1591a9..36ed50d71171 100644
+--- a/tools/perf/util/trace-event-scripting.c
++++ b/tools/perf/util/trace-event-scripting.c
+@@ -44,7 +44,8 @@ static void process_event_unsupported(union perf_event *event __maybe_unused,
+ 				      struct perf_sample *sample __maybe_unused,
+ 				      struct perf_evsel *evsel __maybe_unused,
+ 				      struct thread *thread __maybe_unused,
+-				      struct addr_location *al __maybe_unused)
++				      struct addr_location *al __maybe_unused,
++				      struct perf_session *session __maybe_unused)
+ {
+ }
+ 
+diff --git a/tools/perf/util/trace-event.h b/tools/perf/util/trace-event.h
+index 52aaa19e1eb1..c5870e57eee9 100644
+--- a/tools/perf/util/trace-event.h
++++ b/tools/perf/util/trace-event.h
+@@ -70,7 +70,8 @@ struct scripting_ops {
+ 			       struct perf_sample *sample,
+ 			       struct perf_evsel *evsel,
+ 			       struct thread *thread,
+-				   struct addr_location *al);
++			       struct addr_location *al,
++			       struct perf_session *session);
+ 	int (*generate_script) (struct pevent *pevent, const char *outfile);
+ };
  
 -- 
 2.2.2
