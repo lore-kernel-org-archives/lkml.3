@@ -1,51 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758319AbbA2O1M (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 09:27:12 -0500
-Received: from ns.mm-sol.com ([37.157.136.199]:50163 "EHLO extserv.mm-sol.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757952AbbA2O1J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 09:27:09 -0500
-Message-ID: <54CA4337.6070500@mm-sol.com>
-Date: Thu, 29 Jan 2015 16:27:03 +0200
-From: Stanimir Varbanov <svarbanov@mm-sol.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	id S1758449AbbA2O13 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 09:27:29 -0500
+Received: from mail-lb0-f177.google.com ([209.85.217.177]:61422 "EHLO
+	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754559AbbA2O11 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Jan 2015 09:27:27 -0500
 MIME-Version: 1.0
-To: Andy Gross <agross@codeaurora.org>
-CC: Linus Walleij <linus.walleij@linaro.org>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-gpio@vger.kernel.org, devicetree@vger.kernel.org,
-        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
-        Joonwoo Park <joonwoop@codeaurora.org>
-Subject: Re: [PATCH 3/3] pinctrl: qcom: Add msm8916 pinctrl driver
-References: <1421745476-6276-1-git-send-email-svarbanov@mm-sol.com> <1421745476-6276-4-git-send-email-svarbanov@mm-sol.com> <20150128231847.GC17315@qualcomm.com>
-In-Reply-To: <20150128231847.GC17315@qualcomm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1417707288-675-1-git-send-email-geert+renesas@glider.be>
+References: <1417707288-675-1-git-send-email-geert+renesas@glider.be>
+Date: Thu, 29 Jan 2015 15:27:25 +0100
+X-Google-Sender-Auth: e0iCR03gpF4kHjilVnyG_AkzraM
+Message-ID: <CAMuHMdVBT8UHixD24HL=-qE6isH7hx8BH__R8LDNuSUh4GcSsw@mail.gmail.com>
+Subject: Re: [PATCH] power: Use subdir-ccflags-* to inherit debug flag
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Geert Uytterhoeven <geert+renesas@glider.be>
+Cc: Sebastian Reichel <sre@kernel.org>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andy,
+ping?
 
-On 01/29/2015 01:18 AM, Andy Gross wrote:
-> On Tue, Jan 20, 2015 at 11:17:56AM +0200, Stanimir Varbanov wrote:
-> 
-> <snip>
-> 
->> +	MSM_MUX_blsp1_spi,
->> +	MSM_MUX_blsp2_spi,
->> +	MSM_MUX_blsp3_spi,
-> 
-> The above three need to be renamed to blsp_spiX_csX to denote which SPI and chip
-> select they modify.
+On Thu, Dec 4, 2014 at 4:34 PM, Geert Uytterhoeven
+<geert+renesas@glider.be> wrote:
+> Use subdir-ccflags-* instead of ccflags-* to inherit the debug
+> settings from Kconfig when traversing subdirectories.
+>
+> Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
+> ---
+>  drivers/power/Makefile | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/drivers/power/Makefile b/drivers/power/Makefile
+> index dfa89427392636ed..845e2e25b016f04e 100644
+> --- a/drivers/power/Makefile
+> +++ b/drivers/power/Makefile
+> @@ -1,4 +1,4 @@
+> -ccflags-$(CONFIG_POWER_SUPPLY_DEBUG) := -DDEBUG
+> +subdir-ccflags-$(CONFIG_POWER_SUPPLY_DEBUG) := -DDEBUG
+>
+>  power_supply-y                         := power_supply_core.o
+>  power_supply-$(CONFIG_SYSFS)           += power_supply_sysfs.o
+> --
+> 1.9.1
 
-I catch the idea, thanks for the tips. I will address all comments.
+Gr{oetje,eeting}s,
 
--- 
-regards,
-Stan
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
