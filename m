@@ -1,71 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754974AbbA2Gly (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 01:41:54 -0500
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:46753 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754924AbbA2Glx (ORCPT
+	id S1755906AbbA2Gmb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 01:42:31 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:36613 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755708AbbA2Gma (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 01:41:53 -0500
-Message-ID: <54C9D62B.7000602@collabora.com>
-Date: Thu, 29 Jan 2015 07:41:47 +0100
-From: Tomeu Vizoso <tomeu.vizoso@collabora.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Mike Turquette <mturquette@linaro.org>
-CC: Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Subject: Re: [PATCH v13 0/6] Per-user clock constraints
-References: <1422011024-32283-1-git-send-email-tomeu.vizoso@collabora.com> <54C6E1FB.5030907@codeaurora.org> <54C888EF.2080500@collabora.com> <20150129022633.22722.78592@quantum>
-In-Reply-To: <20150129022633.22722.78592@quantum>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+	Thu, 29 Jan 2015 01:42:30 -0500
+Date: Wed, 28 Jan 2015 22:42:28 -0800 (PST)
+Message-Id: <20150128.224228.1533046356464752424.davem@davemloft.net>
+To: behanw@converseincode.com
+Cc: sathya.perla@emulex.com, ajit.khaparde@emulex.com,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        subbu.seetharaman@emulex.com, arnd@arndb.de
+Subject: Re: [PATCH] net, ethernet, LLVMLinux: Add missing
+ MODULE_DEVICE_TABLE()
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1422495374-22835-1-git-send-email-behanw@converseincode.com>
+References: <1422495374-22835-1-git-send-email-behanw@converseincode.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Wed, 28 Jan 2015 22:42:29 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/29/2015 03:26 AM, Mike Turquette wrote:
-> Quoting Tomeu Vizoso (2015-01-27 22:59:59)
->> On 01/27/2015 01:55 AM, Stephen Boyd wrote:
->>> On 01/23/15 03:03, Tomeu Vizoso wrote:
->>>> Hi,
->>>>
->>>> in this v13 I have:
->>>>
->>>> * added the latest R-b tags from Stephen,
->>>>
->>>> * split some lines that went over the 80-char limit,
->>>>
->>>> * made explicit in the docs that the range limits are inclusive, and
->>>>
->>>> * removed an ifdef in clkdev.c by adding a dev_id param to __of_clk_get_by_name.
->>>>
->>>
->>> I think this patch series is ready to go except for the last one? Do you
->>> plan on polishing that one some more?
->>
->> Hi Mike,
->>
->> do you plan to merge this for 3.20?
-> 
-> Tomeu,
-> 
-> Yes. I have taken patches 1-5.
-> 
-> I edited patch #3 to adapt clk_has_parent for struct clk_core.
-> 
-> https://git.kernel.org/cgit/linux/kernel/git/clk/linux.git/commit/?h=clk-next&id=59cf3fcf9bafe8fdb6183f13dafb81fc8213a8f9
-> 
-> Patch #4 need an update to convert sun6i_ahb1_clk_determine_rate to have
-> min/max rates.
-> 
-> https://git.kernel.org/cgit/linux/kernel/git/clk/linux.git/commit/?h=clk-next&id=cb75a8fcd14e71c115decc416dd8d223e7c8b2e0
-> 
-> Can you look it over and make sure I didn't screw anything up?
+From: Behan Webster <behanw@converseincode.com>
+Date: Wed, 28 Jan 2015 17:36:14 -0800
 
-Yup, they look good to me. I have also done some testing here.
+> Missing MODULE_DEVICE_TABLE for pci ids from benet driver found by clang.
+> 
+> Signed-off-by: Behan Webster <behanw@converseincode.com>
+> Suggested-by: Arnd Bergmann <arnd@arndb.de>
 
-Thanks,
+Why are you removing the device table?
 
-Tomeu
+Second of all, your Subject needs to be adjusted, using "net" and
+"LLVMLinux" in your subsystem prefix is not appropriate.  Simply
+"be2net: ", the name of this driver, is sufficient.
 
