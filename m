@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756991AbbA2NIh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 08:08:37 -0500
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:40051 "EHLO
+	id S1757717AbbA2NLZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 08:11:25 -0500
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:39648 "EHLO
 	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751793AbbA2NId (ORCPT
+	with ESMTP id S1755912AbbA2NIf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 08:08:33 -0500
+	Thu, 29 Jan 2015 08:08:35 -0500
 From: Daniel Lezcano <daniel.lezcano@linaro.org>
 To: tglx@linutronix.de
 Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         Barry.Song@csr.com, baruch@tkos.co.il, linux@rempel-privat.de,
         rob.herring@linaro.org, thierry.reding@gmail.com
-Subject: [PATCH 2/9] clocksource: marco: Rename marco to atlas7
-Date: Thu, 29 Jan 2015 14:08:12 +0100
-Message-Id: <1422536899-16609-2-git-send-email-daniel.lezcano@linaro.org>
+Subject: [PATCH 3/9] ARM: clocksource: Add asm9260_timer driver
+Date: Thu, 29 Jan 2015 14:08:13 +0100
+Message-Id: <1422536899-16609-3-git-send-email-daniel.lezcano@linaro.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422536899-16609-1-git-send-email-daniel.lezcano@linaro.org>
 References: <54CA3044.6070501@linaro.org>
@@ -23,674 +23,275 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Barry Song <Baohua.Song@csr.com>
+From: Oleksij Rempel <linux@rempel-privat.de>
 
-marco project is replaced by atlas7 and we should obliterate
-its all traces.
+In some cases asm9260 looks similar to iMX2x. One of exceptions is
+timer controller. So this patch introduces new driver for this special case.
 
-Signed-off-by: Barry Song <Baohua.Song@csr.com>
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+Signed-off-by: Oleksij Rempel <linux@rempel-privat.de>
 Acked-by: Daniel Lezcano <daniel.lezcano@linaro.org>
 Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
 ---
- MAINTAINERS                        |   2 +-
- drivers/clocksource/Makefile       |   2 +-
- drivers/clocksource/timer-atlas7.c | 306 +++++++++++++++++++++++++++++++++++++
- drivers/clocksource/timer-marco.c  | 306 -------------------------------------
- 4 files changed, 308 insertions(+), 308 deletions(-)
- create mode 100644 drivers/clocksource/timer-atlas7.c
- delete mode 100644 drivers/clocksource/timer-marco.c
+ drivers/clocksource/Kconfig         |  10 ++
+ drivers/clocksource/Makefile        |   1 +
+ drivers/clocksource/asm9260_timer.c | 220 ++++++++++++++++++++++++++++++++++++
+ 3 files changed, 231 insertions(+)
+ create mode 100644 drivers/clocksource/asm9260_timer.c
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 2fa3853..f6923cf 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -958,7 +958,7 @@ S:	Maintained
- F:	arch/arm/mach-prima2/
- F:	drivers/clk/sirf/
- F:	drivers/clocksource/timer-prima2.c
--F:	drivers/clocksource/timer-marco.c
-+F:	drivers/clocksource/timer-atlas7.c
- N:	[^a-z]sirf
+diff --git a/drivers/clocksource/Kconfig b/drivers/clocksource/Kconfig
+index fc01ec2..bfaaae4 100644
+--- a/drivers/clocksource/Kconfig
++++ b/drivers/clocksource/Kconfig
+@@ -229,4 +229,14 @@ config CLKSRC_MIPS_GIC
+ 	depends on MIPS_GIC
+ 	select CLKSRC_OF
  
- ARM/EBSA110 MACHINE SUPPORT
++config ASM9260_TIMER
++	bool "Alphascale ASM9260 timer driver"
++	depends on GENERIC_CLOCKEVENTS
++	select CLKSRC_MMIO
++	select CLKSRC_OF
++	default y if MACH_ASM9260
++	help
++	  This enables build of a clocksource and clockevent driver for
++	  the 32-bit System Timer hardware available on a Alphascale ASM9260.
++
+ endmenu
 diff --git a/drivers/clocksource/Makefile b/drivers/clocksource/Makefile
-index 94d90b2..306bc47 100644
+index 306bc47..e5661cc9 100644
 --- a/drivers/clocksource/Makefile
 +++ b/drivers/clocksource/Makefile
-@@ -18,7 +18,7 @@ obj-$(CONFIG_ARMADA_370_XP_TIMER)	+= time-armada-370-xp.o
- obj-$(CONFIG_ORION_TIMER)	+= time-orion.o
- obj-$(CONFIG_ARCH_BCM2835)	+= bcm2835_timer.o
- obj-$(CONFIG_ARCH_CLPS711X)	+= clps711x-timer.o
--obj-$(CONFIG_ARCH_MARCO)	+= timer-marco.o
-+obj-$(CONFIG_ARCH_ATLAS7)	+= timer-atlas7.o
- obj-$(CONFIG_ARCH_MOXART)	+= moxart_timer.o
- obj-$(CONFIG_ARCH_MXS)		+= mxs_timer.o
- obj-$(CONFIG_ARCH_PXA)		+= pxa_timer.o
-diff --git a/drivers/clocksource/timer-atlas7.c b/drivers/clocksource/timer-atlas7.c
+@@ -48,3 +48,4 @@ obj-$(CONFIG_ARCH_KEYSTONE)		+= timer-keystone.o
+ obj-$(CONFIG_ARCH_INTEGRATOR_AP)	+= timer-integrator-ap.o
+ obj-$(CONFIG_CLKSRC_VERSATILE)		+= versatile.o
+ obj-$(CONFIG_CLKSRC_MIPS_GIC)		+= mips-gic-timer.o
++obj-$(CONFIG_ASM9260_TIMER)		+= asm9260_timer.o
+diff --git a/drivers/clocksource/asm9260_timer.c b/drivers/clocksource/asm9260_timer.c
 new file mode 100644
-index 0000000..60f9de3
+index 0000000..2c9c993
 --- /dev/null
-+++ b/drivers/clocksource/timer-atlas7.c
-@@ -0,0 +1,306 @@
++++ b/drivers/clocksource/asm9260_timer.c
+@@ -0,0 +1,220 @@
 +/*
-+ * System timer for CSR SiRFprimaII
++ * Copyright (C) 2014 Oleksij Rempel <linux@rempel-privat.de>
 + *
-+ * Copyright (c) 2011 Cambridge Silicon Radio Limited, a CSR plc group company.
-+ *
-+ * Licensed under GPLv2 or later.
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * as published by the Free Software Foundation; either version 2
++ * of the License, or (at your option) any later version.
 + */
 +
 +#include <linux/kernel.h>
++#include <linux/init.h>
 +#include <linux/interrupt.h>
-+#include <linux/clockchips.h>
-+#include <linux/clocksource.h>
-+#include <linux/cpu.h>
-+#include <linux/bitops.h>
-+#include <linux/irq.h>
++#include <linux/sched.h>
 +#include <linux/clk.h>
-+#include <linux/slab.h>
++#include <linux/clocksource.h>
++#include <linux/clockchips.h>
++#include <linux/io.h>
 +#include <linux/of.h>
-+#include <linux/of_irq.h>
 +#include <linux/of_address.h>
-+#include <linux/sched_clock.h>
++#include <linux/of_irq.h>
++#include <linux/bitops.h>
 +
-+#define SIRFSOC_TIMER_32COUNTER_0_CTRL			0x0000
-+#define SIRFSOC_TIMER_32COUNTER_1_CTRL			0x0004
-+#define SIRFSOC_TIMER_MATCH_0				0x0018
-+#define SIRFSOC_TIMER_MATCH_1				0x001c
-+#define SIRFSOC_TIMER_COUNTER_0				0x0048
-+#define SIRFSOC_TIMER_COUNTER_1				0x004c
-+#define SIRFSOC_TIMER_INTR_STATUS			0x0060
-+#define SIRFSOC_TIMER_WATCHDOG_EN			0x0064
-+#define SIRFSOC_TIMER_64COUNTER_CTRL			0x0068
-+#define SIRFSOC_TIMER_64COUNTER_LO			0x006c
-+#define SIRFSOC_TIMER_64COUNTER_HI			0x0070
-+#define SIRFSOC_TIMER_64COUNTER_LOAD_LO			0x0074
-+#define SIRFSOC_TIMER_64COUNTER_LOAD_HI			0x0078
-+#define SIRFSOC_TIMER_64COUNTER_RLATCHED_LO		0x007c
-+#define SIRFSOC_TIMER_64COUNTER_RLATCHED_HI		0x0080
++#define DRIVER_NAME	"asm9260-timer"
 +
-+#define SIRFSOC_TIMER_REG_CNT 6
++/*
++ * this device provide 4 offsets for each register:
++ * 0x0 - plain read write mode
++ * 0x4 - set mode, OR logic.
++ * 0x8 - clr mode, XOR logic.
++ * 0xc - togle mode.
++ */
++#define SET_REG 4
++#define CLR_REG 8
 +
-+static unsigned long atlas7_timer_rate;
++#define HW_IR           0x0000 /* RW. Interrupt */
++#define BM_IR_CR0	BIT(4)
++#define BM_IR_MR3	BIT(3)
++#define BM_IR_MR2	BIT(2)
++#define BM_IR_MR1	BIT(1)
++#define BM_IR_MR0	BIT(0)
 +
-+static const u32 sirfsoc_timer_reg_list[SIRFSOC_TIMER_REG_CNT] = {
-+	SIRFSOC_TIMER_WATCHDOG_EN,
-+	SIRFSOC_TIMER_32COUNTER_0_CTRL,
-+	SIRFSOC_TIMER_32COUNTER_1_CTRL,
-+	SIRFSOC_TIMER_64COUNTER_CTRL,
-+	SIRFSOC_TIMER_64COUNTER_RLATCHED_LO,
-+	SIRFSOC_TIMER_64COUNTER_RLATCHED_HI,
-+};
++#define HW_TCR		0x0010 /* RW. Timer controller */
++/* BM_C*_RST
++ * Timer Counter and the Prescale Counter are synchronously reset on the
++ * next positive edge of PCLK. The counters remain reset until TCR[1] is
++ * returned to zero. */
++#define BM_C3_RST	BIT(7)
++#define BM_C2_RST	BIT(6)
++#define BM_C1_RST	BIT(5)
++#define BM_C0_RST	BIT(4)
++/* BM_C*_EN
++ * 1 - Timer Counter and Prescale Counter are enabled for counting
++ * 0 - counters are disabled */
++#define BM_C3_EN	BIT(3)
++#define BM_C2_EN	BIT(2)
++#define BM_C1_EN	BIT(1)
++#define BM_C0_EN	BIT(0)
 +
-+static u32 sirfsoc_timer_reg_val[SIRFSOC_TIMER_REG_CNT];
++#define HW_DIR		0x0020 /* RW. Direction? */
++/* 00 - count up
++ * 01 - count down
++ * 10 - ?? 2^n/2 */
++#define BM_DIR_COUNT_UP		0
++#define BM_DIR_COUNT_DOWN	1
++#define BM_DIR0_SHIFT	0
++#define BM_DIR1_SHIFT	4
++#define BM_DIR2_SHIFT	8
++#define BM_DIR3_SHIFT	12
++#define BM_DIR_DEFAULT		(BM_DIR_COUNT_UP << BM_DIR0_SHIFT | \
++				 BM_DIR_COUNT_UP << BM_DIR1_SHIFT | \
++				 BM_DIR_COUNT_UP << BM_DIR2_SHIFT | \
++				 BM_DIR_COUNT_UP << BM_DIR3_SHIFT)
 +
-+static void __iomem *sirfsoc_timer_base;
++#define HW_TC0		0x0030 /* RO. Timer counter 0 */
++/* HW_TC*. Timer counter owerflow (0xffff.ffff to 0x0000.0000) do not generate
++ * interrupt. This registers can be used to detect overflow */
++#define HW_TC1          0x0040
++#define HW_TC2		0x0050
++#define HW_TC3		0x0060
 +
-+/* disable count and interrupt */
-+static inline void sirfsoc_timer_count_disable(int idx)
++#define HW_PR		0x0070 /* RW. prescaler */
++#define BM_PR_DISABLE	0
++#define HW_PC		0x0080 /* RO. Prescaler counter */
++#define HW_MCR		0x0090 /* RW. Match control */
++/* enable interrupt on match */
++#define BM_MCR_INT_EN(n)	(1 << (n * 3 + 0))
++/* enable TC reset on match */
++#define BM_MCR_RES_EN(n)	(1 << (n * 3 + 1))
++/* enable stop TC on match */
++#define BM_MCR_STOP_EN(n)	(1 << (n * 3 + 2))
++
++#define HW_MR0		0x00a0 /* RW. Match reg */
++#define HW_MR1		0x00b0
++#define HW_MR2		0x00C0
++#define HW_MR3		0x00D0
++
++#define HW_CTCR		0x0180 /* Counter control */
++#define BM_CTCR0_SHIFT	0
++#define BM_CTCR1_SHIFT	2
++#define BM_CTCR2_SHIFT	4
++#define BM_CTCR3_SHIFT	6
++#define BM_CTCR_TM	0	/* Timer mode. Every rising PCLK edge. */
++#define BM_CTCR_DEFAULT	(BM_CTCR_TM << BM_CTCR0_SHIFT | \
++			 BM_CTCR_TM << BM_CTCR1_SHIFT | \
++			 BM_CTCR_TM << BM_CTCR2_SHIFT | \
++			 BM_CTCR_TM << BM_CTCR3_SHIFT)
++
++static struct asm9260_timer_priv {
++	void __iomem *base;
++	unsigned long ticks_per_jiffy;
++} priv;
++
++static int asm9260_timer_set_next_event(unsigned long delta,
++					 struct clock_event_device *evt)
 +{
-+	writel_relaxed(readl_relaxed(sirfsoc_timer_base + SIRFSOC_TIMER_32COUNTER_0_CTRL + 4 * idx) & ~0x7,
-+		sirfsoc_timer_base + SIRFSOC_TIMER_32COUNTER_0_CTRL + 4 * idx);
-+}
-+
-+/* enable count and interrupt */
-+static inline void sirfsoc_timer_count_enable(int idx)
-+{
-+	writel_relaxed(readl_relaxed(sirfsoc_timer_base + SIRFSOC_TIMER_32COUNTER_0_CTRL + 4 * idx) | 0x3,
-+		sirfsoc_timer_base + SIRFSOC_TIMER_32COUNTER_0_CTRL + 4 * idx);
-+}
-+
-+/* timer interrupt handler */
-+static irqreturn_t sirfsoc_timer_interrupt(int irq, void *dev_id)
-+{
-+	struct clock_event_device *ce = dev_id;
-+	int cpu = smp_processor_id();
-+
-+	/* clear timer interrupt */
-+	writel_relaxed(BIT(cpu), sirfsoc_timer_base + SIRFSOC_TIMER_INTR_STATUS);
-+
-+	if (ce->mode == CLOCK_EVT_MODE_ONESHOT)
-+		sirfsoc_timer_count_disable(cpu);
-+
-+	ce->event_handler(ce);
-+
-+	return IRQ_HANDLED;
-+}
-+
-+/* read 64-bit timer counter */
-+static cycle_t sirfsoc_timer_read(struct clocksource *cs)
-+{
-+	u64 cycles;
-+
-+	writel_relaxed((readl_relaxed(sirfsoc_timer_base + SIRFSOC_TIMER_64COUNTER_CTRL) |
-+			BIT(0)) & ~BIT(1), sirfsoc_timer_base + SIRFSOC_TIMER_64COUNTER_CTRL);
-+
-+	cycles = readl_relaxed(sirfsoc_timer_base + SIRFSOC_TIMER_64COUNTER_RLATCHED_HI);
-+	cycles = (cycles << 32) | readl_relaxed(sirfsoc_timer_base + SIRFSOC_TIMER_64COUNTER_RLATCHED_LO);
-+
-+	return cycles;
-+}
-+
-+static int sirfsoc_timer_set_next_event(unsigned long delta,
-+	struct clock_event_device *ce)
-+{
-+	int cpu = smp_processor_id();
-+
-+	/* disable timer first, then modify the related registers */
-+	sirfsoc_timer_count_disable(cpu);
-+
-+	writel_relaxed(0, sirfsoc_timer_base + SIRFSOC_TIMER_COUNTER_0 +
-+		4 * cpu);
-+	writel_relaxed(delta, sirfsoc_timer_base + SIRFSOC_TIMER_MATCH_0 +
-+		4 * cpu);
-+
-+	/* enable the tick */
-+	sirfsoc_timer_count_enable(cpu);
-+
++	/* configure match count for TC0 */
++	writel_relaxed(delta, priv.base + HW_MR0);
++	/* enable TC0 */
++	writel_relaxed(BM_C0_EN, priv.base + HW_TCR + SET_REG);
 +	return 0;
 +}
 +
-+static void sirfsoc_timer_set_mode(enum clock_event_mode mode,
-+	struct clock_event_device *ce)
++static void asm9260_timer_set_mode(enum clock_event_mode mode,
++				    struct clock_event_device *evt)
 +{
++	/* stop timer0 */
++	writel_relaxed(BM_C0_EN, priv.base + HW_TCR + CLR_REG);
++
 +	switch (mode) {
++	case CLOCK_EVT_MODE_PERIODIC:
++		/* disable reset and stop on match */
++		writel_relaxed(BM_MCR_RES_EN(0) | BM_MCR_STOP_EN(0),
++				priv.base + HW_MCR + CLR_REG);
++		/* configure match count for TC0 */
++		writel_relaxed(priv.ticks_per_jiffy, priv.base + HW_MR0);
++		/* enable TC0 */
++		writel_relaxed(BM_C0_EN, priv.base + HW_TCR + SET_REG);
++		break;
 +	case CLOCK_EVT_MODE_ONESHOT:
-+		/* enable in set_next_event */
++		/* enable reset and stop on match */
++		writel_relaxed(BM_MCR_RES_EN(0) | BM_MCR_STOP_EN(0),
++				priv.base + HW_MCR + SET_REG);
 +		break;
 +	default:
 +		break;
 +	}
-+
-+	sirfsoc_timer_count_disable(smp_processor_id());
 +}
 +
-+static void sirfsoc_clocksource_suspend(struct clocksource *cs)
-+{
-+	int i;
-+
-+	for (i = 0; i < SIRFSOC_TIMER_REG_CNT; i++)
-+		sirfsoc_timer_reg_val[i] = readl_relaxed(sirfsoc_timer_base + sirfsoc_timer_reg_list[i]);
-+}
-+
-+static void sirfsoc_clocksource_resume(struct clocksource *cs)
-+{
-+	int i;
-+
-+	for (i = 0; i < SIRFSOC_TIMER_REG_CNT - 2; i++)
-+		writel_relaxed(sirfsoc_timer_reg_val[i], sirfsoc_timer_base + sirfsoc_timer_reg_list[i]);
-+
-+	writel_relaxed(sirfsoc_timer_reg_val[SIRFSOC_TIMER_REG_CNT - 2],
-+		sirfsoc_timer_base + SIRFSOC_TIMER_64COUNTER_LOAD_LO);
-+	writel_relaxed(sirfsoc_timer_reg_val[SIRFSOC_TIMER_REG_CNT - 1],
-+		sirfsoc_timer_base + SIRFSOC_TIMER_64COUNTER_LOAD_HI);
-+
-+	writel_relaxed(readl_relaxed(sirfsoc_timer_base + SIRFSOC_TIMER_64COUNTER_CTRL) |
-+		BIT(1) | BIT(0), sirfsoc_timer_base + SIRFSOC_TIMER_64COUNTER_CTRL);
-+}
-+
-+static struct clock_event_device __percpu *sirfsoc_clockevent;
-+
-+static struct clocksource sirfsoc_clocksource = {
-+	.name = "sirfsoc_clocksource",
-+	.rating = 200,
-+	.mask = CLOCKSOURCE_MASK(64),
-+	.flags = CLOCK_SOURCE_IS_CONTINUOUS,
-+	.read = sirfsoc_timer_read,
-+	.suspend = sirfsoc_clocksource_suspend,
-+	.resume = sirfsoc_clocksource_resume,
++static struct clock_event_device event_dev = {
++	.name		= DRIVER_NAME,
++	.rating		= 200,
++	.features       = CLOCK_EVT_FEAT_PERIODIC | CLOCK_EVT_FEAT_ONESHOT,
++	.set_next_event	= asm9260_timer_set_next_event,
++	.set_mode	= asm9260_timer_set_mode,
 +};
 +
-+static struct irqaction sirfsoc_timer_irq = {
-+	.name = "sirfsoc_timer0",
-+	.flags = IRQF_TIMER | IRQF_NOBALANCING,
-+	.handler = sirfsoc_timer_interrupt,
-+};
-+
-+static struct irqaction sirfsoc_timer1_irq = {
-+	.name = "sirfsoc_timer1",
-+	.flags = IRQF_TIMER | IRQF_NOBALANCING,
-+	.handler = sirfsoc_timer_interrupt,
-+};
-+
-+static int sirfsoc_local_timer_setup(struct clock_event_device *ce)
++static irqreturn_t asm9260_timer_interrupt(int irq, void *dev_id)
 +{
-+	int cpu = smp_processor_id();
-+	struct irqaction *action;
++	struct clock_event_device *evt = dev_id;
 +
-+	if (cpu == 0)
-+		action = &sirfsoc_timer_irq;
-+	else
-+		action = &sirfsoc_timer1_irq;
++	evt->event_handler(evt);
 +
-+	ce->irq = action->irq;
-+	ce->name = "local_timer";
-+	ce->features = CLOCK_EVT_FEAT_ONESHOT;
-+	ce->rating = 200;
-+	ce->set_mode = sirfsoc_timer_set_mode;
-+	ce->set_next_event = sirfsoc_timer_set_next_event;
-+	clockevents_calc_mult_shift(ce, atlas7_timer_rate, 60);
-+	ce->max_delta_ns = clockevent_delta2ns(-2, ce);
-+	ce->min_delta_ns = clockevent_delta2ns(2, ce);
-+	ce->cpumask = cpumask_of(cpu);
++	writel_relaxed(BM_IR_MR0, priv.base + HW_IR);
 +
-+	action->dev_id = ce;
-+	BUG_ON(setup_irq(ce->irq, action));
-+	irq_force_affinity(action->irq, cpumask_of(cpu));
-+
-+	clockevents_register_device(ce);
-+	return 0;
++	return IRQ_HANDLED;
 +}
 +
-+static void sirfsoc_local_timer_stop(struct clock_event_device *ce)
++/*
++ * ---------------------------------------------------------------------------
++ * Timer initialization
++ * ---------------------------------------------------------------------------
++ */
++static void __init asm9260_timer_init(struct device_node *np)
 +{
-+	int cpu = smp_processor_id();
-+
-+	sirfsoc_timer_count_disable(1);
-+
-+	if (cpu == 0)
-+		remove_irq(sirfsoc_timer_irq.irq, &sirfsoc_timer_irq);
-+	else
-+		remove_irq(sirfsoc_timer1_irq.irq, &sirfsoc_timer1_irq);
-+}
-+
-+static int sirfsoc_cpu_notify(struct notifier_block *self,
-+			      unsigned long action, void *hcpu)
-+{
-+	/*
-+	 * Grab cpu pointer in each case to avoid spurious
-+	 * preemptible warnings
-+	 */
-+	switch (action & ~CPU_TASKS_FROZEN) {
-+	case CPU_STARTING:
-+		sirfsoc_local_timer_setup(this_cpu_ptr(sirfsoc_clockevent));
-+		break;
-+	case CPU_DYING:
-+		sirfsoc_local_timer_stop(this_cpu_ptr(sirfsoc_clockevent));
-+		break;
-+	}
-+
-+	return NOTIFY_OK;
-+}
-+
-+static struct notifier_block sirfsoc_cpu_nb = {
-+	.notifier_call = sirfsoc_cpu_notify,
-+};
-+
-+static void __init sirfsoc_clockevent_init(void)
-+{
-+	sirfsoc_clockevent = alloc_percpu(struct clock_event_device);
-+	BUG_ON(!sirfsoc_clockevent);
-+
-+	BUG_ON(register_cpu_notifier(&sirfsoc_cpu_nb));
-+
-+	/* Immediately configure the timer on the boot CPU */
-+	sirfsoc_local_timer_setup(this_cpu_ptr(sirfsoc_clockevent));
-+}
-+
-+/* initialize the kernel jiffy timer source */
-+static void __init sirfsoc_atlas7_timer_init(struct device_node *np)
-+{
++	int irq;
 +	struct clk *clk;
++	int ret;
++	unsigned long rate;
++
++	priv.base = of_io_request_and_map(np, 0, np->name);
++	if (!priv.base)
++		panic("%s: unable to map resource", np->name);
 +
 +	clk = of_clk_get(np, 0);
-+	BUG_ON(IS_ERR(clk));
 +
-+	BUG_ON(clk_prepare_enable(clk));
++	ret = clk_prepare_enable(clk);
++	if (ret)
++		panic("Failed to enable clk!\n");
 +
-+	atlas7_timer_rate = clk_get_rate(clk);
++	irq = irq_of_parse_and_map(np, 0);
++	ret = request_irq(irq, asm9260_timer_interrupt, IRQF_TIMER,
++			DRIVER_NAME, &event_dev);
++	if (ret)
++		panic("Failed to setup irq!\n");
 +
-+	/* timer dividers: 0, not divided */
-+	writel_relaxed(0, sirfsoc_timer_base + SIRFSOC_TIMER_64COUNTER_CTRL);
-+	writel_relaxed(0, sirfsoc_timer_base + SIRFSOC_TIMER_32COUNTER_0_CTRL);
-+	writel_relaxed(0, sirfsoc_timer_base + SIRFSOC_TIMER_32COUNTER_1_CTRL);
++	/* set all timers for count-up */
++	writel_relaxed(BM_DIR_DEFAULT, priv.base + HW_DIR);
++	/* disable divider */
++	writel_relaxed(BM_PR_DISABLE, priv.base + HW_PR);
++	/* make sure all timers use every rising PCLK edge. */
++	writel_relaxed(BM_CTCR_DEFAULT, priv.base + HW_CTCR);
++	/* enable interrupt for TC0 and clean setting for all other lines */
++	writel_relaxed(BM_MCR_INT_EN(0) , priv.base + HW_MCR);
 +
-+	/* Initialize timer counters to 0 */
-+	writel_relaxed(0, sirfsoc_timer_base + SIRFSOC_TIMER_64COUNTER_LOAD_LO);
-+	writel_relaxed(0, sirfsoc_timer_base + SIRFSOC_TIMER_64COUNTER_LOAD_HI);
-+	writel_relaxed(readl_relaxed(sirfsoc_timer_base + SIRFSOC_TIMER_64COUNTER_CTRL) |
-+		BIT(1) | BIT(0), sirfsoc_timer_base + SIRFSOC_TIMER_64COUNTER_CTRL);
-+	writel_relaxed(0, sirfsoc_timer_base + SIRFSOC_TIMER_COUNTER_0);
-+	writel_relaxed(0, sirfsoc_timer_base + SIRFSOC_TIMER_COUNTER_1);
++	rate = clk_get_rate(clk);
++	clocksource_mmio_init(priv.base + HW_TC1, DRIVER_NAME, rate,
++			200, 32, clocksource_mmio_readl_up);
 +
-+	/* Clear all interrupts */
-+	writel_relaxed(0xFFFF, sirfsoc_timer_base + SIRFSOC_TIMER_INTR_STATUS);
++	/* Seems like we can't use counter without match register even if
++	 * actions for MR are disabled. So, set MR to max value. */
++	writel_relaxed(0xffffffff, priv.base + HW_MR1);
++	/* enable TC1 */
++	writel_relaxed(BM_C1_EN, priv.base + HW_TCR + SET_REG);
 +
-+	BUG_ON(clocksource_register_hz(&sirfsoc_clocksource, atlas7_timer_rate));
-+
-+	sirfsoc_clockevent_init();
++	priv.ticks_per_jiffy = DIV_ROUND_CLOSEST(rate, HZ);
++	event_dev.cpumask = cpumask_of(0);
++	clockevents_config_and_register(&event_dev, rate, 0x2c00, 0xfffffffe);
 +}
-+
-+static void __init sirfsoc_of_timer_init(struct device_node *np)
-+{
-+	sirfsoc_timer_base = of_iomap(np, 0);
-+	if (!sirfsoc_timer_base)
-+		panic("unable to map timer cpu registers\n");
-+
-+	sirfsoc_timer_irq.irq = irq_of_parse_and_map(np, 0);
-+	if (!sirfsoc_timer_irq.irq)
-+		panic("No irq passed for timer0 via DT\n");
-+
-+	sirfsoc_timer1_irq.irq = irq_of_parse_and_map(np, 1);
-+	if (!sirfsoc_timer1_irq.irq)
-+		panic("No irq passed for timer1 via DT\n");
-+
-+	sirfsoc_atlas7_timer_init(np);
-+}
-+CLOCKSOURCE_OF_DECLARE(sirfsoc_atlas7_timer, "sirf,atlas7-tick", sirfsoc_of_timer_init);
-diff --git a/drivers/clocksource/timer-marco.c b/drivers/clocksource/timer-marco.c
-deleted file mode 100644
-index 3ddb81f..0000000
---- a/drivers/clocksource/timer-marco.c
-+++ /dev/null
-@@ -1,306 +0,0 @@
--/*
-- * System timer for CSR SiRFprimaII
-- *
-- * Copyright (c) 2011 Cambridge Silicon Radio Limited, a CSR plc group company.
-- *
-- * Licensed under GPLv2 or later.
-- */
--
--#include <linux/kernel.h>
--#include <linux/interrupt.h>
--#include <linux/clockchips.h>
--#include <linux/clocksource.h>
--#include <linux/cpu.h>
--#include <linux/bitops.h>
--#include <linux/irq.h>
--#include <linux/clk.h>
--#include <linux/slab.h>
--#include <linux/of.h>
--#include <linux/of_irq.h>
--#include <linux/of_address.h>
--#include <linux/sched_clock.h>
--
--#define SIRFSOC_TIMER_32COUNTER_0_CTRL			0x0000
--#define SIRFSOC_TIMER_32COUNTER_1_CTRL			0x0004
--#define SIRFSOC_TIMER_MATCH_0				0x0018
--#define SIRFSOC_TIMER_MATCH_1				0x001c
--#define SIRFSOC_TIMER_COUNTER_0				0x0048
--#define SIRFSOC_TIMER_COUNTER_1				0x004c
--#define SIRFSOC_TIMER_INTR_STATUS			0x0060
--#define SIRFSOC_TIMER_WATCHDOG_EN			0x0064
--#define SIRFSOC_TIMER_64COUNTER_CTRL			0x0068
--#define SIRFSOC_TIMER_64COUNTER_LO			0x006c
--#define SIRFSOC_TIMER_64COUNTER_HI			0x0070
--#define SIRFSOC_TIMER_64COUNTER_LOAD_LO			0x0074
--#define SIRFSOC_TIMER_64COUNTER_LOAD_HI			0x0078
--#define SIRFSOC_TIMER_64COUNTER_RLATCHED_LO		0x007c
--#define SIRFSOC_TIMER_64COUNTER_RLATCHED_HI		0x0080
--
--#define SIRFSOC_TIMER_REG_CNT 6
--
--static unsigned long marco_timer_rate;
--
--static const u32 sirfsoc_timer_reg_list[SIRFSOC_TIMER_REG_CNT] = {
--	SIRFSOC_TIMER_WATCHDOG_EN,
--	SIRFSOC_TIMER_32COUNTER_0_CTRL,
--	SIRFSOC_TIMER_32COUNTER_1_CTRL,
--	SIRFSOC_TIMER_64COUNTER_CTRL,
--	SIRFSOC_TIMER_64COUNTER_RLATCHED_LO,
--	SIRFSOC_TIMER_64COUNTER_RLATCHED_HI,
--};
--
--static u32 sirfsoc_timer_reg_val[SIRFSOC_TIMER_REG_CNT];
--
--static void __iomem *sirfsoc_timer_base;
--
--/* disable count and interrupt */
--static inline void sirfsoc_timer_count_disable(int idx)
--{
--	writel_relaxed(readl_relaxed(sirfsoc_timer_base + SIRFSOC_TIMER_32COUNTER_0_CTRL + 4 * idx) & ~0x7,
--		sirfsoc_timer_base + SIRFSOC_TIMER_32COUNTER_0_CTRL + 4 * idx);
--}
--
--/* enable count and interrupt */
--static inline void sirfsoc_timer_count_enable(int idx)
--{
--	writel_relaxed(readl_relaxed(sirfsoc_timer_base + SIRFSOC_TIMER_32COUNTER_0_CTRL + 4 * idx) | 0x3,
--		sirfsoc_timer_base + SIRFSOC_TIMER_32COUNTER_0_CTRL + 4 * idx);
--}
--
--/* timer interrupt handler */
--static irqreturn_t sirfsoc_timer_interrupt(int irq, void *dev_id)
--{
--	struct clock_event_device *ce = dev_id;
--	int cpu = smp_processor_id();
--
--	/* clear timer interrupt */
--	writel_relaxed(BIT(cpu), sirfsoc_timer_base + SIRFSOC_TIMER_INTR_STATUS);
--
--	if (ce->mode == CLOCK_EVT_MODE_ONESHOT)
--		sirfsoc_timer_count_disable(cpu);
--
--	ce->event_handler(ce);
--
--	return IRQ_HANDLED;
--}
--
--/* read 64-bit timer counter */
--static cycle_t sirfsoc_timer_read(struct clocksource *cs)
--{
--	u64 cycles;
--
--	writel_relaxed((readl_relaxed(sirfsoc_timer_base + SIRFSOC_TIMER_64COUNTER_CTRL) |
--			BIT(0)) & ~BIT(1), sirfsoc_timer_base + SIRFSOC_TIMER_64COUNTER_CTRL);
--
--	cycles = readl_relaxed(sirfsoc_timer_base + SIRFSOC_TIMER_64COUNTER_RLATCHED_HI);
--	cycles = (cycles << 32) | readl_relaxed(sirfsoc_timer_base + SIRFSOC_TIMER_64COUNTER_RLATCHED_LO);
--
--	return cycles;
--}
--
--static int sirfsoc_timer_set_next_event(unsigned long delta,
--	struct clock_event_device *ce)
--{
--	int cpu = smp_processor_id();
--
--	/* disable timer first, then modify the related registers */
--	sirfsoc_timer_count_disable(cpu);
--
--	writel_relaxed(0, sirfsoc_timer_base + SIRFSOC_TIMER_COUNTER_0 +
--		4 * cpu);
--	writel_relaxed(delta, sirfsoc_timer_base + SIRFSOC_TIMER_MATCH_0 +
--		4 * cpu);
--
--	/* enable the tick */
--	sirfsoc_timer_count_enable(cpu);
--
--	return 0;
--}
--
--static void sirfsoc_timer_set_mode(enum clock_event_mode mode,
--	struct clock_event_device *ce)
--{
--	switch (mode) {
--	case CLOCK_EVT_MODE_ONESHOT:
--		/* enable in set_next_event */
--		break;
--	default:
--		break;
--	}
--
--	sirfsoc_timer_count_disable(smp_processor_id());
--}
--
--static void sirfsoc_clocksource_suspend(struct clocksource *cs)
--{
--	int i;
--
--	for (i = 0; i < SIRFSOC_TIMER_REG_CNT; i++)
--		sirfsoc_timer_reg_val[i] = readl_relaxed(sirfsoc_timer_base + sirfsoc_timer_reg_list[i]);
--}
--
--static void sirfsoc_clocksource_resume(struct clocksource *cs)
--{
--	int i;
--
--	for (i = 0; i < SIRFSOC_TIMER_REG_CNT - 2; i++)
--		writel_relaxed(sirfsoc_timer_reg_val[i], sirfsoc_timer_base + sirfsoc_timer_reg_list[i]);
--
--	writel_relaxed(sirfsoc_timer_reg_val[SIRFSOC_TIMER_REG_CNT - 2],
--		sirfsoc_timer_base + SIRFSOC_TIMER_64COUNTER_LOAD_LO);
--	writel_relaxed(sirfsoc_timer_reg_val[SIRFSOC_TIMER_REG_CNT - 1],
--		sirfsoc_timer_base + SIRFSOC_TIMER_64COUNTER_LOAD_HI);
--
--	writel_relaxed(readl_relaxed(sirfsoc_timer_base + SIRFSOC_TIMER_64COUNTER_CTRL) |
--		BIT(1) | BIT(0), sirfsoc_timer_base + SIRFSOC_TIMER_64COUNTER_CTRL);
--}
--
--static struct clock_event_device __percpu *sirfsoc_clockevent;
--
--static struct clocksource sirfsoc_clocksource = {
--	.name = "sirfsoc_clocksource",
--	.rating = 200,
--	.mask = CLOCKSOURCE_MASK(64),
--	.flags = CLOCK_SOURCE_IS_CONTINUOUS,
--	.read = sirfsoc_timer_read,
--	.suspend = sirfsoc_clocksource_suspend,
--	.resume = sirfsoc_clocksource_resume,
--};
--
--static struct irqaction sirfsoc_timer_irq = {
--	.name = "sirfsoc_timer0",
--	.flags = IRQF_TIMER | IRQF_NOBALANCING,
--	.handler = sirfsoc_timer_interrupt,
--};
--
--static struct irqaction sirfsoc_timer1_irq = {
--	.name = "sirfsoc_timer1",
--	.flags = IRQF_TIMER | IRQF_NOBALANCING,
--	.handler = sirfsoc_timer_interrupt,
--};
--
--static int sirfsoc_local_timer_setup(struct clock_event_device *ce)
--{
--	int cpu = smp_processor_id();
--	struct irqaction *action;
--
--	if (cpu == 0)
--		action = &sirfsoc_timer_irq;
--	else
--		action = &sirfsoc_timer1_irq;
--
--	ce->irq = action->irq;
--	ce->name = "local_timer";
--	ce->features = CLOCK_EVT_FEAT_ONESHOT;
--	ce->rating = 200;
--	ce->set_mode = sirfsoc_timer_set_mode;
--	ce->set_next_event = sirfsoc_timer_set_next_event;
--	clockevents_calc_mult_shift(ce, marco_timer_rate, 60);
--	ce->max_delta_ns = clockevent_delta2ns(-2, ce);
--	ce->min_delta_ns = clockevent_delta2ns(2, ce);
--	ce->cpumask = cpumask_of(cpu);
--
--	action->dev_id = ce;
--	BUG_ON(setup_irq(ce->irq, action));
--	irq_force_affinity(action->irq, cpumask_of(cpu));
--
--	clockevents_register_device(ce);
--	return 0;
--}
--
--static void sirfsoc_local_timer_stop(struct clock_event_device *ce)
--{
--	int cpu = smp_processor_id();
--
--	sirfsoc_timer_count_disable(1);
--
--	if (cpu == 0)
--		remove_irq(sirfsoc_timer_irq.irq, &sirfsoc_timer_irq);
--	else
--		remove_irq(sirfsoc_timer1_irq.irq, &sirfsoc_timer1_irq);
--}
--
--static int sirfsoc_cpu_notify(struct notifier_block *self,
--			      unsigned long action, void *hcpu)
--{
--	/*
--	 * Grab cpu pointer in each case to avoid spurious
--	 * preemptible warnings
--	 */
--	switch (action & ~CPU_TASKS_FROZEN) {
--	case CPU_STARTING:
--		sirfsoc_local_timer_setup(this_cpu_ptr(sirfsoc_clockevent));
--		break;
--	case CPU_DYING:
--		sirfsoc_local_timer_stop(this_cpu_ptr(sirfsoc_clockevent));
--		break;
--	}
--
--	return NOTIFY_OK;
--}
--
--static struct notifier_block sirfsoc_cpu_nb = {
--	.notifier_call = sirfsoc_cpu_notify,
--};
--
--static void __init sirfsoc_clockevent_init(void)
--{
--	sirfsoc_clockevent = alloc_percpu(struct clock_event_device);
--	BUG_ON(!sirfsoc_clockevent);
--
--	BUG_ON(register_cpu_notifier(&sirfsoc_cpu_nb));
--
--	/* Immediately configure the timer on the boot CPU */
--	sirfsoc_local_timer_setup(this_cpu_ptr(sirfsoc_clockevent));
--}
--
--/* initialize the kernel jiffy timer source */
--static void __init sirfsoc_marco_timer_init(struct device_node *np)
--{
--	struct clk *clk;
--
--	clk = of_clk_get(np, 0);
--	BUG_ON(IS_ERR(clk));
--
--	BUG_ON(clk_prepare_enable(clk));
--
--	marco_timer_rate = clk_get_rate(clk);
--
--	/* timer dividers: 0, not divided */
--	writel_relaxed(0, sirfsoc_timer_base + SIRFSOC_TIMER_64COUNTER_CTRL);
--	writel_relaxed(0, sirfsoc_timer_base + SIRFSOC_TIMER_32COUNTER_0_CTRL);
--	writel_relaxed(0, sirfsoc_timer_base + SIRFSOC_TIMER_32COUNTER_1_CTRL);
--
--	/* Initialize timer counters to 0 */
--	writel_relaxed(0, sirfsoc_timer_base + SIRFSOC_TIMER_64COUNTER_LOAD_LO);
--	writel_relaxed(0, sirfsoc_timer_base + SIRFSOC_TIMER_64COUNTER_LOAD_HI);
--	writel_relaxed(readl_relaxed(sirfsoc_timer_base + SIRFSOC_TIMER_64COUNTER_CTRL) |
--		BIT(1) | BIT(0), sirfsoc_timer_base + SIRFSOC_TIMER_64COUNTER_CTRL);
--	writel_relaxed(0, sirfsoc_timer_base + SIRFSOC_TIMER_COUNTER_0);
--	writel_relaxed(0, sirfsoc_timer_base + SIRFSOC_TIMER_COUNTER_1);
--
--	/* Clear all interrupts */
--	writel_relaxed(0xFFFF, sirfsoc_timer_base + SIRFSOC_TIMER_INTR_STATUS);
--
--	BUG_ON(clocksource_register_hz(&sirfsoc_clocksource, marco_timer_rate));
--
--	sirfsoc_clockevent_init();
--}
--
--static void __init sirfsoc_of_timer_init(struct device_node *np)
--{
--	sirfsoc_timer_base = of_iomap(np, 0);
--	if (!sirfsoc_timer_base)
--		panic("unable to map timer cpu registers\n");
--
--	sirfsoc_timer_irq.irq = irq_of_parse_and_map(np, 0);
--	if (!sirfsoc_timer_irq.irq)
--		panic("No irq passed for timer0 via DT\n");
--
--	sirfsoc_timer1_irq.irq = irq_of_parse_and_map(np, 1);
--	if (!sirfsoc_timer1_irq.irq)
--		panic("No irq passed for timer1 via DT\n");
--
--	sirfsoc_marco_timer_init(np);
--}
--CLOCKSOURCE_OF_DECLARE(sirfsoc_marco_timer, "sirf,marco-tick", sirfsoc_of_timer_init );
++CLOCKSOURCE_OF_DECLARE(asm9260_timer, "alphascale,asm9260-timer",
++		asm9260_timer_init);
 -- 
 1.9.1
 
