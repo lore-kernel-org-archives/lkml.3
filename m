@@ -1,57 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761679AbbA2KDR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 05:03:17 -0500
-Received: from mout.kundenserver.de ([212.227.17.13]:52400 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756415AbbA2KDM (ORCPT
+	id S1761916AbbA2KDq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 05:03:46 -0500
+Received: from mail-lb0-f169.google.com ([209.85.217.169]:49980 "EHLO
+	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758063AbbA2KDk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 05:03:12 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: "Darrick J. Wong" <darrick.wong@oracle.com>
-Cc: Jens Axboe <axboe@kernel.dk>, Christoph Hellwig <hch@infradead.org>,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-api@vger.kernel.org, Jeff Layton <jlayton@poochiereds.net>,
-        "J. Bruce Fields" <bfields@fieldses.org>
-Subject: Re: [RESEND] [PATCH] block: create ioctl to discard-or-zeroout a range of blocks
-Date: Thu, 29 Jan 2015 11:02:58 +0100
-Message-ID: <2747023.BlTyJ4fNVf@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20150129020025.GE9981@birch.djwong.org>
-References: <20150129020025.GE9981@birch.djwong.org>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V03:K0:1t06EFNA5IyIwZy+nZQCCElnMfWN3HmcjiGZmV4MH32ZTsk6T71
- Ob/0+0MsTXzfMmPmIMjHNWB4stE+16xe277OqWXkJaIz3anZRz4kTbysDXZIz6umayWRoFZ
- b06nlfq1ldTbPIrZjjV2qHxF+xogdQzeiC7kscpKGSTe+FNnlgQI4ooD6cn1I1BQV07TB+w
- FTwV7wzpS97lndDq5UZLA==
-X-UI-Out-Filterresults: notjunk:1;
+	Thu, 29 Jan 2015 05:03:40 -0500
+From: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Trond Myklebust <trond.myklebust@primarydata.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>,
+        "David S. Miller" <davem@davemloft.net>
+Cc: Rasmus Villemoes <linux@rasmusvillemoes.dk>, linux-kernel@vger.kernel.org,
+        linux-nfs@vger.kernel.org, netdev@vger.kernel.org
+Subject: [PATCH v2 0/3] Two printf fixes
+Date: Thu, 29 Jan 2015 11:03:17 +0100
+Message-Id: <1422525801-26560-1-git-send-email-linux@rasmusvillemoes.dk>
+X-Mailer: git-send-email 2.1.3
+In-Reply-To: <1422451543-12401-1-git-send-email-linux@rasmusvillemoes.dk>
+References: <1422451543-12401-1-git-send-email-linux@rasmusvillemoes.dk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 28 January 2015 18:00:25 Darrick J. Wong wrote:
-> Create a new ioctl to expose the block layer's newfound ability to
-> issue either a zeroing discard, a WRITE SAME with a zero page, or a
-> regular write with the zero page.  This BLKZEROOUT2 ioctl takes
-> {start, length, flags} as parameters.  So far, the only flag available
-> is to enable the zeroing discard part -- without it, the call invokes
-> the old BLKZEROOUT behavior.  start and length have the same meaning
-> as in BLKZEROOUT.
-> 
-> Furthermore, because BLKZEROOUT2 issues commands directly to the
-> storage device, we must invalidate the page cache (as a regular
-> O_DIRECT write would do) to avoid returning stale cache contents at a
-> later time.
-> 
-> This patch depends on "block: Add discard flag to
-> blkdev_issue_zeroout() function" in Jens' for-3.20/core branch.
-> 
-> Signed-off-by: Darrick J. Wong <darrick.wong@oracle.com>
-> 
+Both %pE and %ph are unusable in kasprintf(), since the occurrence of
+either will trigger an oops during the first vsnprintf call where
+kasprintf tries to find the correct size to allocate. These oopses
+could be papered over with somewhat smaller patches than these, but
+then the return value from vsnprintf would still not reflect the
+actual size needed. For %pE, this requires a change of semantics of
+string_escape_mem and hence an annoyingly large diffstat.
 
-Would this work ok for devices that fill discarded areas with all-ones
-instead of all-zeroes? I believe SD cards can do either.
+Whether this is 3.20, 3.21 and/or -stable material (or /dev/null
+material, for that matter ;-)) I'll leave to others to decide.
 
-	Arnd
+v2: Suggestions from Andy Shevchenko:
+
+* Simpler fix of hex_string().
+
+* The string_escape_mem change is split in two, 2/3 updating the
+  internal helpers and 3/3 then changing the external interface.
+
+Rasmus Villemoes (3):
+  lib/vsprintf.c: Fix potential NULL deref in hex_string
+  lib/string_helpers.c: Refactor string_escape_mem
+  lib/string_helpers.c: Change semantics of string_escape_mem
+
+ include/linux/string_helpers.h |  10 +--
+ lib/string_helpers.c           | 191 ++++++++++++++++-------------------------
+ lib/test-string_helpers.c      |  37 ++++----
+ lib/vsprintf.c                 |  18 ++--
+ net/sunrpc/cache.c             |   8 +-
+ 5 files changed, 111 insertions(+), 153 deletions(-)
+
+-- 
+2.1.3
+
