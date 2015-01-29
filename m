@@ -1,75 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933388AbbA2KKk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 05:10:40 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:63015 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752923AbbA2KKi (ORCPT
+	id S1761255AbbA2KK6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 05:10:58 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:38313 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754540AbbA2KK4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 05:10:38 -0500
-From: Karl Beldan <karl.beldan@gmail.com>
-X-Google-Original-From: Karl Beldan <karl.beldan@rivierawaves.com>
-To: "David S . Miller" <davem@davemloft.net>
-Cc: Karl Beldan <karl.beldan@gmail.com>,
-        Karl Beldan <karl.beldan@rivierawaves.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Eric Dumazet <edumazet@google.com>
-Subject: [PATCH] lib/checksum.c: fix build for generic csum_tcpudp_nofold
-Date: Thu, 29 Jan 2015 11:10:22 +0100
-Message-Id: <1422526222-2445-1-git-send-email-karl.beldan@rivierawaves.com>
-X-Mailer: git-send-email 2.0.1
+	Thu, 29 Jan 2015 05:10:56 -0500
+Date: Thu, 29 Jan 2015 10:18:39 +0008
+From: Jason Wang <jasowang@redhat.com>
+Subject: Re: [PATCH v3 3/3] Drivers: hv: vmbus: serialize Offer and Rescind
+ offer
+To: Vitaly Kuznetsov <vkuznets@redhat.com>
+Cc: Dexuan Cui <decui@microsoft.com>, KY Srinivasan <kys@microsoft.com>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        Haiyang Zhang <haiyangz@microsoft.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Radim =?iso-8859-2?b?S3LobeH4?= <rkrcmar@redhat.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>
+Message-Id: <1422526239.14137.3@smtp.corp.redhat.com>
+In-Reply-To: <87egqf8316.fsf@vitty.brq.redhat.com>
+References: <1421768706-5363-1-git-send-email-vkuznets@redhat.com>
+	<1421768706-5363-4-git-send-email-vkuznets@redhat.com>
+	<F792CF86EFE20D4AB8064279AFBA51C61EA94FB7@SIXPRD3002MB028.064d.mgd.msft.net>
+	<8761br9kfd.fsf@vitty.brq.redhat.com>
+	<F792CF86EFE20D4AB8064279AFBA51C61EA9510B@SIXPRD3002MB028.064d.mgd.msft.net>
+	<F792CF86EFE20D4AB8064279AFBA51C61EA9510B@SIXPRD3002MB028.064d.mgd.msft.net>
+	<87egqf8316.fsf@vitty.brq.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixed commit added from64to32 under _#ifndef do_csum_ but used it
-under _#ifndef csum_tcpudp_nofold_, breaking some builds (Fengguang's
-robot reported TILEGX's). Move from64to32 under the latter.
 
-Fixes: 150ae0e94634 ("lib/checksum.c: fix carry in csum_tcpudp_nofold")
-Reported-by: kbuild test robot <fengguang.wu@intel.com>
-Signed-off-by: Karl Beldan <karl.beldan@rivierawaves.com>
-Cc: Eric Dumazet <edumazet@google.com>
-Cc: David S. Miller <davem@davemloft.net>
----
- lib/checksum.c | 18 +++++++++---------
- 1 file changed, 9 insertions(+), 9 deletions(-)
 
-diff --git a/lib/checksum.c b/lib/checksum.c
-index fcf3894..8b39e86 100644
---- a/lib/checksum.c
-+++ b/lib/checksum.c
-@@ -47,15 +47,6 @@ static inline unsigned short from32to16(unsigned int x)
- 	return x;
- }
- 
--static inline u32 from64to32(u64 x)
--{
--	/* add up 32-bit and 32-bit for 32+c bit */
--	x = (x & 0xffffffff) + (x >> 32);
--	/* add up carry.. */
--	x = (x & 0xffffffff) + (x >> 32);
--	return (u32)x;
--}
--
- static unsigned int do_csum(const unsigned char *buff, int len)
- {
- 	int odd;
-@@ -190,6 +181,15 @@ csum_partial_copy(const void *src, void *dst, int len, __wsum sum)
- EXPORT_SYMBOL(csum_partial_copy);
- 
- #ifndef csum_tcpudp_nofold
-+static inline u32 from64to32(u64 x)
-+{
-+	/* add up 32-bit and 32-bit for 32+c bit */
-+	x = (x & 0xffffffff) + (x >> 32);
-+	/* add up carry.. */
-+	x = (x & 0xffffffff) + (x >> 32);
-+	return (u32)x;
-+}
-+
- __wsum csum_tcpudp_nofold(__be32 saddr, __be32 daddr,
- 			unsigned short len,
- 			unsigned short proto,
--- 
-2.0.1
+On Wed, Jan 28, 2015 at 9:09 PM, Vitaly Kuznetsov <vkuznets@redhat.com> 
+wrote:
+> Dexuan Cui <decui@microsoft.com> writes:
+> 
+>>>  -----Original Message-----
+>>>  From: Vitaly Kuznetsov [mailto:vkuznets@redhat.com]
+>>>  Sent: Wednesday, January 28, 2015 20:09 PM
+>>>  To: Dexuan Cui
+>>>  Cc: KY Srinivasan; devel@linuxdriverproject.org; Haiyang Zhang; 
+>>> linux-
+>>>  kernel@vger.kernel.org; Jason Wang; Radim Krčmář; Dan Carpenter
+>>>  Subject: Re: [PATCH v3 3/3] Drivers: hv: vmbus: serialize Offer 
+>>> and Rescind
+>>>  offer
+>>>  
+>>>  Dexuan Cui <decui@microsoft.com> writes:
+>>>  
+>>>  >> -----Original Message-----
+>>>  >> From: Vitaly Kuznetsov [mailto:vkuznets@redhat.com]
+>>>  >> Sent: Tuesday, January 20, 2015 23:45 PM
+>>>  >> To: KY Srinivasan; devel@linuxdriverproject.org
+>>>  >> Cc: Haiyang Zhang; linux-kernel@vger.kernel.org; Dexuan Cui; 
+>>> Jason Wang;
+>>>  >> Radim Krčmář; Dan Carpenter
+>>>  >> Subject: [PATCH v3 3/3] Drivers: hv: vmbus: serialize Offer and 
+>>> Rescind
+>>>  offer
+>>>  ...
+>>>  >
+>>>  > Hi Vitaly and all,
+>>>  > I have 2 questions:
+>>>  > In vmbus_process_offer(),  in the cases of "goto err_free_chan",
+>>>  > should we consider the possibility a rescind message could be 
+>>> pending for
+>>>  > the new channel?
+>>>  > In the cases,  because we don't run
+>>>  > "INIT_WORK(&newchannel->work, vmbus_process_rescind_offer); ",
+>>>  > vmbus_onoffer_rescind() will do nothing and as a result,
+>>>  > vmbus_process_rescind_offer() won't be invoked.
+>>>  
+>>>  Yes, but processing the rescind offer results in freeing the 
+>>> channel
+>>>  (and this processing supposes the channel wasn't freed before) so
+>>>  there is no difference... or is it?
+>>>  
+>>>  >
+>>>  > Question 2: in vmbus_process_offer(), in the case
+>>>  > vmbus_device_register() fails, we'll run
+>>>  > "list_del(&newchannel->listentry);" -- just after this line,
+>>>  >  what will happen at this time if relid2channel() returns NULL
+>>>  > in vmbus_onoffer_rescind()?
+>>>  >
+>>>  > I think we'll lose the rescind message.
+>>>  >
+>>>  
+>>>  Yes, but same logic applies - we already freed the channes so no 
+>>> rescind
+>>>  proccessing required.
+>>  free_channel() and vmbus_process_rescind_offer() are different, 
+>> because
+>>   the latter does more work, e.g., sending the host a message 
+>>  CHANNELMSG_RELID_RELEASED.
+>> 
+>>  In the cases of "goto err_free_chan" + "a pending rescind message",
+>>  the host may expect the message CHANNELMSG_RELID_RELEASED and
+>>  could reoffer the channel once the message is received.
+>> 
+>>  It would be better if the VM doesn't lose the rescind message
+>>  here. :-)
+> 
+> Ah, I see, CHANNELMSG_RELID_RELEASED is expected from us in any
+> case. I'll doing that in a separate patch is noone objects.
+
+All the evil come from the un-serialized processing of message. I 
+wonder whether we can do all the processing in workqueue and then those 
+were automatically serialized.
+
+> 
+> Thanks for the review,
+> 
+>> 
+>>>   If we still need to do something we need to
+>>>  add support for already freed channel to the rescind offer 
+>>> processing path.
+>>>  
+>> 
+>>  Thanks,
+>>  -- Dexuan
+> 
+> -- 
+>   Vitaly
+> --
+> To unsubscribe from this list: send the line "unsubscribe 
+> linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
