@@ -1,68 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753695AbbA2Ojy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 09:39:54 -0500
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:17035 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752885AbbA2Ojv (ORCPT
+	id S1753865AbbA2OkO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 09:40:14 -0500
+Received: from smtp73.iad3a.emailsrvr.com ([173.203.187.73]:46169 "EHLO
+	smtp73.iad3a.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753777AbbA2OkM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 09:39:51 -0500
-X-AuditID: cbfec7f4-b7f126d000001e9a-7c-54ca45a3dd0b
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Sebastian Reichel <sre@kernel.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>, Milo Kim <milo.kim@ti.com>,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>, stable@vger.kernel.org
-Subject: [PATCH 2/2] power_supply: lp8788-charger: Fix leaked power supply on
- probe fail
-Date: Thu, 29 Jan 2015 15:39:39 +0100
-Message-id: <1422542379-8202-2-git-send-email-k.kozlowski@samsung.com>
-X-Mailer: git-send-email 1.9.1
-In-reply-to: <1422542379-8202-1-git-send-email-k.kozlowski@samsung.com>
-References: <1422542379-8202-1-git-send-email-k.kozlowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpkluLIzCtJLcpLzFFi42I5/e/4Nd3FrqdCDPrui1hsnLGe1WLSk/fM
-	FhNXTma2eP3C0OLyrjlsFp97jzBaLP+1jsXi9O4SiwUbHzE6cHrsnHWX3WPzCi2PTas62Tz6
-	tqxi9Dh+YzuTx+dNcgFsUVw2Kak5mWWpRfp2CVwZH+c8YytYwFHxasZCtgbGHvYuRk4OCQET
-	iTtXjzFD2GISF+6tZwOxhQSWMkrc2MHfxcgFZPcxSRy9sIgVJMEmYCyxefkSNpCEiMB1Rokr
-	L48xgSSYBRoZJTbeVgCxhQWiJObvPQMWZxFQlVj64ifYBl4BN4mLc78xQmyTkzh5bDLQUA4O
-	TgF3iX3LJCAWu0lM/drOOoGRdwEjwypG0dTS5ILipPRcQ73ixNzi0rx0veT83E2MkGD7soNx
-	8TGrQ4wCHIxKPLwzN50MEWJNLCuuzD3EKMHBrCTCu9TyVIgQb0piZVVqUX58UWlOavEhRiYO
-	TqkGxvl6F363d196UGacpzD/9P0S98sRnw8fksrhzvhoZVTx9MCJTcs8xQ5VHl6y7kZq7sZV
-	S+et27P+eleXpq/UolOXl02Ua141ky9g/bQ9ubJ2ojy82srrhe+n7IoLldTiOevfW3b4xPbf
-	+p61aSqdhqU/uUw1uVz/1ve5bi5qO3VLelNlR/p5NSWW4oxEQy3mouJEADXiYpkUAgAA
+	Thu, 29 Jan 2015 09:40:12 -0500
+X-Sender-Id: abbotti@mev.co.uk
+Message-ID: <54CA463C.9090804@mev.co.uk>
+Date: Thu, 29 Jan 2015 14:39:56 +0000
+From: Ian Abbott <abbotti@mev.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.3.0
+MIME-Version: 1.0
+To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        H Hartley Sweeten <hsweeten@visionengravers.com>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Julia Lawall <julia.lawall@lip6.fr>,
+        Heena Sirwani <heenasirwani@gmail.com>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging: comedi: drivers: mite: Removed variables that
+ is never used
+References: <1422484584-9164-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+In-Reply-To: <1422484584-9164-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Driver forgot to unregister charger power supply if registering of
-battery supply failed in probe(). In such case the memory associated
-with power supply leaked.
+On 28/01/15 22:36, Rickard Strandqvist wrote:
+> Variable ar assigned a value that is never used.
+> I have also removed all the code that thereby serves no purpose.
+>
+> This was found using a static code analysis program called cppcheck
+>
+> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+> ---
+>   drivers/staging/comedi/drivers/mite.c |    3 +--
+>   1 file changed, 1 insertion(+), 2 deletions(-)
+>
+> diff --git a/drivers/staging/comedi/drivers/mite.c b/drivers/staging/comedi/drivers/mite.c
+> index ffc9e61..8d2903b 100644
+> --- a/drivers/staging/comedi/drivers/mite.c
+> +++ b/drivers/staging/comedi/drivers/mite.c
+> @@ -494,9 +494,8 @@ EXPORT_SYMBOL_GPL(mite_bytes_read_from_memory_ub);
+>   unsigned mite_dma_tcr(struct mite_channel *mite_chan)
+>   {
+>   	struct mite_struct *mite = mite_chan->mite;
+> -	int lkar;
+>
+> -	lkar = readl(mite->mite_io_addr + MITE_LKAR(mite_chan->channel));
+> +	readl(mite->mite_io_addr + MITE_LKAR(mite_chan->channel));
+>   	return readl(mite->mite_io_addr + MITE_TCR(mite_chan->channel));
+>   }
+>   EXPORT_SYMBOL_GPL(mite_dma_tcr);
+>
 
-Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Fixes: 98a276649358 ("power_supply: Add new lp8788 charger driver")
-Cc: <stable@vger.kernel.org>
----
- drivers/power/lp8788-charger.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+Reading the MITE_LKAR(channel) register won't have any side-effects, so 
+that call to readl() can be removed altogether.  In previous versions of 
+the driver, the value of lkar was only used in debugging messages.
 
-diff --git a/drivers/power/lp8788-charger.c b/drivers/power/lp8788-charger.c
-index 21fc233c7d61..176dab2e4c16 100644
---- a/drivers/power/lp8788-charger.c
-+++ b/drivers/power/lp8788-charger.c
-@@ -417,8 +417,10 @@ static int lp8788_psy_register(struct platform_device *pdev,
- 	pchg->battery.num_properties = ARRAY_SIZE(lp8788_battery_prop);
- 	pchg->battery.get_property = lp8788_battery_get_property;
- 
--	if (power_supply_register(&pdev->dev, &pchg->battery))
-+	if (power_supply_register(&pdev->dev, &pchg->battery)) {
-+		power_supply_unregister(&pchg->charger);
- 		return -EPERM;
-+	}
- 
- 	return 0;
- }
 -- 
-1.9.1
-
+-=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk> )=-
+-=(                          Web: http://www.mev.co.uk/  )=-
