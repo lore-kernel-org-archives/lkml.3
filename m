@@ -1,116 +1,498 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752971AbbA2PLJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 10:11:09 -0500
-Received: from omr1.cc.vt.edu ([198.82.141.52]:39478 "EHLO omr1.cc.vt.edu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752450AbbA2PLG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 10:11:06 -0500
-X-Mailer: exmh version 2.8.0 04/21/2012 with nmh-1.6+dev
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: linux-kernel@vger.kernel.org
-Subject: linux-next - process hangs in do_exit().
-From: Valdis Kletnieks <Valdis.Kletnieks@vt.edu>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1422544258_1909P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Thu, 29 Jan 2015 10:10:58 -0500
-Message-ID: <6559.1422544258@turing-police.cc.vt.edu>
+	id S1754030AbbA2PMZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 10:12:25 -0500
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:13126 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753353AbbA2PMW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Jan 2015 10:12:22 -0500
+X-AuditID: cbfec7f4-b7f126d000001e9a-b8-54ca4d424b7a
+From: Andrey Ryabinin <a.ryabinin@samsung.com>
+To: linux-kernel@vger.kernel.org
+Cc: Andrey Ryabinin <a.ryabinin@samsung.com>,
+        Dmitry Vyukov <dvyukov@google.com>,
+        Konstantin Serebryany <kcc@google.com>,
+        Dmitry Chernenkov <dmitryc@google.com>,
+        Andrey Konovalov <adech.fo@gmail.com>,
+        Yuri Gribov <tetra2005@gmail.com>,
+        Konstantin Khlebnikov <koct9i@gmail.com>,
+        Sasha Levin <sasha.levin@oracle.com>, Michal Marek <mmarek@suse.cz>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dave Hansen <dave.hansen@intel.com>, Andi Kleen <andi@firstfloor.org>,
+        Vegard Nossum <vegard.nossum@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org, linux-mm@kvack.org,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Dave Jones <davej@redhat.com>, Jonathan Corbet <corbet@lwn.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Catalin Marinas <catalin.marinas@arm.com>
+Subject: [PATCH v10 00/17] Kernel address sanitizer - runtime memory debugger.
+Date: Thu, 29 Jan 2015 18:11:44 +0300
+Message-id: <1422544321-24232-1-git-send-email-a.ryabinin@samsung.com>
+X-Mailer: git-send-email 2.2.2
+In-reply-to: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com>
+References: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprDIsWRmVeSWpSXmKPExsVy+t/xy7pOvqdCDCZ+UbfY9usRm8XvvTNZ
+	LeasX8NmceTad3aL98t6GC2uf3vDaPHkQDujxaeXDxgttlxvYrJ4/vAhu8WEh23sFtM2ilus
+	7G5ms9j+7C2TxcrOB6wWl3fNYbO4t+Y/q8WlAwuYLFr2XWCyaPv8j9XieO8BJou3d6azWLQt
+	2chksfjIbWaLd88mM1ts3jSV2eJR31t2i6urDrJbnP97nNXix4bHrA5yHmvmrWH0mL/zI6PH
+	zll32T0WbCr12LxCy2PxnpdMHptWdbJ5bPo0id2j6+0VJo93586xe5yY8ZvF48mV6Uwei/sm
+	s3p8fHqLxeP9vqtsHn1bVjEGiERx2aSk5mSWpRbp2yVwZbxZUVUwZTZjRduFG+wNjBdKuhg5
+	OSQETCTm/FvHAmGLSVy4t54NxBYSWMoo8XFvUBcjF5DdxySx+91qRpAEm4CexL9Z28GKRAQU
+	JDb3PmMFKWIWOMIhMeVSEzNIQljAT2L96qXsIDaLgKrE/91bwRp4BdwkDm9fD7SNA2ibnMSF
+	j/EgYU6g8ITp15hBwkICrhITVqhNYORdwMiwilE0tTS5oDgpPddQrzgxt7g0L10vOT93EyMk
+	Rr/sYFx8zOoQowAHoxIP78xNJ0OEWBPLiitzDzFKcDArifAutTwVIsSbklhZlVqUH19UmpNa
+	fIiRiYNTqoFxyZZf5xvs677sbr3xf9+ZPZF1n/i/V0ab86RGe8f9ztxvMkVQY+Unv2DddT/S
+	jt9MEtstbiD90vzYX8VmfXlbkaLZYffqo+6L96y5XXE1+/0NxQeTnR9uCnHaHXFB4embFVcP
+	FWq1LPZYO9G55f2fDefvss9cdthOojNs8ZI7zE2q79tTuVgTlFiKMxINtZiLihMBPY2hgK8C	AAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1422544258_1909P
-Content-Type: text/plain; charset=us-ascii
+KASan is a runtime memory debugger designed to find use-after-free
+and out-of-bounds bugs.
 
-Saw my laptop grind to a halt this morning where processes would hang
-while trying to exit.  Looks like Al was last person to touch kernel/acct.c
-back around Jan 9:
+Currently KASAN supported only for x86_64 architecture and requires kernel
+to be build with SLUB allocator.
+KASAN uses compile-time instrumentation for checking every memory access, therefore you
+will need a fresh GCC >= v4.9.2
 
-commit 9e251d02041432487d89cb340e72490c4bbc198a
-Author: Al Viro <viro@zeniv.linux.org.uk>
-Date:   Fri Jan 9 20:40:02 2015 -0500
 
-    kill pin_put()
+As usual patches available in git:
 
-touched code near where it hung.  But I don't understand RCU enough to
-tell for sure what is/isn't wrong there....
+	git://github.com/aryabinin/linux --branch=kasan/kasan_v10
 
-Found this in my syslog:
 
-Jan 29 08:51:30 turing-police kernel: [36313.248179] INFO: task sendmail:32228 blocked for more than 120 seconds.
-Jan 29 08:51:30 turing-police kernel: [36313.248192]       Tainted: G           OE   3.19.0-rc6-next-20150127 #42
-Jan 29 08:51:30 turing-police kernel: [36313.248196] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-Jan 29 08:51:30 turing-police kernel: [36313.248200] sendmail        D ffff880098ddbd98 12880 32228   1380 0x00000080
-Jan 29 08:51:30 turing-police kernel: [36313.248215]  ffff880098ddbd98 ffff880098ddbda8 ffff880098ddbfd8 ffff8801bd090c90
-Jan 29 08:51:30 turing-police kernel: [36313.248226]  ffffffff9e0b34a1 0000000000014c80 ffff88022dd94c80 ffff88022cb2c350
-Jan 29 08:51:30 turing-police kernel: [36313.248236]  ffff8801bd090c90 ffff880098ddbd88 ffff880222133e30 0000000000000200
-Jan 29 08:51:30 turing-police kernel: [36313.248247] Call Trace:
-Jan 29 08:51:30 turing-police kernel: [36313.248261]  [<ffffffff9e0b34a1>] ? acct_get+0x4f/0x76
-Jan 29 08:51:30 turing-police kernel: [36313.248271]  [<ffffffff9e6c267f>] schedule+0x64/0x66
-Jan 29 08:51:30 turing-police kernel: [36313.248279]  [<ffffffff9e6c29ad>] schedule_preempt_disabled+0x13/0x1f
-Jan 29 08:51:30 turing-police kernel: [36313.248287]  [<ffffffff9e6c3db4>] mutex_lock_nested+0x274/0x58c
-Jan 29 08:51:30 turing-police kernel: [36313.248293]  [<ffffffff9e0b34a1>] ? acct_get+0x4f/0x76
-Jan 29 08:51:30 turing-police kernel: [36313.248300]  [<ffffffff9e0b3433>] ? rcu_read_unlock+0x3e/0x5d
-Jan 29 08:51:30 turing-police kernel: [36313.248307]  [<ffffffff9e0b34a1>] acct_get+0x4f/0x76
-Jan 29 08:51:30 turing-police kernel: [36313.248315]  [<ffffffff9e0b3e69>] acct_process+0x56/0x89
-Jan 29 08:51:30 turing-police kernel: [36313.248324]  [<ffffffff9e042f68>] do_exit+0x55e/0xcf4
-Jan 29 08:51:30 turing-police kernel: [36313.248332]  [<ffffffff9e0c8d68>] ? __audit_syscall_entry+0x10b/0x137
-Jan 29 08:51:30 turing-police kernel: [36313.248341]  [<ffffffff9e00e35d>] ? do_audit_syscall_entry+0xb8/0xc7
-Jan 29 08:51:30 turing-police kernel: [36313.248349]  [<ffffffff9e0448aa>] do_group_exit+0x63/0xe0
-Jan 29 08:51:30 turing-police kernel: [36313.248356]  [<ffffffff9e044936>] SyS_exit_group+0xf/0xf
-Jan 29 08:51:30 turing-police kernel: [36313.248363]  [<ffffffff9e6c8112>] system_call_fastpath+0x12/0x17
+Changes since v9:
+ 	- Makefile changes per discussion with Michal Marek
+	- Fix false positive 'wild memory access' reports that
+	  sometimes could happen on freeing modules memory.
 
-Jan 29 08:51:30 turing-police kernel: [36313.248369] INFO: lockdep is turned off.
-Jan 29 08:51:30 turing-police kernel: [36313.248375] INFO: task formail:32242 blocked for more than 120 seconds.
-Jan 29 08:51:30 turing-police kernel: [36313.248379]       Tainted: G           OE   3.19.0-rc6-next-20150127 #42
-Jan 29 08:51:30 turing-police kernel: [36313.248383] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-Jan 29 08:51:30 turing-police kernel: [36313.248387] formail         D ffff8801882b7d98 14104 32242  32241 0x00000082
-Jan 29 08:51:30 turing-police kernel: [36313.248399]  ffff8801882b7d98 ffff8801882b7da8 ffff8801882b7fd8 ffff8801c07e8cd0
-Jan 29 08:51:30 turing-police kernel: [36313.248409]  ffffffff9e0b34a1 0000000000014c80 ffff88022dc94c80 ffff88022cb182d0
-Jan 29 08:51:30 turing-police kernel: [36313.248419]  ffff8801c07e8cd0 ffff8801882b7d88 ffff880222133e30 0000000000000200
-Jan 29 08:51:30 turing-police kernel: [36313.248429] Call Trace:
-Jan 29 08:51:30 turing-police kernel: [36313.248436]  [<ffffffff9e0b34a1>] ? acct_get+0x4f/0x76
-Jan 29 08:51:30 turing-police kernel: [36313.248444]  [<ffffffff9e6c267f>] schedule+0x64/0x66
-Jan 29 08:51:30 turing-police kernel: [36313.248451]  [<ffffffff9e6c29ad>] schedule_preempt_disabled+0x13/0x1f
-Jan 29 08:51:30 turing-police kernel: [36313.248459]  [<ffffffff9e6c3db4>] mutex_lock_nested+0x274/0x58c
-Jan 29 08:51:30 turing-police kernel: [36313.248465]  [<ffffffff9e0b34a1>] ? acct_get+0x4f/0x76
-Jan 29 08:51:30 turing-police kernel: [36313.248472]  [<ffffffff9e0b3433>] ? rcu_read_unlock+0x3e/0x5d
-Jan 29 08:51:30 turing-police kernel: [36313.248479]  [<ffffffff9e0b34a1>] acct_get+0x4f/0x76
-Jan 29 08:51:30 turing-police kernel: [36313.248485]  [<ffffffff9e0b3e69>] acct_process+0x56/0x89
-Jan 29 08:51:30 turing-police kernel: [36313.248493]  [<ffffffff9e042f68>] do_exit+0x55e/0xcf4
-Jan 29 08:51:30 turing-police kernel: [36313.248499]  [<ffffffff9e0c8d68>] ? __audit_syscall_entry+0x10b/0x137
-Jan 29 08:51:30 turing-police kernel: [36313.248507]  [<ffffffff9e00e35d>] ? do_audit_syscall_entry+0xb8/0xc7
-Jan 29 08:51:30 turing-police kernel: [36313.248514]  [<ffffffff9e0448aa>] do_group_exit+0x63/0xe0
-Jan 29 08:51:30 turing-police kernel: [36313.248521]  [<ffffffff9e044936>] SyS_exit_group+0xf/0xf
-Jan 29 08:51:30 turing-police kernel: [36313.248528]  [<ffffffff9e6c8112>] system_call_fastpath+0x12/0x17
-Jan 29 08:51:30 turing-police kernel: [36313.248532] INFO: lockdep is turned off.
-Jan 29 08:51:30 turing-police kernel: [36313.248537] INFO: task formail:32246 blocked for more than 120 seconds.
-Jan 29 08:51:30 turing-police kernel: [36313.248541]       Tainted: G           OE   3.19.0-rc6-next-20150127 #42
 
-(and another few identical traces)
+Historical background of address sanitizer from Dmitry Vyukov <dvyukov@google.com>:
+	"We've developed the set of tools, AddressSanitizer (Asan),
+	ThreadSanitizer and MemorySanitizer, for user space. We actively use
+	them for testing inside of Google (continuous testing, fuzzing,
+	running prod services). To date the tools have found more than 10'000
+	scary bugs in Chromium, Google internal codebase and various
+	open-source projects (Firefox, OpenSSL, gcc, clang, ffmpeg, MySQL and
+	lots of others):
+	https://code.google.com/p/address-sanitizer/wiki/FoundBugs
+	https://code.google.com/p/thread-sanitizer/wiki/FoundBugs
+	https://code.google.com/p/memory-sanitizer/wiki/FoundBugs
+	The tools are part of both gcc and clang compilers.
 
---==_Exmh_1422544258_1909P
-Content-Type: application/pgp-signature
+	We have not yet done massive testing under the Kernel AddressSanitizer
+	(it's kind of chicken and egg problem, you need it to be upstream to
+	start applying it extensively). To date it has found about 50 bugs.
+	Bugs that we've found in upstream kernel are listed here:
+	https://code.google.com/p/address-sanitizer/wiki/AddressSanitizerForKernel#Trophies
+	We've also found ~20 bugs in out internal version of the kernel. Also
+	people from Samsung and Oracle have found some. It's somewhat expected
+	that when we boot the kernel and run a trivial workload, we do not
+	find hundreds of bugs -- most of the harmful bugs in kernel codebase
+	were already fixed the hard way (the kernel is quite stable, right).
+	Based on our experience with user-space version of the tool, most of
+	the bugs will be discovered by continuously testing new code (new bugs
+	discovered the easy way), running fuzzers (that can discover existing
+	bugs that are not hit frequently enough) and running end-to-end tests
+	of production systems.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-Comment: Exmh version 2.5 07/13/2001
+	As others noted, the main feature of AddressSanitizer is its
+	performance due to inline compiler instrumentation and simple linear
+	shadow memory. User-space Asan has ~2x slowdown on computational
+	programs and ~2x memory consumption increase. Taking into account that
+	kernel usually consumes only small fraction of CPU and memory when
+	running real user-space programs, I would expect that kernel Asan will
+	have ~10-30% slowdown and similar memory consumption increase (when we
+	finish all tuning).
 
-iQIVAwUBVMpNggdmEQWDXROgAQKCaA//URF/nAJZ0dAIMyC06yQPGIgWDLOqAUtI
-qVwLxMzSQLvCbQADksfbVssmgh6RA+yGk8HQyTniBacPbOpQrvCeC25jqDT6yiIz
-SqxVDyxGrKblcwOx/eco3RdrR56fL2i2OtKvpblJpzwGrUu3fNgObw1EWOUNDoVf
-4sXE6gtsmP287lMkGMLNVQv4af/o8GPPaEEKKRBhM5h5qdN0yHBfgMLcdOtBCqNk
-Vri8aa1TQdSlE4BPypSq070mrYYLVD9RBX0UiCgMy+HbmU6zWesy/NUWL7UW2jyF
-k+oJPc3fMufFO12fQSEF5g/D9SEXTeo37jD4JOXsH5L+WPETR0r+Fa4psHx0M7LM
-1wlFv9MY7GMLNNc2Zfunia78aCpX39bAU/0TceBVwu+28OkX5dOlhXFHWnXnZVLg
-GEWRoS5o64VjhKdu/ZzGug0E6QcnzvhB7NT9tbkU19R/t9iDp4+IEG347ymo1Z4p
-2CujFb2OWWWEgGlV9p6b2TPVOwLnwhoY21XR+waJSI87QM+iYA5E67CHbroKZUZZ
-2a7wSwSoBxFzf/14GmRcGIrNM3VL66iHzXCkkDfVRlPf0pOM5O4MTSRElbW8FYGm
-4A9eMOhFGm1qqPbwraZ6X+wRFDoOxH9kKx+1/MhpTgbHvapIBq7VV4ULuNubrB7t
-XUCWKnvm2CU=
-=Da9Y
------END PGP SIGNATURE-----
+	I agree that Asan can well replace kmemcheck. We have plans to start
+	working on Kernel MemorySanitizer that finds uses of uninitialized
+	memory. Asan+Msan will provide feature-parity with kmemcheck. As
+	others noted, Asan will unlikely replace debug slab and pagealloc that
+	can be enabled at runtime. Asan uses compiler instrumentation, so even
+	if it is disabled, it still incurs visible overheads.
 
---==_Exmh_1422544258_1909P--
+	Asan technology is easily portable to other architectures. Compiler
+	instrumentation is fully portable. Runtime has some arch-dependent
+	parts like shadow mapping and atomic operation interception. They are
+	relatively easy to port.
+
+	Thanks"
+
+
+Comparison with other debugging features:
+=======================================
+
+KMEMCHECK:
+	- KASan can do almost everything that kmemcheck can. KASan uses compile-time
+	  instrumentation, which makes it significantly faster than kmemcheck.
+	  The only advantage of kmemcheck over KASan is detection of uninitialized
+	  memory reads.
+
+	  Some brief performance testing showed that kasan could be x500-x600 times
+	  faster than kmemcheck:
+
+$ netperf -l 30
+		MIGRATED TCP STREAM TEST from 0.0.0.0 (0.0.0.0) port 0 AF_INET to localhost (127.0.0.1) port 0 AF_INET
+		Recv   Send    Send
+		Socket Socket  Message  Elapsed
+		Size   Size    Size     Time     Throughput
+		bytes  bytes   bytes    secs.    10^6bits/sec
+
+ no debug:	87380  16384  16384    30.00    41624.72
+
+ kasan inline:	87380  16384  16384    30.00    12870.54
+
+ kasan outline:	87380  16384  16384    30.00    10586.39
+
+ kmemcheck: 	87380  16384  16384    30.03      20.23
+
+	- Also kmemcheck couldn't work on several CPUs. It always sets number of CPUs to 1.
+	  KASan doesn't have such limitation.
+
+DEBUG_PAGEALLOC:
+	- KASan is slower than DEBUG_PAGEALLOC, but KASan works on sub-page
+	  granularity level, so it able to find more bugs.
+
+SLUB_DEBUG (poisoning, redzones):
+	- SLUB_DEBUG has lower overhead than KASan.
+
+	- SLUB_DEBUG in most cases are not able to detect bad reads,
+	  KASan able to detect both reads and writes.
+
+	- In some cases (e.g. redzone overwritten) SLUB_DEBUG detect
+	  bugs only on allocation/freeing of object. KASan catch
+	  bugs right before it will happen, so we always know exact
+	  place of first bad read/write.
+
+Basic idea:
+===========
+
+    The main idea of KASAN is to use shadow memory to record whether each byte of memory
+    is safe to access or not, and use compiler's instrumentation to check the shadow memory
+    on each memory access.
+
+    Address sanitizer uses 1/8 of the memory addressable in kernel for shadow memory
+    (on x86_64 16TB of virtual address space reserved for shadow to cover all 128TB)
+    and uses direct mapping with a scale and offset to translate a memory
+    address to its corresponding shadow address.
+
+    Here is function to translate address to corresponding shadow address:
+
+         unsigned long kasan_mem_to_shadow(unsigned long addr)
+         {
+                    return (addr >> KASAN_SHADOW_SCALE_SHIFT) + KASAN_SHADOW_OFFSET;
+         }
+    where KASAN_SHADOW_SCALE_SHIFT = 3.
+
+    So for every 8 bytes there is one corresponding byte of shadow memory.
+    The following encoding used for each shadow byte: 0 means that all 8 bytes of the
+    corresponding memory region are valid for access; k (1 <= k <= 7) means that
+    the first k bytes are valid for access, and other (8 - k) bytes are not;
+    Any negative value indicates that the entire 8-bytes are inaccessible.
+    Different negative values used to distinguish between different kinds of
+    inaccessible memory (redzones, freed memory) (see mm/kasan/kasan.h).
+
+    To be able to detect accesses to bad memory we need a special compiler.
+    Such compiler inserts a specific function calls (__asan_load*(addr), __asan_store*(addr))
+    before each memory access of size 1, 2, 4, 8 or 16.
+
+    These functions check whether memory region is valid to access or not by checking
+    corresponding shadow memory. If access is not valid an error printed.
+
+
+Changelog for previous versions:
+===============================
+
+Changes since v8:
+	- Fixed unpoisoned redzones for not-allocated-yet object
+	    in newly allocated slab page. (from Dmitry C.)
+
+	- Some minor non-function cleanups in kasan internals.
+
+	- Added ack from Catalin
+
+	- Added stack instrumentation. With this we could detect
+	    out of bounds accesses in stack variables. (patch 12)
+
+	- Added globals instrumentation - catching out of bounds in
+	    global varibles. (patches 13-17)
+
+	- Shadow moved out from vmalloc into hole between vmemmap
+	    and %esp fixup stacks. For globals instrumentation
+	    we will need shadow backing modules addresses.
+	    So we need some sort of a shadow memory allocator
+	    (something like vmmemap_populate() function, except
+	    that it should be available after boot).
+
+	    __vmalloc_node_range() suits that purpose, except that
+	    it can't be used for allocating for shadow in vmalloc
+	    area because shadow in vmalloc is already 'allocated'
+	    to protect us from other vmalloc users. So we need
+	    16TB of unused addresses. And we have big enough hole
+	    between vmemmap and %esp fixup stacks. So I moved shadow
+	    there.
+
+
+Changes since v7:
+        - Fix build with CONFIG_KASAN_INLINE=y from Sasha.
+
+        - Don't poison redzone on freeing, since it is poisend already from Dmitry Chernenkov.
+
+        - Fix altinstruction_entry for memcpy.
+
+        - Move kasan_slab_free() call after debug_obj_free to prevent some false-positives
+            with CONFIG_DEBUG_OBJECTS=y
+
+        - Drop -pg flag for kasan internals to avoid recursion with function tracer
+           enabled.
+
+        - Added ack from Christoph.
+
+
+Changes since v6:
+   - New patch 'x86_64: kasan: add interceptors for memset/memmove/memcpy functions'
+        Recently instrumentation of builtin functions calls (memset/memmove/memcpy)
+        was removed in GCC 5.0. So to check the memory accessed by such functions,
+        we now need interceptors for them.
+
+   - Added kasan's die notifier which prints a hint message before General protection fault,
+       explaining that GPF could be caused by NULL-ptr dereference or user memory access.
+
+   - Minor refactoring in 3/n patch. Rename kasan_map_shadow() to kasan_init() and call it
+     from setup_arch() instead of zone_sizes_init().
+
+   - Slightly tweak kasan's report layout.
+
+   - Update changelog for 1/n patch.
+
+Changes since v5:
+    - Added  __printf(3, 4) to slab_err to catch format mismatches (Joe Perches)
+
+    - Changed in Documentation/kasan.txt per Jonathan.
+
+    - Patch for inline instrumentation support merged to the first patch.
+        GCC 5.0 finally has support for this.
+    - Patch 'kasan: Add support for upcoming GCC 5.0 asan ABI changes' also merged into the first.
+         Those GCC ABI changes are in GCC's master branch now.
+
+    - Added information about instrumentation types to documentation.
+
+    - Added -fno-conserve-stack to CFLAGS for mm/kasan/kasan.c file, because -fconserve-stack is bogus
+      and it causing unecessary split in __asan_load1/__asan_store1. Because of this split
+      kasan_report() is actually not inlined (even though it __always_inline) and _RET_IP_ gives
+      unexpected value. GCC bugzilla entry: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=63533
+
+Changes since v4:
+    - rebased on top of mmotm-2014-10-23-16-26
+
+    - merge patch 'efi: libstub: disable KASAN for efistub in' into the first patch.
+        No reason to keep it separate.
+
+    - Added support for upcoming asan ABI changes in GCC 5.0 (second patch).
+        GCC patch has not been published/upstreamed yet, but to will be soon. I'm adding this in advance
+        in order to avoid breaking kasan with future GCC update.
+        Details about gcc ABI changes in this thread: https://gcc.gnu.org/ml/gcc-patches/2014-10/msg02510.html
+
+    - Updated GCC verison requirements in doc (GCC kasan patches were backported into 4.9 branch)
+
+    - Dropped last patch with inline instrumentation support. At first let's wait for merging GCC patches.
+
+Changes since v3:
+
+    - rebased on last mm
+    - Added comment about rcu slabs.
+    - Removed useless kasan_free_slab_pages().
+    - Removed __asan_init_v*() stub. GCC doesn't generate this call anymore:
+       https://gcc.gnu.org/ml/gcc-patches/2014-10/msg00269.html
+    - Replaced CALL_KASAN_REPORT define with inline function
+
+Changes since v2:
+
+    - Shadow moved to vmalloc area.
+    - Added posion page. This page mapped to shadow correspondig to
+      shadow region itself:
+       [kasan_mem_to_shadow(KASAN_SHADOW_START) - kasan_mem_to_shadow(KASAN_SHADOW_END)]
+      It used to catch memory access to shadow outside mm/kasan/.
+
+    - Fixed boot with CONFIG_DEBUG_VIRTUAL=y
+    - Fixed boot with KASan and stack protector enabled
+         (patch "x86_64: load_percpu_segment: read irq_stack_union.gs_base before load_segment")
+
+    - Fixed build with CONFIG_EFI_STUB=y
+    - Some slub specific stuf moved from mm/slab.h to include/linux/slub_def.h
+    - Fixed Kconfig dependency. CONFIG_KASAN depends on CONFIG_SLUB_DEBUG.
+    - Optimizations of __asan_load/__asan_store.
+    - Spelling fixes from Randy.
+    - Misc minor cleanups in different places.
+
+
+    - Added inline instrumentation in last patch. This will require two not
+         yet-in-trunk-patches for GCC:
+             https://gcc.gnu.org/ml/gcc-patches/2014-09/msg00452.html
+             https://gcc.gnu.org/ml/gcc-patches/2014-09/msg00605.html
+
+Changes since v1:
+
+    - The main change is in shadow memory laoyut.
+      Now for shadow memory we reserve 1/8 of all virtual addresses available for kernel.
+      16TB on x86_64 to cover all 128TB of kernel's address space.
+      At early stage we map whole shadow region with zero page.
+      Latter, after physical memory mapped to direct mapping address range
+      we unmap zero pages from corresponding shadow and allocate and map a real
+      memory.
+
+     - Since per-arch work is much bigger now, support for arm/x86_32 platforms was dropped.
+
+     - CFLAGS was change from -fsanitize=address with different --params to -fsanitize=kernel-address
+
+     - If compiler doesn't support -fsanitize=kernel-address warning printed and build continues without -fsanitize
+
+     - Removed kasan_memset/kasan_memcpy/kasan_memmove hooks. It turned out that this hooks are not needed. Compiler
+       already instrument memset/memcpy/memmove (inserts __asan_load/__asan_store call before mem*() calls).
+
+     - branch profiling disabled for mm/kasan/kasan.c to avoid recursion (__asan_load -> ftrace_likely_update -> __asan_load -> ...)
+
+     - kasan hooks for buddy allocator moved to right places
+
+
+Andrey Ryabinin (17):
+  Add kernel address sanitizer infrastructure.
+  x86_64: add KASan support
+  mm: page_alloc: add kasan hooks on alloc and free paths
+  mm: slub: introduce virt_to_obj function.
+  mm: slub: share object_err function
+  mm: slub: introduce metadata_access_enable()/metadata_access_disable()
+  mm: slub: add kernel address sanitizer support for slub allocator
+  fs: dcache: manually unpoison dname after allocation to shut up
+    kasan's reports
+  kmemleak: disable kasan instrumentation for kmemleak
+  lib: add kasan test module
+  x86_64: kasan: add interceptors for memset/memmove/memcpy functions
+  kasan: enable stack instrumentation
+  mm: vmalloc: add flag preventing guard hole allocation
+  mm: vmalloc: pass additional vm_flags to __vmalloc_node_range()
+  kernel: add support for .init_array.* constructors
+  module: fix types of device tables aliases
+  kasan: enable instrumentation of global variables
+
+ Documentation/kasan.txt                | 169 ++++++++++++
+ Documentation/x86/x86_64/mm.txt        |   2 +
+ Makefile                               |   3 +-
+ arch/arm/kernel/module.c               |   2 +-
+ arch/arm64/kernel/module.c             |   4 +-
+ arch/mips/kernel/module.c              |   2 +-
+ arch/parisc/kernel/module.c            |   2 +-
+ arch/s390/kernel/module.c              |   2 +-
+ arch/sparc/kernel/module.c             |   2 +-
+ arch/unicore32/kernel/module.c         |   2 +-
+ arch/x86/Kconfig                       |   1 +
+ arch/x86/boot/Makefile                 |   2 +
+ arch/x86/boot/compressed/Makefile      |   2 +
+ arch/x86/boot/compressed/eboot.c       |   3 +-
+ arch/x86/boot/compressed/misc.h        |   1 +
+ arch/x86/include/asm/kasan.h           |  31 +++
+ arch/x86/include/asm/page_64_types.h   |  12 +-
+ arch/x86/include/asm/string_64.h       |  18 +-
+ arch/x86/kernel/Makefile               |   4 +
+ arch/x86/kernel/dumpstack.c            |   5 +-
+ arch/x86/kernel/head64.c               |   9 +-
+ arch/x86/kernel/head_64.S              |  30 ++
+ arch/x86/kernel/module.c               |  14 +-
+ arch/x86/kernel/setup.c                |   3 +
+ arch/x86/kernel/x8664_ksyms_64.c       |  10 +-
+ arch/x86/lib/memcpy_64.S               |   6 +-
+ arch/x86/lib/memmove_64.S              |   4 +
+ arch/x86/lib/memset_64.S               |  10 +-
+ arch/x86/mm/Makefile                   |   3 +
+ arch/x86/mm/kasan_init_64.c            | 205 ++++++++++++++
+ arch/x86/realmode/Makefile             |   2 +-
+ arch/x86/realmode/rm/Makefile          |   1 +
+ arch/x86/vdso/Makefile                 |   1 +
+ drivers/firmware/efi/libstub/Makefile  |   1 +
+ drivers/firmware/efi/libstub/efistub.h |   4 +
+ fs/dcache.c                            |   5 +
+ include/asm-generic/vmlinux.lds.h      |   1 +
+ include/linux/compiler-gcc4.h          |   4 +
+ include/linux/compiler-gcc5.h          |   2 +
+ include/linux/init_task.h              |   8 +
+ include/linux/kasan.h                  |  86 ++++++
+ include/linux/module.h                 |   2 +-
+ include/linux/sched.h                  |   3 +
+ include/linux/slab.h                   |  11 +-
+ include/linux/slub_def.h               |   8 +
+ include/linux/vmalloc.h                |  13 +-
+ kernel/module.c                        |   2 +
+ lib/Kconfig.debug                      |   2 +
+ lib/Kconfig.kasan                      |  55 ++++
+ lib/Makefile                           |   1 +
+ lib/test_kasan.c                       | 277 +++++++++++++++++++
+ mm/Makefile                            |   4 +
+ mm/compaction.c                        |   2 +
+ mm/kasan/Makefile                      |   8 +
+ mm/kasan/kasan.c                       | 487 +++++++++++++++++++++++++++++++++
+ mm/kasan/kasan.h                       |  86 ++++++
+ mm/kasan/report.c                      | 251 +++++++++++++++++
+ mm/kmemleak.c                          |   6 +
+ mm/page_alloc.c                        |   3 +
+ mm/slab_common.c                       |   5 +-
+ mm/slub.c                              |  52 +++-
+ mm/vmalloc.c                           |  16 +-
+ scripts/Makefile.kasan                 |  26 ++
+ scripts/Makefile.lib                   |  10 +
+ scripts/module-common.lds              |   3 +
+ 65 files changed, 1964 insertions(+), 47 deletions(-)
+ create mode 100644 Documentation/kasan.txt
+ create mode 100644 arch/x86/include/asm/kasan.h
+ create mode 100644 arch/x86/mm/kasan_init_64.c
+ create mode 100644 include/linux/kasan.h
+ create mode 100644 lib/Kconfig.kasan
+ create mode 100644 lib/test_kasan.c
+ create mode 100644 mm/kasan/Makefile
+ create mode 100644 mm/kasan/kasan.c
+ create mode 100644 mm/kasan/kasan.h
+ create mode 100644 mm/kasan/report.c
+ create mode 100644 scripts/Makefile.kasan
+
+--
+Cc: Dmitry Vyukov <dvyukov@google.com>
+Cc: Konstantin Serebryany <kcc@google.com>
+Cc: Dmitry Chernenkov <dmitryc@google.com>
+Cc: Andrey Konovalov <adech.fo@gmail.com>
+Cc: Yuri Gribov <tetra2005@gmail.com>
+Cc: Konstantin Khlebnikov <koct9i@gmail.com>
+Cc: Sasha Levin <sasha.levin@oracle.com>
+Cc: Michal Marek <mmarek@suse.cz>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Christoph Lameter <cl@linux.com>
+Cc: Pekka Enberg <penberg@kernel.org>
+Cc: David Rientjes <rientjes@google.com>
+Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Dave Hansen <dave.hansen@intel.com>
+Cc: Andi Kleen <andi@firstfloor.org>
+Cc: Vegard Nossum <vegard.nossum@gmail.com>
+Cc: H. Peter Anvin <hpa@zytor.com>
+Cc: <x86@kernel.org>
+Cc: <linux-mm@kvack.org>
+Cc: Randy Dunlap <rdunlap@infradead.org>
+Cc: Michal Marek <mmarek@suse.cz>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>
+Cc: Dave Jones <davej@redhat.com>
+Cc: Jonathan Corbet <corbet@lwn.net>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Catalin Marinas <catalin.marinas@arm.com>
+--
+2.2.2
+
