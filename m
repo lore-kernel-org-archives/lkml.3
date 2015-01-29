@@ -1,65 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754542AbbA2BXp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 20:23:45 -0500
-Received: from smtprelay0247.hostedemail.com ([216.40.44.247]:49006 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753744AbbA2BWw (ORCPT
+	id S1754664AbbA2BYV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 20:24:21 -0500
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:36305 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751528AbbA2BYS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 20:22:52 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::,RULES_HIT:41:355:379:541:599:968:973:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3871:3874:4321:5007:6119:6261:7903:10004:10400:10848:11026:11232:11473:11657:11658:11914:12043:12438:12517:12519:12555:12740:13069:13255:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: bee65_52cc91c11f519
-X-Filterd-Recvd-Size: 2270
-Message-ID: <1422494566.13127.25.camel@perches.com>
-Subject: Re: [PATCH] staging: lustre: fid: lproc_fid: Removed variables that
- is never used
-From: Joe Perches <joe@perches.com>
-To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-Cc: Oleg Drokin <oleg.drokin@intel.com>,
-        Andreas Dilger <andreas.dilger@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Dmitry Eremin <dmitry.eremin@intel.com>,
-        Eddie Kovsky <ewk@edkovsky.org>, Anil Belur <askb23@gmail.com>,
-        HPDD-discuss@ml01.01.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Date: Wed, 28 Jan 2015 17:22:46 -0800
-In-Reply-To: <1422485188-10994-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-References: <1422485188-10994-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 28 Jan 2015 20:24:18 -0500
+Date: Thu, 29 Jan 2015 10:24:07 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: John Moser <john.r.moser@gmail.com>
+Cc: Vlastimil Babka <vbabka@suse.cz>, linux-kernel@vger.kernel.org,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Christoph Lameter <cl@linux-foundation.org>
+Subject: Re: OOM at low page cache?
+Message-ID: <20150129012356.GA9672@blaptop>
+References: <54C2C89C.8080002@gmail.com>
+ <54C77086.7090505@suse.cz>
+ <20150128062609.GA4706@blaptop>
+ <54C8EF16.5080701@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54C8EF16.5080701@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2015-01-28 at 23:46 +0100, Rickard Strandqvist wrote:
-> Variable ar assigned a value that is never used.
-> I have also removed all the code that thereby serves no purpose.
-[]
-> diff --git a/drivers/staging/lustre/lustre/fid/lproc_fid.c b/drivers/staging/lustre/lustre/fid/lproc_fid.c
-[]
-> @@ -63,7 +63,6 @@ static int lprocfs_fid_write_common(const char __user *buffer, size_t count,
->  				    struct lu_seq_range *range)
->  {
->  	struct lu_seq_range tmp;
-> -	int rc;
->  	char kernbuf[MAX_FID_RANGE_STRLEN];
->  
->  	LASSERT(range != NULL);
-> @@ -82,7 +81,7 @@ static int lprocfs_fid_write_common(const char __user *buffer, size_t count,
->  	}
->  
->  	/* of the form "[0x0000000240000400 - 0x000000028000400]" */
-> -	rc = sscanf(kernbuf, "[%llx - %llx]\n",
-> +	sscanf(kernbuf, "[%llx - %llx]\n",
->  		    (unsigned long long *)&tmp.lsr_start,
->  		    (unsigned long long *)&tmp.lsr_end);
->  	if (!range_is_sane(&tmp) || range_is_zero(&tmp) ||
+Hello,
 
-Better to make this test use rc rather than
-ignore the return from sscanf
+On Wed, Jan 28, 2015 at 09:15:50AM -0500, John Moser wrote:
+> On 01/28/2015 01:26 AM, Minchan Kim wrote:
+> > Hello,
+> >
+> > On Tue, Jan 27, 2015 at 12:03:34PM +0100, Vlastimil Babka wrote:
+> >> CC linux-mm in case somebody has a good answer but missed this in lkml traffic
+> >>
+> >> On 01/23/2015 11:18 PM, John Moser wrote:
+> >>> Why is there no tunable to OOM at low page cache?
+> > AFAIR, there were several trial although there wasn't acceptable
+> > at that time. One thing I can remember is min_filelist_kbytes.
+> > FYI, http://lwn.net/Articles/412313/
+> >
+> 
+> That looks more straight-forward than http://lwn.net/Articles/422291/
+> 
+> 
+> > I'm far away from reclaim code for a long time but when I read again,
+> > I found something strange.
+> >
+> > With having swap in get_scan_count, we keep a mount of file LRU + free
+> > as above than high wmark to prevent file LRU thrashing but we don't
+> > with no swap. Why?
+> >
+> 
+> That's ... strange.  That means having a token 1MB swap file changes the
+> system's practical memory reclaim behavior dramatically?
 
-	if (rc != 2 || !range_is_sane(etc...))
+Basically, yes but 1M is too small. If all of swap consumed, the behavior
+will be same so I think we need more explicit logic to prevent cache
+thrashing. Could you test below patch?
 
+Thanks.
+
+>From d7659ff20f065b89633037652042968ba9c9f5c2 Mon Sep 17 00:00:00 2001
+From: Minchan Kim <minchan@kernel.org>
+Date: Wed, 28 Jan 2015 14:01:57 +0900
+Subject: [PATCH] mm: prevent page thrashing for non-swap
+
+Josh reported
+
+"I have no swap configured.  I have 16GB RAM.  If Chrome or Gimp or some
+other stupid program goes off the deep end and eats up my RAM, I hit
+some 15.5GB or 15.75GB usage and stay there for about 40 minutes.  Every
+time the program tries to do something to eat more RAM, it cranks disk
+hard; the disk starts thrashing, the mouse pointer stops moving, and
+nothing goes on.  It's like swapping like crazy, except you're reading
+library files instead of paged anonymous RAM."
+
+With swap enable, get_scan_count has a logic to prevent cache thrasing
+but it doesn't with no swap case. This patch adds the check for
+non-swap case so that we shouldn't drop all of page cache in non-swap
+case, either to prevent cache thrashing.
+
+Reported-by: John Moser <john.r.moser@gmail.com>
+Signed-off-by: Minchan Kim <minchan@kernel.org>
+---
+ mm/vmscan.c | 42 ++++++++++++++++++++++++++++++------------
+ 1 file changed, 30 insertions(+), 12 deletions(-)
+
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 671e47edb584..2a2236fceaee 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -1957,6 +1957,22 @@ enum scan_balance {
+ 	SCAN_FILE,
+ };
+ 
++bool enough_file_pages(struct zone *zone)
++{
++	bool ret = true;
++	unsigned long zonefile;
++	unsigned long zonefree;
++
++	zonefree = zone_page_state(zone, NR_FREE_PAGES);
++	zonefile = zone_page_state(zone, NR_ACTIVE_FILE) +
++		   zone_page_state(zone, NR_INACTIVE_FILE);
++
++	if (unlikely(zonefile + zonefree <= high_wmark_pages(zone)))
++		ret = false;
++
++	return ret;
++}
++
+ /*
+  * Determine how aggressively the anon and file LRU lists should be
+  * scanned.  The relative value of each set of LRU lists is determined
+@@ -2039,18 +2055,9 @@ static void get_scan_count(struct lruvec *lruvec, int swappiness,
+ 	 * thrashing file LRU becomes infinitely more attractive than
+ 	 * anon pages.  Try to detect this based on file LRU size.
+ 	 */
+-	if (global_reclaim(sc)) {
+-		unsigned long zonefile;
+-		unsigned long zonefree;
+-
+-		zonefree = zone_page_state(zone, NR_FREE_PAGES);
+-		zonefile = zone_page_state(zone, NR_ACTIVE_FILE) +
+-			   zone_page_state(zone, NR_INACTIVE_FILE);
+-
+-		if (unlikely(zonefile + zonefree <= high_wmark_pages(zone))) {
+-			scan_balance = SCAN_ANON;
+-			goto out;
+-		}
++	if (global_reclaim(sc) && !enough_file_pages(zone)) {
++		scan_balance = SCAN_ANON;
++		goto out;
+ 	}
+ 
+ 	/*
+@@ -2143,6 +2150,17 @@ out:
+ 							denominator);
+ 				break;
+ 			case SCAN_FILE:
++				/*
++				 * If there isn't enough page cache to prevent
++				 * cache thrashing, OOM is better than long time
++				 * unresponsible system.
++				 */
++				if (global_reclaim(sc) && file &&
++						!enough_file_pages(zone)) {
++					size = 0;
++					scan = 0;
++					break;
++				}
+ 			case SCAN_ANON:
+ 				/* Scan one type exclusively */
+ 				if ((scan_balance == SCAN_FILE) != file) {
+-- 
+1.9.1
+
+-- 
+Kind regards,
+Minchan Kim
