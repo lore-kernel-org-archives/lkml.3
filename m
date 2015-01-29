@@ -1,127 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755714AbbA2Mjt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 07:39:49 -0500
-Received: from mail-lb0-f171.google.com ([209.85.217.171]:42091 "EHLO
-	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755465AbbA2Mjo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 07:39:44 -0500
+	id S1756040AbbA2MkG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 07:40:06 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:40036 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753828AbbA2Mjr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Jan 2015 07:39:47 -0500
+Message-ID: <54CA2A10.5050801@suse.cz>
+Date: Thu, 29 Jan 2015 13:39:44 +0100
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
 MIME-Version: 1.0
-In-Reply-To: <20150126114735.GA3178@pengutronix.de>
-References: <1422022202-7526-1-git-send-email-s.hauer@pengutronix.de>
-	<20150126114735.GA3178@pengutronix.de>
-Date: Thu, 29 Jan 2015 13:39:42 +0100
-Message-ID: <CABuKBe+x9o5OiysnMq-gvOBx3nKoaheL2efZGA6YQ7ZT5aqijw@mail.gmail.com>
-Subject: Re: [PATCH v2] MediaTek PMIC support
-From: Matthias Brugger <matthias.bgg@gmail.com>
-To: Sascha Hauer <s.hauer@pengutronix.de>
-Cc: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        =?UTF-8?B?WUggQ2hlbiAo6Zmz5pix6LGqKQ==?= <yh.chen@mediatek.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Henry Chen <henryc.chen@mediatek.com>,
-        Rob Herring <robh+dt@kernel.org>,
-        =?UTF-8?B?WWluZ2pvZSBDaGVuICjpmbPoi7HmtLIp?= 
-	<Yingjoe.Chen@mediatek.com>,
-        Eddie Huang <eddie.huang@mediatek.com>,
-        Lee Jones <lee.jones@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        James Liao <jamesjj.liao@mediatek.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Stephen Boyd <sboyd@codeaurora.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Paul Bolle <pebolle@tiscali.nl>
+CC: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] kconfig: warn if an unknown symbol is selected
+References: <1412100583.21730.31.camel@x220>		 <1415014691.20372.49.camel@x220> <1422438897.5666.23.camel@x220>	 <54C8FFBA.5040000@suse.cz> <1422480756.3621.52.camel@x220>
+In-Reply-To: <1422480756.3621.52.camel@x220>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sascha,
+On 2015-01-28 22:32, Paul Bolle wrote:
+> On Wed, 2015-01-28 at 16:26 +0100, Michal Marek wrote:
+>> On 2015-01-28 10:54, Paul Bolle wrote:
+>>> Now that we've been told Yann has disappeared, would you consider taking
+>>> this patch into one of your trees? It would be nice to have people
+>>> actually use it for a while.
+>>>
+>>> Or should we first clean up (most of) the warnings it generates? There
+>>
+>> It seems your fixes have been accepted in the meantime, but there is one
+>> new:
+>> *** Default configuration is based on 'x86_64_defconfig'
+>> drivers/misc/cxl/Kconfig:8:warning: 'CXL_BASE' selects unknown symbol
+>> 'PPC_COPRO_BASE'
+>>
+>> PPC_COPRO_BASE is not known on x86, but at the same time, there is no
+>> way for CXL_BASE to be selected on x86:
+>>
+>> config CXL_BASE
+>> 	bool
+>> 	default n
+>> 	select PPC_COPRO_BASE
+>>
+>> config CXL
+>> 	tristate "Support for IBM Coherent Accelerators (CXL)"
+>> 	depends on PPC_POWERNV && PCI_MSI
+>> 	select CXL_BASE
+>> 	default m
+>>
+>> Shouldn't we only warn about a select when it is triggered? An
+>> allyesconfig would still report all bogus selects for given architecture.
+> 
+> Good catch! I think checking only for selects done by Kconfig symbols
+> that are not "n" might do the trick. Expect a v2 one of these days.
+> 
+> The current load of issues (for allyesconfig on all arches except um) is
+> pasted at the bottom of this message (with some comments added). Looking
+> at that load I think it might be preferable to first most of fix those
+> issues before adding this to kconfig.
 
-2015-01-26 12:47 GMT+01:00 Sascha Hauer <s.hauer@pengutronix.de>:
-> Olof, Arnd,
->
-> OK to put the driver into drivers/soc/mediatek? Can you take these
-> patches?
+Maybe. OTOH, you have no warnings on x86 and powerpc and you already
+have patches for the arm(64) warnings, so I think this can go in.
 
-How does this patches fit together with the one James clock framework patches?
-Both use the same compatible "mediatek,mt8135-infracfg" and
-"mediatek,mt8135-pericfg".
-
-I had a look on other implementations and they attach the reset
-controller to the clk driver, if they share the same hw block.
-Might we run into problems if we implement the clocks in the mfd, as
-we need the clocks early in boot (e.g. for the timer)?
-
-In mt6589 pericfg apart from the clocks and reset controller provides
-registers for AXI bus control and USB wakeup and USB clock selection.
-The infracfg block provides top AXI bus fabric control signals and
-remap registers for the modem.
-Mike, Stephen, what do you think. Can we implement the clk in a mfd
-driver? Or do you prefer to implement the whole block in the clk
-driver?
-
-Cheers,
-Matthias
-
->
-> Sascha
->
-> On Fri, Jan 23, 2015 at 03:09:55PM +0100, Sascha Hauer wrote:
->> This series adds initial support for the MediaTek MT6397 PMIC and the
->> necessary infrastructure to attach it on the MT8135 / MT8173 SoCs.
->>
->> The infrastructure includes:
->>
->> - pericfg / infracfg controller support
->>   The pericfg / infracfg controllers contain miscellaneous registers for
->>   reset controllers and clocks.
->>
->> - PMIC wrapper support
->>   On MediaTek MT8135, MT8173 and other SoCs the PMIC is connected via
->>   SPI. The SPI master interface is not directly visible to the CPU, but
->>   only through the PMIC wrapper inside the SoC. The communication between
->>   the SoC and the PMIC can optionally be encrypted. Also a non standard
->>   Dual IO SPI mode can be used to increase speed. The MT8135 also supports
->>   a special feature named "IP Pairing". With IP Pairing the pins of some
->>   SoC internal peripherals can be on the PMIC. The signals of these pins
->>   are routed over the SPI bus using the pwrap bridge. Because of these
->>   optional non SPI conform features the PMIC driver is not implemented as
->>   a SPI bus master driver.
->>
->> The MT6397 PMIC itself is implemented as a regular mfd device driver which
->> uses regmap to access the PMIC registers.
->>
->> This series also adds regulator support for the MT6397 PMIC.
->>
->> The first 6 patches can be merged through the ARM SoC tree. The mfd
->> patch is independent of the first 6 patches and can be merged through the
->> mfd maintainer trees.
->>
->> Changes since v1:
->>
->> - document reset bindings for infracfg/pericfg
->> - fix base addresses in infracfg binding example
->> - Remove more Email addresses from Flora Fu (She is not working at
->>   MediaTek anymore, her address is no longer valid)
->> - drop Regulator support patch, it's already in next
->>
->> Sascha
->>
->>
->> _______________________________________________
->> linux-arm-kernel mailing list
->> linux-arm-kernel@lists.infradead.org
->> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
->>
->
-> --
-> Pengutronix e.K.                           |                             |
-> Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-> Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-> Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
-
-
-
--- 
-motzblog.wordpress.com
+Michal
