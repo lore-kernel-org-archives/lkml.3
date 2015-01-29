@@ -1,117 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755417AbbA2Mjn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 07:39:43 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:46113 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753221AbbA2Mjl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 07:39:41 -0500
-X-AuditID: cbfee61a-f79c06d000004e71-3b-54ca2a0b8e9b
-From: Chao Yu <chao2.yu@samsung.com>
-To: "'Jaegeuk Kim'" <jaegeuk@kernel.org>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net
-References: <1422401503-4769-1-git-send-email-jaegeuk@kernel.org>
- <1422401503-4769-5-git-send-email-jaegeuk@kernel.org>
-In-reply-to: <1422401503-4769-5-git-send-email-jaegeuk@kernel.org>
-Subject: RE: [PATCH 5/5] f2fs: introduce a batched trim
-Date: Thu, 29 Jan 2015 20:38:30 +0800
-Message-id: <003b01d03bc0$a5f23d20$f1d6b760$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: AQKDs63B3JtDSVeEmIqjDxgyUQN23AKL4RA4m1u1E3A=
-Content-language: zh-cn
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrNLMWRmVeSWpSXmKPExsVy+t9jAV1urVMhBhevyFs8WT+L2eLSIneL
-	PXtPslhc3jWHzYHFY9OqTjaP3Qs+M3l83iQXwBzFZZOSmpNZllqkb5fAlXFlzQ32gnXCFa1T
-	jrI1MN7h72Lk5JAQMJG4cOIzM4QtJnHh3nq2LkYuDiGBRYwSnT8XsEI4Pxgl9h+YzQZSxSag
-	IrG84z8TSEJEoJdR4seZfrB2IYFKiQtbH4PZnAJOEpOa+1lBbGEBc4nlq58zgdgsAqoSfcdm
-	sIDYvAKWEheb1zND2IISPybfA4szC2hJrN95nAnClpfYvOYt1HkKEjvOvmYEsUUErCTOnr0A
-	VS8usfHILZYJjIKzkIyahWTULCSjZiFpWcDIsopRNLUguaA4KT3XUK84Mbe4NC9dLzk/dxMj
-	OMifSe1gXNlgcYhRgINRiYeXo/5kiBBrYllxZe4hRgkOZiUR3kKlUyFCvCmJlVWpRfnxRaU5
-	qcWHGKU5WJTEeZXs20KEBNITS1KzU1MLUotgskwcnFINjGvXHz+q/iimf3vJuZPXfr1O5S9c
-	s/Qns73MB+X/LTYnxBU2BnmLs944GzTxa7xhskykTIrYUr0vCclzQypSvmz6MH/D1p7FjIsO
-	ZVw5mCevp7hw4dWXFv83aTNPs+8/qlyRcSv41aoTeZ7tc1q5zZz+Obx+JJB1ln/1pJeZaZsa
-	v53zmz5r/g8lluKMREMt5qLiRACbwPZ4bgIAAA==
+	id S1754988AbbA2Mi1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 07:38:27 -0500
+Received: from mail.kernel.org ([198.145.29.136]:33759 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752205AbbA2Mi0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Jan 2015 07:38:26 -0500
+Date: Thu, 29 Jan 2015 09:38:31 -0300
+From: Arnaldo Carvalho de Melo <acme@kernel.org>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Jiri Olsa <jolsa@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        David Ahern <dsahern@gmail.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Stephane Eranian <eranian@google.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH 40/42] perf callchain: Save eh/debug frame offset for
+ dwarf unwind
+Message-ID: <20150129123831.GT7220@kernel.org>
+References: <1422518843-25818-1-git-send-email-namhyung@kernel.org>
+ <1422518843-25818-41-git-send-email-namhyung@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1422518843-25818-41-git-send-email-namhyung@kernel.org>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jaegeuk,
-
-> -----Original Message-----
-> From: linux-fsdevel-owner@vger.kernel.org [mailto:linux-fsdevel-owner@vger.kernel.org] On
-> Behalf Of Jaegeuk Kim
-> Sent: Wednesday, January 28, 2015 7:32 AM
-> To: linux-kernel@vger.kernel.org; linux-fsdevel@vger.kernel.org;
-> linux-f2fs-devel@lists.sourceforge.net
-> Cc: Jaegeuk Kim
-> Subject: [PATCH 5/5] f2fs: introduce a batched trim
+Em Thu, Jan 29, 2015 at 05:07:21PM +0900, Namhyung Kim escreveu:
+> When libunwind tries to resolve callchains it needs to know the offset
+> of .eh_frame_hdr or .debug_frame to access the dso.  Since it calls
+> dso__data_fd(), it'll try to grab dso->lock everytime for same
+> information.  So save it to dso_data struct and reuse it.
 > 
-> This patch introduces a batched trimming feature, which submits split discard
-> commands.
+> Note that there's a window between dso__data_fd() and actual use of
+> the fd.  The fd could be closed by other threads to deal with the open
+> file limit in dso cache code.  But I think it's ok since in that case
+> elf_section_offset() will return 0 so it'll be tried in next acess.
 
-I didn't get it, why we should split discard commands. :(
+I know that you did this in the context of your multi threading
+patchkit, but this seems useful even without that patckhit, i.e. this
+can be cherry picked on the grounds that it speeds up things by caching
+something that doesn't change, right?
 
-Does smaller discarding for flash shows better performance or effect or safety?
-Can you please explain more about this patch?
+I.e. I'll probably just rewrite the comment and apply it before
+considering the other patches, so that other people can comment on the
+other patches, etc.
 
-Thanks,
-
-> 
-> Signed-off-by: Jaegeuk Kim <jaegeuk@kernel.org>
+- Arnaldo
+ 
+> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 > ---
->  fs/f2fs/f2fs.h    |  1 +
->  fs/f2fs/segment.c | 15 ++++++++++-----
->  2 files changed, 11 insertions(+), 5 deletions(-)
+>  tools/perf/util/dso.h              |  1 +
+>  tools/perf/util/unwind-libunwind.c | 31 ++++++++++++++++++++-----------
+>  2 files changed, 21 insertions(+), 11 deletions(-)
 > 
-> diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
-> index c0b83d6..ec4d16b 100644
-> --- a/fs/f2fs/f2fs.h
-> +++ b/fs/f2fs/f2fs.h
-> @@ -104,6 +104,7 @@ enum {
->  	CP_DISCARD,
->  };
-> 
-> +#define BATCHED_TRIM_SEGMENTS	10
->  struct cp_control {
->  	int reason;
->  	__u64 trim_start;
-> diff --git a/fs/f2fs/segment.c b/fs/f2fs/segment.c
-> index 31c4e57..6c9c784 100644
-> --- a/fs/f2fs/segment.c
-> +++ b/fs/f2fs/segment.c
-> @@ -1066,14 +1066,19 @@ int f2fs_trim_fs(struct f2fs_sb_info *sbi, struct fstrim_range *range)
->  	end_segno = (end >= MAX_BLKADDR(sbi)) ? MAIN_SEGS(sbi) - 1 :
->  						GET_SEGNO(sbi, end);
->  	cpc.reason = CP_DISCARD;
-> -	cpc.trim_start = start_segno;
-> -	cpc.trim_end = end_segno;
->  	cpc.trim_minlen = range->minlen >> sbi->log_blocksize;
-> 
->  	/* do checkpoint to issue discard commands safely */
-> -	mutex_lock(&sbi->gc_mutex);
-> -	write_checkpoint(sbi, &cpc);
-> -	mutex_unlock(&sbi->gc_mutex);
-> +	for (; start_segno <= end_segno;
-> +				start_segno += BATCHED_TRIM_SEGMENTS + 1) {
-> +		cpc.trim_start = start_segno;
-> +		cpc.trim_end = min_t(unsigned int,
-> +				start_segno + BATCHED_TRIM_SEGMENTS, end_segno);
-> +
-> +		mutex_lock(&sbi->gc_mutex);
-> +		write_checkpoint(sbi, &cpc);
-> +		mutex_unlock(&sbi->gc_mutex);
+> diff --git a/tools/perf/util/dso.h b/tools/perf/util/dso.h
+> index c18fcc0e8081..323ee08d56fc 100644
+> --- a/tools/perf/util/dso.h
+> +++ b/tools/perf/util/dso.h
+> @@ -141,6 +141,7 @@ struct dso {
+>  		u32		 status_seen;
+>  		size_t		 file_size;
+>  		struct list_head open_entry;
+> +		u64		 frame_offset;
+>  	} data;
+>  
+>  	union { /* Tool specific area */
+> diff --git a/tools/perf/util/unwind-libunwind.c b/tools/perf/util/unwind-libunwind.c
+> index 7ed6eaf232b6..3219b20837b5 100644
+> --- a/tools/perf/util/unwind-libunwind.c
+> +++ b/tools/perf/util/unwind-libunwind.c
+> @@ -266,14 +266,17 @@ static int read_unwind_spec_eh_frame(struct dso *dso, struct machine *machine,
+>  				     u64 *fde_count)
+>  {
+>  	int ret = -EINVAL, fd;
+> -	u64 offset;
+> +	u64 offset = dso->data.frame_offset;
+>  
+> -	fd = dso__data_fd(dso, machine);
+> -	if (fd < 0)
+> -		return -EINVAL;
+> +	if (offset == 0) {
+> +		fd = dso__data_fd(dso, machine);
+> +		if (fd < 0)
+> +			return -EINVAL;
+>  
+> -	/* Check the .eh_frame section for unwinding info */
+> -	offset = elf_section_offset(fd, ".eh_frame_hdr");
+> +		/* Check the .eh_frame section for unwinding info */
+> +		offset = elf_section_offset(fd, ".eh_frame_hdr");
+> +		dso->data.frame_offset = offset;
 > +	}
->  out:
->  	range->len = cpc.trimmed << sbi->log_blocksize;
->  	return 0;
-> --
-> 2.1.1
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
+>  
+>  	if (offset)
+>  		ret = unwind_spec_ehframe(dso, machine, offset,
+> @@ -287,14 +290,20 @@ static int read_unwind_spec_eh_frame(struct dso *dso, struct machine *machine,
+>  static int read_unwind_spec_debug_frame(struct dso *dso,
+>  					struct machine *machine, u64 *offset)
+>  {
+> -	int fd = dso__data_fd(dso, machine);
+> +	int fd;
+> +	u64 ofs = dso->data.frame_offset;
+>  
+> -	if (fd < 0)
+> -		return -EINVAL;
+> +	if (ofs == 0) {
+> +		fd = dso__data_fd(dso, machine);
+> +		if (fd < 0)
+> +			return -EINVAL;
+>  
+> -	/* Check the .debug_frame section for unwinding info */
+> -	*offset = elf_section_offset(fd, ".debug_frame");
+> +		/* Check the .debug_frame section for unwinding info */
+> +		ofs = elf_section_offset(fd, ".debug_frame");
+> +		dso->data.frame_offset = ofs;
+> +	}
+>  
+> +	*offset = ofs;
+>  	if (*offset)
+>  		return 0;
+>  
+> -- 
+> 2.2.2
