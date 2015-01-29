@@ -1,69 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758055AbbA2O0e (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 09:26:34 -0500
-Received: from smtp121.iad3a.emailsrvr.com ([173.203.187.121]:40855 "EHLO
-	smtp121.iad3a.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753588AbbA2O0V (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 09:26:21 -0500
-X-Sender-Id: abbotti@mev.co.uk
-Message-ID: <54CA4309.4050807@mev.co.uk>
-Date: Thu, 29 Jan 2015 14:26:17 +0000
-From: Ian Abbott <abbotti@mev.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.3.0
+	id S1758238AbbA2O0w (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 09:26:52 -0500
+Received: from guitar.tcltek.co.il ([192.115.133.116]:57549 "EHLO
+	mx.tkos.co.il" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758140AbbA2O0v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Jan 2015 09:26:51 -0500
+Date: Thu, 29 Jan 2015 16:26:39 +0200
+From: Baruch Siach <baruch@tkos.co.il>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: Daniel Lezcano <daniel.lezcano@linaro.org>, tglx@linutronix.de,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Barry.Song@csr.com, linux@rempel-privat.de, rob.herring@linaro.org,
+        thierry.reding@gmail.com
+Subject: Re: [PATCH 6/9] clocksource: Driver for Conexant Digicolor SoC timer
+Message-ID: <20150129142639.GI19448@tarshish>
+References: <54CA3044.6070501@linaro.org>
+ <1422536899-16609-1-git-send-email-daniel.lezcano@linaro.org>
+ <1422536899-16609-6-git-send-email-daniel.lezcano@linaro.org>
+ <1422538656.32520.4.camel@x220>
 MIME-Version: 1.0
-To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        H Hartley Sweeten <hsweeten@visionengravers.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Vladimir A. Nazarenko" <naszar@ya.ru>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: comedi: drivers: jr3_pci: Removed variables
- that is never used
-References: <1422484546-9045-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-In-Reply-To: <1422484546-9045-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1422538656.32520.4.camel@x220>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 28/01/15 22:35, Rickard Strandqvist wrote:
-> Variable ar assigned a value that is never used.
-> I have also removed all the code that thereby serves no purpose.
->
-> This was found using a static code analysis program called cppcheck
->
-> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-> ---
->   drivers/staging/comedi/drivers/jr3_pci.c |    3 +--
->   1 file changed, 1 insertion(+), 2 deletions(-)
->
-> diff --git a/drivers/staging/comedi/drivers/jr3_pci.c b/drivers/staging/comedi/drivers/jr3_pci.c
-> index 81fab2d..5d4cca7 100644
-> --- a/drivers/staging/comedi/drivers/jr3_pci.c
-> +++ b/drivers/staging/comedi/drivers/jr3_pci.c
-> @@ -520,10 +520,9 @@ static struct jr3_pci_poll_delay jr3_pci_poll_subdevice(struct comedi_subdevice
->   			result = poll_delay_min_max(20, 100);
->   		} else {
->   			/* Set full scale */
-> -			struct six_axis_t min_full_scale;
->   			struct six_axis_t max_full_scale;
->
-> -			min_full_scale = get_min_full_scales(channel);
-> +			get_min_full_scales(channel);
->   			max_full_scale = get_max_full_scales(channel);
->   			set_full_scales(channel, max_full_scale);
->
->
+Hi Paul,
 
-Yes, it doesn't appear to be needed.  The driver used to have some 
-kernel logs that output the min and max full scale information, but it 
-didn't do anything else with min_full_scale.
+On Thu, Jan 29, 2015 at 02:37:36PM +0100, Paul Bolle wrote:
+> On Thu, 2015-01-29 at 14:08 +0100, Daniel Lezcano wrote:
+> > From: Baruch Siach <baruch@tkos.co.il>
+> > +config DIGICOLOR_TIMER
+> > +	bool
+> 
+> And the select for this symbol (see https://lkml.org/lkml/2015/1/26/360)
+> will be provided in a separate patch? Because this patch, by itself,
+> won't allow DIGICOLOR_TIMER to be set, will it?
 
-The call to get_min_full_scales() and the function itself can also be 
-removed.
+Yes. Posted yesterday. See 
+http://article.gmane.org/gmane.linux.ports.arm.kernel/390166.
+
+baruch
 
 -- 
--=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk> )=-
--=(                          Web: http://www.mev.co.uk/  )=-
+     http://baruch.siach.name/blog/                  ~. .~   Tk Open Systems
+=}------------------------------------------------ooO--U--Ooo------------{=
+   - baruch@tkos.co.il - tel: +972.2.679.5364, http://www.tkos.co.il -
