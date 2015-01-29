@@ -1,73 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756233AbbA2Nr0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 08:47:26 -0500
-Received: from mga09.intel.com ([134.134.136.24]:36875 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755280AbbA2NrY convert rfc822-to-8bit (ORCPT
+	id S1756853AbbA2NsJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 08:48:09 -0500
+Received: from smtprelay0160.hostedemail.com ([216.40.44.160]:38792 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752455AbbA2NsG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 08:47:24 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.09,486,1418112000"; 
-   d="scan'208";a="658610452"
-From: "Ong, Boon Leong" <boon.leong.ong@intel.com>
-To: "Bryan O'Donoghue" <pure.logic@nexus-software.ie>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>,
-        "dvhart@infradead.org" <dvhart@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andy Shevchenko <andy.shevchenko@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: RE: [PATCH 1/2] x86: Add Isolated Memory Regions for Quark X1000
-Thread-Topic: [PATCH 1/2] x86: Add Isolated Memory Regions for Quark X1000
-Thread-Index: AQHQOylqnLZVjTv+WEq44p1GA6waZpzWMk6AgAAoNgCAAAEsAIAAwdXQ
-Date: Thu, 29 Jan 2015 13:47:18 +0000
-Message-ID: <AF233D1473C1364ABD51D28909A1B1B7327158BE@PGSMSX105.gar.corp.intel.com>
-References: <1422470186-7860-1-git-send-email-pure.logic@nexus-software.ie>
-	<1422470186-7860-2-git-send-email-pure.logic@nexus-software.ie>
-	<20150129074411.GA4817@gmail.com>
- <CAHp75Vfff-C++LWyyK+FWLnot=jO4kQvbDaN9hJ2_VrhG8n2Qg@mail.gmail.com>
- <54CA0782.8000807@nexus-software.ie>
-In-Reply-To: <54CA0782.8000807@nexus-software.ie>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.30.20.206]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 29 Jan 2015 08:48:06 -0500
+X-Session-Marker: 6E657665747340676F6F646D69732E6F7267
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,rostedt@goodmis.org,:::::::::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1183:1260:1277:1311:1313:1314:1345:1359:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:1981:2194:2199:2393:2553:2559:2562:2736:3138:3139:3140:3141:3142:3352:3622:3865:3867:3868:3870:3872:3873:3874:4362:5007:6261:7875:8660:9040:9108:10004:10400:10848:10967:11026:11232:11658:11914:12043:12295:12438:12517:12519:12740:13069:13148:13149:13230:13311:13357:14096:14097:21060:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: books85_29452c61cc510
+X-Filterd-Recvd-Size: 2168
+Date: Thu, 29 Jan 2015 08:48:02 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [RFC][PATCH 0/3] kprobes/ftrace/x86: Function graph trace
+ jprobes
+Message-ID: <20150129084802.77431788@gandalf.local.home>
+In-Reply-To: <54C9CD7C.3030402@hitachi.com>
+References: <20150128043036.429390502@goodmis.org>
+	<54C9CD7C.3030402@hitachi.com>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Bryan,
+On Thu, 29 Jan 2015 15:04:44 +0900
+Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
+ 
+> Hmm, could you make this more generic? Maybe we can directly call
+> ftrace_return_to_handler() from longjmp_break_handler().
 
-Once you have the next revision ready, I would like to test it on my end across both Galileo Gen v1 & v2. 
+I tried that, but because the longjump handlers can also be traced (and
+I still want them to be :-) It makes things even more complicated to
+get the stacks right. It's best to deal with the stack when you can.
 
-Cheers,
-BL  
+> Actually, current implementation seems just skipping one return
+> address, however, there may be possible to call jprobe_return() in
+> the nested functions, like below;
+> 
+> void test_exit(int flag)
+> {
+> 	if (!flag)
+> 		jprobe_return();
+> }
+> int jdo_fork(...)
+> {
+> 	...
+> 	test_exit(something_to_test);
+> 	...
+> 	jprobe_return();
+> 	return 0;
+> }
+> 
+> I've tested similar code on this series and it crashed kernel.
+> (I also checked that the above example can work safely without graph tracer)
+> 
 
->-----Original Message-----
->From: Bryan O'Donoghue [mailto:pure.logic@nexus-software.ie]
->Sent: Thursday, January 29, 2015 6:12 PM
->To: Andy Shevchenko; Ingo Molnar
->Cc: Thomas Gleixner; Ingo Molnar; H. Peter Anvin; x86@kernel.org;
->dvhart@infradead.org; Ong, Boon Leong; linux-kernel@vger.kernel.org
->Subject: Re: [PATCH 1/2] x86: Add Isolated Memory Regions for Quark X1000
->
->On 29/01/15 10:08, Andy Shevchenko wrote:
->> On Thu, Jan 29, 2015 at 9:44 AM, Ingo Molnar <mingo@kernel.org> wrote:
->>> * Bryan O'Donoghue <pure.logic@nexus-software.ie> wrote:
->>
->> []
->>
->>> In any case, I don't see any major problems with this code, so if
->>> it's fixed it could go into v3.20.
->>
->> Brian, it would be really nice to have it in 3.20 since we have
->> several drivers already in upstream or be ready for 3.20.
->> It would be then first upstream kernel with minimal Quark support.
->
->NP lads - I'll get a patch out today
+Ah yes, I missed this. I have a way to solve this but it's not going to
+get done before the merge window. Thanks for the test case. I'll use
+this and more complicated ones for future changes.
+
+Thanks!
+
+-- Steve
 
