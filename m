@@ -1,81 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756444AbbA2LB3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 06:01:29 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:37961 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753471AbbA2LB1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 06:01:27 -0500
-From: Kalle Valo <kvalo@codeaurora.org>
-To: Oleksij Rempel <linux@rempel-privat.de>
-Cc: zhengyuwei@360.cn, linux-kernel@vger.kernel.org,
-        ath9k-devel@venema.h4ckr.net, linux-wireless@vger.kernel.org,
-        ath9k-devel@qca.qualcomm.com, netdev@vger.kernel.org
-Subject: Re: [ath9k-devel] [PATCH] Repair soft lockup with monitor mode of ath9k_htc card
-References: <1422504583-17839-1-git-send-email-zhengyuwei@360.cn>
-	<54CA10DB.3070903@rempel-privat.de>
-Date: Thu, 29 Jan 2015 13:01:19 +0200
-In-Reply-To: <54CA10DB.3070903@rempel-privat.de> (Oleksij Rempel's message of
-	"Thu, 29 Jan 2015 11:52:11 +0100")
-Message-ID: <874mr93l6o.fsf@kamboji.qca.qualcomm.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S932491AbbA2JtM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 04:49:12 -0500
+Received: from p3plsmtps2ded04.prod.phx3.secureserver.net ([208.109.80.198]:53061
+	"EHLO p3plsmtps2ded04.prod.phx3.secureserver.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932325AbbA2JtG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Jan 2015 04:49:06 -0500
+x-originating-ip: 72.167.245.219
+From: Dexuan Cui <decui@microsoft.com>
+To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        driverdev-devel@linuxdriverproject.org, olaf@aepfle.de,
+        apw@canonical.com, jasowang@redhat.com, kys@microsoft.com
+Cc: haiyangz@microsoft.com
+Subject: [PATCH 1/3] hv: hv_util: move vmbus_open() to a later place
+Date: Thu, 29 Jan 2015 03:02:27 -0800
+Message-Id: <1422529347-28192-1-git-send-email-decui@microsoft.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Oleksij Rempel <linux@rempel-privat.de> writes:
+Before the line vmbus_open() returns, srv->util_cb can be already running
+and the variablies, like util_fw_version, are needed by the srv->util_cb.
 
-> Am 29.01.2015 um 05:09 schrieb zhengyuwei@360.cn:
->> From: Yuwei Zheng <zhengyuwei@360.cn>
->> 
->> In the environment with heavy wifi traffic, set the ar9271 into monitor mode, will
->> trigger a deadloop panic. 
->> 
->> The ath9k_hif_usb_rx_cb function excute on  the interrupt context, and ath9k_rx_tasklet excute
->> on the soft irq context. In other words, the ath9k_hif_usb_rx_cb have more chance to excute than
->> ath9k_rx_tasklet.  So in the worst condition,  the rx.rxbuf receive list is always full,
->> and the do {}while(true) loop will not be break. The kernel get a soft lockup panic.  
->>   
->> [59011.007210] BUG: soft lockup - CPU#0 stuck for 23s! 
->> [kworker/0:0:30609]
->> [59011.030560] BUG: scheduling while atomic: kworker/0:0/30609/0x40010100
->> [59013.804486] BUG: scheduling while atomic: kworker/0:0/30609/0x40010100
->> [59013.858522] Kernel panic - not syncing: softlockup: hung tasks
->> 
->> [59014.038891] Exception stack(0xdf4bbc38 to 0xdf4bbc80)
->> [59014.046834] bc20:                                                       de57b950 60000113
->> [59014.059579] bc40: 00000000 bb32bb32 60000113 de57b948 de57b500 dc7bb440 df4bbcd0 00000000
->> [59014.072337] bc60: de57b950 60000113 df4bbcd0 df4bbc80 c04c259d c04c25a0 60000133 ffffffff
->> [59014.085233] [<c04c28db>] (__irq_svc+0x3b/0x5c) from [<c04c25a0>] (_raw_spin_unlock_irqrestore+0xc/0x10)
->> [59014.100437] [<c04c25a0>] (_raw_spin_unlock_irqrestore+0xc/0x10) from [<bf9c2089>] (ath9k_rx_tasklet+0x290/0x490 [ath9k_htc])
->> [59014.118267] [<bf9c2089>] (ath9k_rx_tasklet+0x290/0x490 [ath9k_htc]) from [<c0036d23>] (tasklet_action+0x3b/0x98)
->> [59014.134132] [<c0036d23>] (tasklet_action+0x3b/0x98) from [<c0036709>] (__do_softirq+0x99/0x16c)
->> [59014.147784] [<c0036709>] (__do_softirq+0x99/0x16c) from [<c00369f7>] (irq_exit+0x5b/0x5c)
->> [59014.160653] [<c00369f7>] (irq_exit+0x5b/0x5c) from [<c000cfc3>] (handle_IRQ+0x37/0x78)
->> [59014.173124] [<c000cfc3>] (handle_IRQ+0x37/0x78) from [<c00085df>] (omap3_intc_handle_irq+0x5f/0x68)
->> [59014.187225] [<c00085df>] (omap3_intc_handle_irq+0x5f/0x68) from [<c04c28db>](__irq_svc+0x3b/0x5c)
->> 
->> This bug can be see with low performance board, such as uniprocessor beagle bone board.
->> Signed-off-by: Yuwei Zheng <zhengyuwei@360.cn>
->> 
->> ---
->>  drivers/net/wireless/ath/ath9k/hif_usb.c       | 53 ++++++++++++++++++++++----
->>  drivers/net/wireless/ath/ath9k/hif_usb.h       |  5 +++
->>  drivers/net/wireless/ath/ath9k/htc.h           | 13 +++++++
->>  drivers/net/wireless/ath/ath9k/htc_drv_debug.c | 49 ++++++++++++++++++++++++
->>  drivers/net/wireless/ath/ath9k/htc_drv_txrx.c  | 26 +++++++++++++
->>  5 files changed, 139 insertions(+), 7 deletions(-)
->
-> First of all, thank you for you work! :D
->
-> Please run ./scripts/checkpatch.pl yourpatch_path
-> i get:
-> total: 139 errors, 12 warnings, 2 checks, 231 lines checked
+So we have to make sure the variables are initialized before the vmbus_open().
 
-Also please add "ath9k_htc:" prefix to the title.
+CC: "K. Y. Srinivasan" <kys@microsoft.com>
+Signed-off-by: Dexuan Cui <decui@microsoft.com>
+---
+ drivers/hv/hv_util.c | 11 ++++++-----
+ 1 file changed, 6 insertions(+), 5 deletions(-)
 
+diff --git a/drivers/hv/hv_util.c b/drivers/hv/hv_util.c
+index 3b9c9ef..c5be773 100644
+--- a/drivers/hv/hv_util.c
++++ b/drivers/hv/hv_util.c
+@@ -340,12 +340,8 @@ static int util_probe(struct hv_device *dev,
+ 
+ 	set_channel_read_state(dev->channel, false);
+ 
+-	ret = vmbus_open(dev->channel, 4 * PAGE_SIZE, 4 * PAGE_SIZE, NULL, 0,
+-			srv->util_cb, dev->channel);
+-	if (ret)
+-		goto error;
+-
+ 	hv_set_drvdata(dev, srv);
++
+ 	/*
+ 	 * Based on the host; initialize the framework and
+ 	 * service version numbers we will negotiate.
+@@ -365,6 +361,11 @@ static int util_probe(struct hv_device *dev,
+ 		hb_srv_version = HB_VERSION;
+ 	}
+ 
++	ret = vmbus_open(dev->channel, 4 * PAGE_SIZE, 4 * PAGE_SIZE, NULL, 0,
++			srv->util_cb, dev->channel);
++	if (ret)
++		goto error;
++
+ 	return 0;
+ 
+ error:
 -- 
-Kalle Valo
+1.9.1
+
