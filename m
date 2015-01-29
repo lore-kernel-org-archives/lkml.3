@@ -1,76 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755821AbbA2PPO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 10:15:14 -0500
-Received: from smtp121.iad3a.emailsrvr.com ([173.203.187.121]:48243 "EHLO
-	smtp121.iad3a.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753065AbbA2PPA (ORCPT
+	id S1756056AbbA2PQH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 10:16:07 -0500
+Received: from mga01.intel.com ([192.55.52.88]:21526 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754420AbbA2PQD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 10:15:00 -0500
-X-Sender-Id: abbotti@mev.co.uk
-Message-ID: <54CA4E69.7070506@mev.co.uk>
-Date: Thu, 29 Jan 2015 15:14:49 +0000
-From: Ian Abbott <abbotti@mev.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.3.0
+	Thu, 29 Jan 2015 10:16:03 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="447039146"
+From: "Ong, Boon Leong" <boon.leong.ong@intel.com>
+To: "Bryan O'Donoghue" <pure.logic@nexus-software.ie>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>,
+        "dvhart@infradead.org" <dvhart@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andy Shevchenko <andy.shevchenko@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: RE: [PATCH 1/2] x86: Add Isolated Memory Regions for Quark X1000
+Thread-Topic: [PATCH 1/2] x86: Add Isolated Memory Regions for Quark X1000
+Thread-Index: AQHQOylqnLZVjTv+WEq44p1GA6waZpzWMk6AgAAoNgCAAAEsAIAAwdXQgAAXoFA=
+Date: Thu, 29 Jan 2015 15:15:58 +0000
+Message-ID: <AF233D1473C1364ABD51D28909A1B1B732715A94@PGSMSX105.gar.corp.intel.com>
+References: <1422470186-7860-1-git-send-email-pure.logic@nexus-software.ie>
+	<1422470186-7860-2-git-send-email-pure.logic@nexus-software.ie>
+	<20150129074411.GA4817@gmail.com>
+ <CAHp75Vfff-C++LWyyK+FWLnot=jO4kQvbDaN9hJ2_VrhG8n2Qg@mail.gmail.com>
+ <54CA0782.8000807@nexus-software.ie> 
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.30.20.206]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        H Hartley Sweeten <hsweeten@visionengravers.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Chase Southwood <chase.southwood@gmail.com>,
-        Marcin Kostrzewa <marckostrzewa@gmail.com>,
-        Fred Akers <knivey@botops.net>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: comedi: drivers: addi-data: hwdrv_apci3501:
- Removed variables that is never used
-References: <1422481914-31418-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-In-Reply-To: <1422481914-31418-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 28/01/15 21:51, Rickard Strandqvist wrote:
-> Variable ar assigned a value that is never used.
-> I have also removed all the code that thereby serves no purpose.
->
-> This was found using a static code analysis program called cppcheck
->
-> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-> ---
->   drivers/staging/comedi/drivers/addi-data/hwdrv_apci3501.c |    3 +--
->   1 file changed, 1 insertion(+), 2 deletions(-)
->
-> diff --git a/drivers/staging/comedi/drivers/addi-data/hwdrv_apci3501.c b/drivers/staging/comedi/drivers/addi-data/hwdrv_apci3501.c
-> index 339519a..24126e3 100644
-> --- a/drivers/staging/comedi/drivers/addi-data/hwdrv_apci3501.c
-> +++ b/drivers/staging/comedi/drivers/addi-data/hwdrv_apci3501.c
-> @@ -93,7 +93,6 @@ static int apci3501_write_insn_timer(struct comedi_device *dev,
->   {
->   	struct apci3501_private *devpriv = dev->private;
->   	unsigned int ul_Command1 = 0;
-> -	int i_Temp;
->
->   	if (devpriv->b_TimerSelectMode == ADDIDATA_WATCHDOG) {
->
-> @@ -135,7 +134,7 @@ static int apci3501_write_insn_timer(struct comedi_device *dev,
->   		}
->   	}
->
-> -	i_Temp = inl(dev->iobase + APCI3501_TIMER_STATUS_REG) & 0x1;
-> +	inl(dev->iobase + APCI3501_TIMER_STATUS_REG) & 0x1;
+Hi Bryan,
 
-The ' & 0x1' part produces compiler warnings and should be removed.
+These two patches requires another patch "x86: Re-enable IO-APIC for non-SMP X86_32" 
+to be included to make sure we have the right build for Quark.
 
-I don't know if the inl() call has any side-effects or not, but since 
-it's part of the watchdog functionality of this board, it's safest to 
-leave it in.
+I tested v6 on Galileo Gen v2 just now. I am happy with it.
+Many thanks.
 
->   	return insn->n;
->   }
+Below are the logs:
+
+root@quark:/proc# dmesg | grep imr
+[    3.727884] imr: protecting kernel .text - .rodata: 9240 KiB (c1000000 - c1906000)
+[    3.736421] imr_selftest: self_test pass zero sized IMR
+[    3.742413] imr_selftest: self_test pass overlapped IMR @ (0xc1000000 - 0xc1906000)
+[    3.751164] imr_selftest: self_test pass overlapped IMR @ (0xc1905c00 - 0xc220bc00)
+[    3.759916] imr_selftest: self_test pass overlapped IMR @ (0xc0fff400 - 0xc1905400)
+[    3.768566] imr_selftest: self_test pass 1KiB IMR @ 0x00000000 - access-all
+[    3.776542] imr_selftest: self_test pass 1KiB IMR @ 0x00000000 - cpu access
+[    3.784442] imr_selftest: self_test pass index-teardown - cpu access
+[    3.791690] imr_selftest: self_test pass 2KiB IMR @ 0x00000000
+[    3.798396] imr_selftest: self_test pass index-teardown 2KiB
+[    3.804957] imr_selftest: self_test pass 2KiB IMR @ 0x00000000
+[    3.811616] imr_selftest: self_test pass addr-teardown 2KiB
+root@quark:/proc# cat /sys/kernel/debug/imr_state
+imr00: base=0x00000000, end=0x00000000, size=0x00000000 rmask=0xbfffffff, wmask=0xffffffff, disabled, unlocked
+imr01: base=0x00000000, end=0x00000000, size=0x00000000 rmask=0xbfffffff, wmask=0xffffffff, disabled, unlocked
+imr02: base=0x00000000, end=0x00000000, size=0x00000000 rmask=0xbfffffff, wmask=0xffffffff, disabled, unlocked
+imr03: base=0x00000000, end=0x00000000, size=0x00000000 rmask=0xbfffffff, wmask=0xffffffff, disabled, unlocked
+imr04: base=0x00000000, end=0x00000000, size=0x00000000 rmask=0xbfffffff, wmask=0xffffffff, disabled, unlocked
+imr05: base=0x00000000, end=0x00000000, size=0x00000000 rmask=0xbfffffff, wmask=0xffffffff, disabled, unlocked
+imr06: base=0x00000000, end=0x00000000, size=0x00000000 rmask=0xbfffffff, wmask=0xffffffff, disabled, unlocked
+imr07: base=0x01000000, end=0x01905fff, size=0x00905fff rmask=0x00000001, wmask=0x00000001, enabled , locked
+
+ 
+
+>-----Original Message-----
+>From: Ong, Boon Leong
+>Sent: Thursday, January 29, 2015 9:47 PM
+>To: 'Bryan O'Donoghue'
+>Cc: Thomas Gleixner; Ingo Molnar; H. Peter Anvin; x86@kernel.org;
+>dvhart@infradead.org; linux-kernel@vger.kernel.org; Andy Shevchenko; Ingo
+>Molnar
+>Subject: RE: [PATCH 1/2] x86: Add Isolated Memory Regions for Quark X1000
 >
+>Bryan,
 >
+>Once you have the next revision ready, I would like to test it on my end across
+>both Galileo Gen v1 & v2.
+>
+>Cheers,
+>BL
+>
+>>-----Original Message-----
+>>From: Bryan O'Donoghue [mailto:pure.logic@nexus-software.ie]
+>>Sent: Thursday, January 29, 2015 6:12 PM
+>>To: Andy Shevchenko; Ingo Molnar
+>>Cc: Thomas Gleixner; Ingo Molnar; H. Peter Anvin; x86@kernel.org;
+>>dvhart@infradead.org; Ong, Boon Leong; linux-kernel@vger.kernel.org
+>>Subject: Re: [PATCH 1/2] x86: Add Isolated Memory Regions for Quark
+>>X1000
+>>
+>>On 29/01/15 10:08, Andy Shevchenko wrote:
+>>> On Thu, Jan 29, 2015 at 9:44 AM, Ingo Molnar <mingo@kernel.org> wrote:
+>>>> * Bryan O'Donoghue <pure.logic@nexus-software.ie> wrote:
+>>>
+>>> []
+>>>
+>>>> In any case, I don't see any major problems with this code, so if
+>>>> it's fixed it could go into v3.20.
+>>>
+>>> Brian, it would be really nice to have it in 3.20 since we have
+>>> several drivers already in upstream or be ready for 3.20.
+>>> It would be then first upstream kernel with minimal Quark support.
+>>
+>>NP lads - I'll get a patch out today
 
--- 
--=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk> )=-
--=(                          Web: http://www.mev.co.uk/  )=-
