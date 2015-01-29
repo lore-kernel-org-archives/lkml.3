@@ -1,39 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753581AbbA2Ofw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 09:35:52 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53232 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752525AbbA2Ofu (ORCPT
+	id S1753020AbbA2OhU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 09:37:20 -0500
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:44464 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751878AbbA2OhS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 09:35:50 -0500
-Date: Thu, 29 Jan 2015 06:35:48 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drivers/base/node: Avoid manual device_create_file()
- calls
-Message-ID: <20150129143548.GA9723@kroah.com>
-References: <1422530962-2460-1-git-send-email-tiwai@suse.de>
+	Thu, 29 Jan 2015 09:37:18 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1422530962-2460-1-git-send-email-tiwai@suse.de>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20150128234938.20644.69989.stgit@dusk.lan>
+References: <20150128234935.20644.89300.stgit@dusk.lan> <20150128234938.20644.69989.stgit@dusk.lan>
+From: Rob Herring <robherring2@gmail.com>
+Date: Thu, 29 Jan 2015 08:36:56 -0600
+Message-ID: <CAL_JsqJq8D86gUdw80Nev=zmW=kYR90iNKiTzciwpaGx2qNJsA@mail.gmail.com>
+Subject: Re: [PATCH 24/24] Documentation: DT bindings: add nvidia, denver
+ compatible string
+To: Paul Walmsley <paul@pwsan.com>
+Cc: Mark Rutland <mark.rutland@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
+        Heiko Stuebner <heiko@sntech.de>, Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Rohit Vaswani <rvaswani@codeaurora.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Marc Carino <marc.ceeeee@gmail.com>, Rob Herring <robh+dt@kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>, Paul Walmsley <pwalmsley@nvidia.com>,
+        Kumar Gala <galak@codeaurora.org>, Olof Johansson <olof@lixom.net>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 29, 2015 at 12:29:22PM +0100, Takashi Iwai wrote:
-> Instead of manual calls of multiple device_create_file() and
-> device_remove_file(), use the static attribute groups assigned to the
-> new device.  This also fixes the possible races, too.
-> 
-> Signed-off-by: Takashi Iwai <tiwai@suse.de>
+On Wed, Jan 28, 2015 at 5:49 PM, Paul Walmsley <paul@pwsan.com> wrote:
+>
+> Add a compatible string for the NVIDIA Denver CPU to the ARM CPU DT
+> binding documentation file.  The primary objective here is to keep
+> checkpatch.pl from warning when the compatible string is used in an
+> SoC DT file, per:
+>
+> http://marc.info/?l=linux-tegra&m=142201349727836&w=2
+>
+>
+> Signed-off-by: Paul Walmsley <paul@pwsan.com>
+> Cc: Rob Herring <robh+dt@kernel.org>
+> Cc: Pawel Moll <pawel.moll@arm.com>
+> Cc: Mark Rutland <mark.rutland@arm.com>
+> Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>
+> Cc: Kumar Gala <galak@codeaurora.org>
+> Cc: Heiko Stuebner <heiko@sntech.de>
+> Cc: Arnd Bergmann <arnd@arndb.de>
+> Cc: Catalin Marinas <catalin.marinas@arm.com>
+> Cc: Olof Johansson <olof@lixom.net>
+> Cc: Maxime Ripard <maxime.ripard@free-electrons.com>
+> Cc: Rohit Vaswani <rvaswani@codeaurora.org>
+> Cc: Paul Walmsley <pwalmsley@nvidia.com>
+> Cc: Marc Carino <marc.ceeeee@gmail.com>
+> Cc: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+> Cc: devicetree@vger.kernel.org
+> Cc: linux-kernel@vger.kernel.org
+> Cc: linux-arm-kernel@lists.infradead.org
 > ---
->  drivers/base/node.c | 34 ++++++++++++++++++++--------------
->  1 file changed, 20 insertions(+), 14 deletions(-)
+>  Documentation/devicetree/bindings/arm/cpus.txt |    1 +
+>  1 file changed, 1 insertion(+)
+>
+> diff --git a/Documentation/devicetree/bindings/arm/cpus.txt b/Documentation/devicetree/bindings/arm/cpus.txt
+> index b2aacbe16ed9..4ea31f0b7764 100644
+> --- a/Documentation/devicetree/bindings/arm/cpus.txt
+> +++ b/Documentation/devicetree/bindings/arm/cpus.txt
+> @@ -175,6 +175,7 @@ nodes to be present and contain the properties described below.
+>                             "marvell,pj4a"
+>                             "marvell,pj4b"
+>                             "marvell,sheeva-v5"
+> +                           "nvidia,denver" (not yet matched in the code)
 
-Looks good, I'll queue this up soon, thanks for doing it.
+There's not variations or versions of Denver cores or plans to change
+from the codename?
 
-greg k-h
+Rob
