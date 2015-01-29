@@ -1,34 +1,239 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762821AbbA2CpI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 21:45:08 -0500
-Received: from mail-lb0-f169.google.com ([209.85.217.169]:41258 "EHLO
-	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756117AbbA2CpB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 21:45:01 -0500
+	id S1763288AbbA2Cye (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 21:54:34 -0500
+Received: from mga02.intel.com ([134.134.136.20]:2193 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756115AbbA2Cyc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jan 2015 21:54:32 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.09,484,1418112000"; 
+   d="scan'208";a="658393163"
+From: "Zhang, Yang Z" <yang.z.zhang@intel.com>
+To: Wincy Van <fanwenyi0529@gmail.com>, Paolo Bonzini <pbonzini@redhat.com>,
+        "gleb@kernel.org" <gleb@kernel.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        Wanpeng Li <wanpeng.li@linux.intel.com>,
+        Jan Kiszka <jan.kiszka@web.de>
+Subject: RE: [PATCH v4 2/6] KVM: nVMX: Enable nested virtualize x2apic mode
+Thread-Topic: [PATCH v4 2/6] KVM: nVMX: Enable nested virtualize x2apic mode
+Thread-Index: AQHQOxMWJBk+rZSvikyCsGDNUyZvI5zWY0nw
+Date: Thu, 29 Jan 2015 02:54:13 +0000
+Message-ID: <A9667DDFB95DB7438FA9D7D576C3D87E0AC2E2AF@SHSMSX104.ccr.corp.intel.com>
+References: <CACzj_yXSy9NwBFWkvN+y=5oZfJTM5AaoLZ08O-G2+hXtZLqH0Q@mail.gmail.com>
+In-Reply-To: <CACzj_yXSy9NwBFWkvN+y=5oZfJTM5AaoLZ08O-G2+hXtZLqH0Q@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-In-Reply-To: <1422453867-17326-1-git-send-email-andrej.skvortzov@gmail.com>
-References: <1422453867-17326-1-git-send-email-andrej.skvortzov@gmail.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Wed, 28 Jan 2015 18:44:39 -0800
-Message-ID: <CALCETrUjjt95zP2mAqLANXmuZKWsCF02MKC7UrhSPf9pusF8YA@mail.gmail.com>
-Subject: Re: [PATCH] x86/vdso: teach 'make clean' remove vdso64 binaries
-To: Andrey Skvortsov <andrej.skvortzov@gmail.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, X86 ML <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id t0T2sdJv010340
 
-On Wed, Jan 28, 2015 at 6:04 AM, Andrey Skvortsov
-<andrej.skvortzov@gmail.com> wrote:
-> After 'make clean' vdso64.so and vdso64.dbg.so were left in arch/x86/vdso/.
->
-> Signed-off-by: Andrey Skvortsov <andrej.skvortzov@gmail.com>
+Wincy Van wrote on 2015-01-28:
+> When L2 is using x2apic, we can use virtualize x2apic mode to gain higher
+> performance, especially in apicv case.
+> 
+> This patch also introduces nested_vmx_check_apicv_controls for the nested
+> apicv patches.
+> 
+> Signed-off-by: Wincy Van <fanwenyi0529@gmail.com>
+> ---
+>  arch/x86/kvm/vmx.c |  114
+> +++++++++++++++++++++++++++++++++++++++++++++++++++-
+>  1 files changed, 112 insertions(+), 2 deletions(-)
+> 
+> diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c index 787f886..9d11a93
+> 100644
+> --- a/arch/x86/kvm/vmx.c
+> +++ b/arch/x86/kvm/vmx.c
+> @@ -1108,6 +1108,11 @@ static inline bool nested_cpu_has_xsaves(struct
+> vmcs12 *vmcs12)
+>                 vmx_xsaves_supported();
+>  }
+> 
+> +static inline bool nested_cpu_has_virt_x2apic_mode(struct vmcs12
+> +*vmcs12) {
+> +       return nested_cpu_has2(vmcs12,
+> +SECONDARY_EXEC_VIRTUALIZE_X2APIC_MODE);
+> +}
+> +
+>  static inline bool is_exception(u32 intr_info)  {
+>         return (intr_info & (INTR_INFO_INTR_TYPE_MASK |
+> INTR_INFO_VALID_MASK)) @@ -2395,6 +2400,7 @@ static __init void
+> nested_vmx_setup_ctls_msrs(void)
+>         nested_vmx_secondary_ctls_low = 0;
+>         nested_vmx_secondary_ctls_high &=
+>                 SECONDARY_EXEC_VIRTUALIZE_APIC_ACCESSES |
+> +               SECONDARY_EXEC_VIRTUALIZE_X2APIC_MODE |
+>                 SECONDARY_EXEC_WBINVD_EXITING |
+>                 SECONDARY_EXEC_XSAVES;
+> 
+> @@ -4155,6 +4161,52 @@ static void
+> __vmx_enable_intercept_for_msr(unsigned long *msr_bitmap,
+>         }
+>  }
+> 
+> +/*
+> + * If a msr is allowed by L0, we should check whether it is allowed by L1.
+> + * The corresponding bit will be cleared unless both of L0 and L1 allow it.
+> + */
+> +static void nested_vmx_disable_intercept_for_msr(unsigned long
+> *msr_bitmap_l1,
+> +                                              unsigned long
+> *msr_bitmap_nested,
+> +                                              u32 msr, int type) {
+> +       int f = sizeof(unsigned long);
+> +
+> +       if (!cpu_has_vmx_msr_bitmap()) {
+> +               WARN_ON(1);
+> +               return;
+> +       }
+> +
+> +       /*
+> +        * See Intel PRM Vol. 3, 20.6.9 (MSR-Bitmap Address). Early manuals
+> +        * have the write-low and read-high bitmap offsets the wrong way
+> round.
+> +        * We can control MSRs 0x00000000-0x00001fff and
+> 0xc0000000-0xc0001fff.
+> +        */
+> +       if (msr <= 0x1fff) {
+> +               if (type & MSR_TYPE_R &&
+> +                  !test_bit(msr, msr_bitmap_l1 + 0x000 / f))
+> +                       /* read-low */
+> +                       __clear_bit(msr, msr_bitmap_nested + 0x000 / f);
+> +
+> +               if (type & MSR_TYPE_W &&
+> +                  !test_bit(msr, msr_bitmap_l1 + 0x800 / f))
+> +                       /* write-low */
+> +                       __clear_bit(msr, msr_bitmap_nested + 0x800 / f);
+> +
+> +       } else if ((msr >= 0xc0000000) && (msr <= 0xc0001fff)) {
+> +               msr &= 0x1fff;
+> +               if (type & MSR_TYPE_R &&
+> +                  !test_bit(msr, msr_bitmap_l1 + 0x400 / f))
+> +                       /* read-high */
+> +                       __clear_bit(msr, msr_bitmap_nested + 0x400 / f);
+> +
+> +               if (type & MSR_TYPE_W &&
+> +                  !test_bit(msr, msr_bitmap_l1 + 0xc00 / f))
+> +                       /* write-high */
+> +                       __clear_bit(msr, msr_bitmap_nested + 0xc00 / f);
+> +
+> +       }
+> +}
+> +
+>  static void vmx_disable_intercept_for_msr(u32 msr, bool longmode_only)  {
+>         if (!longmode_only)
+> @@ -8350,7 +8402,59 @@ static int
+> nested_vmx_check_msr_bitmap_controls(struct kvm_vcpu *vcpu,  static
+> inline bool nested_vmx_merge_msr_bitmap(struct kvm_vcpu *vcpu,
+>                                                struct vmcs12
+> *vmcs12)  {
+> -       return false;
+> +       struct page *page;
+> +       unsigned long *msr_bitmap;
+> +
+> +       if (!nested_cpu_has_virt_x2apic_mode(vmcs12))
+> +               return false;
+> +
+> +       page = nested_get_page(vcpu, vmcs12->msr_bitmap);
+> +       if (!page) {
+> +               WARN_ON(1);
+> +               return false;
+> +       }
+> +       msr_bitmap = (unsigned long *)kmap(page);
+> +       if (!msr_bitmap) {
+> +               nested_release_page_clean(page);
+> +               WARN_ON(1);
+> +               return false;
+> +       }
+> +
+> +       if (nested_cpu_has_virt_x2apic_mode(vmcs12)) {
+> +               /* TPR is allowed */
+> +               nested_vmx_disable_intercept_for_msr(msr_bitmap,
+> +                               vmx_msr_bitmap_nested,
+> +                               APIC_BASE_MSR + (APIC_TASKPRI >>
+> 4),
+> +                               MSR_TYPE_R | MSR_TYPE_W);
+> +       } else
+> +               __vmx_enable_intercept_for_msr(
+> +                               vmx_msr_bitmap_nested,
+> +                               APIC_BASE_MSR + (APIC_TASKPRI >>
+> 4),
+> +                               MSR_TYPE_R | MSR_TYPE_W);
+> +       kunmap(page);
+> +       nested_release_page_clean(page);
+> +
+> +       return true;
+> +}
+> +
+> +static int nested_vmx_check_apicv_controls(struct kvm_vcpu *vcpu,
+> +                                          struct vmcs12 *vmcs12) {
+> +       if (!nested_cpu_has_virt_x2apic_mode(vmcs12))
+> +               return 0;
+> +
+> +       /*
+> +        * If virtualize x2apic mode is enabled,
+> +        * virtualize apic access must be disabled.
+> +        */
+> +       if (nested_cpu_has2(vmcs12,
+> SECONDARY_EXEC_VIRTUALIZE_APIC_ACCESSES))
+> +               return -EINVAL;
+> +
+> +       /* tpr shadow is needed by all apicv features. */
+> +       if (!nested_cpu_has(vmcs12, CPU_BASED_TPR_SHADOW))
+> +               return -EINVAL;
+> +
+> +       return 0;
+>  }
+> 
+>  static int nested_vmx_check_msr_switch(struct kvm_vcpu *vcpu, @@
+> -8646,7 +8750,8 @@ static void prepare_vmcs02(struct kvm_vcpu *vcpu,
+> struct vmcs12 *vmcs12)
+>                         else
+>                                 vmcs_write64(APIC_ACCESS_ADDR,
+> 
+> page_to_phys(vmx->nested.apic_access_page));
+> -               } else if
+> (vm_need_virtualize_apic_accesses(vmx->vcpu.kvm)) {
+> +               } else if (!(nested_cpu_has_virt_x2apic_mode(vmcs12)) &&
+> +
+> + (vm_need_virtualize_apic_accesses(vmx->vcpu.kvm))) {
+>                         exec_control |=
 
-Applied.  Thanks.
+You don't load L2's apic_page in your patch correctly when x2apic mode is used. Here is the right change for prepare_vmcs02()(maybe other place also need change too):
 
---Andy
+@@ -8585,7 +8585,8 @@ static void prepare_vmcs02(struct kvm_vcpu *vcpu, struct vmcs12 *vmcs12)
+                                CPU_BASED_ACTIVATE_SECONDARY_CONTROLS))
+                        exec_control |= vmcs12->secondary_vm_exec_control;
+ 
+-               if (exec_control & SECONDARY_EXEC_VIRTUALIZE_APIC_ACCESSES) {
++               if (exec_control & (SECONDARY_EXEC_VIRTUALIZE_APIC_ACCESSES |
++                                   SECONDARY_EXEC_VIRTUALIZE_X2APIC_MODE)) {
+                        /*
+                         * If translation failed, no matter: This feature asks
+                         * to exit when accessing the given address, and if it
+@@ -8594,7 +8595,8 @@ static void prepare_vmcs02(struct kvm_vcpu *vcpu, struct vmcs12 *vmcs12)
+                         */
+                        if (!vmx->nested.apic_access_page)
+                                exec_control &=
+-                                 ~SECONDARY_EXEC_VIRTUALIZE_APIC_ACCESSES;
++                                 ~ (SECONDARY_EXEC_VIRTUALIZE_APIC_ACCESSES |
++                                    SECONDARY_EXEC_VIRTUALIZE_X2APIC_MODE);
+                        else
+                                vmcs_write64(APIC_ACCESS_ADDR,
+                                  page_to_phys(vmx->nested.apic_access_page));
+
+
+Best regards,
+Yang
+
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
