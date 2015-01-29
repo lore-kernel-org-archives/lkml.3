@@ -1,57 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757574AbbA2Ng5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 08:36:57 -0500
-Received: from david.siemens.de ([192.35.17.14]:44155 "EHLO david.siemens.de"
+	id S1757845AbbA2Nha (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 08:37:30 -0500
+Received: from mga01.intel.com ([192.55.52.88]:34252 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752205AbbA2Ngz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 08:36:55 -0500
-Message-ID: <54CA3736.4090600@siemens.com>
-Date: Thu, 29 Jan 2015 14:35:50 +0100
-From: Jan Kiszka <jan.kiszka@siemens.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
-MIME-Version: 1.0
-To: Michal Marek <mmarek@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org,
-        Daniel Thompson <daniel.thompson@linaro.org>
-CC: Thomas Gleixner <tglx@linutronix.de>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        kgdb-bugreport@lists.sourceforge.net, Andi Kleen <andi@firstfloor.org>,
-        Tom Tromey <tromey@redhat.com>, Ben Widawsky <ben@bwidawsk.net>,
-        Borislav Petkov <bp@suse.de>, linux-kbuild@vger.kernel.org
-Subject: Re: [PATCH v11 23/28] scripts/gdb: Ignore byte-compiled python files
-References: <cover.1422514006.git.jan.kiszka@siemens.com> <fd0c2a6ad6e1d021ce85798f9cd89d9e3381288e.1422514006.git.jan.kiszka@siemens.com> <54CA325F.9070906@suse.cz>
-In-Reply-To: <54CA325F.9070906@suse.cz>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+	id S1753177AbbA2Nh3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Jan 2015 08:37:29 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.09,486,1418112000"; 
+   d="scan'208";a="669696314"
+Message-ID: <1422538649.31903.330.camel@linux.intel.com>
+Subject: Re: [PATCH v2 2/3] lib/string_helpers.c: Refactor string_escape_mem
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Mathias Krause <minipli@googlemail.com>, linux-kernel@vger.kernel.org
+Date: Thu, 29 Jan 2015 15:37:29 +0200
+In-Reply-To: <87sietbulp.fsf@rasmusvillemoes.dk>
+References: <1422451543-12401-1-git-send-email-linux@rasmusvillemoes.dk>
+	 <1422525801-26560-1-git-send-email-linux@rasmusvillemoes.dk>
+	 <1422525801-26560-3-git-send-email-linux@rasmusvillemoes.dk>
+	 <1422533541.31903.314.camel@linux.intel.com>
+	 <87sietbulp.fsf@rasmusvillemoes.dk>
+Organization: Intel Finland Oy
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.9-1+b1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2015-01-29 14:15, Michal Marek wrote:
-> On 2015-01-29 07:46, Jan Kiszka wrote:
->> --- a/Makefile
->> +++ b/Makefile
->> @@ -1179,7 +1179,8 @@ MRPROPER_FILES += .config .config.old .version .old_version $(version_h) \
->>  		  Module.symvers tags TAGS cscope* GPATH GTAGS GRTAGS GSYMS \
->>  		  signing_key.priv signing_key.x509 x509.genkey		\
->>  		  extra_certificates signing_key.x509.keyid		\
->> -		  signing_key.x509.signer vmlinux-gdb.py
->> +		  signing_key.x509.signer vmlinux-gdb.py		\
->> +		  scripts/gdb/linux/*.py[co]
-> 
-> In 01/28, you already have
-> 
-> +clean-files := *.pyc $(if $(KBUILD_SRC),*.py)
-> 
-> Maybe just add *.pyo there and you don't need to add it to the toplevel
-> Makefile.
+On Thu, 2015-01-29 at 14:10 +0100, Rasmus Villemoes wrote:
+> On Thu, Jan 29 2015, Andy Shevchenko <andriy.shevchenko@linux.intel.com> wrote:
 
-Based on a quick test, you seem right. Daniel, anything we miss?
 
-Thanks,
-Jan
+> >> -	*out++ = '\\';
+> >> -	*out++ = to;
+> >> +	if (out + 0 < end)
+> >> +		out[0] = '\\';
+> >> +	if (out + 1 < end)
+> >> +		out[1] = to;
+> >
+> > Could we do this in the same way like for hex_string, i.e.
+> >
+> > if (out < end)
+> >  *out = '\\';
+> > ++out;
+> >
+> > …
+> >
+> > *dst = out;
+> > return true;
+> >
+> > ?
+> 
+> We could, but I don't think either is more readable than the
+> other. Hence I chose the one requiring 2n+1 lines instead of 3n+1
+> lines. Had this been in vsprintf.c I would stick to the pattern you
+> suggest.
+
+I think the pattern with 3n lines is a bit more readable.
+
+> >> +	ret = p - *dst;
+> >>  	*dst = p;
+> >> -
+> >> -	if (ret < 0)
+> >> -		return ret;
+> >> -
+> >> -	return p - out;
+> >
+> > …and do not change the logic right now. Just substitute if (ret < 0) by
+> > above if (p > end).
+> >
+> 
+> I'm not sure I follow. How does this change the logic? We return -ENOMEM
+> if and only if the entire output didn't fit, while still updating *dst
+> to point to one past the last output character. If the output did fit,
+> we return the size of the output.
+
+I meant to do the arithmetics like it was in the original code.
+
+> One thing that only occured to me now is that we may now leave a partial
+> escape sequence at the end of the buffer. I can't see how this can
+> reasonably be avoided
+
+I don't know which way is better, but you may check how it was done in
+the original code. First it was checking for enough space, and only
+after filling the destination buffer.
+
+fs/proc/array.c, for example, originally might leave the back slash at
+the end.
+
+>  while still doing a meaningful refactorization
+> preparing it for the next patch.
+> 
+> Rasmus
+
 
 -- 
-Siemens AG, Corporate Technology, CT RTC ITP SES-DE
-Corporate Competence Center Embedded Linux
+Andy Shevchenko <andriy.shevchenko@intel.com>
+Intel Finland Oy
+
