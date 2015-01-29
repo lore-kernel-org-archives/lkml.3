@@ -1,308 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761551AbbA2Jkz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 04:40:55 -0500
-Received: from mout.gmx.net ([212.227.17.20]:54173 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760093AbbA2Jkv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 04:40:51 -0500
-From: Marc Dietrich <marvin24@gmx.de>
-To: Andrey Danin <danindrey@mail.ru>
-Cc: linux-i2c@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org,
-        ac100@lists.launchpad.net, Laxman Dewangan <ldewangan@nvidia.com>,
-        Wolfram Sang <wsa@the-dreams.de>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Alexandre Courbot <gnurou@gmail.com>
-Subject: Re: [PATCH 1/3] i2c: tegra: implement slave mode
-Date: Thu, 29 Jan 2015 10:40:29 +0100
-Message-ID: <9832724.7FuYNbcgYv@fb07-iapwap2>
-User-Agent: KMail/4.14.4 (Linux/3.18.3-1-desktop; KDE/4.14.4; x86_64; ; )
-In-Reply-To: <1422516022-27161-2-git-send-email-danindrey@mail.ru>
-References: <1422516022-27161-1-git-send-email-danindrey@mail.ru> <1422516022-27161-2-git-send-email-danindrey@mail.ru>
+	id S1761627AbbA2JlE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 04:41:04 -0500
+Received: from eusmtp01.atmel.com ([212.144.249.243]:28467 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760682AbbA2Jk6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Jan 2015 04:40:58 -0500
+Message-ID: <54CA0021.7000706@atmel.com>
+Date: Thu, 29 Jan 2015 10:40:49 +0100
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="nextPart2151738.3ynmAqSYhs"; micalg="pgp-sha256"; protocol="application/pgp-signature"
-X-Provags-ID: V03:K0:cblhwdYFRaK5okF18aoujpP/CiXxwjb3Bd9UScPhiOOpONqM/Tu
- VmHJW6nJRUMwgkKXWPXz4eCYmHgwaFfr6FnUMpj+0LpK2OCXJiHuaVtK6E69ly25q7L+Vz2
- GsIn0dSzPY7z5zh3VSe1DtOAsMVE8Y1ZObyEb7nmW1G+d34mG2zlPzc6+KjQzAfDmqp7Iia
- rS5AvX3tWmQ6LQKs9wfAA==
-X-UI-Out-Filterresults: notjunk:1;
+To: Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
+        ARM Maintainers <arm@kernel.org>
+CC: <linux-pcmcia@lists.infradead.org>,
+        Boris Brezillon <boris.brezillon@free-electrons.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] pcmcia: at91_cf: depend on !ARCH_MULTIPLATFORM
+References: <1421173685-21559-1-git-send-email-alexandre.belloni@free-electrons.com> <54B63517.9030809@atmel.com>
+In-Reply-To: <54B63517.9030809@atmel.com>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---nextPart2151738.3ynmAqSYhs
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="ISO-8859-1"
-
-Hi Andrey,
-
-first, thanks for accepting the challenge once more ;-)
-
-The driver depends on I2C_SLAVE now, so you need to add this to Kconfig. The 
-amount of code (and additional overhead) is pretty small, so I think it's ok 
-to always enable it. Otherwise we would need lots of ifdefs.
-
-Am Donnerstag, 29. Januar 2015, 10:20:20 schrieb Andrey Danin:
-> Initialization code is based on NVEC driver.
+Le 14/01/2015 10:21, Nicolas Ferre a écrit :
+> Le 13/01/2015 19:28, Alexandre Belloni a écrit :
+>> Until the driver is corrected to stop including mach/at91_ramc.h and using
+>> mach/io.h, it won't compile in a ARCH_MULTIPLATFORM configuration.
+>>
+>> Suggested-by: Arnd Bergmann <arnd@arndb.de>
+>> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
 > 
-> There is a HW bug in AP20 that was also mentioned in kernel sources
-> for Toshiba AC100.
-> 
-> Signed-off-by: Andrey Danin <danindrey@mail.ru>
-> ---
->  drivers/i2c/busses/i2c-tegra.c | 131
-> +++++++++++++++++++++++++++++++++++++++++ 1 file changed, 131 insertions(+)
-> 
-> diff --git a/drivers/i2c/busses/i2c-tegra.c b/drivers/i2c/busses/i2c-tegra.c
-> index 28b87e6..cfc4e67 100644
-> --- a/drivers/i2c/busses/i2c-tegra.c
-> +++ b/drivers/i2c/busses/i2c-tegra.c
-> @@ -42,8 +42,15 @@
->  #define I2C_SL_CNFG				0x020
->  #define I2C_SL_CNFG_NACK			(1<<1)
->  #define I2C_SL_CNFG_NEWSL			(1<<2)
-> +#define I2C_SL_RCVD				0x024
-> +#define I2C_SL_STATUS				0x028
-> +#define I2C_SL_ST_IRQ				(1<<3)
-> +#define I2C_SL_ST_END_TRANS			(1<<4)
-> +#define I2C_SL_ST_RCVD				(1<<2)
-> +#define I2C_SL_ST_RNW				(1<<1)
->  #define I2C_SL_ADDR1				0x02c
->  #define I2C_SL_ADDR2				0x030
-> +#define I2C_SL_DELAY_COUNT			0x03c
->  #define I2C_TX_FIFO				0x050
->  #define I2C_RX_FIFO				0x054
->  #define I2C_PACKET_TRANSFER_STATUS		0x058
-> @@ -125,6 +132,8 @@ enum msg_end_type {
->   * @clk_divisor_std_fast_mode: Clock divisor in standard/fast mode. It is
->   *		applicable if there is no fast clock source i.e. single clock
->   *		source.
-> + * @slave_read_start_delay: Workaround for AP20 I2C Slave Controller bug.
-> Delay + *              before writing data byte into register I2C_SL_RCVD.
-> */
-> 
->  struct tegra_i2c_hw_feature {
-> @@ -133,6 +142,7 @@ struct tegra_i2c_hw_feature {
->  	bool has_single_clk_source;
->  	int clk_divisor_hs_mode;
->  	int clk_divisor_std_fast_mode;
-> +	int slave_read_start_delay;
->  };
-> 
->  /**
-> @@ -173,6 +183,7 @@ struct tegra_i2c_dev {
->  	int msg_read;
->  	u32 bus_clk_rate;
->  	bool is_suspended;
-> +	struct i2c_client *slave;
->  };
-> 
->  static void dvc_writel(struct tegra_i2c_dev *i2c_dev, u32 val, unsigned
-> long reg) @@ -398,6 +409,12 @@ static inline int
-> tegra_i2c_clock_enable(struct tegra_i2c_dev *i2c_dev)
-> 
->  static inline void tegra_i2c_clock_disable(struct tegra_i2c_dev *i2c_dev)
->  {
-> +	if (i2c_dev->slave) {
-> +		dev_warn(i2c_dev->dev,
-> +			"i2c slave is registered, don't disable a clock\n");
-> +		return;
-> +	}
-> +
+> Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 
-is this really required? What are the callers of clock_disable? I think it 
-would be ok to make master or slave operation exclusive for now. We have no 
-way to test this anyway. Maybe some flag which blocks master operation.
+Arnd, Olof, Kevin,
+
+It seems that nobody is taking this lonely patch. It can be interesting
+to have it for 3.20.
+So, can you please add it to the "drivers" branch so that the switch to
+multi-platform is possible soon.
+
+Here is the reference of it in patchwork:
+
+https://patchwork.kernel.org/patch/5623391/
+
+Tell me if it's better to ask Greg or Andrew.
+
+Bye,
+
+>> ---
+>>  drivers/pcmcia/Kconfig | 1 +
+>>  1 file changed, 1 insertion(+)
+>>
+>> diff --git a/drivers/pcmcia/Kconfig b/drivers/pcmcia/Kconfig
+>> index 910e90bf16c6..45f67c63d385 100644
+>> --- a/drivers/pcmcia/Kconfig
+>> +++ b/drivers/pcmcia/Kconfig
+>> @@ -276,6 +276,7 @@ config BFIN_CFPCMCIA
+>>  config AT91_CF
+>>  	tristate "AT91 CompactFlash Controller"
+>>  	depends on PCMCIA && ARCH_AT91
+>> +	depends on !ARCH_MULTIPLATFORM
+>>  	help
+>>  	  Say Y here to support the CompactFlash controller on AT91 chips.
+>>  	  Or choose M to compile the driver as a module named "at91_cf".
+>>
+> 
+> 
 
 
->  	clk_disable(i2c_dev->div_clk);
->  	if (!i2c_dev->hw->has_single_clk_source)
->  		clk_disable(i2c_dev->fast_clk);
-> @@ -459,12 +476,84 @@ static int tegra_i2c_init(struct tegra_i2c_dev
-> *i2c_dev) return err;
->  }
-> 
-> +static inline int is_ready(unsigned long status)
-> +{
-> +	return status & I2C_SL_ST_IRQ;
-> +}
-
-is_slave_irq?
-
-> +
-> +static inline int is_write(unsigned long status)
-> +{
-> +	return (status & I2C_SL_ST_RNW) == 0;
-> +}
-> +
-> +static inline int is_read(unsigned long status)
-> +{
-> +	return !is_write(status);
-> +}
-> +
-> +static inline int is_trans_start(unsigned long status)
-> +{
-> +	return status & I2C_SL_ST_RCVD;
-> +}
-> +
-> +static inline int is_trans_end(unsigned long status)
-> +{
-> +	return status & I2C_SL_ST_END_TRANS;
-> +}
-
-Following the rest of the files coding style, I think this helpers can be 
-moved to the caller itself. 
-
-> +
-> +static bool tegra_i2c_slave_isr(int irq, struct tegra_i2c_dev *i2c_dev)
-> +{
-> +	unsigned long status;
-> +	u8 value;
-> +
-> +	if (!i2c_dev->slave || !i2c_dev->slave->slave_cb)
-> +		return false;
-> +
-> +	status = i2c_readl(i2c_dev, I2C_SL_STATUS);
-> +	if (!is_ready(status))
-> +		return false;
-> +
-> +	/* master sent stop */
-> +	if (is_trans_end(status)) {
-> +		i2c_slave_event(i2c_dev->slave, I2C_SLAVE_STOP, NULL);
-> +		if (!is_trans_start(status))
-> +			return true;
-> +	}
-> +
-> +	/* i2c master sends data to us */
-> +	if (is_write(status)) {
-> +		i2c_slave_event(i2c_dev->slave, I2C_SLAVE_REQ_WRITE_START,
-> +				NULL);
-> +		value = i2c_readl(i2c_dev, I2C_SL_RCVD);
-> +		if (is_trans_start(status))
-> +			i2c_writel(i2c_dev, 0, I2C_SL_RCVD);
-> +		i2c_slave_event(i2c_dev->slave, I2C_SLAVE_REQ_WRITE_END,
-> +				&value);
-> +	}
-> +
-> +	/* i2c master reads data from us */
-> +	if (is_read(status)) {
-> +		i2c_slave_event(i2c_dev->slave, I2C_SLAVE_REQ_READ_START,
-> +				&value);
-> +		if (is_trans_start(status)
-> +				&& i2c_dev->hw->slave_read_start_delay)
-> +			udelay(i2c_dev->hw->slave_read_start_delay);
-> +		i2c_writel(i2c_dev, value, I2C_SL_RCVD);
-> +		i2c_slave_event(i2c_dev->slave, I2C_SLAVE_REQ_READ_END, NULL);
-> +	}
-> +
-> +	return true;
-> +}
-> +
->  static irqreturn_t tegra_i2c_isr(int irq, void *dev_id)
->  {
->  	u32 status;
->  	const u32 status_err = I2C_INT_NO_ACK | I2C_INT_ARBITRATION_LOST;
->  	struct tegra_i2c_dev *i2c_dev = dev_id;
-> 
-> +	if (tegra_i2c_slave_isr(irq, i2c_dev))
-> +		return IRQ_HANDLED;
-> +
->  	status = i2c_readl(i2c_dev, I2C_INT_STATUS);
-> 
->  	if (status == 0) {
-> @@ -660,9 +749,48 @@ static u32 tegra_i2c_func(struct i2c_adapter *adap)
->  	return ret;
->  }
-> 
-> +static int tegra_reg_slave(struct i2c_client *slave)
-> +{
-> +	struct tegra_i2c_dev *i2c_dev = i2c_get_adapdata(slave->adapter);
-> +
-> +	if (i2c_dev->slave)
-> +		return -EBUSY;
-> +
-> +	i2c_dev->slave = slave;
-> +
-> +	tegra_i2c_clock_enable(i2c_dev);
-> +
-> +	reset_control_assert(i2c_dev->rst);
-> +	udelay(2);
-> +	reset_control_deassert(i2c_dev->rst);
-> +
-> +	i2c_writel(i2c_dev, I2C_SL_CNFG_NEWSL, I2C_SL_CNFG);
-> +	i2c_writel(i2c_dev, 0x1E, I2C_SL_DELAY_COUNT);
-> +
-> +	i2c_writel(i2c_dev, slave->addr, I2C_SL_ADDR1);
-> +	i2c_writel(i2c_dev, 0, I2C_SL_ADDR2);
-> +
-> +	return 0;
-> +}
-> +
-> +static int tegra_unreg_slave(struct i2c_client *slave)
-> +{
-> +	struct tegra_i2c_dev *i2c_dev = i2c_get_adapdata(slave->adapter);
-> +
-> +	WARN_ON(!i2c_dev->slave);
-> +
-> +	i2c_writel(i2c_dev, 0, I2C_SL_CNFG);
-> +
-> +	i2c_dev->slave = NULL;
-> +
-> +	return 0;
-> +}
-> +
->  static const struct i2c_algorithm tegra_i2c_algo = {
->  	.master_xfer	= tegra_i2c_xfer,
->  	.functionality	= tegra_i2c_func,
-> +	.reg_slave		= tegra_reg_slave,
-> +	.unreg_slave	= tegra_unreg_slave,
->  };
-> 
->  static const struct tegra_i2c_hw_feature tegra20_i2c_hw = {
-> @@ -671,6 +799,7 @@ static const struct tegra_i2c_hw_feature tegra20_i2c_hw
-> = { .has_single_clk_source = false,
->  	.clk_divisor_hs_mode = 3,
->  	.clk_divisor_std_fast_mode = 0,
-> +	.slave_read_start_delay = 8,
->  };
-> 
->  static const struct tegra_i2c_hw_feature tegra30_i2c_hw = {
-> @@ -679,6 +808,7 @@ static const struct tegra_i2c_hw_feature tegra30_i2c_hw
-> = { .has_single_clk_source = false,
->  	.clk_divisor_hs_mode = 3,
->  	.clk_divisor_std_fast_mode = 0,
-> +	.slave_read_start_delay = 0,
->  };
-> 
->  static const struct tegra_i2c_hw_feature tegra114_i2c_hw = {
-> @@ -687,6 +817,7 @@ static const struct tegra_i2c_hw_feature tegra114_i2c_hw
-> = { .has_single_clk_source = true,
->  	.clk_divisor_hs_mode = 1,
->  	.clk_divisor_std_fast_mode = 0x19,
-> +	.slave_read_start_delay = 0,
->  };
-> 
->  /* Match table for of_platform binding */
-
---nextPart2151738.3ynmAqSYhs
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part.
-Content-Transfer-Encoding: 7Bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAABCAAGBQJUygANAAoJEKyeR39HFBtohIQH/1lr2RJBeHoqRqJptZ0IuVmm
-2JmhzPQp2Gre3EIm10Fj/FfwDaKfF4CmYDUj5NactOoXq7OmfGN5BPcjGv9PO0AT
-D4AhoW8jfaAVBJ9pK0O8g950bfZp9vaCVtwkB8CiaZU1lu6gyQOBanSLuEh5onoR
-mHnQ9OIjsLHQfCCmKvbK8Vq5pvnF1Dra8wFoNbdqzSFvhYQGfKG1kzt4jqL2wQmF
-kas8qgxmZYwKzIXHV6Sm+iRYySELJCNvByl04lVolfMff8N/pvaEiWhGScFO1eoo
-OMiB8TeweEjukEa3ZQ1MLld8rkIn8ycY6sjiIYRD0e/8L4CQIOWfF1MX6uhHuxA=
-=KT0Z
------END PGP SIGNATURE-----
-
---nextPart2151738.3ynmAqSYhs--
-
+-- 
+Nicolas Ferre
