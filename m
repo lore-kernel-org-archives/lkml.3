@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755737AbbA2Fx4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 00:53:56 -0500
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:40151 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755049AbbA2Fxy (ORCPT
+	id S1756590AbbA2GBX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 01:01:23 -0500
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:47520 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752266AbbA2GBV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 00:53:54 -0500
-Date: Thu, 29 Jan 2015 11:23:10 +0530
+	Thu, 29 Jan 2015 01:01:21 -0500
+Date: Thu, 29 Jan 2015 11:30:58 +0530
 From: Tina Ruchandani <ruchandani.tina@gmail.com>
-To: linux-afs@lists.infradead.org
-Cc: Arnd Bergmann <arnd@arndb.de>, David Howells <dhowells@redhat.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] AFS: Correctly use 64-bit time for UUID
-Message-ID: <20150129055310.GA3033@tinar>
+To: ocfs2-devel@oss.oracle.com
+Cc: linux-kernel@vger.kernel.org, Mark Fasheh <mfasheh@suse.com>,
+        Joel Becker <jlbec@evilplan.org>, Arnd Bergmann <arnd@arndb.de>
+Subject: [PATCH v3] ocfs2: Use 64bit variables to track heartbeat time
+Message-ID: <20150129060057.GA3176@tinar>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -22,50 +22,122 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-UUID calculation uses 'struct timespec' whose seconds will overflow
-in year 2038 and beyond for 32-bit systems. This patch removes the
-dependency on 'struct timespec' by using ktime_get_real_ns().
-While the patch does not fix a 'bug' as such, it is part of a larger
-effort to remove instances of 'struct timespec' and other data-structures
-suffering from y2038 problem from the kernel.
+o2hb_elapsed_msecs computes the time taken for a disk heartbeat.
+'struct timeval' variables are used to store start and end  times.
+On 32-bit systems, the 'tv_sec' component of 'struct timeval' will
+overflow in year 2038 and beyond.
+This patch solves the overflow with the following:
+1.  Replace o2hb_elapsed_msecs using 'ktime_t' values to measure start
+    and end time, and built-in function 'ktime_ms_delta' to compute the
+    elapsed time.
+    ktime_get_real() is used since the code prints out the wallclock time.
+2.  Changes format string to print time as a single 64-bit nanoseconds
+    value ("%lld") instead of seconds and microseconds. This simplifies
+    the code since converting ktime_t to that format would need expensive
+    computation. However, the debug log string is less readable than the
+    previous format.
 
-Suggested-by: Arnd Bergmann <arnd@arndb.de>
+Suggested by: Arnd Bergmann <arnd@arndb.de>
 Signed-off-by: Tina Ruchandani <ruchandani.tina@gmail.com>
 ---
- fs/afs/main.c | 6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
+Changes in v3:
+	- Remove usage of timespec64 as its inefficient, change the prints
+	  format string instead.
+Changes in v2:
+	- Use ktime_t instead of timespec64 to simplify computation of
+       	  elapsed time.
+	- Use ktime_ms_delta instead of timespec64_sub and
+	  dividing, since 32-bit kernel cannot divide a 64-bit number.
+---
+ fs/ocfs2/cluster/heartbeat.c | 49 ++++++++------------------------------------
+ 1 file changed, 9 insertions(+), 40 deletions(-)
 
-diff --git a/fs/afs/main.c b/fs/afs/main.c
-index 35de0c0..7a9c2e6 100644
---- a/fs/afs/main.c
-+++ b/fs/afs/main.c
-@@ -14,6 +14,7 @@
- #include <linux/init.h>
- #include <linux/completion.h>
- #include <linux/sched.h>
+diff --git a/fs/ocfs2/cluster/heartbeat.c b/fs/ocfs2/cluster/heartbeat.c
+index 16eff45..3a60c832 100644
+--- a/fs/ocfs2/cluster/heartbeat.c
++++ b/fs/ocfs2/cluster/heartbeat.c
+@@ -36,7 +36,7 @@
+ #include <linux/debugfs.h>
+ #include <linux/slab.h>
+ #include <linux/bitmap.h>
+-
 +#include <linux/ktime.h>
- #include "internal.h"
+ #include "heartbeat.h"
+ #include "tcp.h"
+ #include "nodemanager.h"
+@@ -1061,37 +1061,6 @@ bail:
+ 	return ret;
+ }
+
+-/* Subtract b from a, storing the result in a. a *must* have a larger
+- * value than b. */
+-static void o2hb_tv_subtract(struct timeval *a,
+-			     struct timeval *b)
+-{
+-	/* just return 0 when a is after b */
+-	if (a->tv_sec < b->tv_sec ||
+-	    (a->tv_sec == b->tv_sec && a->tv_usec < b->tv_usec)) {
+-		a->tv_sec = 0;
+-		a->tv_usec = 0;
+-		return;
+-	}
+-
+-	a->tv_sec -= b->tv_sec;
+-	a->tv_usec -= b->tv_usec;
+-	while ( a->tv_usec < 0 ) {
+-		a->tv_sec--;
+-		a->tv_usec += 1000000;
+-	}
+-}
+-
+-static unsigned int o2hb_elapsed_msecs(struct timeval *start,
+-				       struct timeval *end)
+-{
+-	struct timeval res = *end;
+-
+-	o2hb_tv_subtract(&res, start);
+-
+-	return res.tv_sec * 1000 + res.tv_usec / 1000;
+-}
+-
+ /*
+  * we ride the region ref that the region dir holds.  before the region
+  * dir is removed and drops it ref it will wait to tear down this
+@@ -1102,7 +1071,7 @@ static int o2hb_thread(void *data)
+ 	int i, ret;
+ 	struct o2hb_region *reg = data;
+ 	struct o2hb_bio_wait_ctxt write_wc;
+-	struct timeval before_hb, after_hb;
++	ktime_t before_hb, after_hb;
+ 	unsigned int elapsed_msec;
+
+ 	mlog(ML_HEARTBEAT|ML_KTHREAD, "hb thread running\n");
+@@ -1119,18 +1088,18 @@ static int o2hb_thread(void *data)
+ 		 * hr_timeout_ms between disk writes. On busy systems
+ 		 * this should result in a heartbeat which is less
+ 		 * likely to time itself out. */
+-		do_gettimeofday(&before_hb);
++		before_hb = ktime_get_real();
+
+ 		ret = o2hb_do_disk_heartbeat(reg);
+
+-		do_gettimeofday(&after_hb);
+-		elapsed_msec = o2hb_elapsed_msecs(&before_hb, &after_hb);
++		after_hb = ktime_get_real();
++
++		elapsed_msec = (unsigned int)
++				ktime_ms_delta(after_hb, before_hb);
+
+ 		mlog(ML_HEARTBEAT,
+-		     "start = %lu.%lu, end = %lu.%lu, msec = %u, ret = %d\n",
+-		     before_hb.tv_sec, (unsigned long) before_hb.tv_usec,
+-		     after_hb.tv_sec, (unsigned long) after_hb.tv_usec,
+-		     elapsed_msec, ret);
++		     "start = %lld, end = %lld, msec = %u, ret = %d\n",
++		     before_hb.tv64, after_hb.tv64, elapsed_msec, ret);
  
- MODULE_DESCRIPTION("AFS Client File System");
-@@ -37,7 +38,6 @@ struct workqueue_struct *afs_wq;
-  */
- static int __init afs_get_client_UUID(void)
- {
--	struct timespec ts;
- 	u64 uuidtime;
- 	u16 clockseq;
- 	int ret;
-@@ -48,9 +48,7 @@ static int __init afs_get_client_UUID(void)
- 	if (ret < 0)
- 		return ret;
- 
--	getnstimeofday(&ts);
--	uuidtime = (u64) ts.tv_sec * 1000 * 1000 * 10;
--	uuidtime += ts.tv_nsec / 100;
-+	uuidtime = ktime_get_real_ns() / 100;
- 	uuidtime += AFS_UUID_TO_UNIX_TIME;
- 	afs_uuid.time_low = uuidtime;
- 	afs_uuid.time_mid = uuidtime >> 32;
+ 		if (!kthread_should_stop() &&
+ 		    elapsed_msec < reg->hr_timeout_ms) {
 -- 
 2.2.0.rc0.207.ga3a616c
 
