@@ -1,364 +1,1103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761398AbbA3LSE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jan 2015 06:18:04 -0500
-Received: from n9-22.mail.139.com ([221.176.9.22]:43586 "EHLO
-	n9-22.mail.139.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761082AbbA3LSA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jan 2015 06:18:00 -0500
-X-Richmail-Antispam: sCL2rVi0borhSzeOjpYxWEmrxqxSIjpgsIL2jVqxeZIR0RM=                             
-X-RM-SPAM-FLAG: 00000000
-X-RM-TRANSID: 2ee354cb6857ccc-1d313
-Message-ID: <1422490701.24285.25.camel@am335x>
-Subject: Re: [PATCH] Repair soft lockup with monitor mode of ath9k_htc card
-From: Yuwei Zheng <yuweizheng@139.com>
-To: Oleksij Rempel <linux@rempel-privat.de>
-Cc: linux-kernel@vger.kernel.org, ath9k-devel@venema.h4ckr.net,
-        linux-wireless@vger.kernel.org, kvalo@codeaurora.org,
-        ath9k-devel@qca.qualcomm.com, netdev@vger.kernel.org,
-        Yuwei Zheng <zhengyuwei@360.cn>
-Date: Thu, 29 Jan 2015 08:18:21 +0800
-In-Reply-To: <54CB6326.2070803@rempel-privat.de>
-References: <1422486872-16308-1-git-send-email-yuweizheng@139.com>
-	 <54CB6326.2070803@rempel-privat.de>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+	id S1752062AbbA2BHs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 20:07:48 -0500
+Received: from mta-out1.inet.fi ([62.71.2.203]:40372 "EHLO kirsi1.inet.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751214AbbA2BHp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jan 2015 20:07:45 -0500
+Date: Thu, 29 Jan 2015 02:30:28 +0200
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/4] mm: split up mm_struct to separate header file
+Message-ID: <20150129003028.GA17519@node.dhcp.inet.fi>
+References: <1422451064-109023-1-git-send-email-kirill.shutemov@linux.intel.com>
+ <1422451064-109023-3-git-send-email-kirill.shutemov@linux.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1422451064-109023-3-git-send-email-kirill.shutemov@linux.intel.com>
+User-Agent: Mutt/1.5.23.1 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-You mean tasklet_schedule ?
-The normal tasklet does not support delayed schedule.
-
-um, I will try normal timer or delayed workqueue later. 
-
-
-On 五, 2015-01-30 at 11:55 +0100, Oleksij Rempel wrote:
-> Am 29.01.2015 um 00:14 schrieb yuweizheng@139.com:
-> > From: Yuwei Zheng <yuweizheng@139.com>
-> > 
-> > In the environment with heavy wifi traffic, set the ar9271 into monitor mode, will
-> > trigger a deadloop panic.
-> >  
-> > The ath9k_hif_usb_rx_cb function excute on  the interrupt context, and ath9k_rx_tasklet excute
-> > on the soft irq context. In other words, the ath9k_hif_usb_rx_cb have more chance to excute than
-> > ath9k_rx_tasklet.  So in the worst condition,  the rx.rxbuf receive list is always full,
-> > and the do {}while(true) loop will not be break. The kernel get a soft lockup panic. 
+On Wed, Jan 28, 2015 at 03:17:42PM +0200, Kirill A. Shutemov wrote:
+> We want to use __PAGETABLE_PMD_FOLDED in mm_struct to drop nr_pmds if
+> pmd is folded. __PAGETABLE_PMD_FOLDED is defined in <asm/pgtable.h>, but
+> <asm/pgtable.h> itself wants <linux/mm_types.h> for struct page
+> definition.
 > 
-> Please note, ath9k_htc is also used on HW where real hrtimer actually
-> exist. It should behave differently and produce different load on the
-> system. The overhead of setting up the hrtimers *may* not be worth it.
-> Depending on the load, it may provide lots of avoidable interrupts.
-> Did you tried to use simple tasklet_start?
+> This patch move mm_struct definition into separate header file in order
+> to fix circular header dependencies.
 > 
-> > [59011.007210] BUG: soft lockup - CPU#0 stuck for 23s!
-> > [kworker/0:0:30609]
-> > [59011.030560] BUG: scheduling while atomic: kworker/0:0/30609/0x40010100
-> > [59013.804486] BUG: scheduling while atomic: kworker/0:0/30609/0x40010100
-> > [59013.858522] Kernel panic - not syncing: softlockup: hung tasks
-> >  
-> > [59014.038891] Exception stack(0xdf4bbc38 to 0xdf4bbc80)
-> > [59014.046834] bc20:                                                       de57b950 60000113
-> > [59014.059579] bc40: 00000000 bb32bb32 60000113 de57b948 de57b500 dc7bb440 df4bbcd0 00000000
-> > [59014.072337] bc60: de57b950 60000113 df4bbcd0 df4bbc80 c04c259d c04c25a0 60000133 ffffffff
-> > [59014.085233] [<c04c28db>] (__irq_svc+0x3b/0x5c) from [<c04c25a0>] (_raw_spin_unlock_irqrestore+0xc/0x10)
-> > [59014.100437] [<c04c25a0>] (_raw_spin_unlock_irqrestore+0xc/0x10) from [<bf9c2089>] (ath9k_rx_tasklet+0x290/0x490 [ath9k_htc])
-> > [59014.118267] [<bf9c2089>] (ath9k_rx_tasklet+0x290/0x490 [ath9k_htc]) from [<c0036d23>] (tasklet_action+0x3b/0x98)
-> > [59014.134132] [<c0036d23>] (tasklet_action+0x3b/0x98) from [<c0036709>] (__do_softirq+0x99/0x16c)
-> > [59014.147784] [<c0036709>] (__do_softirq+0x99/0x16c) from [<c00369f7>] (irq_exit+0x5b/0x5c)
-> > [59014.160653] [<c00369f7>] (irq_exit+0x5b/0x5c) from [<c000cfc3>] (handle_IRQ+0x37/0x78)
-> > [59014.173124] [<c000cfc3>] (handle_IRQ+0x37/0x78) from [<c00085df>] (omap3_intc_handle_irq+0x5f/0x68)
-> > [59014.187225] [<c00085df>] (omap3_intc_handle_irq+0x5f/0x68) from [<c04c28db>](__irq_svc+0x3b/0x5c)
-> >  
-> > This bug can be see with low performance board, such as uniprocessor beagle bone board.
-> >  
-> >  
-> > Signed-off-by: Yuwei Zheng <zhengyuwei@360.cn>
-> > Signed-off-by: Yuwei Zheng <yuweizheng@139.com>
-> > 
-> > 
-> > ---
-> >  drivers/net/wireless/ath/ath9k/hif_usb.c       | 58 ++++++++++++++++++++++----
-> >  drivers/net/wireless/ath/ath9k/hif_usb.h       |  5 +++
-> >  drivers/net/wireless/ath/ath9k/htc.h           | 13 ++++++
-> >  drivers/net/wireless/ath/ath9k/htc_drv_debug.c | 49 ++++++++++++++++++++++
-> >  drivers/net/wireless/ath/ath9k/htc_drv_txrx.c  | 26 ++++++++++++
-> >  5 files changed, 144 insertions(+), 7 deletions(-)
-> > 
-> > diff --git a/drivers/net/wireless/ath/ath9k/hif_usb.c b/drivers/net/wireless/ath/ath9k/hif_usb.c
-> > index 8e7153b..18c6f0e 100644
-> > --- a/drivers/net/wireless/ath/ath9k/hif_usb.c
-> > +++ b/drivers/net/wireless/ath/ath9k/hif_usb.c
-> > @@ -658,7 +658,6 @@ static void ath9k_hif_usb_rx_cb(struct urb *urb)
-> >  	default:
-> >  		goto resubmit;
-> >  	}
-> > -
-> >  	if (likely(urb->actual_length != 0)) {
-> >  		skb_put(skb, urb->actual_length);
-> >  		ath9k_hif_usb_rx_stream(hif_dev, skb);
-> > @@ -667,12 +666,18 @@ static void ath9k_hif_usb_rx_cb(struct urb *urb)
-> >  resubmit:
-> >  	skb_reset_tail_pointer(skb);
-> >  	skb_trim(skb, 0);
-> > -
-> > -	usb_anchor_urb(urb, &hif_dev->rx_submitted);
-> > -	ret = usb_submit_urb(urb, GFP_ATOMIC);
-> > -	if (ret) {
-> > -		usb_unanchor_urb(urb);
-> > -		goto free;
-> > +	if (atomic_read(&hif_dev->rx_urb_submit_delay) > 0) {
-> > +		usb_anchor_urb(urb, &hif_dev->rx_delayed_submitted);
-> > +		ret = tasklet_hrtimer_start(&hif_dev->rx_submit_timer,
-> > +						ktime_set(0, atomic_read(&hif_dev->rx_urb_submit_delay)*1000),
-> > +						HRTIMER_MODE_REL);
-> > +	} else {
-> > +		usb_anchor_urb(urb, &hif_dev->rx_submitted);
-> > +		ret = usb_submit_urb(urb, GFP_ATOMIC);
-> > +		if (ret) {
-> > +			usb_unanchor_urb(urb);
-> > +			goto free;
-> > +		}
-> >  	}
-> >  
-> >  	return;
-> > @@ -818,9 +823,39 @@ err:
-> >  	return -ENOMEM;
-> >  }
-> >  
-> > +static enum hrtimer_restart rx_urb_submit_timer_handler(struct hrtimer *me)
-> > +{
-> > +	struct tasklet_hrtimer *thr =
-> > +		container_of(me, struct tasklet_hrtimer, timer);
-> > +	struct  hif_device_usb *hif_dev =
-> > +		container_of(thr, struct hif_device_usb, rx_submit_timer);
-> > +	struct urb *urb = NULL;
-> > +	struct sk_buff *skb = NULL;
-> > +	int ret;
-> > +
-> > +	while (true) {
-> > +		urb = usb_get_from_anchor(&hif_dev->rx_delayed_submitted);
-> > +		if (urb != NULL) {
-> > +			skb = (struct sk_buff *)urb->context;
-> > +			ret = usb_submit_urb(urb, GFP_ATOMIC);
-> > +			if (ret != -EBUSY) {
-> > +				usb_unanchor_urb(urb);
-> > +				dev_kfree_skb_any(skb);
-> > +				urb->context = NULL;
-> > +			}
-> > +		} else {
-> > +			break;
-> > +		}
-> > +	}
-> > +
-> > +	return HRTIMER_NORESTART;
-> > +}
-> > +
-> >  static void ath9k_hif_usb_dealloc_rx_urbs(struct hif_device_usb *hif_dev)
-> >  {
-> >  	usb_kill_anchored_urbs(&hif_dev->rx_submitted);
-> > +	usb_kill_anchored_urbs(&hif_dev->rx_delayed_submitted);
-> > +	tasklet_hrtimer_cancel(&hif_dev->rx_submit_timer);
-> >  }
-> >  
-> >  static int ath9k_hif_usb_alloc_rx_urbs(struct hif_device_usb *hif_dev)
-> > @@ -830,6 +865,8 @@ static int ath9k_hif_usb_alloc_rx_urbs(struct hif_device_usb *hif_dev)
-> >  	int i, ret;
-> >  
-> >  	init_usb_anchor(&hif_dev->rx_submitted);
-> > +	init_usb_anchor(&hif_dev->rx_delayed_submitted);
-> > +
-> >  	spin_lock_init(&hif_dev->rx_lock);
-> >  
-> >  	for (i = 0; i < MAX_RX_URB_NUM; i++) {
-> > @@ -871,6 +908,13 @@ static int ath9k_hif_usb_alloc_rx_urbs(struct hif_device_usb *hif_dev)
-> >  		usb_free_urb(urb);
-> >  	}
-> >  
-> > +	/* add for flow control*/
-> > +	atomic_set(&hif_dev->rx_urb_submit_delay, 0);
-> > +	tasklet_hrtimer_init(&hif_dev->rx_submit_timer,
-> > +				rx_urb_submit_timer_handler,
-> > +				CLOCK_MONOTONIC,
-> > +				HRTIMER_MODE_REL);
-> > +
-> >  	return 0;
-> >  
-> >  err_submit:
-> > diff --git a/drivers/net/wireless/ath/ath9k/hif_usb.h b/drivers/net/wireless/ath/ath9k/hif_usb.h
-> > index 51496e7..56d6be8 100644
-> > --- a/drivers/net/wireless/ath/ath9k/hif_usb.h
-> > +++ b/drivers/net/wireless/ath/ath9k/hif_usb.h
-> > @@ -98,9 +98,14 @@ struct hif_device_usb {
-> >  	struct hif_usb_tx tx;
-> >  	struct usb_anchor regout_submitted;
-> >  	struct usb_anchor rx_submitted;
-> > +	struct usb_anchor rx_delayed_submitted; /* delayed submit anchor */
-> >  	struct usb_anchor reg_in_submitted;
-> >  	struct usb_anchor mgmt_submitted;
-> >  	struct sk_buff *remain_skb;
-> > +
-> > +	struct tasklet_hrtimer  rx_submit_timer;/* delayed submit hrtimer */
-> > +	atomic_t  rx_urb_submit_delay; /*us*/
-> > +
-> >  	const char *fw_name;
-> >  	int rx_remain_len;
-> >  	int rx_pkt_len;
-> > diff --git a/drivers/net/wireless/ath/ath9k/htc.h b/drivers/net/wireless/ath/ath9k/htc.h
-> > index 9dde265..453d0a8 100644
-> > --- a/drivers/net/wireless/ath/ath9k/htc.h
-> > +++ b/drivers/net/wireless/ath/ath9k/htc.h
-> > @@ -331,6 +331,10 @@ static inline struct ath9k_htc_tx_ctl *HTC_SKB_CB(struct sk_buff *skb)
-> >  
-> >  #define TX_QSTAT_INC(q) (priv->debug.tx_stats.queue_stats[q]++)
-> >  
-> > +#define TASKLETRX_STAT_INC(c) (hif_dev->htc_handle->drv_priv->debug.taskletrx_stats.c++)
-> > +#define TASKLETRX_STAT_ADD(c, a) (hif_dev->htc_handle->drv_priv->debug.taskletrx_stats.c += a)
-> > +#define TASKLETRX_STAT_SET(c, a) (hif_dev->htc_handle->drv_priv->debug.taskletrx_stats.c = a)
-> > +
-> >  void ath9k_htc_err_stat_rx(struct ath9k_htc_priv *priv,
-> >  			   struct ath_rx_status *rs);
-> >  
-> > @@ -352,11 +356,20 @@ struct ath_skbrx_stats {
-> >  	u32 skb_dropped;
-> >  };
-> >  
-> > +struct ath_taskletrx_stats {
-> > +	u32 taskletrx_looptimes;
-> > +	u32 taskletrx_highwater;
-> > +	u32 taskletrx_lowwater;
-> > +	u32 taskletrx_watermark_triggered;
-> > +	u32 taskletrx_urb_submit_delay;
-> > +};
-> > +
-> >  struct ath9k_debug {
-> >  	struct dentry *debugfs_phy;
-> >  	struct ath_tx_stats tx_stats;
-> >  	struct ath_rx_stats rx_stats;
-> >  	struct ath_skbrx_stats skbrx_stats;
-> > +	struct ath_taskletrx_stats taskletrx_stats;
-> >  };
-> >  
-> >  void ath9k_htc_get_et_strings(struct ieee80211_hw *hw,
-> > diff --git a/drivers/net/wireless/ath/ath9k/htc_drv_debug.c b/drivers/net/wireless/ath/ath9k/htc_drv_debug.c
-> > index 8cef1ed..7c8322e 100644
-> > --- a/drivers/net/wireless/ath/ath9k/htc_drv_debug.c
-> > +++ b/drivers/net/wireless/ath/ath9k/htc_drv_debug.c
-> > @@ -286,6 +286,51 @@ static const struct file_operations fops_skb_rx = {
-> >  	.llseek = default_llseek,
-> >  };
-> >  
-> > +static ssize_t read_file_tasklet_rx(struct file *file, char __user *user_buf,
-> > +				    size_t count, loff_t *ppos)
-> > +{
-> > +	struct ath9k_htc_priv *priv = file->private_data;
-> > +	char *buf;
-> > +	unsigned int len = 0, size = 1500;
-> > +	ssize_t retval = 0;
-> > +
-> > +	buf = kzalloc(size, GFP_KERNEL);
-> > +	if (buf == NULL)
-> > +		return -ENOMEM;
-> > +
-> > +	len += scnprintf(buf + len, size - len,
-> > +			"%20s : %10u\n", "Loop times",
-> > +			priv->debug.taskletrx_stats.taskletrx_looptimes);
-> > +	len += scnprintf(buf + len, size - len,
-> > +			"%20s : %10u\n", "High watermark",
-> > +			priv->debug.taskletrx_stats.taskletrx_highwater);
-> > +	len += scnprintf(buf + len, size - len,
-> > +			"%20s : %10u\n", "Low watermark",
-> > +			priv->debug.taskletrx_stats.taskletrx_lowwater);
-> > +
-> > +	len += scnprintf(buf + len, size - len,
-> > +			"%20s : %10u\n", "WM triggered",
-> > +			priv->debug.taskletrx_stats.taskletrx_watermark_triggered);
-> > +
-> > +	len += scnprintf(buf + len, size - len,
-> > +			"%20s : %10u\n", "URB delay",
-> > +			priv->debug.taskletrx_stats.taskletrx_urb_submit_delay);
-> > +	if (len > size)
-> > +		len = size;
-> > +
-> > +	retval = simple_read_from_buffer(user_buf, count, ppos, buf, len);
-> > +	kfree(buf);
-> > +
-> > +	return retval;
-> > +}
-> > +
-> > +static const struct file_operations fops_tasklet_rx = {
-> > +	.read = read_file_tasklet_rx,
-> > +	.open = simple_open,
-> > +	.owner = THIS_MODULE,
-> > +	.llseek = default_llseek,
-> > +};
-> > +
-> >  static ssize_t read_file_slot(struct file *file, char __user *user_buf,
-> >  			      size_t count, loff_t *ppos)
-> >  {
-> > @@ -518,7 +563,11 @@ int ath9k_htc_init_debug(struct ath_hw *ah)
-> >  	debugfs_create_file("skb_rx", S_IRUSR, priv->debug.debugfs_phy,
-> >  			    priv, &fops_skb_rx);
-> >  
-> > +	debugfs_create_file("tasklet_rx", S_IRUSR, priv->debug.debugfs_phy,
-> > +			    priv, &fops_tasklet_rx);
-> > +
-> >  	ath9k_cmn_debug_recv(priv->debug.debugfs_phy, &priv->debug.rx_stats);
-> > +
-> >  	ath9k_cmn_debug_phy_err(priv->debug.debugfs_phy, &priv->debug.rx_stats);
-> >  
-> >  	debugfs_create_file("slot", S_IRUSR, priv->debug.debugfs_phy,
-> > diff --git a/drivers/net/wireless/ath/ath9k/htc_drv_txrx.c b/drivers/net/wireless/ath/ath9k/htc_drv_txrx.c
-> > index a0f58e2..f5e6217 100644
-> > --- a/drivers/net/wireless/ath/ath9k/htc_drv_txrx.c
-> > +++ b/drivers/net/wireless/ath/ath9k/htc_drv_txrx.c
-> > @@ -1061,7 +1061,28 @@ void ath9k_rx_tasklet(unsigned long data)
-> >  	unsigned long flags;
-> >  	struct ieee80211_hdr *hdr;
-> >  
-> > +	/* add for adaptive flow control*/
-> > +	int looptimes = 0;
-> > +	int highwatermark = ATH9K_HTC_RXBUF*3/4;
-> > +	int lowwatermark = ATH9K_HTC_RXBUF/4;
-> > +	unsigned int delay = 0;
-> > +
-> > +	struct htc_target *htc = priv->htc;
-> > +	struct hif_device_usb *hif_dev = htc->hif_dev;
-> > +
-> > +	TASKLETRX_STAT_SET(taskletrx_highwater, highwatermark);
-> > +	TASKLETRX_STAT_SET(taskletrx_lowwater, lowwatermark);
-> > +
-> >  	do {
-> > +		looptimes++;
-> > +		TASKLETRX_STAT_SET(taskletrx_looptimes, looptimes);
-> > +		if (looptimes > highwatermark) {
-> > +			delay = looptimes*10;
-> > +			atomic_set(&hif_dev->rx_urb_submit_delay, delay);
-> > +			TASKLETRX_STAT_INC(taskletrx_watermark_triggered);
-> > +			TASKLETRX_STAT_SET(taskletrx_urb_submit_delay, delay);
-> > +		}
-> > +
-> >  		spin_lock_irqsave(&priv->rx.rxbuflock, flags);
-> >  		list_for_each_entry(tmp_buf, &priv->rx.rxbuf, list) {
-> >  			if (tmp_buf->in_process) {
-> > @@ -1072,6 +1093,11 @@ void ath9k_rx_tasklet(unsigned long data)
-> >  
-> >  		if (rxbuf == NULL) {
-> >  			spin_unlock_irqrestore(&priv->rx.rxbuflock, flags);
-> > +			if (looptimes < lowwatermark) {
-> > +				atomic_set(&hif_dev->rx_urb_submit_delay, 0);
-> > +				TASKLETRX_STAT_SET(taskletrx_urb_submit_delay, 0);
-> > +			}
-> > +
-> >  			break;
-> >  		}
-> >  
-> > 
-> 
-> 
+> Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
 
+Guenter, below is update for the patch. It doesn't fix all the issues, but
+you should see an improvement. I'll continue with this tomorrow.
 
+BTW, any idea where I can get hexagon cross compiler?
 
+>From 8bb23d8b6b4b81485294966193a262f918a0a195 Mon Sep 17 00:00:00 2001
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Date: Wed, 28 Jan 2015 13:30:24 +0200
+Subject: [PATCH] mm: split up mm_struct to separate header file
+
+We want to use __PAGETABLE_PMD_FOLDED in mm_struct to drop nr_pmds if
+pmd is folded. __PAGETABLE_PMD_FOLDED is defined in <asm/pgtable.h>, but
+<asm/pgtable.h> itself wants <linux/mm_types.h> for struct page
+definition.
+
+This patch move mm_struct definition into separate header file in order
+to fix circular header dependencies.
+
+Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+---
+ arch/arm/include/asm/pgtable-3level.h    |   9 +-
+ arch/arm/include/asm/pgtable.h           |   3 -
+ arch/arm/kernel/ftrace.c                 |   1 +
+ arch/arm/mm/mm.h                         |   1 +
+ arch/arm64/kernel/efi.c                  |   1 +
+ arch/avr32/include/asm/pgtable.h         |   5 -
+ arch/avr32/mm/tlb.c                      |   1 +
+ arch/c6x/kernel/dma.c                    |   1 -
+ arch/cris/arch-v10/mm/init.c             |   1 +
+ arch/cris/include/asm/pgtable.h          |   7 +-
+ arch/cris/include/asm/tlbflush.h         |   1 +
+ arch/frv/include/asm/pgtable.h           |  33 +----
+ arch/frv/mm/pgalloc.c                    |  31 +++++
+ arch/ia64/include/asm/pgtable.h          |   8 +-
+ arch/ia64/kernel/topology.c              |   1 +
+ arch/m68k/include/asm/cacheflush_mm.h    |   1 +
+ arch/m68k/include/asm/motorola_pgtable.h |   6 +-
+ arch/m68k/include/asm/pgtable_mm.h       |   1 -
+ arch/microblaze/include/asm/pgtable.h    |   1 -
+ arch/microblaze/kernel/kgdb.c            |   1 +
+ arch/powerpc/include/asm/pgtable-ppc32.h |   1 -
+ arch/s390/include/asm/pgtable.h          |   1 +
+ arch/sparc/include/asm/pgtable_32.h      |   2 +-
+ arch/x86/include/asm/mmu_context.h       |   1 +
+ arch/x86/include/asm/pgtable.h           |  15 +--
+ drivers/iommu/amd_iommu_v2.c             |   1 +
+ drivers/macintosh/adb-iop.c              |   1 +
+ drivers/staging/android/ion/ion.c        |   1 -
+ include/linux/bootmem.h                  |   1 +
+ include/linux/mm.h                       |   1 +
+ include/linux/mm_struct.h                | 214 ++++++++++++++++++++++++++++++
+ include/linux/mm_types.h                 | 218 +------------------------------
+ include/linux/mmu_notifier.h             |   1 +
+ include/linux/sched.h                    |   1 +
+ mm/init-mm.c                             |   1 +
+ mm/kmemcheck.c                           |   1 -
+ 36 files changed, 287 insertions(+), 288 deletions(-)
+ create mode 100644 include/linux/mm_struct.h
+
+diff --git a/arch/arm/include/asm/pgtable-3level.h b/arch/arm/include/asm/pgtable-3level.h
+index 370684dcc2da..7874de5ab7dd 100644
+--- a/arch/arm/include/asm/pgtable-3level.h
++++ b/arch/arm/include/asm/pgtable-3level.h
+@@ -269,7 +269,7 @@ static inline pmd_t pmd_modify(pmd_t pmd, pgprot_t newprot)
+ 	return pmd;
+ }
+ 
+-static inline void set_pmd_at(struct mm_struct *mm, unsigned long addr,
++static inline void __set_pmd_at(struct mm_struct *mm, unsigned long addr,
+ 			      pmd_t *pmdp, pmd_t pmd)
+ {
+ 	BUG_ON(addr >= TASK_SIZE);
+@@ -284,9 +284,14 @@ static inline void set_pmd_at(struct mm_struct *mm, unsigned long addr,
+ 		pmd_val(pmd) |= PMD_SECT_AP2;
+ 
+ 	*pmdp = __pmd(pmd_val(pmd) | PMD_SECT_nG);
+-	flush_pmd_entry(pmdp);
+ }
+ 
++#define set_pmd_at(mm, addr, pmdp, pmd)			\
++	do {						\
++		__set_pmd_at(mm, addr, pmdp, pmd)	\
++		flush_pmd_entry(pmdp)			\
++	} while(0)
++
+ static inline int has_transparent_hugepage(void)
+ {
+ 	return 1;
+diff --git a/arch/arm/include/asm/pgtable.h b/arch/arm/include/asm/pgtable.h
+index f40354198bad..bb4ae035e5e3 100644
+--- a/arch/arm/include/asm/pgtable.h
++++ b/arch/arm/include/asm/pgtable.h
+@@ -24,9 +24,6 @@
+ #include <asm/memory.h>
+ #include <asm/pgtable-hwdef.h>
+ 
+-
+-#include <asm/tlbflush.h>
+-
+ #ifdef CONFIG_ARM_LPAE
+ #include <asm/pgtable-3level.h>
+ #else
+diff --git a/arch/arm/kernel/ftrace.c b/arch/arm/kernel/ftrace.c
+index 709ee1d6d4df..b6f6c11e67a6 100644
+--- a/arch/arm/kernel/ftrace.c
++++ b/arch/arm/kernel/ftrace.c
+@@ -21,6 +21,7 @@
+ #include <asm/opcodes.h>
+ #include <asm/ftrace.h>
+ #include <asm/insn.h>
++#include <asm/tlbflush.h>
+ 
+ #ifdef CONFIG_THUMB2_KERNEL
+ #define	NOP		0xf85deb04	/* pop.w {lr} */
+diff --git a/arch/arm/mm/mm.h b/arch/arm/mm/mm.h
+index ce727d47275c..b5e764e0d5a8 100644
+--- a/arch/arm/mm/mm.h
++++ b/arch/arm/mm/mm.h
+@@ -3,6 +3,7 @@
+ #include <linux/vmalloc.h>
+ 
+ #include <asm/pgtable.h>
++#include <asm/tlbflush.h>
+ 
+ /* the upper-most page table pointer */
+ extern pmd_t *top_pmd;
+diff --git a/arch/arm64/kernel/efi.c b/arch/arm64/kernel/efi.c
+index b42c7b480e1e..fbf0a6d6f691 100644
+--- a/arch/arm64/kernel/efi.c
++++ b/arch/arm64/kernel/efi.c
+@@ -17,6 +17,7 @@
+ #include <linux/export.h>
+ #include <linux/memblock.h>
+ #include <linux/mm_types.h>
++#include <linux/mm_struct.h>
+ #include <linux/bootmem.h>
+ #include <linux/of.h>
+ #include <linux/of_fdt.h>
+diff --git a/arch/avr32/include/asm/pgtable.h b/arch/avr32/include/asm/pgtable.h
+index 35800664076e..3af39532b25b 100644
+--- a/arch/avr32/include/asm/pgtable.h
++++ b/arch/avr32/include/asm/pgtable.h
+@@ -10,11 +10,6 @@
+ 
+ #include <asm/addrspace.h>
+ 
+-#ifndef __ASSEMBLY__
+-#include <linux/sched.h>
+-
+-#endif /* !__ASSEMBLY__ */
+-
+ /*
+  * Use two-level page tables just as the i386 (without PAE)
+  */
+diff --git a/arch/avr32/mm/tlb.c b/arch/avr32/mm/tlb.c
+index 0da23109f817..964130f8f89d 100644
+--- a/arch/avr32/mm/tlb.c
++++ b/arch/avr32/mm/tlb.c
+@@ -8,6 +8,7 @@
+  * published by the Free Software Foundation.
+  */
+ #include <linux/mm.h>
++#include <linux/sched.h>
+ 
+ #include <asm/mmu_context.h>
+ 
+diff --git a/arch/c6x/kernel/dma.c b/arch/c6x/kernel/dma.c
+index ab7b12de144d..5a489f1eabbd 100644
+--- a/arch/c6x/kernel/dma.c
++++ b/arch/c6x/kernel/dma.c
+@@ -9,7 +9,6 @@
+ #include <linux/module.h>
+ #include <linux/dma-mapping.h>
+ #include <linux/mm.h>
+-#include <linux/mm_types.h>
+ #include <linux/scatterlist.h>
+ 
+ #include <asm/cacheflush.h>
+diff --git a/arch/cris/arch-v10/mm/init.c b/arch/cris/arch-v10/mm/init.c
+index e7f8066105aa..800faf7f97e7 100644
+--- a/arch/cris/arch-v10/mm/init.c
++++ b/arch/cris/arch-v10/mm/init.c
+@@ -6,6 +6,7 @@
+ #include <linux/init.h>
+ #include <linux/bootmem.h>
+ #include <linux/mm.h>
++#include <linux/sched.h>
+ #include <asm/pgtable.h>
+ #include <asm/page.h>
+ #include <asm/types.h>
+diff --git a/arch/cris/include/asm/pgtable.h b/arch/cris/include/asm/pgtable.h
+index ceefc314d64d..88fd211af681 100644
+--- a/arch/cris/include/asm/pgtable.h
++++ b/arch/cris/include/asm/pgtable.h
+@@ -9,7 +9,7 @@
+ #include <asm-generic/pgtable-nopmd.h>
+ 
+ #ifndef __ASSEMBLY__
+-#include <linux/sched.h>
++#include <linux/mm_types.h>
+ #include <asm/mmu.h>
+ #endif
+ #include <arch/pgtable.h>
+@@ -232,10 +232,7 @@ static inline void pmd_set(pmd_t * pmdp, pte_t * ptep)
+ #define pgd_index(address) (((address) >> PGDIR_SHIFT) & (PTRS_PER_PGD-1))
+ 
+ /* to find an entry in a page-table-directory */
+-static inline pgd_t * pgd_offset(const struct mm_struct *mm, unsigned long address)
+-{
+-	return mm->pgd + pgd_index(address);
+-}
++#define pgd_offset(mm, address) ((mm)->pgd + pgd_index(address))
+ 
+ /* to find an entry in a kernel page-table-directory */
+ #define pgd_offset_k(address) pgd_offset(&init_mm, address)
+diff --git a/arch/cris/include/asm/tlbflush.h b/arch/cris/include/asm/tlbflush.h
+index 20697e7ef4f2..149c8aa1d58a 100644
+--- a/arch/cris/include/asm/tlbflush.h
++++ b/arch/cris/include/asm/tlbflush.h
+@@ -2,6 +2,7 @@
+ #define _CRIS_TLBFLUSH_H
+ 
+ #include <linux/mm.h>
++#include <linux/sched.h>
+ #include <asm/processor.h>
+ #include <asm/pgtable.h>
+ #include <asm/pgalloc.h>
+diff --git a/arch/frv/include/asm/pgtable.h b/arch/frv/include/asm/pgtable.h
+index 93bcf2abd1a1..0c1c9ead8510 100644
+--- a/arch/frv/include/asm/pgtable.h
++++ b/arch/frv/include/asm/pgtable.h
+@@ -25,7 +25,6 @@
+ #include <linux/slab.h>
+ #include <linux/list.h>
+ #include <linux/spinlock.h>
+-#include <linux/sched.h>
+ struct vm_area_struct;
+ #endif
+ 
+@@ -477,36 +476,8 @@ static inline pte_t pte_modify(pte_t pte, pgprot_t newprot)
+ #define __HAVE_ARCH_PTE_SAME
+ #include <asm-generic/pgtable.h>
+ 
+-/*
+- * preload information about a newly instantiated PTE into the SCR0/SCR1 PGE cache
+- */
+-static inline void update_mmu_cache(struct vm_area_struct *vma, unsigned long address, pte_t *ptep)
+-{
+-	struct mm_struct *mm;
+-	unsigned long ampr;
+-
+-	mm = current->mm;
+-	if (mm) {
+-		pgd_t *pge = pgd_offset(mm, address);
+-		pud_t *pue = pud_offset(pge, address);
+-		pmd_t *pme = pmd_offset(pue, address);
+-
+-		ampr = pme->ste[0] & 0xffffff00;
+-		ampr |= xAMPRx_L | xAMPRx_SS_16Kb | xAMPRx_S | xAMPRx_C |
+-			xAMPRx_V;
+-	} else {
+-		address = ULONG_MAX;
+-		ampr = 0;
+-	}
+-
+-	asm volatile("movgs %0,scr0\n"
+-		     "movgs %0,scr1\n"
+-		     "movgs %1,dampr4\n"
+-		     "movgs %1,dampr5\n"
+-		     :
+-		     : "r"(address), "r"(ampr)
+-		     );
+-}
++void update_mmu_cache(struct vm_area_struct *vma, unsigned long address,
++		pte_t *ptep);
+ 
+ #ifdef CONFIG_PROC_FS
+ extern char *proc_pid_status_frv_cxnr(struct mm_struct *mm, char *buffer);
+diff --git a/arch/frv/mm/pgalloc.c b/arch/frv/mm/pgalloc.c
+index 41907d25ed38..fc18d208030b 100644
+--- a/arch/frv/mm/pgalloc.c
++++ b/arch/frv/mm/pgalloc.c
+@@ -155,3 +155,34 @@ void check_pgt_cache(void)
+ 	quicklist_trim(0, pgd_dtor, 25, 16);
+ }
+ 
++/*
++ * preload information about a newly instantiated PTE into the SCR0/SCR1 PGE cache
++ */
++void update_mmu_cache(struct vm_area_struct *vma, unsigned long address,
++		pte_t *ptep)
++{
++	struct mm_struct *mm;
++	unsigned long ampr;
++
++	mm = current->mm;
++	if (mm) {
++		pgd_t *pge = pgd_offset(mm, address);
++		pud_t *pue = pud_offset(pge, address);
++		pmd_t *pme = pmd_offset(pue, address);
++
++		ampr = pme->ste[0] & 0xffffff00;
++		ampr |= xAMPRx_L | xAMPRx_SS_16Kb | xAMPRx_S | xAMPRx_C |
++			xAMPRx_V;
++	} else {
++		address = ULONG_MAX;
++		ampr = 0;
++	}
++
++	asm volatile("movgs %0,scr0\n"
++		     "movgs %0,scr1\n"
++		     "movgs %1,dampr4\n"
++		     "movgs %1,dampr5\n"
++		     :
++		     : "r"(address), "r"(ampr)
++		     );
++}
+diff --git a/arch/ia64/include/asm/pgtable.h b/arch/ia64/include/asm/pgtable.h
+index 7b6f8801df57..66bbf5618631 100644
+--- a/arch/ia64/include/asm/pgtable.h
++++ b/arch/ia64/include/asm/pgtable.h
+@@ -147,10 +147,8 @@
+ 
+ # ifndef __ASSEMBLY__
+ 
+-#include <linux/sched.h>	/* for mm_struct */
+ #include <linux/bitops.h>
+ #include <asm/cacheflush.h>
+-#include <asm/mmu_context.h>
+ 
+ /*
+  * Next come the mappings that determine how mmap() protection bits
+@@ -368,11 +366,7 @@ pgd_index (unsigned long address)
+ 
+ /* The offset in the 1-level directory is given by the 3 region bits
+    (61..63) and the level-1 bits.  */
+-static inline pgd_t*
+-pgd_offset (const struct mm_struct *mm, unsigned long address)
+-{
+-	return mm->pgd + pgd_index(address);
+-}
++#define pgd_offset(mm, addr) ((mm)->pgd + pgd_index(addr))
+ 
+ /* In the kernel's mapped region we completely ignore the region number
+    (since we know it's in region number 5). */
+diff --git a/arch/ia64/kernel/topology.c b/arch/ia64/kernel/topology.c
+index 965ab42fabb0..4009738811f7 100644
+--- a/arch/ia64/kernel/topology.c
++++ b/arch/ia64/kernel/topology.c
+@@ -16,6 +16,7 @@
+ #include <linux/cpu.h>
+ #include <linux/kernel.h>
+ #include <linux/mm.h>
++#include <linux/sched.h>
+ #include <linux/node.h>
+ #include <linux/slab.h>
+ #include <linux/init.h>
+diff --git a/arch/m68k/include/asm/cacheflush_mm.h b/arch/m68k/include/asm/cacheflush_mm.h
+index fa2c3d681d84..e91674ddf62a 100644
+--- a/arch/m68k/include/asm/cacheflush_mm.h
++++ b/arch/m68k/include/asm/cacheflush_mm.h
+@@ -2,6 +2,7 @@
+ #define _M68K_CACHEFLUSH_H
+ 
+ #include <linux/mm.h>
++#include <linux/sched.h>
+ #ifdef CONFIG_COLDFIRE
+ #include <asm/mcfsim.h>
+ #endif
+diff --git a/arch/m68k/include/asm/motorola_pgtable.h b/arch/m68k/include/asm/motorola_pgtable.h
+index 0085aab80e5a..8074c399a048 100644
+--- a/arch/m68k/include/asm/motorola_pgtable.h
++++ b/arch/m68k/include/asm/motorola_pgtable.h
+@@ -192,11 +192,7 @@ static inline pte_t pte_mkspecial(pte_t pte)	{ return pte; }
+ #define pgd_index(address)     ((address) >> PGDIR_SHIFT)
+ 
+ /* to find an entry in a page-table-directory */
+-static inline pgd_t *pgd_offset(const struct mm_struct *mm,
+-				unsigned long address)
+-{
+-	return mm->pgd + pgd_index(address);
+-}
++#define pgd_offset(mm, address) ((mm)->pgd + pgd_index(address))
+ 
+ #define swapper_pg_dir kernel_pg_dir
+ extern pgd_t kernel_pg_dir[128];
+diff --git a/arch/m68k/include/asm/pgtable_mm.h b/arch/m68k/include/asm/pgtable_mm.h
+index 28a145bfbb71..575b39fd31a8 100644
+--- a/arch/m68k/include/asm/pgtable_mm.h
++++ b/arch/m68k/include/asm/pgtable_mm.h
+@@ -7,7 +7,6 @@
+ 
+ #ifndef __ASSEMBLY__
+ #include <asm/processor.h>
+-#include <linux/sched.h>
+ #include <linux/threads.h>
+ 
+ /*
+diff --git a/arch/microblaze/include/asm/pgtable.h b/arch/microblaze/include/asm/pgtable.h
+index e53b8532353c..101cc7b4440a 100644
+--- a/arch/microblaze/include/asm/pgtable.h
++++ b/arch/microblaze/include/asm/pgtable.h
+@@ -66,7 +66,6 @@ extern int mem_init_done;
+ #ifdef __KERNEL__
+ #ifndef __ASSEMBLY__
+ 
+-#include <linux/sched.h>
+ #include <linux/threads.h>
+ #include <asm/processor.h>		/* For TASK_SIZE */
+ #include <asm/mmu.h>
+diff --git a/arch/microblaze/kernel/kgdb.c b/arch/microblaze/kernel/kgdb.c
+index 8736af5806ae..89e12562b30d 100644
+--- a/arch/microblaze/kernel/kgdb.c
++++ b/arch/microblaze/kernel/kgdb.c
+@@ -10,6 +10,7 @@
+ #include <linux/kdebug.h>
+ #include <linux/irq.h>
+ #include <linux/io.h>
++#include <linux/sched.h>
+ #include <asm/cacheflush.h>
+ #include <asm/asm-offsets.h>
+ #include <asm/kgdb.h>
+diff --git a/arch/powerpc/include/asm/pgtable-ppc32.h b/arch/powerpc/include/asm/pgtable-ppc32.h
+index cc3e621aa830..32632aa7e1c7 100644
+--- a/arch/powerpc/include/asm/pgtable-ppc32.h
++++ b/arch/powerpc/include/asm/pgtable-ppc32.h
+@@ -4,7 +4,6 @@
+ #include <asm-generic/pgtable-nopmd.h>
+ 
+ #ifndef __ASSEMBLY__
+-#include <linux/sched.h>
+ #include <linux/threads.h>
+ #include <asm/io.h>			/* For sub-arch specific PPC_PIN_SIZE */
+ 
+diff --git a/arch/s390/include/asm/pgtable.h b/arch/s390/include/asm/pgtable.h
+index fbb5ee3ae57c..578eb098b1be 100644
+--- a/arch/s390/include/asm/pgtable.h
++++ b/arch/s390/include/asm/pgtable.h
+@@ -29,6 +29,7 @@
+ #ifndef __ASSEMBLY__
+ #include <linux/sched.h>
+ #include <linux/mm_types.h>
++#include <linux/mm_struct.h>
+ #include <linux/page-flags.h>
+ #include <linux/radix-tree.h>
+ #include <asm/bug.h>
+diff --git a/arch/sparc/include/asm/pgtable_32.h b/arch/sparc/include/asm/pgtable_32.h
+index f06b36a00a3b..91b963a887b7 100644
+--- a/arch/sparc/include/asm/pgtable_32.h
++++ b/arch/sparc/include/asm/pgtable_32.h
+@@ -14,7 +14,7 @@
+ #include <asm-generic/4level-fixup.h>
+ 
+ #include <linux/spinlock.h>
+-#include <linux/swap.h>
++#include <linux/mm_types.h>
+ #include <asm/types.h>
+ #include <asm/pgtsrmmu.h>
+ #include <asm/vaddrs.h>
+diff --git a/arch/x86/include/asm/mmu_context.h b/arch/x86/include/asm/mmu_context.h
+index 4b75d591eb5e..78a87a30ec50 100644
+--- a/arch/x86/include/asm/mmu_context.h
++++ b/arch/x86/include/asm/mmu_context.h
+@@ -4,6 +4,7 @@
+ #include <asm/desc.h>
+ #include <linux/atomic.h>
+ #include <linux/mm_types.h>
++#include <linux/mm_struct.h>
+ 
+ #include <trace/events/tlb.h>
+ 
+diff --git a/arch/x86/include/asm/pgtable.h b/arch/x86/include/asm/pgtable.h
+index 9d0ade00923e..594d09d07bb4 100644
+--- a/arch/x86/include/asm/pgtable.h
++++ b/arch/x86/include/asm/pgtable.h
+@@ -445,18 +445,9 @@ static inline int pte_present(pte_t a)
+ 	return pte_flags(a) & (_PAGE_PRESENT | _PAGE_PROTNONE);
+ }
+ 
+-#define pte_accessible pte_accessible
+-static inline bool pte_accessible(struct mm_struct *mm, pte_t a)
+-{
+-	if (pte_flags(a) & _PAGE_PRESENT)
+-		return true;
+-
+-	if ((pte_flags(a) & _PAGE_PROTNONE) &&
+-			mm_tlb_flush_pending(mm))
+-		return true;
+-
+-	return false;
+-}
++#define pte_accessible(mm, pte) \
++	(pte_flags(pte) & _PAGE_PRESENT) || \
++	((pte_flags(pte) & _PAGE_PROTNONE) && mm_tlb_flush_pending(mm))
+ 
+ static inline int pte_hidden(pte_t pte)
+ {
+diff --git a/drivers/iommu/amd_iommu_v2.c b/drivers/iommu/amd_iommu_v2.c
+index 90f70d0e1141..d49cd95eaf7b 100644
+--- a/drivers/iommu/amd_iommu_v2.c
++++ b/drivers/iommu/amd_iommu_v2.c
+@@ -19,6 +19,7 @@
+ #include <linux/mmu_notifier.h>
+ #include <linux/amd-iommu.h>
+ #include <linux/mm_types.h>
++#include <linux/mm_struct.h>
+ #include <linux/profile.h>
+ #include <linux/module.h>
+ #include <linux/sched.h>
+diff --git a/drivers/macintosh/adb-iop.c b/drivers/macintosh/adb-iop.c
+index f5f4da3d0b67..8916f1ad5f37 100644
+--- a/drivers/macintosh/adb-iop.c
++++ b/drivers/macintosh/adb-iop.c
+@@ -18,6 +18,7 @@
+ #include <linux/delay.h>
+ #include <linux/init.h>
+ #include <linux/proc_fs.h>
++#include <linux/sched.h>
+ 
+ #include <asm/macintosh.h> 
+ #include <asm/macints.h> 
+diff --git a/drivers/staging/android/ion/ion.c b/drivers/staging/android/ion/ion.c
+index b8f1c491553e..1cb3c88f6423 100644
+--- a/drivers/staging/android/ion/ion.c
++++ b/drivers/staging/android/ion/ion.c
+@@ -27,7 +27,6 @@
+ #include <linux/miscdevice.h>
+ #include <linux/export.h>
+ #include <linux/mm.h>
+-#include <linux/mm_types.h>
+ #include <linux/rbtree.h>
+ #include <linux/slab.h>
+ #include <linux/seq_file.h>
+diff --git a/include/linux/bootmem.h b/include/linux/bootmem.h
+index 0995c2de8162..4d90afe3fbb4 100644
+--- a/include/linux/bootmem.h
++++ b/include/linux/bootmem.h
+@@ -7,6 +7,7 @@
+ #include <linux/mmzone.h>
+ #include <linux/mm_types.h>
+ #include <asm/dma.h>
++#include <asm/mmu.h>
+ 
+ /*
+  *  simple boot-time physical memory area allocator.
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index b976d9ffbcd6..543e9723d441 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -14,6 +14,7 @@
+ #include <linux/atomic.h>
+ #include <linux/debug_locks.h>
+ #include <linux/mm_types.h>
++#include <linux/mm_struct.h>
+ #include <linux/range.h>
+ #include <linux/pfn.h>
+ #include <linux/bit_spinlock.h>
+diff --git a/include/linux/mm_struct.h b/include/linux/mm_struct.h
+new file mode 100644
+index 000000000000..0a233c232a39
+--- /dev/null
++++ b/include/linux/mm_struct.h
+@@ -0,0 +1,214 @@
++#ifndef _LINUX_MM_STRUCT_H
++#define _LINUX_MM_STRUCT_H
++
++#include <linux/auxvec.h>
++#include <linux/rbtree.h>
++#include <linux/rwsem.h>
++#include <linux/types.h>
++#include <linux/uprobes.h>
++
++#include <asm/mmu.h>
++
++struct kioctx_table;
++struct vm_area_struct;
++
++#ifndef AT_VECTOR_SIZE_ARCH
++#define AT_VECTOR_SIZE_ARCH 0
++#endif
++#define AT_VECTOR_SIZE (2*(AT_VECTOR_SIZE_ARCH + AT_VECTOR_SIZE_BASE + 1))
++
++enum {
++	MM_FILEPAGES,
++	MM_ANONPAGES,
++	MM_SWAPENTS,
++	NR_MM_COUNTERS
++};
++
++#if NR_CPUS >= CONFIG_SPLIT_PTLOCK_CPUS && defined(CONFIG_MMU)
++#define SPLIT_RSS_COUNTING
++/* per-thread cached information, */
++struct task_rss_stat {
++	int events;	/* for synchronization threshold */
++	int count[NR_MM_COUNTERS];
++};
++#endif /* USE_SPLIT_PTE_PTLOCKS */
++
++struct mm_rss_stat {
++	atomic_long_t count[NR_MM_COUNTERS];
++};
++
++struct mm_struct {
++	struct vm_area_struct *mmap;		/* list of VMAs */
++	struct rb_root mm_rb;
++	u32 vmacache_seqnum;                   /* per-thread vmacache */
++#ifdef CONFIG_MMU
++	unsigned long (*get_unmapped_area) (struct file *filp,
++				unsigned long addr, unsigned long len,
++				unsigned long pgoff, unsigned long flags);
++#endif
++	unsigned long mmap_base;		/* base of mmap area */
++	unsigned long mmap_legacy_base;         /* base of mmap area in bottom-up allocations */
++	unsigned long task_size;		/* size of task vm space */
++	unsigned long highest_vm_end;		/* highest vma end address */
++	pgd_t * pgd;
++	atomic_t mm_users;			/* How many users with user space? */
++	atomic_t mm_count;			/* How many references to "struct mm_struct" (users count as 1) */
++	atomic_long_t nr_ptes;			/* PTE page table pages */
++	atomic_long_t nr_pmds;			/* PMD page table pages */
++	int map_count;				/* number of VMAs */
++
++	spinlock_t page_table_lock;		/* Protects page tables and some counters */
++	struct rw_semaphore mmap_sem;
++
++	struct list_head mmlist;		/* List of maybe swapped mm's.	These are globally strung
++						 * together off init_mm.mmlist, and are protected
++						 * by mmlist_lock
++						 */
++
++
++	unsigned long hiwater_rss;	/* High-watermark of RSS usage */
++	unsigned long hiwater_vm;	/* High-water virtual memory usage */
++
++	unsigned long total_vm;		/* Total pages mapped */
++	unsigned long locked_vm;	/* Pages that have PG_mlocked set */
++	unsigned long pinned_vm;	/* Refcount permanently increased */
++	unsigned long shared_vm;	/* Shared pages (files) */
++	unsigned long exec_vm;		/* VM_EXEC & ~VM_WRITE */
++	unsigned long stack_vm;		/* VM_GROWSUP/DOWN */
++	unsigned long def_flags;
++	unsigned long start_code, end_code, start_data, end_data;
++	unsigned long start_brk, brk, start_stack;
++	unsigned long arg_start, arg_end, env_start, env_end;
++
++	unsigned long saved_auxv[AT_VECTOR_SIZE]; /* for /proc/PID/auxv */
++
++	/*
++	 * Special counters, in some configurations protected by the
++	 * page_table_lock, in other configurations by being atomic.
++	 */
++	struct mm_rss_stat rss_stat;
++
++	struct linux_binfmt *binfmt;
++
++	cpumask_var_t cpu_vm_mask_var;
++
++	/* Architecture-specific MM context */
++	mm_context_t context;
++
++	unsigned long flags; /* Must use atomic bitops to access the bits */
++
++	struct core_state *core_state; /* coredumping support */
++#ifdef CONFIG_AIO
++	spinlock_t			ioctx_lock;
++	struct kioctx_table __rcu	*ioctx_table;
++#endif
++#ifdef CONFIG_MEMCG
++	/*
++	 * "owner" points to a task that is regarded as the canonical
++	 * user/owner of this mm. All of the following must be true in
++	 * order for it to be changed:
++	 *
++	 * current == mm->owner
++	 * current->mm != mm
++	 * new_owner->mm == mm
++	 * new_owner->alloc_lock is held
++	 */
++	struct task_struct __rcu *owner;
++#endif
++
++	/* store ref to file /proc/<pid>/exe symlink points to */
++	struct file *exe_file;
++#ifdef CONFIG_MMU_NOTIFIER
++	struct mmu_notifier_mm *mmu_notifier_mm;
++#endif
++#if defined(CONFIG_TRANSPARENT_HUGEPAGE) && !USE_SPLIT_PMD_PTLOCKS
++	pgtable_t pmd_huge_pte; /* protected by page_table_lock */
++#endif
++#ifdef CONFIG_CPUMASK_OFFSTACK
++	struct cpumask cpumask_allocation;
++#endif
++#ifdef CONFIG_NUMA_BALANCING
++	/*
++	 * numa_next_scan is the next time that the PTEs will be marked
++	 * pte_numa. NUMA hinting faults will gather statistics and migrate
++	 * pages to new nodes if necessary.
++	 */
++	unsigned long numa_next_scan;
++
++	/* Restart point for scanning and setting pte_numa */
++	unsigned long numa_scan_offset;
++
++	/* numa_scan_seq prevents two threads setting pte_numa */
++	int numa_scan_seq;
++#endif
++#if defined(CONFIG_NUMA_BALANCING) || defined(CONFIG_COMPACTION)
++	/*
++	 * An operation with batched TLB flushing is going on. Anything that
++	 * can move process memory needs to flush the TLB when moving a
++	 * PROT_NONE or PROT_NUMA mapped page.
++	 */
++	bool tlb_flush_pending;
++#endif
++	struct uprobes_state uprobes_state;
++#ifdef CONFIG_X86_INTEL_MPX
++	/* address of the bounds directory */
++	void __user *bd_addr;
++#endif
++};
++
++static inline void mm_init_cpumask(struct mm_struct *mm)
++{
++#ifdef CONFIG_CPUMASK_OFFSTACK
++	mm->cpu_vm_mask_var = &mm->cpumask_allocation;
++#endif
++	cpumask_clear(mm->cpu_vm_mask_var);
++}
++
++/* Future-safe accessor for struct mm_struct's cpu_vm_mask. */
++static inline cpumask_t *mm_cpumask(struct mm_struct *mm)
++{
++	return mm->cpu_vm_mask_var;
++}
++
++#if defined(CONFIG_NUMA_BALANCING) || defined(CONFIG_COMPACTION)
++/*
++ * Memory barriers to keep this state in sync are graciously provided by
++ * the page table locks, outside of which no page table modifications happen.
++ * The barriers below prevent the compiler from re-ordering the instructions
++ * around the memory barriers that are already present in the code.
++ */
++static inline bool mm_tlb_flush_pending(struct mm_struct *mm)
++{
++	barrier();
++	return mm->tlb_flush_pending;
++}
++static inline void set_tlb_flush_pending(struct mm_struct *mm)
++{
++	mm->tlb_flush_pending = true;
++
++	/*
++	 * Guarantee that the tlb_flush_pending store does not leak into the
++	 * critical section updating the page tables
++	 */
++	smp_mb__before_spinlock();
++}
++/* Clearing is done after a TLB flush, which also provides a barrier. */
++static inline void clear_tlb_flush_pending(struct mm_struct *mm)
++{
++	barrier();
++	mm->tlb_flush_pending = false;
++}
++#else
++static inline bool mm_tlb_flush_pending(struct mm_struct *mm)
++{
++	return false;
++}
++static inline void set_tlb_flush_pending(struct mm_struct *mm)
++{
++}
++static inline void clear_tlb_flush_pending(struct mm_struct *mm)
++{
++}
++#endif
++
++#endif
+diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
+index 5dfdd5ed5254..80797b1c1e26 100644
+--- a/include/linux/mm_types.h
++++ b/include/linux/mm_types.h
+@@ -1,24 +1,16 @@
+ #ifndef _LINUX_MM_TYPES_H
+ #define _LINUX_MM_TYPES_H
+ 
+-#include <linux/auxvec.h>
+-#include <linux/types.h>
+-#include <linux/threads.h>
+-#include <linux/list.h>
+-#include <linux/spinlock.h>
+-#include <linux/rbtree.h>
+-#include <linux/rwsem.h>
+ #include <linux/completion.h>
+ #include <linux/cpumask.h>
+-#include <linux/uprobes.h>
++#include <linux/list.h>
+ #include <linux/page-flags-layout.h>
+-#include <asm/page.h>
+-#include <asm/mmu.h>
++#include <linux/rbtree.h>
++#include <linux/spinlock.h>
++#include <linux/threads.h>
++#include <linux/types.h>
+ 
+-#ifndef AT_VECTOR_SIZE_ARCH
+-#define AT_VECTOR_SIZE_ARCH 0
+-#endif
+-#define AT_VECTOR_SIZE (2*(AT_VECTOR_SIZE_ARCH + AT_VECTOR_SIZE_BASE + 1))
++#include <asm/page.h>
+ 
+ struct address_space;
+ struct mem_cgroup;
+@@ -326,203 +318,7 @@ struct core_state {
+ 	struct completion startup;
+ };
+ 
+-enum {
+-	MM_FILEPAGES,
+-	MM_ANONPAGES,
+-	MM_SWAPENTS,
+-	NR_MM_COUNTERS
+-};
+-
+-#if USE_SPLIT_PTE_PTLOCKS && defined(CONFIG_MMU)
+-#define SPLIT_RSS_COUNTING
+-/* per-thread cached information, */
+-struct task_rss_stat {
+-	int events;	/* for synchronization threshold */
+-	int count[NR_MM_COUNTERS];
+-};
+-#endif /* USE_SPLIT_PTE_PTLOCKS */
+-
+-struct mm_rss_stat {
+-	atomic_long_t count[NR_MM_COUNTERS];
+-};
+-
+-struct kioctx_table;
+-struct mm_struct {
+-	struct vm_area_struct *mmap;		/* list of VMAs */
+-	struct rb_root mm_rb;
+-	u32 vmacache_seqnum;                   /* per-thread vmacache */
+-#ifdef CONFIG_MMU
+-	unsigned long (*get_unmapped_area) (struct file *filp,
+-				unsigned long addr, unsigned long len,
+-				unsigned long pgoff, unsigned long flags);
+-#endif
+-	unsigned long mmap_base;		/* base of mmap area */
+-	unsigned long mmap_legacy_base;         /* base of mmap area in bottom-up allocations */
+-	unsigned long task_size;		/* size of task vm space */
+-	unsigned long highest_vm_end;		/* highest vma end address */
+-	pgd_t * pgd;
+-	atomic_t mm_users;			/* How many users with user space? */
+-	atomic_t mm_count;			/* How many references to "struct mm_struct" (users count as 1) */
+-	atomic_long_t nr_ptes;			/* PTE page table pages */
+-	atomic_long_t nr_pmds;			/* PMD page table pages */
+-	int map_count;				/* number of VMAs */
+-
+-	spinlock_t page_table_lock;		/* Protects page tables and some counters */
+-	struct rw_semaphore mmap_sem;
+-
+-	struct list_head mmlist;		/* List of maybe swapped mm's.	These are globally strung
+-						 * together off init_mm.mmlist, and are protected
+-						 * by mmlist_lock
+-						 */
+-
+-
+-	unsigned long hiwater_rss;	/* High-watermark of RSS usage */
+-	unsigned long hiwater_vm;	/* High-water virtual memory usage */
+-
+-	unsigned long total_vm;		/* Total pages mapped */
+-	unsigned long locked_vm;	/* Pages that have PG_mlocked set */
+-	unsigned long pinned_vm;	/* Refcount permanently increased */
+-	unsigned long shared_vm;	/* Shared pages (files) */
+-	unsigned long exec_vm;		/* VM_EXEC & ~VM_WRITE */
+-	unsigned long stack_vm;		/* VM_GROWSUP/DOWN */
+-	unsigned long def_flags;
+-	unsigned long start_code, end_code, start_data, end_data;
+-	unsigned long start_brk, brk, start_stack;
+-	unsigned long arg_start, arg_end, env_start, env_end;
+-
+-	unsigned long saved_auxv[AT_VECTOR_SIZE]; /* for /proc/PID/auxv */
+-
+-	/*
+-	 * Special counters, in some configurations protected by the
+-	 * page_table_lock, in other configurations by being atomic.
+-	 */
+-	struct mm_rss_stat rss_stat;
+-
+-	struct linux_binfmt *binfmt;
+-
+-	cpumask_var_t cpu_vm_mask_var;
+-
+-	/* Architecture-specific MM context */
+-	mm_context_t context;
+-
+-	unsigned long flags; /* Must use atomic bitops to access the bits */
+-
+-	struct core_state *core_state; /* coredumping support */
+-#ifdef CONFIG_AIO
+-	spinlock_t			ioctx_lock;
+-	struct kioctx_table __rcu	*ioctx_table;
+-#endif
+-#ifdef CONFIG_MEMCG
+-	/*
+-	 * "owner" points to a task that is regarded as the canonical
+-	 * user/owner of this mm. All of the following must be true in
+-	 * order for it to be changed:
+-	 *
+-	 * current == mm->owner
+-	 * current->mm != mm
+-	 * new_owner->mm == mm
+-	 * new_owner->alloc_lock is held
+-	 */
+-	struct task_struct __rcu *owner;
+-#endif
+-
+-	/* store ref to file /proc/<pid>/exe symlink points to */
+-	struct file *exe_file;
+-#ifdef CONFIG_MMU_NOTIFIER
+-	struct mmu_notifier_mm *mmu_notifier_mm;
+-#endif
+-#if defined(CONFIG_TRANSPARENT_HUGEPAGE) && !USE_SPLIT_PMD_PTLOCKS
+-	pgtable_t pmd_huge_pte; /* protected by page_table_lock */
+-#endif
+-#ifdef CONFIG_CPUMASK_OFFSTACK
+-	struct cpumask cpumask_allocation;
+-#endif
+-#ifdef CONFIG_NUMA_BALANCING
+-	/*
+-	 * numa_next_scan is the next time that the PTEs will be marked
+-	 * pte_numa. NUMA hinting faults will gather statistics and migrate
+-	 * pages to new nodes if necessary.
+-	 */
+-	unsigned long numa_next_scan;
+-
+-	/* Restart point for scanning and setting pte_numa */
+-	unsigned long numa_scan_offset;
+-
+-	/* numa_scan_seq prevents two threads setting pte_numa */
+-	int numa_scan_seq;
+-#endif
+-#if defined(CONFIG_NUMA_BALANCING) || defined(CONFIG_COMPACTION)
+-	/*
+-	 * An operation with batched TLB flushing is going on. Anything that
+-	 * can move process memory needs to flush the TLB when moving a
+-	 * PROT_NONE or PROT_NUMA mapped page.
+-	 */
+-	bool tlb_flush_pending;
+-#endif
+-	struct uprobes_state uprobes_state;
+-#ifdef CONFIG_X86_INTEL_MPX
+-	/* address of the bounds directory */
+-	void __user *bd_addr;
+-#endif
+-};
+-
+-static inline void mm_init_cpumask(struct mm_struct *mm)
+-{
+-#ifdef CONFIG_CPUMASK_OFFSTACK
+-	mm->cpu_vm_mask_var = &mm->cpumask_allocation;
+-#endif
+-	cpumask_clear(mm->cpu_vm_mask_var);
+-}
+-
+-/* Future-safe accessor for struct mm_struct's cpu_vm_mask. */
+-static inline cpumask_t *mm_cpumask(struct mm_struct *mm)
+-{
+-	return mm->cpu_vm_mask_var;
+-}
+-
+-#if defined(CONFIG_NUMA_BALANCING) || defined(CONFIG_COMPACTION)
+-/*
+- * Memory barriers to keep this state in sync are graciously provided by
+- * the page table locks, outside of which no page table modifications happen.
+- * The barriers below prevent the compiler from re-ordering the instructions
+- * around the memory barriers that are already present in the code.
+- */
+-static inline bool mm_tlb_flush_pending(struct mm_struct *mm)
+-{
+-	barrier();
+-	return mm->tlb_flush_pending;
+-}
+-static inline void set_tlb_flush_pending(struct mm_struct *mm)
+-{
+-	mm->tlb_flush_pending = true;
+-
+-	/*
+-	 * Guarantee that the tlb_flush_pending store does not leak into the
+-	 * critical section updating the page tables
+-	 */
+-	smp_mb__before_spinlock();
+-}
+-/* Clearing is done after a TLB flush, which also provides a barrier. */
+-static inline void clear_tlb_flush_pending(struct mm_struct *mm)
+-{
+-	barrier();
+-	mm->tlb_flush_pending = false;
+-}
+-#else
+-static inline bool mm_tlb_flush_pending(struct mm_struct *mm)
+-{
+-	return false;
+-}
+-static inline void set_tlb_flush_pending(struct mm_struct *mm)
+-{
+-}
+-static inline void clear_tlb_flush_pending(struct mm_struct *mm)
+-{
+-}
+-#endif
+-
+-struct vm_special_mapping
+-{
++struct vm_special_mapping {
+ 	const char *name;
+ 	struct page **pages;
+ };
+diff --git a/include/linux/mmu_notifier.h b/include/linux/mmu_notifier.h
+index 95243d28a0ee..779e32567e6d 100644
+--- a/include/linux/mmu_notifier.h
++++ b/include/linux/mmu_notifier.h
+@@ -4,6 +4,7 @@
+ #include <linux/list.h>
+ #include <linux/spinlock.h>
+ #include <linux/mm_types.h>
++#include <linux/mm_struct.h>
+ #include <linux/srcu.h>
+ 
+ struct mmu_notifier;
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 22ee0d5d7f8c..99001775ffa0 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -25,6 +25,7 @@ struct sched_param {
+ #include <linux/errno.h>
+ #include <linux/nodemask.h>
+ #include <linux/mm_types.h>
++#include <linux/mm_struct.h>
+ #include <linux/preempt_mask.h>
+ 
+ #include <asm/page.h>
+diff --git a/mm/init-mm.c b/mm/init-mm.c
+index a56a851908d2..310ae8c7d9c6 100644
+--- a/mm/init-mm.c
++++ b/mm/init-mm.c
+@@ -1,4 +1,5 @@
+ #include <linux/mm_types.h>
++#include <linux/mm_struct.h>
+ #include <linux/rbtree.h>
+ #include <linux/rwsem.h>
+ #include <linux/spinlock.h>
+diff --git a/mm/kmemcheck.c b/mm/kmemcheck.c
+index cab58bb592d8..c40d065013d2 100644
+--- a/mm/kmemcheck.c
++++ b/mm/kmemcheck.c
+@@ -1,5 +1,4 @@
+ #include <linux/gfp.h>
+-#include <linux/mm_types.h>
+ #include <linux/mm.h>
+ #include <linux/slab.h>
+ #include "slab.h"
+-- 
+2.2.2
+
+-- 
+ Kirill A. Shutemov
