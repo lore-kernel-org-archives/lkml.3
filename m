@@ -1,121 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755720AbbA2Pcz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 10:32:55 -0500
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:43017 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753722AbbA2Pcw (ORCPT
+	id S1756031AbbA2PdD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 10:33:03 -0500
+Received: from mga11.intel.com ([192.55.52.93]:57797 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755787AbbA2PdA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 10:32:52 -0500
-Message-ID: <54CA5299.6050304@gmail.com>
-Date: Thu, 29 Jan 2015 21:02:41 +0530
-From: Varka Bhadram <varkabhadram@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Thu, 29 Jan 2015 10:33:00 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.09,486,1418112000"; 
+   d="scan'208";a="669751459"
+From: "Ong, Boon Leong" <boon.leong.ong@intel.com>
+To: "Bryan O'Donoghue" <pure.logic@nexus-software.ie>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>,
+        "dvhart@infradead.org" <dvhart@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andy Shevchenko <andy.shevchenko@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: RE: [PATCH 1/2] x86: Add Isolated Memory Regions for Quark X1000
+Thread-Topic: [PATCH 1/2] x86: Add Isolated Memory Regions for Quark X1000
+Thread-Index: AQHQOylqnLZVjTv+WEq44p1GA6waZpzWMk6AgAAoNgCAAAEsAIAAwdXQ//+UzICAAIb+4A==
+Date: Thu, 29 Jan 2015 15:32:55 +0000
+Message-ID: <AF233D1473C1364ABD51D28909A1B1B732715B43@PGSMSX105.gar.corp.intel.com>
+References: <1422470186-7860-1-git-send-email-pure.logic@nexus-software.ie>
+	<1422470186-7860-2-git-send-email-pure.logic@nexus-software.ie>
+	<20150129074411.GA4817@gmail.com>
+ <CAHp75Vfff-C++LWyyK+FWLnot=jO4kQvbDaN9hJ2_VrhG8n2Qg@mail.gmail.com>
+ <54CA0782.8000807@nexus-software.ie>
+ <AF233D1473C1364ABD51D28909A1B1B7327158BE@PGSMSX105.gar.corp.intel.com>
+ <54CA502D.9030307@nexus-software.ie>
+In-Reply-To: <54CA502D.9030307@nexus-software.ie>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.30.20.206]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Chunyan Zhang <chunyan.zhang@spreadtrum.com>, gregkh@linuxfoundation.org
-CC: robh+dt@kernel.org, mark.rutland@arm.com, arnd@arndb.de,
-        gnomes@lxorguk.ukuu.org.uk, peter@hurleysoftware.com,
-        pawel.moll@arm.com, ijc+devicetree@hellion.org.uk,
-        galak@codeaurora.org, grant.likely@linaro.org, jslaby@suse.cz,
-        heiko@sntech.de, jason@lakedaemon.net, florian.vaussard@epfl.ch,
-        andrew@lunn.ch, hytszk@gmail.com, antonynpavlov@gmail.com,
-        shawn.guo@linaro.org, orsonzhai@gmail.com, geng.ren@spreadtrum.com,
-        zhizhou.zhang@spreadtrum.com, lanqing.liu@spreadtrum.com,
-        zhang.lyra@gmail.com, wei.qiao@spreadtrum.com,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-serial@vger.kernel.org, linux-api@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v10 2/2] tty/serial: Add Spreadtrum sc9836-uart driver
- support
-References: <sc9836-serial-v10> <1422443324-25082-1-git-send-email-chunyan.zhang@spreadtrum.com> <1422443324-25082-3-git-send-email-chunyan.zhang@spreadtrum.com> <54CA5128.8050500@gmail.com>
-In-Reply-To: <54CA5128.8050500@gmail.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 29 January 2015 08:56 PM, Varka Bhadram wrote:
-> Hi,
->
-> On Wednesday 28 January 2015 04:38 PM, Chunyan Zhang wrote:
->> Add a full sc9836-uart driver for SC9836 SoC which is based on the
->> spreadtrum sharkl64 platform.
->> This driver also support earlycon.
->>
->> Originally-by: Lanqing Liu <lanqing.liu@spreadtrum.com>
->> Signed-off-by: Orson Zhai <orson.zhai@spreadtrum.com>
->> Signed-off-by: Chunyan Zhang <chunyan.zhang@spreadtrum.com>
->> Acked-by: Arnd Bergmann <arnd@arndb.de>
->> Reviewed-by: Peter Hurley <peter@hurleysoftware.com>
->> ---
->>   drivers/tty/serial/Kconfig       |   18 +
->>   drivers/tty/serial/Makefile      |    1 +
->>   drivers/tty/serial/sprd_serial.c |  793 
->> ++++++++++++++++++++++++++++++++++++++
->>   include/uapi/linux/serial_core.h |    3 +
->>   4 files changed, 815 insertions(+)
->>   create mode 100644 drivers/tty/serial/sprd_serial.c
->>
-> (...)
->
->> +static int sprd_probe(struct platform_device *pdev)
->> +{
->> +    struct resource *res;
->> +    struct uart_port *up;
->> +    struct clk *clk;
->> +    int irq;
->> +    int index;
->> +    int ret;
->> +
->> +    for (index = 0; index < ARRAY_SIZE(sprd_port); index++)
->> +        if (sprd_port[index] == NULL)
->> +            break;
->> +
->> +    if (index == ARRAY_SIZE(sprd_port))
->> +        return -EBUSY;
->> +
->> +    index = sprd_probe_dt_alias(index, &pdev->dev);
->> +
->> +    sprd_port[index] = devm_kzalloc(&pdev->dev,
->> +        sizeof(*sprd_port[index]), GFP_KERNEL);
->> +    if (!sprd_port[index])
->> +        return -ENOMEM;
->> +
->> +    up = &sprd_port[index]->port;
->> +    up->dev = &pdev->dev;
->> +    up->line = index;
->> +    up->type = PORT_SPRD;
->> +    up->iotype = SERIAL_IO_PORT;
->> +    up->uartclk = SPRD_DEF_RATE;
->> +    up->fifosize = SPRD_FIFO_SIZE;
->> +    up->ops = &serial_sprd_ops;
->> +    up->flags = UPF_BOOT_AUTOCONF;
->> +
->> +    clk = devm_clk_get(&pdev->dev, NULL);
->> +    if (!IS_ERR(clk))
->> +        up->uartclk = clk_get_rate(clk);
->> +
->> +    res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
->> +    if (!res) {
->> +        dev_err(&pdev->dev, "not provide mem resource\n");
->> +        return -ENODEV;
->> +    }
->
-> This check is not required. It will be done by devm_ioremap_resource()
->
->> +    up->mapbase = res->start;
 
-Accessing of 'res' has to be done after devm_ioremap_resource()
 
->> +    up->membase = devm_ioremap_resource(&pdev->dev, res);
->> +    if (IS_ERR(up->membase))
->> +        return PTR_ERR(up->membase);
->> +
->>
+>-----Original Message-----
+>From: Bryan O'Donoghue [mailto:pure.logic@nexus-software.ie]
+>Sent: Thursday, January 29, 2015 11:22 PM
+>To: Ong, Boon Leong
+>Cc: Thomas Gleixner; Ingo Molnar; H. Peter Anvin; x86@kernel.org;
+>dvhart@infradead.org; linux-kernel@vger.kernel.org; Andy Shevchenko; Ingo
+>Molnar
+>Subject: Re: [PATCH 1/2] x86: Add Isolated Memory Regions for Quark X1000
 >
+>On 29/01/15 13:47, Ong, Boon Leong wrote:
+>> Bryan,
+>>
+>> Once you have the next revision ready, I would like to test it on my end across
+>both Galileo Gen v1 & v2.
+>>
+>> Cheers,
+>> BL
+>
+>Andy/BL - thanks for taking the time to test.
+>
+>I may end up dropping the imr_del_range() tests based on index as a result of
+>changing the external interface as suggested by Ingo.
+It would be nice to have two variants (1) index based & (2) address based. 
 
--- 
-Thanks,
-Varka Bhadram.
+>
+>If you guys have a clear preference to keep those tests shout now and I'll re-
+>merge the imr_selftest code into the main chunk of IMR code.
+Ok, once you have that ready, I will re-run the test on my end. 
+
+>
+>--
+>BOD
 
