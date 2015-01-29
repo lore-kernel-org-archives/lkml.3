@@ -1,117 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754431AbbA2Ms0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 07:48:26 -0500
-Received: from ns.mm-sol.com ([37.157.136.199]:42734 "EHLO extserv.mm-sol.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753914AbbA2MsY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 07:48:24 -0500
-Message-ID: <1422535712.28891.3.camel@mm-sol.com>
-Subject: Re: [PATCH v2 2/2] leds: add Qualcomm PM8941 WLED driver
-From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-To: Bjorn Andersson <bjorn.andersson@sonymobile.com>
-Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Bryan Wu <cooloney@gmail.com>,
-        Richard Purdie <rpurdie@rpsys.net>,
-        Grant Likely <grant.likely@linaro.org>,
-        Courtney Cavin <courtney.cavin@sonymobile.com>,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-leds@vger.kernel.org, linux-arm-msm@vger.kernel.org
-Date: Thu, 29 Jan 2015 14:48:32 +0200
-In-Reply-To: <1422060853-1067-2-git-send-email-bjorn.andersson@sonymobile.com>
-References: <1422060853-1067-1-git-send-email-bjorn.andersson@sonymobile.com>
-	 <1422060853-1067-2-git-send-email-bjorn.andersson@sonymobile.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.13.7-fta1.2~trusty 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754851AbbA2Msy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 07:48:54 -0500
+Received: from mail-oi0-f49.google.com ([209.85.218.49]:51795 "EHLO
+	mail-oi0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751599AbbA2Msx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Jan 2015 07:48:53 -0500
+MIME-Version: 1.0
+In-Reply-To: <20150129123445.GS7220@kernel.org>
+References: <1422518843-25818-1-git-send-email-namhyung@kernel.org>
+ <1422518843-25818-28-git-send-email-namhyung@kernel.org> <20150129123445.GS7220@kernel.org>
+From: Namhyung Kim <namhyung@kernel.org>
+Date: Thu, 29 Jan 2015 21:48:32 +0900
+X-Google-Sender-Auth: lKiNd6hWGkXNTR5fueqyHSkjBdE
+Message-ID: <CAM9d7cjRE+sDYgAZWgrwR_XwT+GTVfK8cULkVo8N5-q8ybLW4A@mail.gmail.com>
+Subject: Re: [PATCH 27/42] perf tools: Protect dso symbol loading using a mutex
+To: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Jiri Olsa <jolsa@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        David Ahern <dsahern@gmail.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Stephane Eranian <eranian@google.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Arnaldo,
 
-Hi Bjorn,
+On Thu, Jan 29, 2015 at 9:34 PM, Arnaldo Carvalho de Melo
+<acme@kernel.org> wrote:
+> Em Thu, Jan 29, 2015 at 05:07:08PM +0900, Namhyung Kim escreveu:
+>> When multi-thread support for perf report is enabled, it's possible to
+>> access a dso concurrently.  Add a new pthread_mutex to protect it from
+>> concurrent dso__load().
+>>
+>> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+>> ---
+>>  tools/perf/util/dso.c    |  2 ++
+>>  tools/perf/util/dso.h    |  1 +
+>>  tools/perf/util/symbol.c | 34 ++++++++++++++++++++++++----------
+>>  3 files changed, 27 insertions(+), 10 deletions(-)
+>>
+>> diff --git a/tools/perf/util/dso.c b/tools/perf/util/dso.c
+>> index 45be944d450a..3da75816b8f8 100644
+>> --- a/tools/perf/util/dso.c
+>> +++ b/tools/perf/util/dso.c
+>> @@ -888,6 +888,7 @@ struct dso *dso__new(const char *name)
+>>               RB_CLEAR_NODE(&dso->rb_node);
+>>               INIT_LIST_HEAD(&dso->node);
+>>               INIT_LIST_HEAD(&dso->data.open_entry);
+>> +             pthread_mutex_init(&dso->lock, NULL);
+>>       }
+>>
+>>       return dso;
+>> @@ -917,6 +918,7 @@ void dso__delete(struct dso *dso)
+>>       dso_cache__free(&dso->data.cache);
+>>       dso__free_a2l(dso);
+>>       zfree(&dso->symsrc_filename);
+>> +     pthread_mutex_destroy(&dso->lock);
+>>       free(dso);
+>>  }
+>>
+>> diff --git a/tools/perf/util/dso.h b/tools/perf/util/dso.h
+>> index 3782c82c6e44..ac753594a469 100644
+>> --- a/tools/perf/util/dso.h
+>> +++ b/tools/perf/util/dso.h
+>> @@ -102,6 +102,7 @@ struct dsos {
+>>  };
+>>
+>>  struct dso {
+>> +     pthread_mutex_t  lock;
+>>       struct list_head node;
+>>       struct rb_node   rb_node;       /* rbtree node sorted by long name */
+>>       struct rb_root   symbols[MAP__NR_TYPES];
+>> diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+>> index a69066865a55..714e20c99354 100644
+>> --- a/tools/perf/util/symbol.c
+>> +++ b/tools/perf/util/symbol.c
+>> @@ -1357,12 +1357,22 @@ int dso__load(struct dso *dso, struct map *map, symbol_filter_t filter)
+>>       struct symsrc *syms_ss = NULL, *runtime_ss = NULL;
+>>       bool kmod;
+>>
+>> -     dso__set_loaded(dso, map->type);
+>> +     pthread_mutex_lock(&dso->lock);
+>> +
+>> +     /* check again under the dso->lock */
+>
+> Again? Where was it first checked?
 
-Just few nitpick comments. 
+Please see map__load().
 
-On Fri, 2015-01-23 at 16:54 -0800, Bjorn Andersson wrote:
-> From: Courtney Cavin cavin@sonymobile.com>
-> 
-> This adds support for the WLED ('White' LED) block on Qualcomm's
-> PM8941 PMICs.
-> 
-> Signed-off-by: Courtney Cavin cavin@sonymobile.com>
-> Signed-off-by: Bjorn Andersson andersson@sonymobile.com>
-> ---
->  drivers/leds/Kconfig            |   8 +
->  drivers/leds/Makefile           |   1 +
->  drivers/leds/leds-pm8941-wled.c | 459 ++++++++++++++++++++++++++++++++++++++++
->  3 files changed, 468 insertions(+)
->  create mode 100644 drivers/leds/leds-pm8941-wled.c
-> 
 
-<snip>
+> Perhaps we should lock there, so that
+> we don't have to do two checks, one unlocked, the other locked?
 
-> +
-> +#define PM8941_WLED_REG_VAL_BASE               0x40
-> +#define  PM8941_WLED_REG_VAL_MAX               0xFFF
-> +
-> +#define PM8941_WLED_REG_MOD_EN                 0x46
-> +#define  PM8941_WLED_REG_MOD_EN_BIT            BIT(7)
-> +#define  PM8941_WLED_REG_MOD_EN_MASK           BIT(7)
+Hmm.. maybe.  I just keep it to avoid locking overhead since it'll be
+called whenever it searches symbols during preprocessing.  I didn't
+measure the overhead but it could be huge IMHO.
 
-Is it possible bit definitions to have same indentation like registers offsets?
+Thanks,
+Namhyung
 
-> 
-> +struct pm8941_wled_config {
-> +       u32 i_boost_limit;
-> +       u32 ovp;
-> +       u32 switch_freq;
-> +       u32 num_strings;
-> +       u32 i_limit;
-> +       bool cs_out_en;
-> +       bool ext_gen;
-> +       bool cabc_en;
-> +};
-> +
 
-Could this be further squashed to bellow structure?
-
-> +struct pm8941_wled {
-> +       struct regmap *regmap;
-> +       u16 addr;
-> +
-> +       struct led_classdev cdev;
-> +
-> +       struct pm8941_wled_config cfg;
-> +};
-> +
-> 
-
-<snip>
-
-> +static void pm8941_wled_set_brightness(struct led_classdev *cdev,
-> +                                                                                       enum 
-> led_brightness value)
-> +{
-> +       if (pm8941_wled_set(cdev, value)) {
-
-pm8941_wled_set() is used only here, could it be merged into this function?
- 
-> +               dev_err(cdev->dev, "Unable to set brightness\n");
-> +               return;
-> +       }
-> +       cdev->brightness = value;
-> +}
-> +
-> 
-
-Otherwise it looks good. Driver is loaded and device is detected
-properly (i have added readings for type and subtype registers).
-Do you know where I can measure result from changing brightness 
-sysfs entry. I am using 8074 dragonboard?
-
-Thank you,
-Ivan
+>
+>> +     if (dso__loaded(dso, map->type)) {
+>> +             ret = 1;
+>> +             goto out;
+>> +     }
+>> +
+>
+> - Arnaldo
