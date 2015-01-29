@@ -1,46 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756947AbbA2FQB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 00:16:01 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:49023 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755661AbbA2FP7 (ORCPT
+	id S1757168AbbA2FQh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 00:16:37 -0500
+Received: from stargate.chelsio.com ([67.207.112.58]:29763 "EHLO
+	stargate.chelsio.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757045AbbA2FQf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 00:15:59 -0500
-Date: Thu, 29 Jan 2015 05:15:55 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Christoph Hellwig <hch@lst.de>
-Cc: Jens Axboe <axboe@kernel.dk>, Stephen Rothwell <sfr@canb.auug.org.au>,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Ming Lei <ming.lei@canonical.com>
-Subject: Re: linux-next: manual merge of the block tree with the vfs tree
-Message-ID: <20150129051555.GC29656@ZenIV.linux.org.uk>
-References: <20150127145754.03e711a3@canb.auug.org.au>
- <54C70D52.6030208@kernel.dk>
- <20150127045422.GY29656@ZenIV.linux.org.uk>
- <20150128171102.GC17528@lst.de>
+	Thu, 29 Jan 2015 00:16:35 -0500
+From: Anish Bhatt <anish@chelsio.com>
+To: Paul Bolle <pebolle@tiscali.nl>, Hariprasad S <hariprasad@chelsio.com>
+CC: Valentin Rothberg <valentinrothberg@gmail.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: cxgb4:  CONFIG_CXGB4_DCB?
+Thread-Topic: cxgb4:  CONFIG_CXGB4_DCB?
+Thread-Index: AQHQO3doqn6aPXOM3k6A3GnSnw8PxJzWjZBm
+Date: Thu, 29 Jan 2015 05:16:25 +0000
+Message-ID: <525DB349B3FB5444AE057A887CB2A8D8E0BB8A@nice.asicdesigners.com>
+References: <1422431914.5666.7.camel@x220>,<1422480916.3621.53.camel@x220>
+In-Reply-To: <1422480916.3621.53.camel@x220>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [76.103.101.57]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150128171102.GC17528@lst.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 28, 2015 at 06:11:02PM +0100, Christoph Hellwig wrote:
-> On Tue, Jan 27, 2015 at 04:54:22AM +0000, Al Viro wrote:
-> > I don't mind opening a never-rebased branch for generic iov_iter-related stuff;
-> > if you prefer to handle it that way - just tell.  The first two patches
-> > from that series would definitely go there; as for the rest... no preferences
-> > here.
-> 
-> It might make sense to just keep the VFS patches in your tree.
-> The target ones also are something I'd prefer if it goes through Nic
-> with additional review.  In addition they aren't really critical,
-> so if you merge the prep patches now we can feed the rest through
-> the proper trees in the .21 merge window.
-
-Done.  The first two are in #iov_iter now (merged into #for-next), the
-rest is dropped.  And #iov_iter is in never-rebased mode, so feel free
-to pull it wherever you need it.
+It got to the maintainer nevertheless. Thanks for bringing this to our notice 
+Paul, fix for this is already in the patchwork queue :
+https://patchwork.ozlabs.org/patch/434279/
+-Anish
