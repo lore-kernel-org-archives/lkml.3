@@ -1,361 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754267AbbA2MMs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 07:12:48 -0500
-Received: from mga03.intel.com ([134.134.136.65]:35481 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752009AbbA2MMr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 07:12:47 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.09,485,1418112000"; 
-   d="scan'208";a="669664237"
-Message-ID: <1422533541.31903.314.camel@linux.intel.com>
-Subject: Re: [PATCH v2 2/3] lib/string_helpers.c: Refactor string_escape_mem
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: Rasmus Villemoes <linux@rasmusvillemoes.dk>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Mathias Krause <minipli@googlemail.com>, linux-kernel@vger.kernel.org
-Date: Thu, 29 Jan 2015 14:12:21 +0200
-In-Reply-To: <1422525801-26560-3-git-send-email-linux@rasmusvillemoes.dk>
-References: <1422451543-12401-1-git-send-email-linux@rasmusvillemoes.dk>
-	 <1422525801-26560-1-git-send-email-linux@rasmusvillemoes.dk>
-	 <1422525801-26560-3-git-send-email-linux@rasmusvillemoes.dk>
-Organization: Intel Finland Oy
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.9-1+b1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+	id S1754736AbbA2MOY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 07:14:24 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:38947 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754501AbbA2MOW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Jan 2015 07:14:22 -0500
+Date: Thu, 29 Jan 2015 12:13:20 +0000
+From: Mark Brown <broonie@kernel.org>
+To: "BhuvanChandra.DV" <bhuvanchandra.dv@toradex.com>
+Cc: "mark.rutland@arm.com" <mark.rutland@arm.com>,
+        "stefan@agner.ch" <stefan@agner.ch>,
+        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        "pawel.moll@arm.com" <pawel.moll@arm.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        "galak@codeaurora.org" <galak@codeaurora.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "B44548@freescale.com" <B44548@freescale.com>,
+        "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-spi@vger.kernel.org" <linux-spi@vger.kernel.org>
+Message-ID: <20150129121320.GI21293@sirena.org.uk>
+References: <1422356608-15961-1-git-send-email-bhuvanchandra.dv@toradex.com>
+ <1422356608-15961-2-git-send-email-bhuvanchandra.dv@toradex.com>
+ <20150128190342.GE21293@sirena.org.uk>
+ <1422533049999.91114@toradex.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha256;
+	protocol="application/pgp-signature"; boundary="+b69FlTXZi5jeJ9W"
+Content-Disposition: inline
+In-Reply-To: <1422533049999.91114@toradex.com>
+X-Cookie: My LESLIE GORE record is BROKEN ...
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 7/7] spi: spi-fsl-dspi: Add support for TCFQ transfer mode
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2015-01-29 at 11:03 +0100, Rasmus Villemoes wrote:
-> When printf is given the format specifier %pE, it needs a way of
-> obtaining the total output size that would be generated if the buffer
-> was large enough, and string_escape_mem doesn't easily provide
-> that. This is a refactorization of string_escape_mem in preparation of
-> changing its external API to provide that information.
 
-Few comments below.
+--+b69FlTXZi5jeJ9W
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> 
-> Signed-off-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
-> ---
->  lib/string_helpers.c | 182 ++++++++++++++++++++-------------------------------
->  1 file changed, 72 insertions(+), 110 deletions(-)
-> 
-> diff --git a/lib/string_helpers.c b/lib/string_helpers.c
-> index 58b78ba57439..e14dd8555760 100644
-> --- a/lib/string_helpers.c
-> +++ b/lib/string_helpers.c
-> @@ -243,29 +243,21 @@ int string_unescape(char *src, char *dst, size_t size, unsigned int flags)
->  }
->  EXPORT_SYMBOL(string_unescape);
->  
-> -static int escape_passthrough(unsigned char c, char **dst, size_t *osz)
-> +static bool escape_passthrough(unsigned char c, char **dst, char *end)
->  {
->  	char *out = *dst;
->  
-> -	if (*osz < 1)
-> -		return -ENOMEM;
-> -
-> -	*out++ = c;
-> -
-> -	*dst = out;
-> -	*osz -= 1;
-> -
-> -	return 1;
-> +	if (out < end)
-> +		*out = c;
-> +	*dst = out + 1;
-> +	return true;
->  }
->  
-> -static int escape_space(unsigned char c, char **dst, size_t *osz)
-> +static bool escape_space(unsigned char c, char **dst, char *end)
->  {
->  	char *out = *dst;
->  	unsigned char to;
->  
-> -	if (*osz < 2)
-> -		return -ENOMEM;
-> -
->  	switch (c) {
->  	case '\n':
->  		to = 'n';
-> @@ -283,26 +275,23 @@ static int escape_space(unsigned char c, char **dst, size_t *osz)
->  		to = 'f';
->  		break;
->  	default:
-> -		return 0;
-> +		return false;
->  	}
->  
-> -	*out++ = '\\';
-> -	*out++ = to;
-> +	if (out + 0 < end)
-> +		out[0] = '\\';
-> +	if (out + 1 < end)
-> +		out[1] = to;
+On Thu, Jan 29, 2015 at 11:58:25AM +0000, BhuvanChandra.DV wrote:
 
-Could we do this in the same way like for hex_string, i.e.
+> As far as i understood the major difference between the two modes are when
+> the interrupt to trigger, as EOQ mode will trigger the interrupt at end of
+> queue and TCF will trigger the interrupt at every frame transfer. Probably
+> mode selection shouldn't be a device tree property, but i don't see any
+> automatic way to choose between the modes.
+> Maybe a config would be more appropriate?
 
-if (out < end)
- *out = '\\';
-++out;
+Or if there's either no particular reason to choose one over the other
+or one is always better then just pick one in the driver and don't worry
+about implementing both.
 
-…
+--+b69FlTXZi5jeJ9W
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-*dst = out;
-return true;
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-?
+iQEcBAEBCAAGBQJUyiPfAAoJECTWi3JdVIfQERQH/RQ8TEoE6Fq+doSDczZ7ViUg
+rj51hTC1gzhgNtgICDzMjuurX/qxvC2pNCxZUWzxgG/Hh5V+7pjFi6+zmlyPp4xA
+qG8ktLi2WoowWa2pYJa+rmA2Z5JYwha5GY0JsEDntA/da+oyc9DUN6osvyHXcGvq
+mbTfmaXYtlEV+MfhqX0kWtBfqIdDUs8PDHcbrdp1ot0DQjO8KikvBebQNfOnVxrf
+kApfPtNXTkaCs1mkekI3IXnwTW+UDKIy2xbldZUQOzPffwTNaQhfZ4BcpO8LLYOr
+cxkpZD8MLgyuJ9KaHrVqMoaFY9ohKDUa+l+XFSDaMf2LcTfw9uY9o4u6k+pXPSQ=
+=j3xY
+-----END PGP SIGNATURE-----
 
->  
-> -	*dst = out;
-> -	*osz -= 2;
-> -
-> -	return 1;
-> +	*dst = out + 2;
-> +	return true;
->  }
->  
-> -static int escape_special(unsigned char c, char **dst, size_t *osz)
-> +static bool escape_special(unsigned char c, char **dst, char *end)
->  {
->  	char *out = *dst;
->  	unsigned char to;
->  
-> -	if (*osz < 2)
-> -		return -ENOMEM;
-> -
->  	switch (c) {
->  	case '\\':
->  		to = '\\';
-> @@ -314,71 +303,66 @@ static int escape_special(unsigned char c, char **dst, size_t *osz)
->  		to = 'e';
->  		break;
->  	default:
-> -		return 0;
-> +		return false;
->  	}
->  
-> -	*out++ = '\\';
-> -	*out++ = to;
-> +	if (out + 0 < end)
-> +		out[0] = '\\';
-> +	if (out + 1 < end)
-> +		out[1] = to;
-
-Ditto.
-
->  
-> -	*dst = out;
-> -	*osz -= 2;
-> -
-> -	return 1;
-> +	*dst = out + 2;
-> +	return true;
->  }
->  
-> -static int escape_null(unsigned char c, char **dst, size_t *osz)
-> +static bool escape_null(unsigned char c, char **dst, char *end)
->  {
->  	char *out = *dst;
->  
-> -	if (*osz < 2)
-> -		return -ENOMEM;
-> -
->  	if (c)
-> -		return 0;
-> -
-> -	*out++ = '\\';
-> -	*out++ = '0';
-> +		return false;
->  
-> -	*dst = out;
-> -	*osz -= 2;
-> +	if (out + 0 < end)
-> +		out[0] = '\\';
-> +	if (out + 1 < end)
-> +		out[1] = '0';
-
-
-Ditto.
-
->  
-> -	return 1;
-> +	*dst = out + 2;
-> +	return true;
->  }
->  
-> -static int escape_octal(unsigned char c, char **dst, size_t *osz)
-> +static bool escape_octal(unsigned char c, char **dst, char *end)
->  {
->  	char *out = *dst;
->  
-> -	if (*osz < 4)
-> -		return -ENOMEM;
-> -
-> -	*out++ = '\\';
-> -	*out++ = ((c >> 6) & 0x07) + '0';
-> -	*out++ = ((c >> 3) & 0x07) + '0';
-> -	*out++ = ((c >> 0) & 0x07) + '0';
-> +	if (out + 0 < end)
-> +		out[0] = '\\';
-> +	if (out + 1 < end)
-> +		out[1] = ((c >> 6) & 0x07) + '0';
-> +	if (out + 2 < end)
-> +		out[2] = ((c >> 3) & 0x07) + '0';
-> +	if (out + 3 < end)
-> +		out[3] = ((c >> 0) & 0x07) + '0';
-
-Ditto.
-
->  
-> -	*dst = out;
-> -	*osz -= 4;
-> -
-> -	return 1;
-> +	*dst = out + 4;
-> +	return true;
->  }
->  
-> -static int escape_hex(unsigned char c, char **dst, size_t *osz)
-> +static bool escape_hex(unsigned char c, char **dst, char *end)
->  {
->  	char *out = *dst;
->  
-> -	if (*osz < 4)
-> -		return -ENOMEM;
-> -
-> -	*out++ = '\\';
-> -	*out++ = 'x';
-> -	*out++ = hex_asc_hi(c);
-> -	*out++ = hex_asc_lo(c);
-> -
-> -	*dst = out;
-> -	*osz -= 4;
-> +	if (out + 0 < end)
-> +		out[0] = '\\';
-> +	if (out + 1 < end)
-> +		out[1] = 'x';
-> +	if (out + 2 < end)
-> +		out[2] = hex_asc_hi(c);
-> +	if (out + 3 < end)
-> +		out[3] = hex_asc_lo(c);
-
-
-Ditto.
-
->  
-> -	return 1;
-> +	*dst = out + 4;
-> +	return true;
->  }
->  
->  /**
-> @@ -440,9 +424,10 @@ static int escape_hex(unsigned char c, char **dst, size_t *osz)
->  int string_escape_mem(const char *src, size_t isz, char **dst, size_t osz,
->  		      unsigned int flags, const char *esc)
->  {
-> -	char *out = *dst, *p = out;
-> +	char *p = *dst;
-
-Leave 'out' here and…
-
-> +	char *end = p + osz;
->  	bool is_dict = esc && *esc;
-> -	int ret = 0;
-> +	int ret;
->  
->  	while (isz--) {
->  		unsigned char c = *src++;
-> @@ -462,55 +447,32 @@ int string_escape_mem(const char *src, size_t isz, char **dst, size_t osz,
->  		    (is_dict && !strchr(esc, c))) {
->  			/* do nothing */
->  		} else {
-> -			if (flags & ESCAPE_SPACE) {
-> -				ret = escape_space(c, &p, &osz);
-> -				if (ret < 0)
-> -					break;
-> -				if (ret > 0)
-> -					continue;
-> -			}
-> -
-> -			if (flags & ESCAPE_SPECIAL) {
-> -				ret = escape_special(c, &p, &osz);
-> -				if (ret < 0)
-> -					break;
-> -				if (ret > 0)
-> -					continue;
-> -			}
-> -
-> -			if (flags & ESCAPE_NULL) {
-> -				ret = escape_null(c, &p, &osz);
-> -				if (ret < 0)
-> -					break;
-> -				if (ret > 0)
-> -					continue;
-> -			}
-> +			if (flags & ESCAPE_SPACE && escape_space(c, &p, end))
-> +				continue;
-> +
-> +			if (flags & ESCAPE_SPECIAL && escape_special(c, &p, end))
-> +				continue;
-> +
-> +			if (flags & ESCAPE_NULL && escape_null(c, &p, end))
-> +				continue;
->  
->  			/* ESCAPE_OCTAL and ESCAPE_HEX always go last */
-> -			if (flags & ESCAPE_OCTAL) {
-> -				ret = escape_octal(c, &p, &osz);
-> -				if (ret < 0)
-> -					break;
-> +			if (flags & ESCAPE_OCTAL && escape_octal(c, &p, end))
->  				continue;
-> -			}
-> -			if (flags & ESCAPE_HEX) {
-> -				ret = escape_hex(c, &p, &osz);
-> -				if (ret < 0)
-> -					break;
-> +
-> +			if (flags & ESCAPE_HEX && escape_hex(c, &p, end))
->  				continue;
-> -			}
->  		}
->  
-> -		ret = escape_passthrough(c, &p, &osz);
-> -		if (ret < 0)
-> -			break;
-> +		escape_passthrough(c, &p, end);
-> +	}
-
-+ black line.
-
-> +	if (p > end) {
-> +		*dst = end;
-> +		return -ENOMEM;
->  	}
->  
-> +	ret = p - *dst;
->  	*dst = p;
-> -
-> -	if (ret < 0)
-> -		return ret;
-> -
-> -	return p - out;
-
-…and do not change the logic right now. Just substitute if (ret < 0) by
-above if (p > end).
-
-> +	return ret;
->  }
->  EXPORT_SYMBOL(string_escape_mem);
-
-
--- 
-Andy Shevchenko <andriy.shevchenko@intel.com>
-Intel Finland Oy
-
+--+b69FlTXZi5jeJ9W--
