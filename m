@@ -1,11 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758845AbbA2G6a (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 01:58:30 -0500
-Received: from david.siemens.de ([192.35.17.14]:58352 "EHLO david.siemens.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750842AbbA2G5Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 01:57:24 -0500
+	id S1757743AbbA2G4q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 01:56:46 -0500
+Received: from goliath.siemens.de ([192.35.17.28]:52165 "EHLO
+	goliath.siemens.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753078AbbA2Gxw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Jan 2015 01:53:52 -0500
 From: Jan Kiszka <jan.kiszka@siemens.com>
 To: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
 Cc: Thomas Gleixner <tglx@linutronix.de>,
@@ -13,11 +14,10 @@ Cc: Thomas Gleixner <tglx@linutronix.de>,
         kgdb-bugreport@lists.sourceforge.net, Andi Kleen <andi@firstfloor.org>,
         Tom Tromey <tromey@redhat.com>, Ben Widawsky <ben@bwidawsk.net>,
         Borislav Petkov <bp@suse.de>,
-        Daniel Thompson <daniel.thompson@linaro.org>,
-        Michal Marek <mmarek@suse.cz>, linux-kbuild@vger.kernel.org
-Subject: [PATCH v11 23/28] scripts/gdb: Ignore byte-compiled python files
-Date: Thu, 29 Jan 2015 07:46:42 +0100
-Message-Id: <fd0c2a6ad6e1d021ce85798f9cd89d9e3381288e.1422514006.git.jan.kiszka@siemens.com>
+        Daniel Wagner <daniel.wagner@bmw-carit.de>
+Subject: [PATCH v11 24/28] scripts/gdb: Use a generator instead of iterator for task list
+Date: Thu, 29 Jan 2015 07:46:43 +0100
+Message-Id: <7266c247b44ec72ad79d9bd7709857374c1d645f.1422514006.git.jan.kiszka@siemens.com>
 X-Mailer: git-send-email 2.1.4
 In-Reply-To: <cover.1422514006.git.jan.kiszka@siemens.com>
 References: <cover.1422514006.git.jan.kiszka@siemens.com>
@@ -27,56 +27,85 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Daniel Thompson <daniel.thompson@linaro.org>
+From: Daniel Wagner <daniel.wagner@bmw-carit.de>
 
-Using the gdb scripts leaves byte-compiled python files in the scripts/
-directory. These should be ignored by git and cleaned up by mrproper.
+The iterator does not return any task_struct from the thread_group list
+because the first condition in the 'if not t or ...' will only be the
+first time None.
 
-Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
-Cc: Michal Marek <mmarek@suse.cz>
-Cc: linux-kbuild@vger.kernel.org
+Instead of keeping track of the state ourself in the next() function,
+we fall back using Python's generator.
+
+Signed-off-by: Daniel Wagner <daniel.wagner@bmw-carit.de>
+Cc: Jan Kiszka <jan.kiszka@siemens.com>
 Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
 ---
- .gitignore                   | 1 +
- Makefile                     | 3 ++-
- scripts/gdb/linux/.gitignore | 2 ++
- 3 files changed, 5 insertions(+), 1 deletion(-)
- create mode 100644 scripts/gdb/linux/.gitignore
+ scripts/gdb/linux/tasks.py | 50 +++++++++++++++++++---------------------------
+ 1 file changed, 20 insertions(+), 30 deletions(-)
 
-diff --git a/.gitignore b/.gitignore
-index ce57b79..ecb89e3 100644
---- a/.gitignore
-+++ b/.gitignore
-@@ -43,6 +43,7 @@ Module.symvers
- /TAGS
- /linux
- /vmlinux
-+/vmlinux-gdb.py
- /vmlinuz
- /System.map
- /Module.markers
-diff --git a/Makefile b/Makefile
-index 6881ddf..ee7394e 100644
---- a/Makefile
-+++ b/Makefile
-@@ -1179,7 +1179,8 @@ MRPROPER_FILES += .config .config.old .version .old_version $(version_h) \
- 		  Module.symvers tags TAGS cscope* GPATH GTAGS GRTAGS GSYMS \
- 		  signing_key.priv signing_key.x509 x509.genkey		\
- 		  extra_certificates signing_key.x509.keyid		\
--		  signing_key.x509.signer vmlinux-gdb.py
-+		  signing_key.x509.signer vmlinux-gdb.py		\
-+		  scripts/gdb/linux/*.py[co]
+diff --git a/scripts/gdb/linux/tasks.py b/scripts/gdb/linux/tasks.py
+index 0008e75..e2037d9 100644
+--- a/scripts/gdb/linux/tasks.py
++++ b/scripts/gdb/linux/tasks.py
+@@ -18,38 +18,28 @@ from linux import utils
  
- # clean - Delete most, but leave enough to build external modules
- #
-diff --git a/scripts/gdb/linux/.gitignore b/scripts/gdb/linux/.gitignore
-new file mode 100644
-index 0000000..52e4e61
---- /dev/null
-+++ b/scripts/gdb/linux/.gitignore
-@@ -0,0 +1,2 @@
-+*.pyc
-+*.pyo
+ task_type = utils.CachedType("struct task_struct")
+ 
+-
+-class TaskList:
+-    def __init__(self):
+-        global task_type
+-        self.task_ptr_type = task_type.get_type().pointer()
+-        self.init_task = gdb.parse_and_eval("init_task")
+-        self.curr_group = self.init_task.address
+-        self.curr_task = None
+-
+-    def __iter__(self):
+-        return self
+-
+-    def __next__(self):
+-        t = self.curr_task
+-        if not t or t == self.curr_group:
+-            self.curr_group = \
+-                utils.container_of(self.curr_group['tasks']['next'],
+-                                   self.task_ptr_type, "tasks")
+-            if self.curr_group == self.init_task.address:
+-                raise StopIteration
+-            t = self.curr_task = self.curr_group
+-        else:
+-            self.curr_task = \
+-                utils.container_of(t['thread_group']['next'],
+-                                   self.task_ptr_type, "thread_group")
+-        return t
+-
+-    def next(self):
+-        return self.__next__()
++def task_lists():
++    global task_type
++    task_ptr_type = task_type.get_type().pointer()
++    init_task = gdb.parse_and_eval("init_task").address
++    t = g = init_task
++
++    while True:
++        while True:
++            yield t
++
++            t = utils.container_of(t['thread_group']['next'],
++                                   task_ptr_type, "thread_group")
++            if t == g:
++                break
++
++        t = g = utils.container_of(g['tasks']['next'],
++                                   task_ptr_type, "tasks")
++        if t == init_task:
++            return
+ 
+ def get_task_by_pid(pid):
+-    for task in TaskList():
++    for task in task_lists():
+         if int(task['pid']) == pid:
+             return task
+     return None
 -- 
 2.1.4
 
