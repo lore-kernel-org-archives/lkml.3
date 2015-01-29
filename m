@@ -1,83 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753864AbbA2LfK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 06:35:10 -0500
-Received: from pandora.arm.linux.org.uk ([78.32.30.218]:33925 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751794AbbA2LfI (ORCPT
+	id S1756825AbbA2LjS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 06:39:18 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:49275 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754325AbbA2LjR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 06:35:08 -0500
-Date: Thu, 29 Jan 2015 11:34:50 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Wenyou Yang <wenyou.yang@atmel.com>
-Cc: nicolas.ferre@atmel.com, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, alexandre.belloni@free-electrons.com,
-        sylvain.rochet@finsecur.com, peda@axentia.se,
-        sergei.shtylyov@cogentembedded.com, linux@maxim.org.za
-Subject: Re: [PATCH v2 3/3] pm: at91: add disable/enable the L1/L2 cache
- while suspend/resume
-Message-ID: <20150129113450.GW26493@n2100.arm.linux.org.uk>
-References: <1422411707-10945-1-git-send-email-wenyou.yang@atmel.com>
- <1422411844-13241-1-git-send-email-wenyou.yang@atmel.com>
+	Thu, 29 Jan 2015 06:39:17 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1422411844-13241-1-git-send-email-wenyou.yang@atmel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <54CA1929.8060903@sandisk.com>
+References: <54C92A47.2030709@sandisk.com>
+	<CACVXFVOtOujWH5jLLf16+-MeW--aiP1N14a=4aJP2h2_UVdtsw@mail.gmail.com>
+	<54CA1929.8060903@sandisk.com>
+Date: Thu, 29 Jan 2015 19:39:14 +0800
+Message-ID: <CACVXFVP0d=17wtH5hHP6oUtA_XZC8TmfhRvYZv_-Kug6=iMtbA@mail.gmail.com>
+Subject: Re: [PATCH] blk-mq: Fix a recently introduced scsi-mq regression
+From: Ming Lei <ming.lei@canonical.com>
+To: Bart Van Assche <bart.vanassche@sandisk.com>
+Cc: Jens Axboe <axboe@kernel.dk>, Sasha Levin <sasha.levin@oracle.com>,
+        Christoph Hellwig <hch@lst.de>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 28, 2015 at 10:24:04AM +0800, Wenyou Yang wrote:
-> +	/*
-> +	 * Clean and invalidate the L2 cache.
-> +	 * Common cache-l2x0.c functions can't be used here since it
-> +	 * uses spinlocks. We are out of coherency here with data cache
-> +	 * disabled. The spinlock implementation uses exclusive load/store
-> +	 * instruction which can fail without data cache being enabled.
-> +	 * Because of this, CPU can lead to deadlock.
+Hi Bart,
 
-We really need to stop needing platforms to create their own L2 handling
-code.  Please move this to a helper function in arch/arm/mm/l2c-l...-clean.S,
-replacing ... with the appropriate part for the code fragment.
+On Thu, Jan 29, 2015 at 7:27 PM, Bart Van Assche
+<bart.vanassche@sandisk.com> wrote:
+> On 01/29/15 00:52, Ming Lei wrote:
+>> On Thu, Jan 29, 2015 at 2:28 AM, Bart Van Assche
+>> <bart.vanassche@sandisk.com> wrote:
+>>> This patch fixes a use-after-free that was introduced via patch
+>>> "blk-mq: fix hctx/ctx kobject use-after-free" (commit
+>>> 76d697d10769; kernel v3.19-rc4) and fixes the following crash:
+>>
+>> Sorry, my fault, I shouldn't have linked mq's release with mq_kobj,
+>> which may be released before running blk_cleanup_queue().
+>>
+>> Another approach may be to revert the faulty commit and release all
+>> mq stuff in request queue's release handler(blk_release_queue)
+>> which should be more safe and simple.
+>
+> Hello Ming,
+>
+> How important is the patch with commit ID 76d697d10769 ? Does it have to
+> be included in kernel v3.19 or can it be postponed until kernel v3.19.1
+> or kernel v3.19.2 ? If so, how about reverting that patch for kernel
 
-> +	 */
-> +	ldr	r1, at91_l2cc_base_addr
-> +	ldr	r2, [r1]
-> +	cmp	r2, #0
-> +	beq	skip_l2disable
-> +	mov	r0, #0xff
-> +	str	r0, [r2, #L2X0_CLEAN_INV_WAY]
-> +wait:
-> +	ldr	r0, [r2, #L2X0_CLEAN_INV_WAY]
-> +	mov	r1, #0xff
-> +	ands	r0, r0, r1
-> +	bne	wait
-> +
-> +	mov	r0, #0
-> +	str	r0, [r2, #L2X0_CTRL]
-> +
-> +l2x_sync:
-> +	ldr	r0, [r2, #L2X0_CACHE_SYNC]
-> +	bic	r0, r0, #0x1
-> +	str	r0, [r2, #L2X0_CACHE_SYNC]
+The patch has been in linus tree, but it isn't marked as -stable.
 
-I wonder whether you've actually read the documentation for this.  You
-don't need to read-modify-write this register.  The C code doesn't even
-do this.  A write to this register is sufficient - a write issues the
-sync, a read returns the completion status.
+> v3.19 and sending a reworked patch to Jens with a "Cc: stable" tag after
+> the release of kernel v3.19 ? That last patch will then get included in
+> a stable version of kernel v3.19.
 
-> +sync:
-> +	ldr	r0, [r2, #L2X0_CACHE_SYNC]
-> +	ands	r0, r0, #0x1
-> +	bne	sync
+Anyway, it need to be fixed, either reverted or a new patch.
 
-Moreover, do you actually need this - it depends on the L2C model.  Only
-L2C220 needs to spin waiting for the sync operation to complete.
+I will post out one revert and another fix candidate, and let's
+discuss further.
 
-Also, are you sure the "clean+invalidate, disable, sync" sequence is
-correct?  Should it not be "clean+invalidate, sync, disable" ?
 
--- 
-FTTC broadband for 0.8mile line: currently at 10.5Mbps down 400kbps up
-according to speedtest.net.
+Thanks,
+Ming Lei
