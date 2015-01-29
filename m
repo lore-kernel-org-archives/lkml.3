@@ -1,72 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758058AbbA2Nhk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 08:37:40 -0500
-Received: from cpsmtpb-ews03.kpnxchange.com ([213.75.39.6]:57465 "EHLO
-	cpsmtpb-ews03.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757922AbbA2Nhi (ORCPT
+	id S1758192AbbA2NiL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 08:38:11 -0500
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:47152 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752742AbbA2NiI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 08:37:38 -0500
-Message-ID: <1422538656.32520.4.camel@x220>
-Subject: Re: [PATCH 6/9] clocksource: Driver for Conexant Digicolor SoC timer
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Daniel Lezcano <daniel.lezcano@linaro.org>
-Cc: tglx@linutronix.de, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, Barry.Song@csr.com,
-        baruch@tkos.co.il, linux@rempel-privat.de, rob.herring@linaro.org,
-        thierry.reding@gmail.com
-Date: Thu, 29 Jan 2015 14:37:36 +0100
-In-Reply-To: <1422536899-16609-6-git-send-email-daniel.lezcano@linaro.org>
-References: <54CA3044.6070501@linaro.org>
-	 <1422536899-16609-1-git-send-email-daniel.lezcano@linaro.org>
-	 <1422536899-16609-6-git-send-email-daniel.lezcano@linaro.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 29 Jan 2015 13:37:37.0067 (UTC) FILETIME=[BE94DFB0:01D03BC8]
-X-RcptDomain: vger.kernel.org
+	Thu, 29 Jan 2015 08:38:08 -0500
+From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        Doug Anderson <dianders@chromium.org>,
+        Bill Richardson <wfrichar@chromium.org>, Simon Glass <sjg@google.com>,
+        Gwendal Grignou <gwendal@google.com>, Jonathan Corbet <corbet@lwn.net>,
+        Varka Bhadram <varkabhadram@gmail.com>,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Subject: [PATCH v4 0/7] platform/chrome: Add user-space dev inferface support
+Date: Thu, 29 Jan 2015 14:37:49 +0100
+Message-Id: <1422538676-4615-1-git-send-email-javier.martinez@collabora.co.uk>
+X-Mailer: git-send-email 2.1.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2015-01-29 at 14:08 +0100, Daniel Lezcano wrote:
-> From: Baruch Siach <baruch@tkos.co.il>
-> 
-> Add clocksource driver to the Conexant CX92755 SoC, part of the Digicolor SoCs
-> series. Hardware provides 8 timers, A to H. Timer A is dedicated to a future
-> watchdog driver so we don't use it here. Use timer B for sched_clock, and timer
-> C for clock_event.
-> 
-> Signed-off-by: Baruch Siach <baruch@tkos.co.il>
-> Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
-> ---
->  drivers/clocksource/Kconfig           |   3 +
->  drivers/clocksource/Makefile          |   1 +
->  drivers/clocksource/timer-digicolor.c | 199 ++++++++++++++++++++++++++++++++++
->  3 files changed, 203 insertions(+)
->  create mode 100644 drivers/clocksource/timer-digicolor.c
-> 
-> diff --git a/drivers/clocksource/Kconfig b/drivers/clocksource/Kconfig
-> index a89120b..72a3827 100644
-> --- a/drivers/clocksource/Kconfig
-> +++ b/drivers/clocksource/Kconfig
-> @@ -18,6 +18,9 @@ config CLKBLD_I8253
->  config CLKSRC_MMIO
->  	bool
->  
-> +config DIGICOLOR_TIMER
-> +	bool
-> +
+Hello,
 
-And the select for this symbol (see https://lkml.org/lkml/2015/1/26/360)
-will be provided in a separate patch? Because this patch, by itself,
-won't allow DIGICOLOR_TIMER to be set, will it?
- 
->  config DW_APB_TIMER
->  	bool
->  
+The mainline ChromeOS Embedded Controller (EC) driver is still missing some
+features that are present in the downstream ChromiumOS tree. These are:
 
+  - Low Pin Count (LPC) interface
+  - User-space device interface
+  - Access to vboot context stored on a block device
+  - Access to vboot context stored on EC's nvram
+  - Power Delivery Device
+  - Support for multiple EC in a system
 
-Paul Bolle
+This is a fourth version of a series that adds support for the first two of
+the missing features: the EC LPC and EC character device interfaces that
+are used by user-space to access the ChromeOS EC. The support patches were
+taken from the downstream ChromiumOS 3.14 tree with the fixes and cleanups
+squashed to have a minimal patch-set.
 
+The version of the ChromeOS EC chardev driver in this series still does not
+reflect the latest one that is in the downstream ChromiumOS 3.14 kernel but
+makes the delta shorter. Following patches will add the remaining missing
+features until both trees are in sync. I preferred to first add the initial
+support and then adding the other features to both maintain the original
+patch history in the downstream kernel and so preserve the patch authorship
+and also make the diff to have a working cros user-space interface smaller.
+
+This version solves the issues pointed out in the earlier revision.
+
+A big difference between this series and the downstream ChromiumOS kernel is
+that the ioctl API is modified to make it 64-bit safe and compatible with both
+64 and 32 bit user-space binaries. The data structures passed as arguments in
+the ChromiumOS ioctl interface commands has pointers fields and since these
+have different byte boundaries alignment requirement, the ChromiumOS driver
+has a compat ioctl interface. The feedback was that this had to be avoided
+since this was a new ioctl API so the pointers fields were replaced with a set
+of fixed-size arrays to be used instead. This has the drawback that more data
+could be used and copied between user and kernel space so feedback is welcomed
+if there is a better approach to solve this kind of issues.
+
+The patches were tested on an Exynos5420 Peach Pit Chromebook and (thanks to
+Bill Richardson) on an x86 Pixel Chromebook using a modified ectool [0] to use
+the new ioctl API. The LPC interface driver and the lightbar sysfs driver were
+also tested on the Pixel Chromebook.
+
+The series is composed of the following patches:
+
+Bill Richardson (4):
+  misc: Add cros_ec_lpc driver for x86 devices
+  platform/chrome: Add Chrome OS EC userspace device interface
+  platform/chrome: Create sysfs attributes for the ChromeOS EC
+  platform/chrome: Expose Chrome OS Lightbar to users
+
+Javier Martinez Canillas (3):
+  mfd: cros_ec: Use fixed size arrays to transfer data with the EC
+  mfd: cros_ec: Add char dev and virtual dev pointers
+  mfd: cros_ec: Instantiate ChromeOS EC character device
+
+ Documentation/ioctl/ioctl-number.txt       |   1 +
+ drivers/i2c/busses/i2c-cros-ec-tunnel.c    |  51 +---
+ drivers/input/keyboard/cros_ec_keyb.c      |  13 +-
+ drivers/mfd/cros_ec.c                      |  19 +-
+ drivers/misc/Kconfig                       |  10 +
+ drivers/misc/Makefile                      |   1 +
+ drivers/misc/cros_ec_lpc.c                 | 291 +++++++++++++++++++++++
+ drivers/platform/chrome/Kconfig            |  14 +-
+ drivers/platform/chrome/Makefile           |   2 +
+ drivers/platform/chrome/cros_ec_dev.c      | 274 +++++++++++++++++++++
+ drivers/platform/chrome/cros_ec_dev.h      |  53 +++++
+ drivers/platform/chrome/cros_ec_lightbar.c | 367 +++++++++++++++++++++++++++++
+ drivers/platform/chrome/cros_ec_sysfs.c    | 271 +++++++++++++++++++++
+ include/linux/mfd/cros_ec.h                |  23 +-
+ 14 files changed, 1328 insertions(+), 62 deletions(-)
+ create mode 100644 drivers/misc/cros_ec_lpc.c
+ create mode 100644 drivers/platform/chrome/cros_ec_dev.c
+ create mode 100644 drivers/platform/chrome/cros_ec_dev.h
+ create mode 100644 drivers/platform/chrome/cros_ec_lightbar.c
+ create mode 100644 drivers/platform/chrome/cros_ec_sysfs.c
+
+Patch #1 modified the struct cros_ec_command structure so it can be used
+as an ioctl argument and be 64 and 32 bit safe and patch #2 adds fields
+to the struct cros_ec_device that will be needed by the EC chardev driver.
+
+Patch #3 adds support for the EC LPC interface used on x86 Chromebooks.
+
+Patch #4 adds the ChromeOS chardev driver and patch #5 instantiates it
+from the mfd cros_ec driver.
+
+Patch #6 exposes sysfs attributes that can be used by user space programs
+to get information and control the ChromeOS EC.
+
+Patch #7 exposes sysfs attributes that are used to control the lightbar
+RGB LEDs found on the Pixel Chromebook.
+
+The patches must be applied together and in that order due dependencies.
+Lee Jones has already acked the MFD changes so I think this could go
+through the chrome-platform.git tree.
+
+Best regards,
+Javier
+
+[0]: git://git.collabora.co.uk/git/user/javier/ec.git mainline-ioctl
