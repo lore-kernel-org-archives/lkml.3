@@ -1,107 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933783AbbA2CYX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 21:24:23 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.242]:31565 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761719AbbA2CYT convert rfc822-to-8bit (ORCPT
+	id S933977AbbA2CdB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 21:33:01 -0500
+Received: from mail-qg0-f54.google.com ([209.85.192.54]:58260 "EHLO
+	mail-qg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933200AbbA2Cc6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 21:24:19 -0500
-From: "Yang, Wenyou" <Wenyou.Yang@atmel.com>
-To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        "Ferre, Nicolas" <Nicolas.FERRE@atmel.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>
-CC: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "alexandre.belloni@free-electrons.com" 
-	<alexandre.belloni@free-electrons.com>,
-        "sylvain.rochet@finsecur.com" <sylvain.rochet@finsecur.com>,
-        "peda@axentia.se" <peda@axentia.se>,
-        "linux@maxim.org.za" <linux@maxim.org.za>
-Subject: RE: [PATCH v2 3/3] pm: at91: add disable/enable the L1/L2 cache
- while suspend/resume
-Thread-Topic: [PATCH v2 3/3] pm: at91: add disable/enable the L1/L2 cache
- while suspend/resume
-Thread-Index: AQHQOqGWhx01SRZMPkSnJ57qqrXM+pzUyZGAgAGU0PA=
-Date: Thu, 29 Jan 2015 02:22:43 +0000
-Message-ID: <B256D81BAE5131468A838E5D7A243641BFD38E20@penmbx01>
-References: <1422411707-10945-1-git-send-email-wenyou.yang@atmel.com>
- <1422411844-13241-1-git-send-email-wenyou.yang@atmel.com>
- <54C8B54B.3090607@cogentembedded.com>
-In-Reply-To: <54C8B54B.3090607@cogentembedded.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.168.5.13]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 28 Jan 2015 21:32:58 -0500
+From: "S. Gilles" <sgilles@terpmail.umd.edu>
+X-Google-Original-From: "S. Gilles" <sgilles@umd.edu>
+Date: Wed, 28 Jan 2015 21:32:47 -0500
+To: Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Maik Broemme <mbroemme@plusserver.de>
+Cc: linux-fbdev <linux-fbdev@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: i915 framebuffer init too slow to find logo
+Message-ID: <20150129023247.GA10967@number16>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sergei,
+Since commit 92b004d1aa9f367c372511ca0330f58216b25703 : prevent use of
+logs after they have been freed, my i915 machine has no logo on boot
+(reverting that commit brings it back on recent trees). My .config
+builds nothing but wireless as =m, so I think this is a genuine false
+positive (as predicted by the commit). Examining an augmented dmesg,
+it appears that the framebuffer setup is too slow by about 0.3s, which
+I wouldn't really expect from this system/driver.
 
-Thank you for your review.
+Is this slowness considered worth fixing, or is this issue considered
+too cosmetic? (Or is this just PEBKAC?)
 
-> -----Original Message-----
-> From: Sergei Shtylyov [mailto:sergei.shtylyov@cogentembedded.com]
-> Sent: Wednesday, January 28, 2015 6:09 PM
-> To: Yang, Wenyou; Ferre, Nicolas; linux@arm.linux.org.uk
-> Cc: linux-arm-kernel@lists.infradead.org; linux-kernel@vger.kernel.org;
-> alexandre.belloni@free-electrons.com; sylvain.rochet@finsecur.com;
-> peda@axentia.se; linux@maxim.org.za
-> Subject: Re: [PATCH v2 3/3] pm: at91: add disable/enable the L1/L2 cache while
-> suspend/resume
-> 
-> Hello.
-> 
-> On 1/28/2015 5:24 AM, Wenyou Yang wrote:
-> 
-> > For the sama5, disable L1 D-cache and L2 cache before the cpu go to
-> > wfi, after wakeing up, enable L1 D-cache and L2 cache.
-> 
->     Waking.
-> 
-> > Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
-> > ---
-> >   arch/arm/mach-at91/pm.c         |   12 +++++
-> >   arch/arm/mach-at91/pm_suspend.S |  107
-> +++++++++++++++++++++++++++++++++++++++
-> >   2 files changed, 119 insertions(+)
-> 
-> [...]
-> > diff --git a/arch/arm/mach-at91/pm_suspend.S
-> > b/arch/arm/mach-at91/pm_suspend.S index 311cc23..02d4e56 100644
-> > --- a/arch/arm/mach-at91/pm_suspend.S
-> > +++ b/arch/arm/mach-at91/pm_suspend.S
-> [...]
-> > @@ -324,3 +325,109 @@ ram_restored:
-> [...]
-> > +l2x_sync:
-> 
->     I don't see where this label is used.
-I thought it is an indication the following is for L2 cache synchronization. 
+Possibly useful information:
 
-It is redundant, remove it.
+$ lspci | grep VGA
+00:02.0 VGA compatible controller: Intel Corporation 2nd Generation Core Processor Family Integrated Graphics Controller (rev 09)
 
-> 
-> > +	ldr	r0, [r2, #L2X0_CACHE_SYNC]
-> > +	bic	r0, r0, #0x1
-> > +	str	r0, [r2, #L2X0_CACHE_SYNC]
-> > +sync:
-> > +	ldr	r0, [r2, #L2X0_CACHE_SYNC]
-> > +	ands	r0, r0, #0x1
-> > +	bne	sync
-> > +
-> > +skip_l2disable:
-> > +	ldmfd	sp!, {r4 - r12, pc}
-> > +ENDPROC(at91_disable_l1_l2_cache)
-> [...]
-> 
-> WBR, Sergei
+>From various printk()s, it looks like the slow portion of
+fb_console_init() is restore_fbdev_mode(), specifically
+drm_mode_set_config_internal(), which takes about 0.45s, while the
+fb_logo_late_init() call happens about 0.15s into that. I can give the
+full details if requested.
 
-Best Regards,
-Wenyou Yang
+Possibly relevant .config bits:
+
+# Graphics support
+CONFIG_AGP=y
+CONFIG_AGP_INTEL=y
+CONFIG_INTEL_GTT=y
+CONFIG_VGA_ARB=y
+CONFIG_VGA_ARB_MAX_GPUS=16
+
+# Direct Rendering Manager
+CONFIG_DRM=y
+CONFIG_DRM_KMS_HELPER=y
+CONFIG_DRM_KMS_FB_HELPER=y
+
+# I2C encoder or helper chips
+CONFIG_DRM_I915=y
+CONFIG_DRM_I915_KMS=y
+CONFIG_DRM_I915_FBDEV=y
+CONFIG_DRM_I915_PRELIMINARY_HW_SUPPORT=y
+
+# Frame buffer Devices
+CONFIG_FB=y
+CONFIG_FIRMWARE_EDID=y
+CONFIG_FB_CMDLINE=y
+CONFIG_FB_CFB_FILLRECT=y
+CONFIG_FB_CFB_COPYAREA=y
+CONFIG_FB_CFB_IMAGEBLIT=y
+
+# Frame buffer hardware drivers
+CONFIG_BACKLIGHT_LCD_SUPPORT=y
+CONFIG_LCD_CLASS_DEVICE=y
+CONFIG_LCD_PLATFORM=y
+CONFIG_BACKLIGHT_CLASS_DEVICE=y
+CONFIG_BACKLIGHT_GENERIC=y
+CONFIG_HDMI=y
+
+# Console display driver support
+CONFIG_VGA_CONSOLE=y
+CONFIG_DUMMY_CONSOLE=y
+CONFIG_FRAMEBUFFER_CONSOLE=y
+CONFIG_FRAMEBUFFER_CONSOLE_DETECT_PRIMARY=y
+CONFIG_FRAMEBUFFER_CONSOLE_ROTATION=y
+CONFIG_LOGO=y
+CONFIG_LOGO_LINUX_MONO=y
+CONFIG_LOGO_LINUX_VGA16=y
+CONFIG_LOGO_LINUX_CLUT224=y
+
+-- 
+S. Gilles
