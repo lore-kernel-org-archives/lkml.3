@@ -1,137 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760434AbbA2CA5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 21:00:57 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:19101 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760384AbbA2CAz (ORCPT
+	id S1760548AbbA2CBZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 21:01:25 -0500
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:54474 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760517AbbA2CBU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 21:00:55 -0500
-Date: Wed, 28 Jan 2015 18:00:25 -0800
-From: "Darrick J. Wong" <darrick.wong@oracle.com>
-To: Jens Axboe <axboe@kernel.dk>, Christoph Hellwig <hch@infradead.org>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-api@vger.kernel.org, Jeff Layton <jlayton@poochiereds.net>,
-        "J. Bruce Fields" <bfields@fieldses.org>
-Subject: [RESEND] [PATCH] block: create ioctl to discard-or-zeroout a range
- of blocks
-Message-ID: <20150129020025.GE9981@birch.djwong.org>
+	Wed, 28 Jan 2015 21:01:20 -0500
+Message-ID: <54C9946D.508@gmail.com>
+Date: Thu, 29 Jan 2015 10:01:17 +0800
+From: Peter Hung <hpeter@gmail.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>, johan@kernel.org
+CC: gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, tom_tsai@fintek.com.tw,
+        peter_hong@fintek.com.tw, Peter Hung <hpeter+linux_kernel@gmail.com>
+Subject: Re: [PATCH v3 5/5] usb: serial: implement CMSPAR for F81232
+References: <1422424712-7561-1-git-send-email-hpeter+linux_kernel@gmail.com> <54C8D68B.6010607@cogentembedded.com>
+In-Reply-To: <54C8D68B.6010607@cogentembedded.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Create a new ioctl to expose the block layer's newfound ability to
-issue either a zeroing discard, a WRITE SAME with a zero page, or a
-regular write with the zero page.  This BLKZEROOUT2 ioctl takes
-{start, length, flags} as parameters.  So far, the only flag available
-is to enable the zeroing discard part -- without it, the call invokes
-the old BLKZEROOUT behavior.  start and length have the same meaning
-as in BLKZEROOUT.
+Hello.
 
-Furthermore, because BLKZEROOUT2 issues commands directly to the
-storage device, we must invalidate the page cache (as a regular
-O_DIRECT write would do) to avoid returning stale cache contents at a
-later time.
+I had using "scripts/checkpatch.pl -f" to scan original f81232.c.
+It reported with "quoted string split across lines", so I merge these
+2 strings into 1 in patch 1/5. But it still warning with "line over 80 
+character", so I had shorted string with this line.
 
-This patch depends on "block: Add discard flag to
-blkdev_issue_zeroout() function" in Jens' for-3.20/core branch.
+I will refine my patch set again with more attention.
+Thanks for your advice.
 
-Signed-off-by: Darrick J. Wong <darrick.wong@oracle.com>
----
- block/ioctl.c           |   45 ++++++++++++++++++++++++++++++++++++++-------
- include/uapi/linux/fs.h |    7 +++++++
- 2 files changed, 45 insertions(+), 7 deletions(-)
+Sergei Shtylyov 於 2015/1/28 下午 08:31 寫道:
+> Hello.
+>
+> On 1/28/2015 8:58 AM, Peter Hung wrote:
+>
+>> This patch implement CMSPAR in set_termios,
+>> and fix some warnning from checkpatch.pl
+>
+>      Please don't try to do 2 unrelated things in one patch.
+>
+>> Signed-off-by: Peter Hung <hpeter+linux_kernel@gmail.com>
+>> ---
+>>   drivers/usb/serial/f81232.c | 21 +++++++++++++++------
+>>   1 file changed, 15 insertions(+), 6 deletions(-)
+>
+>> diff --git a/drivers/usb/serial/f81232.c b/drivers/usb/serial/f81232.c
+>> index 11a236b..79592d6 100644
+>> --- a/drivers/usb/serial/f81232.c
+>> +++ b/drivers/usb/serial/f81232.c
+> [...]
+>> @@ -361,12 +361,21 @@ static void f81232_set_termios(struct tty_struct
+>> *tty,
+>>
+>>
+>>       if (cflag & PARENB) {
+>> -        if (cflag & PARODD)
+>> -            new_lcr |= UART_LCR_PARITY; /* odd */
+>> -        else
+>> -            new_lcr |= SERIAL_EVEN_PARITY; /* even */
+>> +        if (cflag & CMSPAR) {
+>> +            if (cflag & PARODD)
+>> +                new_lcr |= (UART_LCR_PARITY | UART_LCR_SPAR);
+>> +            else
+>> +                new_lcr |= (SERIAL_EVEN_PARITY
+>> +                            | UART_LCR_SPAR);
+>> +        } else {
+>> +            if (cflag & PARODD)
+>> +                new_lcr |= UART_LCR_PARITY; /* odd */
+>> +            else
+>> +                new_lcr |= SERIAL_EVEN_PARITY; /* even */
+>> +        }
+>>       }
+>>
+>> +
+>
+>     Not needed at all.
+>
+>>       if (cflag & CSTOPB)
+>>           new_lcr |= UART_LCR_STOP;
+>>       else
+>> @@ -445,7 +454,7 @@ static int f81232_open(struct tty_struct *tty,
+>> struct usb_serial_port *port)
+>>
+>>       result = usb_submit_urb(port->interrupt_in_urb, GFP_KERNEL);
+>>       if (result) {
+>> -        dev_err(&port->dev, "failed submitting interrupt urb, error
+>> %d\n",
+>> +        dev_err(&port->dev, "failed submitting urb, error %d\n",
+>
+>     What are you fixing here?
+>
+> WBR, Sergei
+>
 
-diff --git a/block/ioctl.c b/block/ioctl.c
-index 7d8befd..ff623d5 100644
---- a/block/ioctl.c
-+++ b/block/ioctl.c
-@@ -186,19 +186,39 @@ static int blk_ioctl_discard(struct block_device *bdev, uint64_t start,
- }
- 
- static int blk_ioctl_zeroout(struct block_device *bdev, uint64_t start,
--			     uint64_t len)
-+			     uint64_t len, uint32_t flags)
- {
-+	int ret;
-+	struct address_space *mapping;
-+	uint64_t end = start + len - 1;
-+
-+	if (flags & ~BLKZEROOUT2_DISCARD_OK)
-+		return -EINVAL;
- 	if (start & 511)
- 		return -EINVAL;
- 	if (len & 511)
- 		return -EINVAL;
--	start >>= 9;
--	len >>= 9;
--
--	if (start + len > (i_size_read(bdev->bd_inode) >> 9))
-+	if (end >= i_size_read(bdev->bd_inode))
- 		return -EINVAL;
- 
--	return blkdev_issue_zeroout(bdev, start, len, GFP_KERNEL, false);
-+	/* Invalidate the page cache, including dirty pages */
-+	mapping = bdev->bd_inode->i_mapping;
-+	truncate_inode_pages_range(mapping, start, end);
-+
-+	ret = blkdev_issue_zeroout(bdev, start >> 9, len >> 9, GFP_KERNEL,
-+				   flags & BLKZEROOUT2_DISCARD_OK);
-+	if (ret)
-+		goto out;
-+
-+	/*
-+	 * Invalidate again; if someone wandered in and dirtied a page,
-+	 * the caller will be given -EBUSY.
-+	 */
-+	ret = invalidate_inode_pages2_range(mapping,
-+					    start >> PAGE_CACHE_SHIFT,
-+					    end >> PAGE_CACHE_SHIFT);
-+out:
-+	return ret;
- }
- 
- static int put_ushort(unsigned long arg, unsigned short val)
-@@ -326,7 +346,18 @@ int blkdev_ioctl(struct block_device *bdev, fmode_t mode, unsigned cmd,
- 		if (copy_from_user(range, (void __user *)arg, sizeof(range)))
- 			return -EFAULT;
- 
--		return blk_ioctl_zeroout(bdev, range[0], range[1]);
-+		return blk_ioctl_zeroout(bdev, range[0], range[1], 0);
-+	}
-+	case BLKZEROOUT2: {
-+		struct blkzeroout2 p;
-+
-+		if (!(mode & FMODE_WRITE))
-+			return -EBADF;
-+
-+		if (copy_from_user(&p, (void __user *)arg, sizeof(p)))
-+			return -EFAULT;
-+
-+		return blk_ioctl_zeroout(bdev, p.start, p.length, p.flags);
- 	}
- 
- 	case HDIO_GETGEO: {
-diff --git a/include/uapi/linux/fs.h b/include/uapi/linux/fs.h
-index 3735fa0..54d24ea 100644
---- a/include/uapi/linux/fs.h
-+++ b/include/uapi/linux/fs.h
-@@ -150,6 +150,13 @@ struct inodes_stat_t {
- #define BLKSECDISCARD _IO(0x12,125)
- #define BLKROTATIONAL _IO(0x12,126)
- #define BLKZEROOUT _IO(0x12,127)
-+struct blkzeroout2 {
-+	__u64 start;
-+	__u64 length;
-+	__u32 flags;
-+};
-+#define BLKZEROOUT2_DISCARD_OK	1
-+#define BLKZEROOUT2 _IOR(0x12, 127, struct blkzeroout2)
- 
- #define BMAP_IOCTL 1		/* obsolete - kept for compatibility */
- #define FIBMAP	   _IO(0x00,1)	/* bmap access */
+-- 
+With Best Regards,
+Peter Hung
