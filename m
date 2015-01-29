@@ -1,80 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755717AbbA2NWe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 08:22:34 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:39882 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751851AbbA2NWd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 08:22:33 -0500
-From: Vitaly Kuznetsov <vkuznets@redhat.com>
-To: Dexuan Cui <decui@microsoft.com>
-Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        driverdev-devel@linuxdriverproject.org, olaf@aepfle.de,
-        apw@canonical.com, jasowang@redhat.com, kys@microsoft.com,
-        haiyangz@microsoft.com
-Subject: Re: [PATCH 3/3] hv: vmbus_open(): reset the channel state on ENOMEM
-References: <1422529370-28261-1-git-send-email-decui@microsoft.com>
-Date: Thu, 29 Jan 2015 14:22:20 +0100
-In-Reply-To: <1422529370-28261-1-git-send-email-decui@microsoft.com> (Dexuan
-	Cui's message of "Thu, 29 Jan 2015 03:02:50 -0800")
-Message-ID: <87fvat7mcz.fsf@vitty.brq.redhat.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	id S1756548AbbA2NWm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 08:22:42 -0500
+Received: from mail-lb0-f170.google.com ([209.85.217.170]:40252 "EHLO
+	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754618AbbA2NWk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Jan 2015 08:22:40 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <CABuKBe+x9o5OiysnMq-gvOBx3nKoaheL2efZGA6YQ7ZT5aqijw@mail.gmail.com>
+References: <1422022202-7526-1-git-send-email-s.hauer@pengutronix.de>
+	<20150126114735.GA3178@pengutronix.de>
+	<CABuKBe+x9o5OiysnMq-gvOBx3nKoaheL2efZGA6YQ7ZT5aqijw@mail.gmail.com>
+Date: Thu, 29 Jan 2015 14:22:38 +0100
+Message-ID: <CABuKBeLWeKkO4oHj1o8ts+nmhSApvy=xLcrFEQ8nEwUrrtcH1Q@mail.gmail.com>
+Subject: Re: [PATCH v2] MediaTek PMIC support
+From: Matthias Brugger <matthias.bgg@gmail.com>
+To: Sascha Hauer <s.hauer@pengutronix.de>
+Cc: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        =?UTF-8?B?WUggQ2hlbiAo6Zmz5pix6LGqKQ==?= <yh.chen@mediatek.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Henry Chen <henryc.chen@mediatek.com>,
+        Rob Herring <robh+dt@kernel.org>,
+        =?UTF-8?B?WWluZ2pvZSBDaGVuICjpmbPoi7HmtLIp?= 
+	<Yingjoe.Chen@mediatek.com>,
+        Eddie Huang <eddie.huang@mediatek.com>,
+        Lee Jones <lee.jones@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        James Liao <jamesjj.liao@mediatek.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Stephen Boyd <sboyd@codeaurora.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dexuan Cui <decui@microsoft.com> writes:
+2015-01-29 13:39 GMT+01:00 Matthias Brugger <matthias.bgg@gmail.com>:
+> Hi Sascha,
+>
+> 2015-01-26 12:47 GMT+01:00 Sascha Hauer <s.hauer@pengutronix.de>:
+>> Olof, Arnd,
+>>
+>> OK to put the driver into drivers/soc/mediatek? Can you take these
+>> patches?
+>
+> How does this patches fit together with the one James clock framework patches?
 
-> Without this patch, the state is put to CHANNEL_OPENING_STATE, and when
-> the driver is loaded next time, vmbus_open() will fail immediately due to
-> newchannel->state != CHANNEL_OPEN_STATE.
+I forgot to send the link to the patches. Sorry for that. Here you are:
+http://lists.infradead.org/pipermail/linux-arm-kernel/2015-January/313793.html
 
-The patch makes sense, but I have one small doubt. We call vmbus_open
-from probe functions of various devices. E.g. in hyperv-keyboard we
-have:
- error = vmbus_open(...)
- if (error)
-     goto err_free_mem;
+> Both use the same compatible "mediatek,mt8135-infracfg" and
+> "mediatek,mt8135-pericfg".
+>
+> I had a look on other implementations and they attach the reset
+> controller to the clk driver, if they share the same hw block.
+> Might we run into problems if we implement the clocks in the mfd, as
+> we need the clocks early in boot (e.g. for the timer)?
+>
+> In mt6589 pericfg apart from the clocks and reset controller provides
+> registers for AXI bus control and USB wakeup and USB clock selection.
+> The infracfg block provides top AXI bus fabric control signals and
+> remap registers for the modem.
+> Mike, Stephen, what do you think. Can we implement the clk in a mfd
+> driver? Or do you prefer to implement the whole block in the clk
+> driver?
+>
+> Cheers,
+> Matthias
+>
+>>
+>> Sascha
+>>
+>> On Fri, Jan 23, 2015 at 03:09:55PM +0100, Sascha Hauer wrote:
+>>> This series adds initial support for the MediaTek MT6397 PMIC and the
+>>> necessary infrastructure to attach it on the MT8135 / MT8173 SoCs.
+>>>
+>>> The infrastructure includes:
+>>>
+>>> - pericfg / infracfg controller support
+>>>   The pericfg / infracfg controllers contain miscellaneous registers for
+>>>   reset controllers and clocks.
+>>>
+>>> - PMIC wrapper support
+>>>   On MediaTek MT8135, MT8173 and other SoCs the PMIC is connected via
+>>>   SPI. The SPI master interface is not directly visible to the CPU, but
+>>>   only through the PMIC wrapper inside the SoC. The communication between
+>>>   the SoC and the PMIC can optionally be encrypted. Also a non standard
+>>>   Dual IO SPI mode can be used to increase speed. The MT8135 also supports
+>>>   a special feature named "IP Pairing". With IP Pairing the pins of some
+>>>   SoC internal peripherals can be on the PMIC. The signals of these pins
+>>>   are routed over the SPI bus using the pwrap bridge. Because of these
+>>>   optional non SPI conform features the PMIC driver is not implemented as
+>>>   a SPI bus master driver.
+>>>
+>>> The MT6397 PMIC itself is implemented as a regular mfd device driver which
+>>> uses regmap to access the PMIC registers.
+>>>
+>>> This series also adds regulator support for the MT6397 PMIC.
+>>>
+>>> The first 6 patches can be merged through the ARM SoC tree. The mfd
+>>> patch is independent of the first 6 patches and can be merged through the
+>>> mfd maintainer trees.
+>>>
+>>> Changes since v1:
+>>>
+>>> - document reset bindings for infracfg/pericfg
+>>> - fix base addresses in infracfg binding example
+>>> - Remove more Email addresses from Flora Fu (She is not working at
+>>>   MediaTek anymore, her address is no longer valid)
+>>> - drop Regulator support patch, it's already in next
+>>>
+>>> Sascha
+>>>
+>>>
+>>> _______________________________________________
+>>> linux-arm-kernel mailing list
+>>> linux-arm-kernel@lists.infradead.org
+>>> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+>>>
+>>
+>> --
+>> Pengutronix e.K.                           |                             |
+>> Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+>> Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+>> Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+>
+>
+>
+> --
+> motzblog.wordpress.com
 
-and we don't call vmbus_close(...) on this path so no
-CHANNELMSG_CLOSECHANNEL will be send. Who's gonna retry probe? Wouldn't
-it be better to close the channel?
 
->
-> CC: "K. Y. Srinivasan" <kys@microsoft.com>
-> Signed-off-by: Dexuan Cui <decui@microsoft.com>
-> ---
->  drivers/hv/channel.c | 8 +++++---
->  1 file changed, 5 insertions(+), 3 deletions(-)
->
-> diff --git a/drivers/hv/channel.c b/drivers/hv/channel.c
-> index 2978f5e..26dcf26 100644
-> --- a/drivers/hv/channel.c
-> +++ b/drivers/hv/channel.c
-> @@ -89,9 +89,10 @@ int vmbus_open(struct vmbus_channel *newchannel, u32 send_ringbuffer_size,
->  	out = (void *)__get_free_pages(GFP_KERNEL|__GFP_ZERO,
->  		get_order(send_ringbuffer_size + recv_ringbuffer_size));
->
-> -	if (!out)
-> -		return -ENOMEM;
-> -
-> +	if (!out) {
-> +		err = -ENOMEM;
-> +		goto error0;
-> +	}
->
->  	in = (void *)((unsigned long)out + send_ringbuffer_size);
->
-> @@ -199,6 +200,7 @@ error0:
->  	free_pages((unsigned long)out,
->  		get_order(send_ringbuffer_size + recv_ringbuffer_size));
->  	kfree(open_info);
-> +	newchannel->state = CHANNEL_OPEN_STATE;
->  	return err;
->  }
->  EXPORT_SYMBOL_GPL(vmbus_open);
 
 -- 
-  Vitaly
+motzblog.wordpress.com
