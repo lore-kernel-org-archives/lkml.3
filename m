@@ -1,511 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753944AbbA2Oki (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 09:40:38 -0500
-Received: from michel.telenet-ops.be ([195.130.137.88]:36982 "EHLO
-	michel.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752469AbbA2Okg (ORCPT
+	id S1754096AbbA2Olh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 09:41:37 -0500
+Received: from smtprelay0249.hostedemail.com ([216.40.44.249]:44720 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752394AbbA2Olf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 09:40:36 -0500
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Thomas Graf <tgraf@suug.ch>, "David S. Miller" <davem@davemloft.net>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: [PATCH] rhashtable: Make selftest modular
-Date: Thu, 29 Jan 2015 15:40:25 +0100
-Message-Id: <1422542425-20940-1-git-send-email-geert@linux-m68k.org>
-X-Mailer: git-send-email 1.9.1
+	Thu, 29 Jan 2015 09:41:35 -0500
+X-Session-Marker: 6E657665747340676F6F646D69732E6F7267
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,rostedt@goodmis.org,:::::,RULES_HIT:41:355:379:541:599:800:960:966:973:988:989:1260:1277:1311:1313:1314:1345:1359:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:1981:2194:2196:2199:2200:2393:2553:2559:2562:2693:2915:3138:3139:3140:3141:3142:3353:3622:3865:3866:3867:3868:3870:3871:3872:3873:3874:4184:4385:5007:6119:6261:7875:7903:8660:8957:9010:10004:10400:10848:10967:11026:11232:11473:11658:11914:12043:12438:12517:12519:12740:13069:13148:13230:13311:13357:13618:14096:14097:21060:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: meal35_47c97e8246234
+X-Filterd-Recvd-Size: 2789
+Date: Thu, 29 Jan 2015 09:41:32 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Miroslav Benes <mbenes@suse.cz>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>, jkosina@suse.cz
+Subject: Re: Question about ftrace, dynamically allocated trampolines and
+ dynamic fops
+Message-ID: <20150129094132.1b9c1494@gandalf.local.home>
+In-Reply-To: <alpine.LNX.2.00.1501291023000.25445@pobox.suse.cz>
+References: <alpine.LNX.2.00.1501291023000.25445@pobox.suse.cz>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Allow the selftest on the resizable hash table to be built modular, just
-like all other tests that do not depend on DEBUG_KERNEL.
+On Thu, 29 Jan 2015 10:40:58 +0100 (CET)
+Miroslav Benes <mbenes@suse.cz> wrote:
 
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
----
-This is against -next
+> 
+> Hi,
+> 
+> solving a possible race condition in kGraft and thinking about the same in 
+> klp live patching I looked quite a lot at ftrace code. One thing about 
+> recent dynamic trampolines seems a bit odd. For dynamic fops 
+> (FTRACE_OPS_FL_DYNAMIC is set in ops->flags) arch_ftrace_update_trampoline 
+> is called only for nonpreemptive kernels in ftrace_update_trampoline. The 
+> reason is obvious and well described in the comment there. However the 
+> actual callback function in arch_ftrace_update_trampoline is 
+> determined by call to ftrace_ops_get_func which gives generic 
+> ftrace_ops_list_func for dynamic ops. This function disables preemption 
+> (because of traversing rcu protected list), so it should be safe to use 
+> dynamic trampolines even for dynamic fops in preemptive kernels. Is this 
+> correct? 
 
-Tested on m68k and arm.
+No, the dynamic trampoline itself is not safe. I explained this at the
+LinuxConEU/Plumbers conference, although the slides don't explain it
+well :-/, otherwise I would have just pointed you to them.
 
- lib/Kconfig.debug     |   2 +-
- lib/Makefile          |   1 +
- lib/rhashtable.c      | 205 ---------------------------------------------
- lib/test_rhashtable.c | 227 ++++++++++++++++++++++++++++++++++++++++++++++++++
- 4 files changed, 229 insertions(+), 206 deletions(-)
- create mode 100644 lib/test_rhashtable.c
+Basically what the issue is, if a task jumps to the dynamic trampoline
+and gets preempted, how would you ever free that trampoline again?
 
-diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
-index 68668f65ac0d26aa..385553a9e0e45d23 100644
---- a/lib/Kconfig.debug
-+++ b/lib/Kconfig.debug
-@@ -1605,7 +1605,7 @@ config TEST_KSTRTOX
- 	tristate "Test kstrto*() family of functions at runtime"
- 
- config TEST_RHASHTABLE
--	bool "Perform selftest on resizable hash table"
-+	tristate "Perform selftest on resizable hash table"
- 	default n
- 	help
- 	  Enable this option to test the rhashtable functions at boot.
-diff --git a/lib/Makefile b/lib/Makefile
-index b1dbda74ef65aeff..4755d43f3f4020d4 100644
---- a/lib/Makefile
-+++ b/lib/Makefile
-@@ -37,6 +37,7 @@ obj-$(CONFIG_TEST_LKM) += test_module.o
- obj-$(CONFIG_TEST_USER_COPY) += test_user_copy.o
- obj-$(CONFIG_TEST_BPF) += test_bpf.o
- obj-$(CONFIG_TEST_FIRMWARE) += test_firmware.o
-+obj-$(CONFIG_TEST_RHASHTABLE) += test_rhashtable.o
- 
- ifeq ($(CONFIG_DEBUG_KOBJECT),y)
- CFLAGS_kobject.o += -DDEBUG
-diff --git a/lib/rhashtable.c b/lib/rhashtable.c
-index bc2d0d80d1f91e73..c41e21096373156a 100644
---- a/lib/rhashtable.c
-+++ b/lib/rhashtable.c
-@@ -935,208 +935,3 @@ void rhashtable_destroy(struct rhashtable *ht)
- 	mutex_unlock(&ht->mutex);
- }
- EXPORT_SYMBOL_GPL(rhashtable_destroy);
--
--/**************************************************************************
-- * Self Test
-- **************************************************************************/
--
--#ifdef CONFIG_TEST_RHASHTABLE
--
--#define TEST_HT_SIZE	8
--#define TEST_ENTRIES	2048
--#define TEST_PTR	((void *) 0xdeadbeef)
--#define TEST_NEXPANDS	4
--
--struct test_obj {
--	void			*ptr;
--	int			value;
--	struct rhash_head	node;
--};
--
--static int __init test_rht_lookup(struct rhashtable *ht)
--{
--	unsigned int i;
--
--	for (i = 0; i < TEST_ENTRIES * 2; i++) {
--		struct test_obj *obj;
--		bool expected = !(i % 2);
--		u32 key = i;
--
--		obj = rhashtable_lookup(ht, &key);
--
--		if (expected && !obj) {
--			pr_warn("Test failed: Could not find key %u\n", key);
--			return -ENOENT;
--		} else if (!expected && obj) {
--			pr_warn("Test failed: Unexpected entry found for key %u\n",
--				key);
--			return -EEXIST;
--		} else if (expected && obj) {
--			if (obj->ptr != TEST_PTR || obj->value != i) {
--				pr_warn("Test failed: Lookup value mismatch %p!=%p, %u!=%u\n",
--					obj->ptr, TEST_PTR, obj->value, i);
--				return -EINVAL;
--			}
--		}
--	}
--
--	return 0;
--}
--
--static void test_bucket_stats(struct rhashtable *ht, bool quiet)
--{
--	unsigned int cnt, rcu_cnt, i, total = 0;
--	struct rhash_head *pos;
--	struct test_obj *obj;
--	struct bucket_table *tbl;
--
--	tbl = rht_dereference_rcu(ht->tbl, ht);
--	for (i = 0; i < tbl->size; i++) {
--		rcu_cnt = cnt = 0;
--
--		if (!quiet)
--			pr_info(" [%#4x/%zu]", i, tbl->size);
--
--		rht_for_each_entry_rcu(obj, pos, tbl, i, node) {
--			cnt++;
--			total++;
--			if (!quiet)
--				pr_cont(" [%p],", obj);
--		}
--
--		rht_for_each_entry_rcu(obj, pos, tbl, i, node)
--			rcu_cnt++;
--
--		if (rcu_cnt != cnt)
--			pr_warn("Test failed: Chain count mismach %d != %d",
--				cnt, rcu_cnt);
--
--		if (!quiet)
--			pr_cont("\n  [%#x] first element: %p, chain length: %u\n",
--				i, tbl->buckets[i], cnt);
--	}
--
--	pr_info("  Traversal complete: counted=%u, nelems=%u, entries=%d\n",
--		total, atomic_read(&ht->nelems), TEST_ENTRIES);
--
--	if (total != atomic_read(&ht->nelems) || total != TEST_ENTRIES)
--		pr_warn("Test failed: Total count mismatch ^^^");
--}
--
--static int __init test_rhashtable(struct rhashtable *ht)
--{
--	struct bucket_table *tbl;
--	struct test_obj *obj;
--	struct rhash_head *pos, *next;
--	int err;
--	unsigned int i;
--
--	/*
--	 * Insertion Test:
--	 * Insert TEST_ENTRIES into table with all keys even numbers
--	 */
--	pr_info("  Adding %d keys\n", TEST_ENTRIES);
--	for (i = 0; i < TEST_ENTRIES; i++) {
--		struct test_obj *obj;
--
--		obj = kzalloc(sizeof(*obj), GFP_KERNEL);
--		if (!obj) {
--			err = -ENOMEM;
--			goto error;
--		}
--
--		obj->ptr = TEST_PTR;
--		obj->value = i * 2;
--
--		rhashtable_insert(ht, &obj->node);
--	}
--
--	rcu_read_lock();
--	test_bucket_stats(ht, true);
--	test_rht_lookup(ht);
--	rcu_read_unlock();
--
--	for (i = 0; i < TEST_NEXPANDS; i++) {
--		pr_info("  Table expansion iteration %u...\n", i);
--		mutex_lock(&ht->mutex);
--		rhashtable_expand(ht);
--		mutex_unlock(&ht->mutex);
--
--		rcu_read_lock();
--		pr_info("  Verifying lookups...\n");
--		test_rht_lookup(ht);
--		rcu_read_unlock();
--	}
--
--	for (i = 0; i < TEST_NEXPANDS; i++) {
--		pr_info("  Table shrinkage iteration %u...\n", i);
--		mutex_lock(&ht->mutex);
--		rhashtable_shrink(ht);
--		mutex_unlock(&ht->mutex);
--
--		rcu_read_lock();
--		pr_info("  Verifying lookups...\n");
--		test_rht_lookup(ht);
--		rcu_read_unlock();
--	}
--
--	rcu_read_lock();
--	test_bucket_stats(ht, true);
--	rcu_read_unlock();
--
--	pr_info("  Deleting %d keys\n", TEST_ENTRIES);
--	for (i = 0; i < TEST_ENTRIES; i++) {
--		u32 key = i * 2;
--
--		obj = rhashtable_lookup(ht, &key);
--		BUG_ON(!obj);
--
--		rhashtable_remove(ht, &obj->node);
--		kfree(obj);
--	}
--
--	return 0;
--
--error:
--	tbl = rht_dereference_rcu(ht->tbl, ht);
--	for (i = 0; i < tbl->size; i++)
--		rht_for_each_entry_safe(obj, pos, next, tbl, i, node)
--			kfree(obj);
--
--	return err;
--}
--
--static int __init test_rht_init(void)
--{
--	struct rhashtable ht;
--	struct rhashtable_params params = {
--		.nelem_hint = TEST_HT_SIZE,
--		.head_offset = offsetof(struct test_obj, node),
--		.key_offset = offsetof(struct test_obj, value),
--		.key_len = sizeof(int),
--		.hashfn = jhash,
--		.nulls_base = (3U << RHT_BASE_SHIFT),
--		.grow_decision = rht_grow_above_75,
--		.shrink_decision = rht_shrink_below_30,
--	};
--	int err;
--
--	pr_info("Running resizable hashtable tests...\n");
--
--	err = rhashtable_init(&ht, &params);
--	if (err < 0) {
--		pr_warn("Test failed: Unable to initialize hashtable: %d\n",
--			err);
--		return err;
--	}
--
--	err = test_rhashtable(&ht);
--
--	rhashtable_destroy(&ht);
--
--	return err;
--}
--
--subsys_initcall(test_rht_init);
--
--#endif /* CONFIG_TEST_RHASHTABLE */
-diff --git a/lib/test_rhashtable.c b/lib/test_rhashtable.c
-new file mode 100644
-index 0000000000000000..1dfeba73fc743718
---- /dev/null
-+++ b/lib/test_rhashtable.c
-@@ -0,0 +1,227 @@
-+/*
-+ * Resizable, Scalable, Concurrent Hash Table
-+ *
-+ * Copyright (c) 2014 Thomas Graf <tgraf@suug.ch>
-+ * Copyright (c) 2008-2014 Patrick McHardy <kaber@trash.net>
-+ *
-+ * Based on the following paper:
-+ * https://www.usenix.org/legacy/event/atc11/tech/final_files/Triplett.pdf
-+ *
-+ * Code partially derived from nft_hash
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+/**************************************************************************
-+ * Self Test
-+ **************************************************************************/
-+
-+#include <linux/init.h>
-+#include <linux/jhash.h>
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/rcupdate.h>
-+#include <linux/rhashtable.h>
-+#include <linux/slab.h>
-+
-+
-+#define TEST_HT_SIZE	8
-+#define TEST_ENTRIES	2048
-+#define TEST_PTR	((void *) 0xdeadbeef)
-+#define TEST_NEXPANDS	4
-+
-+struct test_obj {
-+	void			*ptr;
-+	int			value;
-+	struct rhash_head	node;
-+};
-+
-+static int __init test_rht_lookup(struct rhashtable *ht)
-+{
-+	unsigned int i;
-+
-+	for (i = 0; i < TEST_ENTRIES * 2; i++) {
-+		struct test_obj *obj;
-+		bool expected = !(i % 2);
-+		u32 key = i;
-+
-+		obj = rhashtable_lookup(ht, &key);
-+
-+		if (expected && !obj) {
-+			pr_warn("Test failed: Could not find key %u\n", key);
-+			return -ENOENT;
-+		} else if (!expected && obj) {
-+			pr_warn("Test failed: Unexpected entry found for key %u\n",
-+				key);
-+			return -EEXIST;
-+		} else if (expected && obj) {
-+			if (obj->ptr != TEST_PTR || obj->value != i) {
-+				pr_warn("Test failed: Lookup value mismatch %p!=%p, %u!=%u\n",
-+					obj->ptr, TEST_PTR, obj->value, i);
-+				return -EINVAL;
-+			}
-+		}
-+	}
-+
-+	return 0;
-+}
-+
-+static void test_bucket_stats(struct rhashtable *ht, bool quiet)
-+{
-+	unsigned int cnt, rcu_cnt, i, total = 0;
-+	struct rhash_head *pos;
-+	struct test_obj *obj;
-+	struct bucket_table *tbl;
-+
-+	tbl = rht_dereference_rcu(ht->tbl, ht);
-+	for (i = 0; i < tbl->size; i++) {
-+		rcu_cnt = cnt = 0;
-+
-+		if (!quiet)
-+			pr_info(" [%#4x/%zu]", i, tbl->size);
-+
-+		rht_for_each_entry_rcu(obj, pos, tbl, i, node) {
-+			cnt++;
-+			total++;
-+			if (!quiet)
-+				pr_cont(" [%p],", obj);
-+		}
-+
-+		rht_for_each_entry_rcu(obj, pos, tbl, i, node)
-+			rcu_cnt++;
-+
-+		if (rcu_cnt != cnt)
-+			pr_warn("Test failed: Chain count mismach %d != %d",
-+				cnt, rcu_cnt);
-+
-+		if (!quiet)
-+			pr_cont("\n  [%#x] first element: %p, chain length: %u\n",
-+				i, tbl->buckets[i], cnt);
-+	}
-+
-+	pr_info("  Traversal complete: counted=%u, nelems=%u, entries=%d\n",
-+		total, atomic_read(&ht->nelems), TEST_ENTRIES);
-+
-+	if (total != atomic_read(&ht->nelems) || total != TEST_ENTRIES)
-+		pr_warn("Test failed: Total count mismatch ^^^");
-+}
-+
-+static int __init test_rhashtable(struct rhashtable *ht)
-+{
-+	struct bucket_table *tbl;
-+	struct test_obj *obj;
-+	struct rhash_head *pos, *next;
-+	int err;
-+	unsigned int i;
-+
-+	/*
-+	 * Insertion Test:
-+	 * Insert TEST_ENTRIES into table with all keys even numbers
-+	 */
-+	pr_info("  Adding %d keys\n", TEST_ENTRIES);
-+	for (i = 0; i < TEST_ENTRIES; i++) {
-+		struct test_obj *obj;
-+
-+		obj = kzalloc(sizeof(*obj), GFP_KERNEL);
-+		if (!obj) {
-+			err = -ENOMEM;
-+			goto error;
-+		}
-+
-+		obj->ptr = TEST_PTR;
-+		obj->value = i * 2;
-+
-+		rhashtable_insert(ht, &obj->node);
-+	}
-+
-+	rcu_read_lock();
-+	test_bucket_stats(ht, true);
-+	test_rht_lookup(ht);
-+	rcu_read_unlock();
-+
-+	for (i = 0; i < TEST_NEXPANDS; i++) {
-+		pr_info("  Table expansion iteration %u...\n", i);
-+		mutex_lock(&ht->mutex);
-+		rhashtable_expand(ht);
-+		mutex_unlock(&ht->mutex);
-+
-+		rcu_read_lock();
-+		pr_info("  Verifying lookups...\n");
-+		test_rht_lookup(ht);
-+		rcu_read_unlock();
-+	}
-+
-+	for (i = 0; i < TEST_NEXPANDS; i++) {
-+		pr_info("  Table shrinkage iteration %u...\n", i);
-+		mutex_lock(&ht->mutex);
-+		rhashtable_shrink(ht);
-+		mutex_unlock(&ht->mutex);
-+
-+		rcu_read_lock();
-+		pr_info("  Verifying lookups...\n");
-+		test_rht_lookup(ht);
-+		rcu_read_unlock();
-+	}
-+
-+	rcu_read_lock();
-+	test_bucket_stats(ht, true);
-+	rcu_read_unlock();
-+
-+	pr_info("  Deleting %d keys\n", TEST_ENTRIES);
-+	for (i = 0; i < TEST_ENTRIES; i++) {
-+		u32 key = i * 2;
-+
-+		obj = rhashtable_lookup(ht, &key);
-+		BUG_ON(!obj);
-+
-+		rhashtable_remove(ht, &obj->node);
-+		kfree(obj);
-+	}
-+
-+	return 0;
-+
-+error:
-+	tbl = rht_dereference_rcu(ht->tbl, ht);
-+	for (i = 0; i < tbl->size; i++)
-+		rht_for_each_entry_safe(obj, pos, next, tbl, i, node)
-+			kfree(obj);
-+
-+	return err;
-+}
-+
-+static int __init test_rht_init(void)
-+{
-+	struct rhashtable ht;
-+	struct rhashtable_params params = {
-+		.nelem_hint = TEST_HT_SIZE,
-+		.head_offset = offsetof(struct test_obj, node),
-+		.key_offset = offsetof(struct test_obj, value),
-+		.key_len = sizeof(int),
-+		.hashfn = jhash,
-+		.nulls_base = (3U << RHT_BASE_SHIFT),
-+		.grow_decision = rht_grow_above_75,
-+		.shrink_decision = rht_shrink_below_30,
-+	};
-+	int err;
-+
-+	pr_info("Running resizable hashtable tests...\n");
-+
-+	err = rhashtable_init(&ht, &params);
-+	if (err < 0) {
-+		pr_warn("Test failed: Unable to initialize hashtable: %d\n",
-+			err);
-+		return err;
-+	}
-+
-+	err = test_rhashtable(&ht);
-+
-+	rhashtable_destroy(&ht);
-+
-+	return err;
-+}
-+
-+module_init(test_rht_init);
-+
-+MODULE_LICENSE("GPL v2");
--- 
-1.9.1
+Now for live kernel patching, we could add another flag that says
+permanent, that means the trampoline and the ops will never be free or
+change, and then it would be safe to use dynamic trampolines.
 
+> 
+> Or maybe the problem is the opposite. Why does the ftrace use 
+> ftrace_ops_list_func in such situation? Even for nonpreemptive kernel and 
+> dynamic fops ftrace_ops_list_func has unnecessary overhead.
+
+It points the dynamic ops (in non-preempt) to ftrace_ops_list_func? Are
+you sure about that. One way to verify is to
+cat /sys/kernel/debug/tracing/enabled_functions, which should show you
+want the dynamic ops points to.
+
+-- Steve
