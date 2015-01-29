@@ -1,73 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756436AbbA2HJo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 02:09:44 -0500
-Received: from goliath.siemens.de ([192.35.17.28]:33423 "EHLO
-	goliath.siemens.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753965AbbA2HJn (ORCPT
+	id S1753463AbbA2GwR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 01:52:17 -0500
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:59532 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751855AbbA2GwQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 02:09:43 -0500
-From: Jan Kiszka <jan.kiszka@siemens.com>
-To: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        kgdb-bugreport@lists.sourceforge.net, Andi Kleen <andi@firstfloor.org>,
-        Tom Tromey <tromey@redhat.com>, Ben Widawsky <ben@bwidawsk.net>,
-        Borislav Petkov <bp@suse.de>
-Subject: [PATCH v11 28/28] scripts/gdb: Disable pagination while printing from breakpoint handler
-Date: Thu, 29 Jan 2015 07:46:47 +0100
-Message-Id: <e0dfc0f6e8154aa3d00f1e797d7faa997af092f8.1422514006.git.jan.kiszka@siemens.com>
-X-Mailer: git-send-email 2.1.4
-In-Reply-To: <cover.1422514006.git.jan.kiszka@siemens.com>
-References: <cover.1422514006.git.jan.kiszka@siemens.com>
-In-Reply-To: <cover.1422514006.git.jan.kiszka@siemens.com>
-References: <cover.1422514006.git.jan.kiszka@siemens.com>
+	Thu, 29 Jan 2015 01:52:16 -0500
+Date: Thu, 29 Jan 2015 07:52:12 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Borislav Petkov <bp@suse.de>
+Cc: x86-ml <x86@kernel.org>, lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL] A microcode loader fix for 3.19
+Message-ID: <20150129065212.GA2835@gmail.com>
+References: <20150128204728.GG7569@pd.tnic>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150128204728.GG7569@pd.tnic>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-While reporting the (refreshed) list of modules on automatic updates we
-may hit the page boundary of the output console and cause a stop if
-pagination is enabled. However, gdb does not accept user input while
-running over the breakpoint handler. So we get stuck, and the user is
-forced to interrupt gdb.
 
-Resolve this by disabling pagination during automatic symbol updates. We
-restore the user's configuration once done.
+* Borislav Petkov <bp@suse.de> wrote:
 
-Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
----
- scripts/gdb/linux/symbols.py | 11 +++++++++++
- 1 file changed, 11 insertions(+)
+> Hi guys,
+> 
+> please pull this last small fix for the microcode loader not erroring
+> out of its init routine properly.
+> 
+> Optimally, it should go with the last batch of tip/urgent stuff for
+> 3.19, if possible.
+> 
+> Thanks.
+> 
+> ---
+> The following changes since commit 26bc420b59a38e4e6685a73345a0def461136dce:
+> 
+>   Linux 3.19-rc6 (2015-01-25 20:04:41 -0800)
+> 
+> are available in the git repository at:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/bp/bp.git tags/microcode_fix_for_3.19
+> 
+> for you to fetch changes up to da63865a01c6384d459464e5165d95d4f04878d8:
+> 
+>   x86, microcode: Return error from driver init code when loader is disabled (2015-01-28 09:23:40 +0100)
+> 
+> ----------------------------------------------------------------
+> One final fix for 3.19 to address a wrongful deregistering of the
+> microcode loader module.
+> 
+> ----------------------------------------------------------------
+> Boris Ostrovsky (1):
+>       x86, microcode: Return error from driver init code when loader is disabled
+> 
+>  arch/x86/kernel/cpu/microcode/core.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/arch/x86/kernel/cpu/microcode/core.c b/arch/x86/kernel/cpu/microcode/core.c
+> index 15c29096136b..36a83617eb21 100644
+> --- a/arch/x86/kernel/cpu/microcode/core.c
+> +++ b/arch/x86/kernel/cpu/microcode/core.c
+> @@ -552,7 +552,7 @@ static int __init microcode_init(void)
+>  	int error;
+>  
+>  	if (paravirt_enabled() || dis_ucode_ldr)
+> -		return 0;
+> +		return -EINVAL;
+>  
+>  	if (c->x86_vendor == X86_VENDOR_INTEL)
+>  		microcode_ops = init_intel_microcode();
 
-diff --git a/scripts/gdb/linux/symbols.py b/scripts/gdb/linux/symbols.py
-index bf05e45..cd5bea9 100644
---- a/scripts/gdb/linux/symbols.py
-+++ b/scripts/gdb/linux/symbols.py
-@@ -34,12 +34,23 @@ if hasattr(gdb, 'Breakpoint'):
-             # enforce update if object file is not found
-             cmd.module_files_updated = False
- 
-+            # Disable pagination while reporting symbol (re-)loading.
-+            # The console input is blocked in this context so that we would
-+            # get stuck waiting for the user to acknowledge paged output.
-+            show_pagination = gdb.execute("show pagination", to_string=True)
-+            pagination = show_pagination.endswith("on.\n")
-+            gdb.execute("set pagination off")
-+
-             if module_name in cmd.loaded_modules:
-                 gdb.write("refreshing all symbols to reload module "
-                           "'{0}'\n".format(module_name))
-                 cmd.load_all_symbols()
-             else:
-                 cmd.load_module_symbols(module)
-+
-+            # restore pagination state
-+            gdb.execute("set pagination %s" % ("on" if pagination else "off"))
-+
-             return False
- 
- 
--- 
-2.1.4
+Pulled into tip:x86/urgent, thanks Boris!
 
+	Ingo
