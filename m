@@ -1,90 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757331AbbA2NxT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 08:53:19 -0500
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:47235 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755610AbbA2NxR (ORCPT
+	id S1757973AbbA2ORd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 09:17:33 -0500
+Received: from moreofthesa.me.uk ([178.238.159.109]:60481 "EHLO
+	spam.moreofthesa.me.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757672AbbA2ORa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 08:53:17 -0500
-Message-ID: <54CA3B46.20204@collabora.co.uk>
-Date: Thu, 29 Jan 2015 14:53:10 +0100
-From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
+	Thu, 29 Jan 2015 09:17:30 -0500
+X-Greylist: delayed 970 seconds by postgrey-1.27 at vger.kernel.org; Thu, 29 Jan 2015 09:17:29 EST
+Date: Thu, 29 Jan 2015 13:58:09 +0000
+From: Darren Salt <devspam@moreofthesa.me.uk>
+To: linux-input@vger.kernel.org
+Cc: jkosina@suse.cz, linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Subject: [PATCH] hid-saitek: add USB ID for older R.A.T. 7
+Message-ID: <5493074094%devspam@moreofthesa.me.uk>
+Mail-Followup-To: linux-input@vger.kernel.org, jkosina@suse.cz, 
+ linux-kernel@vger.kernel.org, stable@vger.kernel.org, devspam@moreofthesa.me.uk
+User-Agent: Messenger-Pro/2.73.0.4137 (Qt/5.3.2) (Linux-x86_64)
+X-No-Archive: no
+X-Orwell-Date: Thu, 11017 Dec 1984 13:58:09 +0000
 MIME-Version: 1.0
-To: Ulf Hansson <ulf.hansson@linaro.org>
-CC: Kukjin Kim <kgene@kernel.org>, Doug Anderson <dianders@chromium.org>,
-        Olof Johansson <olof@lixom.net>, Arend van Spriel <arend@broadcom.com>,
-        Srinivas Kandagatla <srinivas.kandagatla@linaro.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-mmc <linux-mmc@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 4/6] mmc: pwrseq_simple: Add optional reference clock
- support
-References: <1422468953-7594-1-git-send-email-javier.martinez@collabora.co.uk>	<1422468953-7594-5-git-send-email-javier.martinez@collabora.co.uk> <CAPDyKFommNu7oscgmhwMpT-5KYN9b6d1xvt513_0qWE=HEGbow@mail.gmail.com>
-In-Reply-To: <CAPDyKFommNu7oscgmhwMpT-5KYN9b6d1xvt513_0qWE=HEGbow@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+X-SA-Exim-Connect-IP: 192.168.0.5
+X-SA-Exim-Mail-From: devspam@moreofthesa.me.uk
+X-SA-Exim-Scanned: No (on spam.moreofthesa.me.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Ulf,
+This patch is against 3.18.4, but should apply to 3.16.x and later.
 
-Thanks a lot for your feedback.
+Signed-off-by: Darren Salt <devspam@moreofthesa.me.uk>
 
-On 01/29/2015 02:05 PM, Ulf Hansson wrote:
->>
->>  struct mmc_pwrseq_simple {
->>         struct mmc_pwrseq pwrseq;
->> +       struct clk *ext_clk;
-> 
-> You need to add a bool, maybe call it clk_enabled;  See why below.
->
-
-Ok
+diff -ur linux-3.18.orig/drivers/hid/hid-core.c linux-3.18/drivers/hid/hid-core.c
+--- linux-3.18.orig/drivers/hid/hid-core.c	2015-01-29 12:01:23.620657746 +0000
++++ linux-3.18/drivers/hid/hid-core.c	2015-01-29 12:51:15.920015501 +0000
+@@ -1909,6 +1909,7 @@
+ #endif
+ #if IS_ENABLED(CONFIG_HID_SAITEK)
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_SAITEK, USB_DEVICE_ID_SAITEK_PS1000) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_SAITEK, USB_DEVICE_ID_SAITEK_RAT7_OLD) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_SAITEK, USB_DEVICE_ID_SAITEK_RAT7) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_SAITEK, USB_DEVICE_ID_SAITEK_MMO7) },
+ #endif
+diff -ur linux-3.18.orig/drivers/hid/hid-ids.h linux-3.18/drivers/hid/hid-ids.h
+--- linux-3.18.orig/drivers/hid/hid-ids.h	2015-01-29 12:43:02.137146055 +0000
++++ linux-3.18/drivers/hid/hid-ids.h	2015-01-29 12:50:19.929617706 +0000
+@@ -787,6 +787,7 @@
+ #define USB_VENDOR_ID_SAITEK		0x06a3
+ #define USB_DEVICE_ID_SAITEK_RUMBLEPAD	0xff17
+ #define USB_DEVICE_ID_SAITEK_PS1000	0x0621
++#define USB_DEVICE_ID_SAITEK_RAT7_OLD	0x0ccb
+ #define USB_DEVICE_ID_SAITEK_RAT7	0x0cd7
+ #define USB_DEVICE_ID_SAITEK_MMO7	0x0cd0
  
->>         int nr_gpios;
->>         struct gpio_desc *reset_gpios[0];
->>  };
->> @@ -39,6 +41,9 @@ static void mmc_pwrseq_simple_pre_power_on(struct mmc_host *host)
->>         struct mmc_pwrseq_simple *pwrseq = container_of(host->pwrseq,
->>                                         struct mmc_pwrseq_simple, pwrseq);
->>
->> +       if (!IS_ERR(pwrseq->ext_clk))
->> +               clk_prepare_enable(pwrseq->ext_clk);
->> +
-> 
-> There are no guarantee that the ->mmc_pwrseq_simple_pre_power_on()
-> will be invoked prior ->mmc_pwrseq_simple_power_off().
->
+diff -ur linux-3.18.orig/drivers/hid/hid-saitek.c linux-3.18/drivers/hid/hid-saitek.c
+--- linux-3.18.orig/drivers/hid/hid-saitek.c	2014-10-05 20:23:04.000000000 +0100
++++ linux-3.18/drivers/hid/hid-saitek.c	2015-01-29 12:50:33.521228771 +0000
+@@ -177,6 +177,8 @@
+ static const struct hid_device_id saitek_devices[] = {
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_SAITEK, USB_DEVICE_ID_SAITEK_PS1000),
+ 		.driver_data = SAITEK_FIX_PS1000 },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_SAITEK, USB_DEVICE_ID_SAITEK_RAT7_OLD),
++		.driver_data = SAITEK_RELEASE_MODE_RAT7 },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_SAITEK, USB_DEVICE_ID_SAITEK_RAT7),
+ 		.driver_data = SAITEK_RELEASE_MODE_RAT7 },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_SAITEK, USB_DEVICE_ID_SAITEK_MMO7),
 
-Got it, I didn't know that mmc_pwrseq_simple_power_off() could be invoked.
-without mmc_pwrseq_simple_pre_power_on() not being called before.
-
-> That means you need to keep track of if you have gated/ungated the
-> clock. In other words check pwrseq->clk_enabled. That will prevent
-> potential clk unbalance issues.
-
-Yes, I'll change to check for the boolean in _simple_power_off() and
-_post_power_on() then.
-
->> @@ -85,6 +104,14 @@ int mmc_pwrseq_simple_alloc(struct mmc_host *host, struct device *dev)
->>         if (!pwrseq)
->>                 return -ENOMEM;
->>
->> +       pwrseq->ext_clk = clk_get(dev, "ext_clock");
->> +       if (IS_ERR(pwrseq->ext_clk) &&
->> +           PTR_ERR(pwrseq->ext_clk) != -ENOENT &&
->> +           PTR_ERR(pwrseq->ext_clk) != -ENOSYS) {
-> 
-> I don't think you can get -ENOSYS.
-> 
-
-You are right, I'll remove that.
-
-Best regards,
-Javier
+-- 
+|  _  | Darren Salt, using Debian GNU/Linux (and Android)
+| ( ) |
+|  X  | ASCII Ribbon campaign against HTML e-mail
+| / \ | http://www.asciiribbon.org/
