@@ -1,80 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933191AbbA2Klp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 05:41:45 -0500
-Received: from hofr.at ([212.69.189.236]:39097 "EHLO mail.hofr.at"
+	id S1758712AbbA2KnU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 05:43:20 -0500
+Received: from mga11.intel.com ([192.55.52.93]:12932 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757389AbbA2Kln (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 05:41:43 -0500
-Date: Thu, 29 Jan 2015 11:41:41 +0100
-From: Nicholas Mc Guire <der.herr@hofr.at>
-To: Tomi Valkeinen <tomi.valkeinen@ti.com>
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
-        Haiyang Zhang <haiyangz@microsoft.com>, devel@linuxdriverproject.org,
-        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3 v2] hyperv: hyperv_fb.c: match
-	wait_for_completion_timeout return type
-Message-ID: <20150129104141.GA32124@opentech.at>
-References: <1422197222-7967-1-git-send-email-der.herr@hofr.at> <54C62D07.3040603@ti.com> <20150129093839.GB23666@opentech.at> <54CA0CBA.6030900@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54CA0CBA.6030900@ti.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1758253AbbA2KnR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Jan 2015 05:43:17 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.09,485,1418112000"; 
+   d="scan'208";a="669630914"
+Message-ID: <1422528195.31903.307.camel@linux.intel.com>
+Subject: Re: [PATCH v2 1/3] lib/vsprintf.c: Fix potential NULL deref in
+ hex_string
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Jiri Kosina <jkosina@suse.cz>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Fabian Frederick <fabf@skynet.be>, Bjorn Helgaas <bhelgaas@google.com>,
+        Ryan Mallon <rmallon@gmail.com>, Masanari Iida <standby24x7@gmail.com>,
+        linux-kernel@vger.kernel.org
+Date: Thu, 29 Jan 2015 12:43:15 +0200
+In-Reply-To: <1422525801-26560-2-git-send-email-linux@rasmusvillemoes.dk>
+References: <1422451543-12401-1-git-send-email-linux@rasmusvillemoes.dk>
+	 <1422525801-26560-1-git-send-email-linux@rasmusvillemoes.dk>
+	 <1422525801-26560-2-git-send-email-linux@rasmusvillemoes.dk>
+Organization: Intel Finland Oy
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.9-1+b1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 29 Jan 2015, Tomi Valkeinen wrote:
-
-> On 29/01/15 11:38, Nicholas Mc Guire wrote:
-> > On Mon, 26 Jan 2015, Tomi Valkeinen wrote:
-> > 
-> >> Hi,
-> >>
-> >> On 25/01/15 16:47, Nicholas Mc Guire wrote:
-> >>> Signed-off-by: Nicholas Mc Guire <der.herr@hofr.at>
-> >>> ---
-> >>>
-> >>> v2: fixed subject line
-> >>>
-> >>> The return type of wait_for_completion_timeout is unsigned long not
-> >>> int. This patch fixes up the declarations only.
-> >>>
-> >>> Patch was compile tested only for x86_64_defconfig + CONFIG_X86_VSMP=y
-> >>> CONFIG_HYPERV=m, CONFIG_FB_HYPERV=m
-> >>
-> >> Why didn't you set the text above as the patch description (which is
-> >> empty at the moment)?
-> >>
-> > basically because the one-line is sufficient to understand the patch
+On Thu, 2015-01-29 at 11:03 +0100, Rasmus Villemoes wrote:
+> The helper hex_string() is broken in two ways. First, it doesn't
+> increment buf regardless of whether there is room to print, so callers
+> such as kasprintf() that try to probe the correct storage to allocate
+> will get a too small return value. But even worse, kasprintf() (and
+> likely anyone else trying to find the size of the result) pass NULL
+> for buf and 0 for size, so we also have end == NULL. But this means
+> that the end-1 in hex_string() is (char*)-1, so buf < end-1 is true
+> and we get a NULL pointer deref. I double-checked this with a trivial
+> kernel module that just did a kasprintf(GFP_KERNEL, "%14ph",
+> "CrashBoomBang").
 > 
-> You didn't have one line, you had no description. Patch subject is not
-> patch description. In the minimal case, the description should have the
-> same text as the subject, but usually it's better to have a bit more
-> text in the description.
-
-ok - was not clear about this - got it.
-
+> Nobody seems to be using %ph with kasprintf, but we might as well fix
+> it before it hits someone.
 > 
-> > and the rest of the information is not relevant for the git log but only
-> > for the review
-> > 
-> > if you think it is necessary to understand the patch I'll move it and
-> > resubmit.
-> 
-> Well, a good description is not only about understanding the code in the
-> patch. It may contain information like which platform/setup this issue
-> happened on, are the any possible side effects, or whatever might be
-> relevant for someone looking at the patch years later.
-> 
-yup - but it seemed to me that the information on the build
-config and kernel version details would not really be relevant for
-this cleanup patch - so if I got your right the description line should
-have gone up and the config/kernel info stays below "---".
+> Signed-off-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
 
-Just resent it - hope this is correct now.
+Acked-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
 
-thx!
-hofrat
+> ---
+>  lib/vsprintf.c | 16 ++++++++++++----
+>  1 file changed, 12 insertions(+), 4 deletions(-)
+> 
+> diff --git a/lib/vsprintf.c b/lib/vsprintf.c
+> index ec337f64f52d..3568e3906777 100644
+> --- a/lib/vsprintf.c
+> +++ b/lib/vsprintf.c
+> @@ -782,11 +782,19 @@ char *hex_string(char *buf, char *end, u8 *addr, struct printf_spec spec,
+>  	if (spec.field_width > 0)
+>  		len = min_t(int, spec.field_width, 64);
+>  
+> -	for (i = 0; i < len && buf < end - 1; i++) {
+> -		buf = hex_byte_pack(buf, addr[i]);
+> +	for (i = 0; i < len; ++i) {
+> +		if (buf < end)
+> +			*buf = hex_asc_hi(addr[i]);
+> +		++buf;
+> +		if (buf < end)
+> +			*buf = hex_asc_lo(addr[i]);
+> +		++buf;
+>  
+> -		if (buf < end && separator && i != len - 1)
+> -			*buf++ = separator;
+> +		if (separator && i != len - 1) {
+> +			if (buf < end)
+> +				*buf = separator;
+> +			++buf;
+> +		}
+>  	}
+>  
+>  	return buf;
+
+
+-- 
+Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Intel Finland Oy
 
