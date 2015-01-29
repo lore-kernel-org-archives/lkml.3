@@ -1,100 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755087AbbA2PF7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 10:05:59 -0500
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:54321 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752162AbbA2PF5 (ORCPT
+	id S1752628AbbA2PJT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 10:09:19 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:33569 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750840AbbA2PJS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 10:05:57 -0500
-Message-ID: <1422543953.7832.29.camel@mochrul>
-Subject: Odd heuristic in load average calculation when many processes start
- in a small window
-From: SZALAY Attila <sasa@balabit.com>
-To: linux-kernel@vger.kernel.org
-Date: Thu, 29 Jan 2015 16:05:53 +0100
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 29 Jan 2015 10:09:18 -0500
+Date: Thu, 29 Jan 2015 16:09:16 +0100
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Wenyou Yang <wenyou.yang@atmel.com>, nicolas.ferre@atmel.com,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        sylvain.rochet@finsecur.com, peda@axentia.se,
+        sergei.shtylyov@cogentembedded.com, linux@maxim.org.za
+Subject: Re: [PATCH v4 05/13] pm: at91: move the copying the sram function to
+ the sram initializationi phase
+Message-ID: <20150129150916.GC4164@piout.net>
+References: <1422409172-24178-1-git-send-email-wenyou.yang@atmel.com>
+ <1422409396-24394-1-git-send-email-wenyou.yang@atmel.com>
+ <20150129112800.GV26493@n2100.arm.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150129112800.GV26493@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I found a strange spike in one of my machine's load average.
+Hi,
 
-The machine does nothing (right now). The normal load average is nearly
-zero, the user and system usage is not more than 5 per cent. But once in
-a while the load average go to more than one, some times even much
-higher (5-20).
+On 29/01/2015 at 11:28:00 +0000, Russell King - ARM Linux wrote :
+> On Wed, Jan 28, 2015 at 09:43:16AM +0800, Wenyou Yang wrote:
+> > -#ifdef CONFIG_AT91_SLOW_CLOCK
+> > -				/* copy slow_clock handler to SRAM, and call it */
+> > -				memcpy(slow_clock, at91_slow_clock, at91_slow_clock_sz);
+> > -#endif
+> >  				slow_clock(at91_pmc_base, at91_ramc_base[0],
+> >  					   at91_ramc_base[1],
+> >  					   at91_pm_data.memctrl);
+> > @@ -272,6 +268,9 @@ static void __init at91_pm_sram_init(void)
+> >  	sram_pbase = gen_pool_virt_to_phys(sram_pool, sram_base);
+> >  	slow_clock = __arm_ioremap_exec(sram_pbase, at91_slow_clock_sz, false);
+> >  
+> > +	/* Copy the slow_clock handler to SRAM */
+> > +	memcpy(slow_clock, at91_slow_clock, at91_slow_clock_sz);
+> > +
+> 
+> Why is this code not using the fncpy() support for copying functions.
 
-The problem with this is that I want to do an alert based on the load of
-the machine but this amount of false positive alerts cause some trouble.
+Indeed, this was done in the original version of the patch that I acked.
 
-I checked the overall status of the machine with the
-dstat -tcdngslyip
+> Why is it not checking the return code from __arm_ioremap_exec() or
+> gen_pool_virt_to_phys() for failure?
 
-command and found no running process and no blocked process either.
+gen_pool_virt_to_phys() will not fail as the chunk is allocated just
+before so it will necessarily be found in the list.
 
-But the number of the new processes was high in every occurrence.
+We need to reintroduce a check for slow_clock != NULL before fncpy()
+since it is moved out of its original if block.
 
-So I created a small script to mimic this behavior and I can reproduce
-the problem with a labor environment. I tested it in an ubuntu trusty,
-with kernel version 3.13.0 and 3.18.0. The production system is an
-ubuntu precise with kernel version 3.2.0.
-
-In the test system I could not create really big load average, but it is
-a virtual machine with 4 core and the production system is a bare metal
-with 16 core.
-
-So, my question is:
-- Can I do something to mitigate this problem (the load of processes is
-  started by the munin and I could not eliminate it from the system)
-
-- Is this can be treated as a bug in the load average calculation? Or
-  it is a known issue/design fact?
-
-Of course I searched the web for the answers but found nothing related
-to this issue. In every place I found there were processes in D state or
-at least high iowait, but not here.
-
-Thanks you for your help
-
-A simplified output sample of the test machine is the following:
-----system---- ----total-cpu-usage---- ---load-avg--- ---procs---
-     time     |usr sys idl wai hiq siq| 1m   5m  15m |run blk new
-29-01 14:52:46|  0   0 100   0   0   0|   0 0.12 0.30|  0   0   0
-29-01 14:52:47|  0   0 100   0   0   0|   0 0.12 0.30|  0   0   0
-29-01 14:52:48|  0   0 100   0   0   0|   0 0.12 0.30|  0   0   0
-29-01 14:52:49|  0   0 100   0   0   0|   0 0.12 0.30|  0   0   0
-29-01 14:52:50|  0   0 100   0   0   0|   0 0.11 0.30|  0   0   0
-29-01 14:52:51|  0   0 100   0   0   0|   0 0.11 0.30|  0   0   0
-29-01 14:52:52|  0   0 100   0   0   0|   0 0.11 0.30|  0   0   0
-29-01 14:52:53|  0   0 100   0   0   0|   0 0.11 0.30|  0   0   0
-29-01 14:52:54|  0   0 100   0   0   0|   0 0.11 0.30|  0   0   0
-29-01 14:52:55|  6  12  81   0   0   0|   0 0.11 0.30|  0   0 504
-29-01 14:52:56|  0   0 100   0   0   0|   0 0.11 0.30|  0   0   0
-29-01 14:52:57|  0   0 100   0   0   0|   0 0.11 0.30|  0   0   0
-29-01 14:52:58|  0   0 100   0   0   0|   0 0.11 0.30|  0   0   0
-29-01 14:52:59|  0   0 100   0   0   0|   0 0.11 0.30|  0   0   0
-29-01 14:53:00|  0   0 100   0   0   0|   0 0.11 0.30|  0   0   0
-29-01 14:53:01|  0   0 100   0   0   0|   0 0.11 0.30|  0   0   0
-29-01 14:53:02|  0   0 100   0   0   0|   0 0.11 0.30|  0   0   0
-29-01 14:53:03|  0   0 100   0   0   0|   0 0.11 0.30|  0   0   0
-29-01 14:53:04|  0   0 100   0   0   0|   0 0.11 0.30|  0   0   0
-29-01 14:53:05|  6  12  83   0   0   0|0.32 0.17 0.32|  0   0 503
-29-01 14:53:06|  0   0 100   0   0   0|0.32 0.17 0.32|  0   0   0
-
-And the test script is the following:
-#!/bin/sh
-
-while `/bin/true`
-do
-  for i in `seq 1 500`
-  do
-    /bin/echo -en "" &
-  done
-  sleep 10
-done
-
-
+-- 
+Alexandre Belloni, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
