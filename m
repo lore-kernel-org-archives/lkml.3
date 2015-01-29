@@ -1,93 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757773AbbA2F2h (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 00:28:37 -0500
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:55702 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752256AbbA2F2f (ORCPT
+	id S1758131AbbA2FcK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 00:32:10 -0500
+Received: from mail-lb0-f170.google.com ([209.85.217.170]:46831 "EHLO
+	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754707AbbA2FcI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 00:28:35 -0500
-Date: Thu, 29 Jan 2015 14:28:27 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Sergey Senozhatsky <sergey.senozhatsky.work@gmail.com>
-Cc: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux-MM <linux-mm@kvack.org>, Nitin Gupta <ngupta@vflare.org>,
-        Jerome Marchand <jmarchan@redhat.com>,
-        Ganesh Mahendran <opensource.ganesh@gmail.com>
-Subject: Re: [PATCH v1 2/2] zram: remove init_lock in zram_make_request
-Message-ID: <20150129052827.GB25462@blaptop>
-References: <1422432945-6764-1-git-send-email-minchan@kernel.org>
- <1422432945-6764-2-git-send-email-minchan@kernel.org>
- <20150128145651.GB965@swordfish>
- <20150128233343.GC4706@blaptop>
- <CAHqPoqKZFDSjO1pL+ixYe_m_L0nGNcu04qSNp-jd1fUixKtHnw@mail.gmail.com>
- <20150129020139.GB9672@blaptop>
- <20150129022241.GA2555@swordfish>
+	Thu, 29 Jan 2015 00:32:08 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150129022241.GA2555@swordfish>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <A9667DDFB95DB7438FA9D7D576C3D87E0AC2E2F6@SHSMSX104.ccr.corp.intel.com>
+References: <CACzj_yWYwnt5duHJjPSDUY=iP-6Xke7jTkJVPVdpaBGzJWFh+Q@mail.gmail.com>
+ <A9667DDFB95DB7438FA9D7D576C3D87E0AC2E2F6@SHSMSX104.ccr.corp.intel.com>
+From: Wincy Van <fanwenyi0529@gmail.com>
+Date: Thu, 29 Jan 2015 13:31:45 +0800
+Message-ID: <CACzj_yXGqUy4rJCTe8XVWYfSvdvD+t_1dptNrEoYJKd=0=MBZA@mail.gmail.com>
+Subject: Re: [PATCH v4 0/6] KVM: nVMX: Enable nested apicv support
+To: "Zhang, Yang Z" <yang.z.zhang@intel.com>
+Cc: Paolo Bonzini <pbonzini@redhat.com>, "gleb@kernel.org" <gleb@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        Wanpeng Li <wanpeng.li@linux.intel.com>,
+        Jan Kiszka <jan.kiszka@web.de>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 29, 2015 at 11:22:41AM +0900, Sergey Senozhatsky wrote:
-> On (01/29/15 11:01), Minchan Kim wrote:
-> > On Thu, Jan 29, 2015 at 10:57:38AM +0900, Sergey Senozhatsky wrote:
-> > > On Thu, Jan 29, 2015 at 8:33 AM, Minchan Kim <minchan@kernel.org> wrote:
-> > > > On Wed, Jan 28, 2015 at 11:56:51PM +0900, Sergey Senozhatsky wrote:
-> > > > > I don't like re-introduced ->init_done.
-> > > > > another idea... how about using `zram->disksize == 0' instead of
-> > > > > `->init_done' (previously `->meta != NULL')? should do the trick.
-> > > >
-> > > > It could be.
-> > > >
-> > > >
-> > > care to change it?
-> > 
-> > Will try!
-> > 
-> > If it was your concern, I'm happy to remove the check.(ie, actually,
-> > I realized that after I push the button to send). Thanks!
-> > 
-> 
-> Thanks a lot, Minchan.
-> 
-> and, guys, sorry for previous html email (I'm sure I toggled the "plain
-> text" mode in gmail web-interface, but somehow it has different meaning
-> in gmail world).
-> 
-> 
-> I'm still concerned about performance numbers that I see on my x86_64.
-> it's not always, but mostly slower. I'll give it another try (disable
-> lockdep, etc.), but if we lose 10% on average then, sorry, I'm not so
-> positive about srcu change and will tend to vote for your initial commit
-> that simply moved meta free() out of init_lock and left locking as is
-> (lockdep warning would have been helpful there, because otherwise it
-> just looked like we change code w/o any reason).
-> 
-> what do you thunk?
+On Thu, Jan 29, 2015 at 11:17 AM, Zhang, Yang Z <yang.z.zhang@intel.com> wrote:
+> Wincy Van wrote on 2015-01-28:
+>> v1 ---> v2:
+>>   Use spin lock to ensure vmcs12 is safe when doing nested
+>>   posted interrupt delivery.
+>> v2 ---> v3:
+>>   1. Add a new field in nested_vmx to avoid the spin lock in v2.
+>>   2. Drop send eoi to L1 when doing nested interrupt delivery.
+>>   3. Use hardware MSR bitmap to enable nested virtualize x2apic
+>>      mode.
+>> v3 ---> v4:
+>>   1. Optimize nested msr bitmap merging.
+>>   2. Allocate nested msr bitmap only when nested == 1.
+>>   3. Inline the nested vmx control checking functions.
+>
+> This version looks good to me. Only minor comment: EXIT_REASON_APIC_WRITE vmexit is introduced by apic register virtualization not virtual interrupt delivery, so it's better add it in 4th patch not 5th patch.(If no other comments, I guess Paolo can help do it when applying it).
+>
+> Reviewed-by: Yang Zhang <yang.z.zhang@intel.com>
+>
 
-Surely I agreee with you. If it suffers from 10% performance regression,
-it's absolutely no go.
-
-However, I believe it should be no loss because that's one of the reason
-from RCU birth which should be really win in read-side lock path compared
-to other locking.
-
-Please test it with dd or something for block-based test for removing
-noise from FS. I also will test it to confirm that with real machine.
-
-Thanks for the review!
+Yes, thank you for pointing out it  ; )
+Paolo, what's your opinion?
 
 
-
-> 
-> 	-ss
-
--- 
-Kind regards,
-Minchan Kim
+Thanks,
+Wincy
