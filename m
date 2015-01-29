@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753175AbbA2IKL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 03:10:11 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:51004 "EHLO
+	id S1752983AbbA2IKI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 03:10:08 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:51025 "EHLO
 	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752499AbbA2IKA (ORCPT
+	with ESMTP id S1752599AbbA2IKB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 03:10:00 -0500
+	Thu, 29 Jan 2015 03:10:01 -0500
 X-Original-SENDERIP: 10.177.220.203
 X-Original-MAILFROM: namhyung@kernel.org
 From: Namhyung Kim <namhyung@kernel.org>
@@ -18,9 +18,9 @@ Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Andi Kleen <andi@firstfloor.org>,
         Stephane Eranian <eranian@google.com>,
         Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [PATCH 07/42] perf tools: Use perf_data_file__fd() consistently
-Date: Thu, 29 Jan 2015 17:06:48 +0900
-Message-Id: <1422518843-25818-8-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 08/42] perf tools: Add rm_rf() utility function
+Date: Thu, 29 Jan 2015 17:06:49 +0900
+Message-Id: <1422518843-25818-9-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <1422518843-25818-1-git-send-email-namhyung@kernel.org>
 References: <1422518843-25818-1-git-send-email-namhyung@kernel.org>
@@ -28,108 +28,81 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Do not reference file->fd directly since we want hide the
-implementation details from outside for possible future changes.
+The rm_rf() function does same as the shell command 'rm -rf' which
+removes all directory entries recursively.
 
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/builtin-inject.c |  5 +++--
- tools/perf/builtin-record.c | 14 +++++++-------
- 2 files changed, 10 insertions(+), 9 deletions(-)
+ tools/perf/util/util.c | 43 +++++++++++++++++++++++++++++++++++++++++++
+ tools/perf/util/util.h |  1 +
+ 2 files changed, 44 insertions(+)
 
-diff --git a/tools/perf/builtin-inject.c b/tools/perf/builtin-inject.c
-index 84df2deed988..a13641e066f5 100644
---- a/tools/perf/builtin-inject.c
-+++ b/tools/perf/builtin-inject.c
-@@ -343,6 +343,7 @@ static int __cmd_inject(struct perf_inject *inject)
- 	int ret = -EINVAL;
- 	struct perf_session *session = inject->session;
- 	struct perf_data_file *file_out = &inject->output;
-+	int fd = perf_data_file__fd(file_out);
+diff --git a/tools/perf/util/util.c b/tools/perf/util/util.c
+index b86744f29eef..de1307a6ff4b 100644
+--- a/tools/perf/util/util.c
++++ b/tools/perf/util/util.c
+@@ -72,6 +72,49 @@ int mkdir_p(char *path, mode_t mode)
+ 	return (stat(path, &st) && mkdir(path, mode)) ? -1 : 0;
+ }
  
- 	signal(SIGINT, sig_handler);
++int rm_rf(char *path)
++{
++	DIR *dir;
++	int ret = 0;
++	struct dirent *d;
++	char namebuf[PATH_MAX];
++
++	dir = opendir(path);
++	if (dir == NULL)
++		return 0;
++
++	while ((d = readdir(dir)) != NULL && !ret) {
++		struct stat statbuf;
++
++		if (!strcmp(d->d_name, ".") || !strcmp(d->d_name, ".."))
++			continue;
++
++		scnprintf(namebuf, sizeof(namebuf), "%s/%s",
++			  path, d->d_name);
++
++		ret = stat(namebuf, &statbuf);
++		if (ret < 0) {
++			pr_debug("stat failed: %s\n", namebuf);
++			break;
++		}
++
++		if (S_ISREG(statbuf.st_mode))
++			ret = unlink(namebuf);
++		else if (S_ISDIR(statbuf.st_mode))
++			ret = rm_rf(namebuf);
++		else {
++			pr_debug("unknown file: %s\n", namebuf);
++			ret = -1;
++		}
++	}
++	closedir(dir);
++
++	if (ret < 0)
++		return ret;
++
++	return rmdir(path);
++}
++
+ static int slow_copyfile(const char *from, const char *to, mode_t mode)
+ {
+ 	int err = -1;
+diff --git a/tools/perf/util/util.h b/tools/perf/util/util.h
+index 027a5153495c..7b71ad87cdc3 100644
+--- a/tools/perf/util/util.h
++++ b/tools/perf/util/util.h
+@@ -248,6 +248,7 @@ static inline int sane_case(int x, int high)
+ }
  
-@@ -376,7 +377,7 @@ static int __cmd_inject(struct perf_inject *inject)
- 	}
+ int mkdir_p(char *path, mode_t mode);
++int rm_rf(char *path);
+ int copyfile(const char *from, const char *to);
+ int copyfile_mode(const char *from, const char *to, mode_t mode);
  
- 	if (!file_out->is_pipe)
--		lseek(file_out->fd, session->header.data_offset, SEEK_SET);
-+		lseek(fd, session->header.data_offset, SEEK_SET);
- 
- 	ret = perf_session__process_events(session, &inject->tool);
- 
-@@ -385,7 +386,7 @@ static int __cmd_inject(struct perf_inject *inject)
- 			perf_header__set_feat(&session->header,
- 					      HEADER_BUILD_ID);
- 		session->header.data_size = inject->bytes_written;
--		perf_session__write_header(session, session->evlist, file_out->fd, true);
-+		perf_session__write_header(session, session->evlist, fd, true);
- 	}
- 
- 	return ret;
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index 9900b433e861..404ab3434052 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -208,7 +208,7 @@ static int process_buildids(struct record *rec)
- 	struct perf_data_file *file  = &rec->file;
- 	struct perf_session *session = rec->session;
- 
--	u64 size = lseek(file->fd, 0, SEEK_CUR);
-+	u64 size = lseek(perf_data_file__fd(file), 0, SEEK_CUR);
- 	if (size == 0)
- 		return 0;
- 
-@@ -334,6 +334,7 @@ static int __cmd_record(struct record *rec, int argc, const char **argv)
- 	struct perf_data_file *file = &rec->file;
- 	struct perf_session *session;
- 	bool disabled = false, draining = false;
-+	int fd;
- 
- 	rec->progname = argv[0];
- 
-@@ -348,6 +349,7 @@ static int __cmd_record(struct record *rec, int argc, const char **argv)
- 		return -1;
- 	}
- 
-+	fd = perf_data_file__fd(file);
- 	rec->session = session;
- 
- 	record__init_features(rec);
-@@ -372,12 +374,11 @@ static int __cmd_record(struct record *rec, int argc, const char **argv)
- 		perf_header__clear_feat(&session->header, HEADER_GROUP_DESC);
- 
- 	if (file->is_pipe) {
--		err = perf_header__write_pipe(file->fd);
-+		err = perf_header__write_pipe(fd);
- 		if (err < 0)
- 			goto out_child;
- 	} else {
--		err = perf_session__write_header(session, rec->evlist,
--						 file->fd, false);
-+		err = perf_session__write_header(session, rec->evlist, fd, false);
- 		if (err < 0)
- 			goto out_child;
- 	}
-@@ -409,7 +410,7 @@ static int __cmd_record(struct record *rec, int argc, const char **argv)
- 			 * return this more properly and also
- 			 * propagate errors that now are calling die()
- 			 */
--			err = perf_event__synthesize_tracing_data(tool, file->fd, rec->evlist,
-+			err = perf_event__synthesize_tracing_data(tool,	fd, rec->evlist,
- 								  process_synthesized_event);
- 			if (err <= 0) {
- 				pr_err("Couldn't record tracing data.\n");
-@@ -545,8 +546,7 @@ static int __cmd_record(struct record *rec, int argc, const char **argv)
- 
- 		if (!rec->no_buildid)
- 			process_buildids(rec);
--		perf_session__write_header(rec->session, rec->evlist,
--					   file->fd, true);
-+		perf_session__write_header(rec->session, rec->evlist, fd, true);
- 	}
- 
- 	if (!err && !quiet) {
 -- 
 2.2.2
 
