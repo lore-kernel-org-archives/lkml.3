@@ -1,138 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756548AbbA2NWm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 08:22:42 -0500
-Received: from mail-lb0-f170.google.com ([209.85.217.170]:40252 "EHLO
-	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754618AbbA2NWk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 08:22:40 -0500
+	id S1757250AbbA2NXM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 08:23:12 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:43600 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754625AbbA2NXK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Jan 2015 08:23:10 -0500
+Message-ID: <54CA343B.6060005@suse.cz>
+Date: Thu, 29 Jan 2015 14:23:07 +0100
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
 MIME-Version: 1.0
-In-Reply-To: <CABuKBe+x9o5OiysnMq-gvOBx3nKoaheL2efZGA6YQ7ZT5aqijw@mail.gmail.com>
-References: <1422022202-7526-1-git-send-email-s.hauer@pengutronix.de>
-	<20150126114735.GA3178@pengutronix.de>
-	<CABuKBe+x9o5OiysnMq-gvOBx3nKoaheL2efZGA6YQ7ZT5aqijw@mail.gmail.com>
-Date: Thu, 29 Jan 2015 14:22:38 +0100
-Message-ID: <CABuKBeLWeKkO4oHj1o8ts+nmhSApvy=xLcrFEQ8nEwUrrtcH1Q@mail.gmail.com>
-Subject: Re: [PATCH v2] MediaTek PMIC support
-From: Matthias Brugger <matthias.bgg@gmail.com>
-To: Sascha Hauer <s.hauer@pengutronix.de>
-Cc: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        =?UTF-8?B?WUggQ2hlbiAo6Zmz5pix6LGqKQ==?= <yh.chen@mediatek.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Henry Chen <henryc.chen@mediatek.com>,
-        Rob Herring <robh+dt@kernel.org>,
-        =?UTF-8?B?WWluZ2pvZSBDaGVuICjpmbPoi7HmtLIp?= 
-	<Yingjoe.Chen@mediatek.com>,
-        Eddie Huang <eddie.huang@mediatek.com>,
-        Lee Jones <lee.jones@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        James Liao <jamesjj.liao@mediatek.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Stephen Boyd <sboyd@codeaurora.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Jan Kiszka <jan.kiszka@siemens.com>
+CC: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        kgdb-bugreport@lists.sourceforge.net, Andi Kleen <andi@firstfloor.org>,
+        Tom Tromey <tromey@redhat.com>, Ben Widawsky <ben@bwidawsk.net>,
+        Borislav Petkov <bp@suse.de>, linux-kbuild@vger.kernel.org
+Subject: Re: [PATCH v11 01/28] scripts/gdb: Add infrastructure
+References: <cover.1422514006.git.jan.kiszka@siemens.com> <39c235fa6c349bf025f957a1913c2e63be5b87c5.1422514006.git.jan.kiszka@siemens.com>
+In-Reply-To: <39c235fa6c349bf025f957a1913c2e63be5b87c5.1422514006.git.jan.kiszka@siemens.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2015-01-29 13:39 GMT+01:00 Matthias Brugger <matthias.bgg@gmail.com>:
-> Hi Sascha,
->
-> 2015-01-26 12:47 GMT+01:00 Sascha Hauer <s.hauer@pengutronix.de>:
->> Olof, Arnd,
->>
->> OK to put the driver into drivers/soc/mediatek? Can you take these
->> patches?
->
-> How does this patches fit together with the one James clock framework patches?
+On 2015-01-29 07:46, Jan Kiszka wrote:
+> --- a/scripts/Makefile
+> +++ b/scripts/Makefile
+> @@ -36,6 +36,7 @@ subdir-$(CONFIG_MODVERSIONS) += genksyms
+>  subdir-y                     += mod
+>  subdir-$(CONFIG_SECURITY_SELINUX) += selinux
+>  subdir-$(CONFIG_DTC)         += dtc
+> +subdir-$(CONFIG_GDB_SCRIPTS) += gdb
+>  
+>  # Let clean descend into subdirs
+> -subdir-	+= basic kconfig package
+> +subdir-	+= basic kconfig package gdb
 
-I forgot to send the link to the patches. Sorry for that. Here you are:
-http://lists.infradead.org/pipermail/linux-arm-kernel/2015-January/313793.html
+The second assignment is superfluous. basic, kconfig and package are
+listed there, because they are built explicitly by the toplevel Makefile
+and not during the recursion.
 
-> Both use the same compatible "mediatek,mt8135-infracfg" and
-> "mediatek,mt8135-pericfg".
->
-> I had a look on other implementations and they attach the reset
-> controller to the clk driver, if they share the same hw block.
-> Might we run into problems if we implement the clocks in the mfd, as
-> we need the clocks early in boot (e.g. for the timer)?
->
-> In mt6589 pericfg apart from the clocks and reset controller provides
-> registers for AXI bus control and USB wakeup and USB clock selection.
-> The infracfg block provides top AXI bus fabric control signals and
-> remap registers for the modem.
-> Mike, Stephen, what do you think. Can we implement the clk in a mfd
-> driver? Or do you prefer to implement the whole block in the clk
-> driver?
->
-> Cheers,
-> Matthias
->
->>
->> Sascha
->>
->> On Fri, Jan 23, 2015 at 03:09:55PM +0100, Sascha Hauer wrote:
->>> This series adds initial support for the MediaTek MT6397 PMIC and the
->>> necessary infrastructure to attach it on the MT8135 / MT8173 SoCs.
->>>
->>> The infrastructure includes:
->>>
->>> - pericfg / infracfg controller support
->>>   The pericfg / infracfg controllers contain miscellaneous registers for
->>>   reset controllers and clocks.
->>>
->>> - PMIC wrapper support
->>>   On MediaTek MT8135, MT8173 and other SoCs the PMIC is connected via
->>>   SPI. The SPI master interface is not directly visible to the CPU, but
->>>   only through the PMIC wrapper inside the SoC. The communication between
->>>   the SoC and the PMIC can optionally be encrypted. Also a non standard
->>>   Dual IO SPI mode can be used to increase speed. The MT8135 also supports
->>>   a special feature named "IP Pairing". With IP Pairing the pins of some
->>>   SoC internal peripherals can be on the PMIC. The signals of these pins
->>>   are routed over the SPI bus using the pwrap bridge. Because of these
->>>   optional non SPI conform features the PMIC driver is not implemented as
->>>   a SPI bus master driver.
->>>
->>> The MT6397 PMIC itself is implemented as a regular mfd device driver which
->>> uses regmap to access the PMIC registers.
->>>
->>> This series also adds regulator support for the MT6397 PMIC.
->>>
->>> The first 6 patches can be merged through the ARM SoC tree. The mfd
->>> patch is independent of the first 6 patches and can be merged through the
->>> mfd maintainer trees.
->>>
->>> Changes since v1:
->>>
->>> - document reset bindings for infracfg/pericfg
->>> - fix base addresses in infracfg binding example
->>> - Remove more Email addresses from Flora Fu (She is not working at
->>>   MediaTek anymore, her address is no longer valid)
->>> - drop Regulator support patch, it's already in next
->>>
->>> Sascha
->>>
->>>
->>> _______________________________________________
->>> linux-arm-kernel mailing list
->>> linux-arm-kernel@lists.infradead.org
->>> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
->>>
->>
->> --
->> Pengutronix e.K.                           |                             |
->> Industrial Linux Solutions                 | http://www.pengutronix.de/  |
->> Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
->> Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
->
->
->
-> --
-> motzblog.wordpress.com
+Michal
 
-
-
--- 
-motzblog.wordpress.com
