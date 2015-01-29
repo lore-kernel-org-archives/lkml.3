@@ -1,169 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754088AbbA2BTJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 20:19:09 -0500
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:40500 "EHLO
-	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754073AbbA2BTE (ORCPT
+	id S1753067AbbA2BVJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 20:21:09 -0500
+Received: from mail-ie0-f179.google.com ([209.85.223.179]:55707 "EHLO
+	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752708AbbA2BVD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 20:19:04 -0500
-X-Original-SENDERIP: 10.177.220.203
-X-Original-MAILFROM: namhyung@kernel.org
-Date: Thu, 29 Jan 2015 09:46:31 +0900
-From: Namhyung Kim <namhyung@kernel.org>
-To: Alexei Starovoitov <ast@plumgrid.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Jiri Olsa <jolsa@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        linux-api@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 linux-trace 1/8] tracing: attach eBPF programs to
- tracepoints and syscalls
-Message-ID: <20150129004631.GA24182@sejong>
-References: <1422417973-10195-1-git-send-email-ast@plumgrid.com>
- <1422417973-10195-2-git-send-email-ast@plumgrid.com>
+	Wed, 28 Jan 2015 20:21:03 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1422417973-10195-2-git-send-email-ast@plumgrid.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <CAPDyKFqjG=yxDcwnk4jbXMZ05hMkWR2x37uVpRNd_11-eB4G7w@mail.gmail.com>
+References: <1422271175-19445-1-git-send-email-addy.ke@rock-chips.com>
+	<1422271175-19445-2-git-send-email-addy.ke@rock-chips.com>
+	<CAPDyKFp=5epMggHu0+u_LU7ETujcoeP2xOpB7iD6JF2bs8BnEA@mail.gmail.com>
+	<CAD=FV=X9x0gW5TyLi4ERm8nxixQB__Y=5bRAtOax-_w+T33rCg@mail.gmail.com>
+	<CAPDyKFqjG=yxDcwnk4jbXMZ05hMkWR2x37uVpRNd_11-eB4G7w@mail.gmail.com>
+Date: Wed, 28 Jan 2015 16:55:28 -0800
+X-Google-Sender-Auth: QsjzPaToXWOu4OxagdDhZOtXP4Y
+Message-ID: <CAD=FV=VQg+sQUpgbKw7Zz=-f+jPM=6O-+3gUpohWhj8JeSPu6Q@mail.gmail.com>
+Subject: Re: [PATCH 1/2] mmc: core: use card pointer as the first parameter of execute_tuning()
+From: Doug Anderson <dianders@chromium.org>
+To: Ulf Hansson <ulf.hansson@linaro.org>
+Cc: Addy Ke <addy.ke@rock-chips.com>, Rob Herring <robh+dt@kernel.org>,
+        =?UTF-8?Q?Pawe=C5=82_Moll?= <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        "tgih.jun@samsung.com" <tgih.jun@samsung.com>,
+        Jaehoon Chung <jh80.chung@samsung.com>, Chris Ball <chris@printf.net>,
+        Dinh Nguyen <dinguyen@altera.com>,
+        =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
+        Olof Johansson <olof@lixom.net>, Sonny Rao <sonnyrao@chromium.org>,
+        Alexandru Stan <amstan@chromium.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-mmc <linux-mmc@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
+        "zhenfu.fang" <zhenfu.fang@rock-chips.com>,
+        Eddie Cai <cf@rock-chips.com>, lintao <lintao@rock-chips.com>,
+        chenfen <chenfen@rock-chips.com>, zyf <zyf@rock-chips.com>,
+        Jianqun Xu <xjq@rock-chips.com>, Tao Huang <huangtao@rock-chips.com>,
+        Chris Zhong <zyw@rock-chips.com>,
+        =?UTF-8?B?5aea5pm65oOF?= <yzq@rock-chips.com>,
+        Han Jiang <hj@rock-chips.com>, Kever Yang <kever.yang@rock-chips.com>,
+        zhangqing <zhangqing@rock-chips.com>, Lin Huang <hl@rock-chips.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alexei,
+Ulf,
 
-On Tue, Jan 27, 2015 at 08:06:06PM -0800, Alexei Starovoitov wrote:
-> User interface:
-> fd = open("/sys/kernel/debug/tracing/__event__/filter")
-> 
-> write(fd, "bpf_123")
-> 
-> where 123 is process local FD associated with eBPF program previously loaded.
-> __event__ is static tracepoint event or syscall.
-> (kprobe support is in next patch)
-> Once program is successfully attached to tracepoint event, the tracepoint
-> will be auto-enabled
-> 
-> close(fd)
-> auto-disables tracepoint event and detaches eBPF program from it
-> 
-> eBPF programs can call in-kernel helper functions to:
-> - lookup/update/delete elements in maps
-> - memcmp
-> - fetch_ptr/u64/u32/u16/u8 values from unsafe address via probe_kernel_read(),
->   so that eBPF program can walk any kernel data structures
-> 
-> Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
-> ---
+On Tue, Jan 27, 2015 at 7:18 AM, Ulf Hansson <ulf.hansson@linaro.org> wrote:
+>> I asked Addy to post upstream against mmc_send_tuning(), but I guess
+>> he didn't (he posted against Alex's NAKed patch instead).
+>>
+>> ...when I talked to him about it, Addy was asserting that when tuning
+>> fails it is important (at least on dw_mmc on rk3288) that we wait for
+>> the card to stop being busy and that the way to detect was using
+>> mmc_send_status().
+>
+> So, could that be due to the internal logic of the error handling in
+> dw_mmc driver? Or you think this is a generic issue?
+>
+> According to the specifications (eMMC and SD) both states that the
+> tuning command has an R1 response. So, there shouldn't be any busy
+> signalling involved - at least according to spec.
 
-[SNIP]
-> diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
-> index b03a0ea77b99..70482817231a 100644
-> --- a/kernel/trace/trace_events.c
-> +++ b/kernel/trace/trace_events.c
-> @@ -1084,6 +1084,26 @@ event_filter_read(struct file *filp, char __user *ubuf, size_t cnt,
->  	return r;
->  }
->  
-> +static int event_filter_release(struct inode *inode, struct file *filp)
-> +{
-> +	struct ftrace_event_file *file;
-> +	char buf[2] = "0";
-> +
-> +	mutex_lock(&event_mutex);
-> +	file = event_file_data(filp);
-> +	if (file) {
-> +		if (file->flags & TRACE_EVENT_FL_BPF) {
-> +			/* auto-disable the filter */
-> +			ftrace_event_enable_disable(file, 0);
+I did a bit of digging into this issue myself.  What I found was that
+a "response CRC" and "end of transfer".  This was why I posted up
+<https://patchwork.kernel.org/patch/5623071/>.  From that patch:
 
-Hmm.. what if user already enabled an event, attached a bpf filter and
-then detached the filter - I'm not sure we can always auto-disable
-it..
+> Specifically it looks like in certain error conditions (I saw this
+> with Response CRC errors) that data keeps showing up in the FIFO even
+> after the error is reported and the CD (command done) bit is set.  If
+> we don't wait for this data to finish transferring then it confuses
+> the next transaction.  In the specific failure case I ran into I found
+> that I could monitor the data_state_mc_busy bit and wait for it to
+> clear, but in other failure cases this bit was stuck at busy when we
+> saw an error.  Hence a generic big delay seems like the only option.
+
+...Addy instead fixed the problem using mmc_send_status() to try to
+detect when the transfer was all done and it apparently worked, but it
+seemed odd to me.  My MMC "expertise" pretty much ends with looking
+for simple logic errors in the MMC driver, so my hope was that one of
+you guys would know this better...
 
 
-> +
-> +			/* if BPF filter was used, clear it on fd close */
-> +			apply_event_filter(file, buf);
-> +		}
-> +	}
-> +	mutex_unlock(&event_mutex);
-> +	return 0;
-> +}
-> +
->  static ssize_t
->  event_filter_write(struct file *filp, const char __user *ubuf, size_t cnt,
->  		   loff_t *ppos)
-> @@ -1107,8 +1127,18 @@ event_filter_write(struct file *filp, const char __user *ubuf, size_t cnt,
->  
->  	mutex_lock(&event_mutex);
->  	file = event_file_data(filp);
-> -	if (file)
-> +	if (file) {
-> +		/*
-> +		 * note to user space tools:
-> +		 * write() into debugfs/tracing/events/xxx/filter file
-> +		 * must be done with the same privilege level as open()
-> +		 */
->  		err = apply_event_filter(file, buf);
-> +		if (!err && file->flags & TRACE_EVENT_FL_BPF)
-> +			/* once filter is applied, auto-enable it */
-> +			ftrace_event_enable_disable(file, 1);
-> +	}
-> +
->  	mutex_unlock(&event_mutex);
->  
->  	free_page((unsigned long) buf);
-> @@ -1363,6 +1393,7 @@ static const struct file_operations ftrace_event_filter_fops = {
->  	.open = tracing_open_generic,
->  	.read = event_filter_read,
->  	.write = event_filter_write,
-> +	.release = event_filter_release,
->  	.llseek = default_llseek,
->  };
->  
-> diff --git a/kernel/trace/trace_events_filter.c b/kernel/trace/trace_events_filter.c
-> index ced69da0ff55..e0303b3cc9fb 100644
-> --- a/kernel/trace/trace_events_filter.c
-> +++ b/kernel/trace/trace_events_filter.c
-> @@ -23,6 +23,9 @@
->  #include <linux/mutex.h>
->  #include <linux/perf_event.h>
->  #include <linux/slab.h>
-> +#include <linux/bpf.h>
-> +#include <trace/bpf_trace.h>
-> +#include <linux/filter.h>
->  
->  #include "trace.h"
->  #include "trace_output.h"
-> @@ -541,6 +544,21 @@ static int filter_match_preds_cb(enum move_type move, struct filter_pred *pred,
->  	return WALK_PRED_DEFAULT;
->  }
->  
-> +unsigned int trace_filter_call_bpf(struct event_filter *filter, void *ctx)
-> +{
-> +	unsigned int ret;
-> +
-> +	if (in_nmi()) /* not supported yet */
-> +		return 0;
+>> That would mean that against upstream you'd need to change
+>> mmc_send_tuning() to take in the card as well (or move the "host->card
+>> = card" assignment to before UHS init, which seems less desirable?)
+>>
+>> What do you think about that?  Is there a better solution?
+>
+> Why do we need to change mmc_send_tuning()? I thought the issue was
+> that mmc_send_status(), which currently takes "card" as a parameter.
 
-But doesn't this mean to auto-disable all attached events during NMI
-as returning 0 will prevent the event going to ring buffer?
-
-I think it'd be better to keep an attached event in a soft-disabled
-state like event trigger and give control of enabling to users..
-
-Thanks,
-Namhyung
+Well, if mmc_send_tuning() needed to call mmc_send_status() then
+mmc_send_tuning() would need the card parameter, right?
 
 
-> +
-> +	rcu_read_lock();
-> +	ret = BPF_PROG_RUN(filter->prog, ctx);
-> +	rcu_read_unlock();
-> +
-> +	return ret;
-> +}
-> +EXPORT_SYMBOL_GPL(trace_filter_call_bpf);
+Doug
