@@ -1,100 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754139AbbA2Mel (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 07:34:41 -0500
-Received: from mail.kernel.org ([198.145.29.136]:33530 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752710AbbA2Mej (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 07:34:39 -0500
-Date: Thu, 29 Jan 2015 09:34:45 -0300
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Jiri Olsa <jolsa@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        David Ahern <dsahern@gmail.com>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Stephane Eranian <eranian@google.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH 27/42] perf tools: Protect dso symbol loading using a
- mutex
-Message-ID: <20150129123445.GS7220@kernel.org>
-References: <1422518843-25818-1-git-send-email-namhyung@kernel.org>
- <1422518843-25818-28-git-send-email-namhyung@kernel.org>
+	id S1754758AbbA2MgI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 07:36:08 -0500
+Received: from mail-oi0-f52.google.com ([209.85.218.52]:35258 "EHLO
+	mail-oi0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753221AbbA2MgG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Jan 2015 07:36:06 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1422518843-25818-28-git-send-email-namhyung@kernel.org>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <CAMEtUuzSDYYWneoTy9=AmMa9=x4owWbWsXod=Do54+yj4Je3=Q@mail.gmail.com>
+References: <CAMEtUuzSDYYWneoTy9=AmMa9=x4owWbWsXod=Do54+yj4Je3=Q@mail.gmail.com>
+From: Namhyung Kim <namhyung@kernel.org>
+Date: Thu, 29 Jan 2015 21:35:44 +0900
+X-Google-Sender-Auth: aE0VxqmrPsCIKIhRRGKpndyufaw
+Message-ID: <CAM9d7chgjWh6CyTiNHJX+kWbk29ANEHWSPgY4ga3BpkFbPwgiQ@mail.gmail.com>
+Subject: Re: [PATCH v2 linux-trace 1/8] tracing: attach eBPF programs to
+ tracepoints and syscalls
+To: Alexei Starovoitov <ast@plumgrid.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Jiri Olsa <jolsa@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Linux API <linux-api@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, Jan 29, 2015 at 05:07:08PM +0900, Namhyung Kim escreveu:
-> When multi-thread support for perf report is enabled, it's possible to
-> access a dso concurrently.  Add a new pthread_mutex to protect it from
-> concurrent dso__load().
-> 
-> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-> ---
->  tools/perf/util/dso.c    |  2 ++
->  tools/perf/util/dso.h    |  1 +
->  tools/perf/util/symbol.c | 34 ++++++++++++++++++++++++----------
->  3 files changed, 27 insertions(+), 10 deletions(-)
-> 
-> diff --git a/tools/perf/util/dso.c b/tools/perf/util/dso.c
-> index 45be944d450a..3da75816b8f8 100644
-> --- a/tools/perf/util/dso.c
-> +++ b/tools/perf/util/dso.c
-> @@ -888,6 +888,7 @@ struct dso *dso__new(const char *name)
->  		RB_CLEAR_NODE(&dso->rb_node);
->  		INIT_LIST_HEAD(&dso->node);
->  		INIT_LIST_HEAD(&dso->data.open_entry);
-> +		pthread_mutex_init(&dso->lock, NULL);
->  	}
->  
->  	return dso;
-> @@ -917,6 +918,7 @@ void dso__delete(struct dso *dso)
->  	dso_cache__free(&dso->data.cache);
->  	dso__free_a2l(dso);
->  	zfree(&dso->symsrc_filename);
-> +	pthread_mutex_destroy(&dso->lock);
->  	free(dso);
->  }
->  
-> diff --git a/tools/perf/util/dso.h b/tools/perf/util/dso.h
-> index 3782c82c6e44..ac753594a469 100644
-> --- a/tools/perf/util/dso.h
-> +++ b/tools/perf/util/dso.h
-> @@ -102,6 +102,7 @@ struct dsos {
->  };
->  
->  struct dso {
-> +	pthread_mutex_t	 lock;
->  	struct list_head node;
->  	struct rb_node	 rb_node;	/* rbtree node sorted by long name */
->  	struct rb_root	 symbols[MAP__NR_TYPES];
-> diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-> index a69066865a55..714e20c99354 100644
-> --- a/tools/perf/util/symbol.c
-> +++ b/tools/perf/util/symbol.c
-> @@ -1357,12 +1357,22 @@ int dso__load(struct dso *dso, struct map *map, symbol_filter_t filter)
->  	struct symsrc *syms_ss = NULL, *runtime_ss = NULL;
->  	bool kmod;
->  
-> -	dso__set_loaded(dso, map->type);
-> +	pthread_mutex_lock(&dso->lock);
-> +
-> +	/* check again under the dso->lock */
+On Thu, Jan 29, 2015 at 4:04 PM, Alexei Starovoitov <ast@plumgrid.com> wrote:
+> On Wed, Jan 28, 2015 at 10:41 PM, Namhyung Kim <namhyung@kernel.org> wrote:
+>>
+>> I think it's not a problem of bpf.  An user process can be killed
+>> anytime while it enabed events without bpf.  The only thing it should
+>> care is the auto-unload IMHO.
+>
+> ok. I think it does indeed make sense to decouple the logic.
+> We can add 'auto_enable' file to achieve desired Ctrl-C behavior.
+> While the 'auto_enable' file is open the event will be enabled
+> and writes to 'enable' file will be ignored.
+> As soon as file closes, the event is auto-disabled.
+> Then user space will use 'bpf' file to attach/auto-unload
+> and 'auto_enable' file together.
+> Seem there would be a use for such 'auto_enable'
+> without bpf as well.
 
-Again? Where was it first checked? Perhaps we should lock there, so that
-we don't have to do two checks, one unlocked, the other locked?
+Why do you want such an 'auto_enable' feature?  I guess it's enough
+just to keep an event in the soft-disabled state and run a bpf program
+before the check.
 
-> +	if (dso__loaded(dso, map->type)) {
-> +		ret = 1;
-> +		goto out;
-> +	}
-> +
 
-- Arnaldo
+>
+>> I'm okay for not calling bpf program in NMI but not for disabling events.
+>>
+>> Suppose an user was collecting an event (including in NMI) and then
+>> [s]he also wanted to run a bpf program.  So [s]he wrote a program
+>> always return 1.  But after attaching the program, it didn't record
+>> the event in NMI..  Isn't that a problem?
+>
+> ok, I think 'if (in_nmi()) return 1;' will work then, right?
+> Or you're thinking something else ?
+
+Nope, returning 1 would be okay..
+
+
+>
+>> Right.  I think bpf programs belong to a user process but events are
+>> global resource.  Maybe you also need to consider attaching bpf
+>> program via perf (ioctl?) interface..
+>
+> yes. I did. Please see my reply to Masami.
+> ioctl only works for tracepoints.
+
+What was the problem of kprobes then? :)
+
+Thanks,
+Namhyung
