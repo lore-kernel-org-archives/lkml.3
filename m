@@ -1,94 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754854AbbA2H3E (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 02:29:04 -0500
-Received: from ozlabs.org ([103.22.144.67]:47475 "EHLO ozlabs.org"
+	id S1752965AbbA2Hfn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 02:35:43 -0500
+Received: from bitmer.com ([213.157.87.50]:51878 "EHLO bitmer.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752521AbbA2H3D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 02:29:03 -0500
-Date: Thu, 29 Jan 2015 18:28:55 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Xen Devel <Xen-devel@lists.xensource.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        David Vrabel <david.vrabel@citrix.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: linux-next: manual merge of the akpm-current tree with the xen-tip
- tree
-Message-ID: <20150129182855.58f0cf82@canb.auug.org.au>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
+	id S1751695AbbA2Hfl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Jan 2015 02:35:41 -0500
+Date: Thu, 29 Jan 2015 09:35:29 +0200
+From: Jarkko Nikula <jarkko.nikula@bitmer.com>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: Peter Ujfalusi <peter.ujfalusi@ti.com>, pali.rohar@gmail.com,
+        sre@debian.org, sre@ring0.de,
+        kernel list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        linux-omap@vger.kernel.org, tony@atomide.com, khilman@kernel.org,
+        aaro.koskinen@iki.fi, ivo.g.dimitrov.75@gmail.com
+Subject: Re: 3.19 on Nokia n900: audio quality awful
+Message-ID: <20150129073529.GA19122@bitmer.com>
+References: <20150106170433.GA5408@amd>
+ <20150118120139.GA1509@amd>
+ <54C63F1C.6010703@ti.com>
+ <54C92752.9000004@bitmer.com>
+ <20150128224144.GA28956@amd>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/Xp=KsYPkgH.R_e7otOCxb2E"; protocol="application/pgp-signature"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150128224144.GA28956@amd>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/Xp=KsYPkgH.R_e7otOCxb2E
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Wed, Jan 28, 2015 at 11:41:44PM +0100, Pavel Machek wrote:
+> On Wed 2015-01-28 20:15:46, Jarkko Nikula wrote:
+> > On 01/26/2015 03:20 PM, Peter Ujfalusi wrote:
+> > > On 01/18/2015 02:01 PM, Pavel Machek wrote:
+> > No need to go that far. N900 has been supported in mainline since 2.6.39
+> > or so. Part A of AIC34 (which is basically dual AIC33 in a same package)
+> > drives 2 V for the digital microphone bias and part B 2.5 V for the headset.
+> 
+> Let me try... Umm, no change here :-(
+> 
+> root@n900:/tmp# arecord delme
+> Recording WAVE 'delme' : Unsigned 8 bit, Rate 8000 Hz, Mono
+> ^CAborted by signal Interrupt...
+> root@n900:/tmp# hexdump delme
+> 0000000 4952 4646 987c 0000 4157 4556 6d66 2074
+> 0000010 0010 0000 0001 0001 1f40 0000 1f40 0000
+> 0000020 0001 0008 6164 6174 9858 0000 8080 8080
+> 0000030 8080 8080 8080 8080 8080 8080 8080 8080
+> *
+> 0009880
+> root@n900:/tmp# aplay delme
+> Playing WAVE 'delme' : Unsigned 8 bit, Rate 8000 Hz, Mono
+> root@n900:/tmp#
+> 
+> I did this:
+> 
+> I'm not sure which one is "main" microphone and which is headset, but
+> I guess 2V should be "close enough" to 2.5V to produce something
+> different from zeros..?
+> 
+Main or integrated is digital microphone which does AD conversion itself
+and headset is analogue. If DMIC is without bias codec will sample plain
+zeros from DMIC input but analogue input should always produce some random
+LSB bits from codec's AD converter.
 
-Hi Andrew,
+If codec produces zeros also from analogue input then I suppose codec
+ADC is not powered up or similar. One way to hunt regression if
+bisecting is not possible due reason or another is to dump and diff codec
+registers from /sys/kernel/debug/regmap/ using both working commit and head.
 
-Today's linux-next merge of the akpm-current tree got a conflict in
-include/linux/mm.h between commit 667a0a06c99d ("mm: provide a
-find_special_page vma operation") from the xen-tip tree and commit
-cfd00f5aa195 ("mm: drop vm_ops->remap_pages and
-generic_file_remap_pages() stub") from the akpm-current tree.
+> diff --git a/arch/arm/boot/dts/omap3-n900.dts b/arch/arm/boot/dts/omap3-n900.dts
+> index 48b0987..f18a5b0 100644
+> --- a/arch/arm/boot/dts/omap3-n900.dts
+> +++ b/arch/arm/boot/dts/omap3-n900.dts
+> @@ -491,6 +491,8 @@
+>  		DRVDD-supply = <&vmmc2>;
+>  		IOVDD-supply = <&vio>;
+>  		DVDD-supply = <&vio>;
+> +
+> +		ai3x-micbias-vg = <1>;
+>  	};
+Looks ok for digital mic.
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+>  
+>  	tlv320aic3x_aux: tlv320aic3x@19 {
+> @@ -502,6 +504,8 @@
+>  		DRVDD-supply = <&vmmc2>;
+>  		IOVDD-supply = <&vio>;
+>  		DVDD-supply = <&vio>;
+> +
+> +		ai3x-micbias-vg = <1>;
+>  	};
+This should be 2, i.e. 2.5 V according to
+Documentation/devicetree/bindings/sound/tlv320aic3x.txt. I think 2 V is
+too low for some headset mics and that was the reason for 2.5 V.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc include/linux/mm.h
-index 9269af7349fe,b5e28731a293..000000000000
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@@ -287,17 -284,6 +284,14 @@@ struct vm_operations_struct=20
-  	struct mempolicy *(*get_policy)(struct vm_area_struct *vma,
-  					unsigned long addr);
-  #endif
-- 	/* called by sys_remap_file_pages() to populate non-linear mapping */
-- 	int (*remap_pages)(struct vm_area_struct *vma, unsigned long addr,
-- 			   unsigned long size, pgoff_t pgoff);
- +
- +	/*
- +	 * Called by vm_normal_page() for special PTEs to find the
- +	 * page for @addr.  This is useful if the default behavior
- +	 * (using pte_page()) would not find the correct page.
- +	 */
- +	struct page *(*find_special_page)(struct vm_area_struct *vma,
- +					  unsigned long addr);
-  };
- =20
-  struct mmu_gather;
-
---Sig_/Xp=KsYPkgH.R_e7otOCxb2E
-Content-Type: application/pgp-signature
-Content-Description: OpenPGP digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJUyeE8AAoJEMDTa8Ir7ZwVpjkQAIRMfYiVQQumAbbBBA5q6nJE
-BLMif5shURtsjLtt+JTn7rvLWEzCoTlLzKRocTG9h19oEj3IFrLD84tthB9LP1RQ
-H0IFLdFX5IZzCNU4nWiuhOPNv4zEGWkCnYJeY8MvCn7omEbJc6H+BnFfjr6ztnkJ
-IPPsL2YnU6HghUAfzxk20ZhqyVcny7lgPqgyzhGGh2wexsy8CjDbnAoYfYP7S7rq
-Dzj6aEJ+B+RNMqVz/JMgxgx7JbmykwBpM3MJ1+DOUsd1f7SwCbsWz7PsY8+ctpib
-xYlfE3WkVObwH6WOSOn5UV6+anwLDh/zuFwA2lZwP/2usexfBmwqsh8MqXFEKhTB
-LTYnRMezO60XhfYtpy7GtHMMKELVwLfBYL1LAPPySkdMkRSUDGjAk50w4opdtzUT
-3/opEFZ5uJFEdbnfmd6JogYj8/KwWgJNioaZZXisSGiemPRnzVzKQDkGImxx8dm9
-7eFdfnZ/OiD8FzZKzmjA1v5mMb3Y68vVEGq58zjvgx4pi2sOQY5+4fhCurQsCGwk
-L1uisHshbC2Nur81BRjmFyW+Fy88waGPf2ve8Udj/TXMo5O6uGqLEh+oUHrpYfkK
-zrJ5eA31tcLwTADh7lihrDKbzGSIGIZGxAAr0AZuwn6/6Jh4Etr9vSeggmtY2Rag
-xMac42c95udxVVKoRMlb
-=Qf9W
------END PGP SIGNATURE-----
-
---Sig_/Xp=KsYPkgH.R_e7otOCxb2E--
+-- 
+Jarkko
