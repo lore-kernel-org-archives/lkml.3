@@ -1,12 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757106AbbA2HNb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 02:13:31 -0500
-Received: from goliath.siemens.de ([192.35.17.28]:35488 "EHLO
-	goliath.siemens.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756819AbbA2HN2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 02:13:28 -0500
+	id S1755722AbbA2Gxy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 01:53:54 -0500
+Received: from david.siemens.de ([192.35.17.14]:58352 "EHLO david.siemens.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754659AbbA2Gxu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Jan 2015 01:53:50 -0500
 From: Jan Kiszka <jan.kiszka@siemens.com>
 To: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
 Cc: Thomas Gleixner <tglx@linutronix.de>,
@@ -14,9 +13,9 @@ Cc: Thomas Gleixner <tglx@linutronix.de>,
         kgdb-bugreport@lists.sourceforge.net, Andi Kleen <andi@firstfloor.org>,
         Tom Tromey <tromey@redhat.com>, Ben Widawsky <ben@bwidawsk.net>,
         Borislav Petkov <bp@suse.de>
-Subject: [PATCH v11 08/28] scripts/gdb: Add internal helper and convenience function to look up a module
-Date: Thu, 29 Jan 2015 07:46:27 +0100
-Message-Id: <0a8f779c4530c3b2e714734987f421b55ca37426.1422514006.git.jan.kiszka@siemens.com>
+Subject: [PATCH v11 09/28] scripts/gdb: Add get_target_endianness helper
+Date: Thu, 29 Jan 2015 07:46:28 +0100
+Message-Id: <f5025d023d76cb0ba5bb5ab654ddced9d6b99312.1422514006.git.jan.kiszka@siemens.com>
 X-Mailer: git-send-email 2.1.4
 In-Reply-To: <cover.1422514006.git.jan.kiszka@siemens.com>
 References: <cover.1422514006.git.jan.kiszka@siemens.com>
@@ -26,61 +25,41 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the internal helper get_module_by_name to obtain the module
-structure corresponding to the given name. Also export this service as a
-convenience function.
+Parse the target endianness from the output of "show endian" and cache
+the result to return it via the new helper get_target_endiannes. We will
+need it for reading integers from buffers that contain target memory.
 
 Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
 ---
- scripts/gdb/linux/modules.py | 28 ++++++++++++++++++++++++++++
- scripts/gdb/vmlinux-gdb.py   |  1 +
- 2 files changed, 29 insertions(+)
+ scripts/gdb/linux/utils.py | 18 ++++++++++++++++++
+ 1 file changed, 18 insertions(+)
 
-diff --git a/scripts/gdb/linux/modules.py b/scripts/gdb/linux/modules.py
-index 8a65c3d..531f763 100644
---- a/scripts/gdb/linux/modules.py
-+++ b/scripts/gdb/linux/modules.py
-@@ -37,3 +37,31 @@ class ModuleList:
-             return utils.container_of(entry, self.module_ptr_type, "list")
-         else:
-             raise StopIteration
+diff --git a/scripts/gdb/linux/utils.py b/scripts/gdb/linux/utils.py
+index c9d705b..10a227b 100644
+--- a/scripts/gdb/linux/utils.py
++++ b/scripts/gdb/linux/utils.py
+@@ -67,3 +67,21 @@ Note that TYPE and ELEMENT have to be quoted as strings."""
+                             elementname.string())
+ 
+ ContainerOf()
 +
 +
-+def find_module_by_name(name):
-+    for module in ModuleList():
-+        if module['name'].string() == name:
-+            return module
-+    return None
++BIG_ENDIAN = 0
++LITTLE_ENDIAN = 1
++target_endianness = None
 +
 +
-+class LxModule(gdb.Function):
-+    """Find module by name and return the module variable.
-+
-+$lx_module("MODULE"): Given the name MODULE, iterate over all loaded modules
-+of the target and return that module variable which MODULE matches."""
-+
-+    def __init__(self):
-+        super(LxModule, self).__init__("lx_module")
-+
-+    def invoke(self, mod_name):
-+        mod_name = mod_name.string()
-+        module = find_module_by_name(mod_name)
-+        if module:
-+            return module.dereference()
++def get_target_endianness():
++    global target_endianness
++    if target_endianness is None:
++        endian = gdb.execute("show endian", to_string=True)
++        if "little endian" in endian:
++            target_endianness = LITTLE_ENDIAN
++        elif "big endian" in endian:
++            target_endianness = BIG_ENDIAN
 +        else:
-+            raise gdb.GdbError("Unable to find MODULE " + mod_name)
-+
-+
-+LxModule()
-diff --git a/scripts/gdb/vmlinux-gdb.py b/scripts/gdb/vmlinux-gdb.py
-index 0b0faa4..cf2e716 100644
---- a/scripts/gdb/vmlinux-gdb.py
-+++ b/scripts/gdb/vmlinux-gdb.py
-@@ -24,3 +24,4 @@ except:
- else:
-     import linux.utils
-     import linux.symbols
-+    import linux.modules
++            raise gdb.GdgError("unknown endianness '{0}'".format(endian))
++    return target_endianness
 -- 
 2.1.4
 
