@@ -1,65 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755384AbbA2Pkd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 10:40:33 -0500
-Received: from outbound-smtp06.blacknight.com ([81.17.249.39]:47649 "EHLO
-	outbound-smtp06.blacknight.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754226AbbA2Pk3 (ORCPT
+	id S1753907AbbA2Pms (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 10:42:48 -0500
+Received: from utopia.booyaka.com ([74.50.51.50]:42472 "EHLO
+	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751759AbbA2Pmq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 10:40:29 -0500
-Message-ID: <54CA546B.3040704@nexus-software.ie>
-Date: Thu, 29 Jan 2015 15:40:27 +0000
-From: "Bryan O'Donoghue" <pure.logic@nexus-software.ie>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
+	Thu, 29 Jan 2015 10:42:46 -0500
+Date: Thu, 29 Jan 2015 15:42:45 +0000 (UTC)
+From: Paul Walmsley <paul@pwsan.com>
+To: linux-tegra@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+cc: Paul Walmsley <pwalmsley@nvidia.com>, Allen Martin <amartin@nvidia.com>,
+        Thierry Reding <treding@nvidia.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Paul Bolle <pebolle@tiscali.nl>
+Subject: [PATCH v2] arm64: Kconfig: clean up two no-op Kconfig options from
+ CONFIG_ARCH_TEGRA*
+Message-ID: <alpine.DEB.2.02.1501291541390.16475@utopia.booyaka.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: "Ong, Boon Leong" <boon.leong.ong@intel.com>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>,
-        "dvhart@infradead.org" <dvhart@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andy Shevchenko <andy.shevchenko@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: [PATCH 1/2] x86: Add Isolated Memory Regions for Quark X1000
-References: <1422470186-7860-1-git-send-email-pure.logic@nexus-software.ie>	<1422470186-7860-2-git-send-email-pure.logic@nexus-software.ie>	<20150129074411.GA4817@gmail.com> <CAHp75Vfff-C++LWyyK+FWLnot=jO4kQvbDaN9hJ2_VrhG8n2Qg@mail.gmail.com> <54CA0782.8000807@nexus-software.ie> <AF233D1473C1364ABD51D28909A1B1B7327158BE@PGSMSX105.gar.corp.intel.com> <54CA502D.9030307@nexus-software.ie> <AF233D1473C1364ABD51D28909A1B1B732715B43@PGSMSX105.gar.corp.intel.com>
-In-Reply-To: <AF233D1473C1364ABD51D28909A1B1B732715B43@PGSMSX105.gar.corp.intel.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 29/01/15 15:32, Ong, Boon Leong wrote:
->
->
->> -----Original Message-----
->> From: Bryan O'Donoghue [mailto:pure.logic@nexus-software.ie]
->> Sent: Thursday, January 29, 2015 11:22 PM
->> To: Ong, Boon Leong
->> Cc: Thomas Gleixner; Ingo Molnar; H. Peter Anvin; x86@kernel.org;
->> dvhart@infradead.org; linux-kernel@vger.kernel.org; Andy Shevchenko; Ingo
->> Molnar
->> Subject: Re: [PATCH 1/2] x86: Add Isolated Memory Regions for Quark X1000
->>
->> On 29/01/15 13:47, Ong, Boon Leong wrote:
->>> Bryan,
->>>
->>> Once you have the next revision ready, I would like to test it on my end across
->> both Galileo Gen v1 & v2.
->>>
->>> Cheers,
->>> BL
->>
->> Andy/BL - thanks for taking the time to test.
->>
->> I may end up dropping the imr_del_range() tests based on index as a result of
->> changing the external interface as suggested by Ingo.
-> It would be nice to have two variants (1) index based & (2) address based.
 
-Understood. The direction from Ingo was to have address based external 
-interface imr_del_range() and support an index based internal 
-imr_clear() - internally.
+Paul Bolle pointed out that commit
+d035fdfa27ac124bc8f94c3d7dc82ad069802170 ("arm64: Add Tegra132
+support") included two Kconfig symbols that are now no-ops:
+USB_ARCH_HAS_EHCI and HAVE_SMP.  So, drop the two symbols.
 
-So - in order to get test coverage - I'll move the self-test code back 
-into the main IMR code
+This second version corrects a thinko in Paul Bolle's E-mail address.
 
-Not as pretty that way - but better coverage :)
+Signed-off-by: Paul Walmsley <paul@pwsan.com>
+Cc: Paul Walmsley <pwalmsley@nvidia.com>
+Cc: Allen Martin <amartin@nvidia.com>
+Cc: Thierry Reding <treding@nvidia.com>
+Cc: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Will Deacon <will.deacon@arm.com>
+Cc: Mark Rutland <mark.rutland@arm.com>
+Cc: Paul Bolle <pebolle@tiscali.nl>
+---
+
+Boot-tested on NVIDIA Tegra132 Norrin64 FFD with a extra DTS page for the 
+board data (not yet posted upstream).
+
+ arch/arm64/Kconfig | 2 --
+ 1 file changed, 2 deletions(-)
+
+diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
+index 3b97e725ebfc..ae18c3d2bb3b 100644
+--- a/arch/arm64/Kconfig
++++ b/arch/arm64/Kconfig
+@@ -180,7 +180,6 @@ config ARCH_TEGRA
+ 	select CLKSRC_OF
+ 	select GENERIC_CLOCKEVENTS
+ 	select HAVE_CLK
+-	select HAVE_SMP
+ 	select PINCTRL
+ 	select RESET_CONTROLLER
+ 	help
+@@ -190,7 +189,6 @@ config ARCH_TEGRA_132_SOC
+ 	bool "NVIDIA Tegra132 SoC"
+ 	depends on ARCH_TEGRA
+ 	select PINCTRL_TEGRA124
+-	select USB_ARCH_HAS_EHCI if USB_SUPPORT
+ 	select USB_ULPI if USB_PHY
+ 	select USB_ULPI_VIEWPORT if USB_PHY
+ 	help
+-- 
+2.1.4
+
