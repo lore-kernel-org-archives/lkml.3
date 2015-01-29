@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761600AbbA2JWz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 04:22:55 -0500
-Received: from e23smtp09.au.ibm.com ([202.81.31.142]:57959 "EHLO
-	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760616AbbA2JWg (ORCPT
+	id S1760940AbbA2J1L (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 04:27:11 -0500
+Received: from e23smtp04.au.ibm.com ([202.81.31.146]:37617 "EHLO
+	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761344AbbA2JWh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 04:22:36 -0500
+	Thu, 29 Jan 2015 04:22:37 -0500
 From: Alexey Kardashevskiy <aik@ozlabs.ru>
 To: linuxppc-dev@lists.ozlabs.org
 Cc: Alexey Kardashevskiy <aik@ozlabs.ru>,
@@ -17,148 +17,122 @@ Cc: Alexey Kardashevskiy <aik@ozlabs.ru>,
         Alex Williamson <alex.williamson@redhat.com>,
         Alexander Graf <agraf@suse.de>,
         Alexander Gordeev <agordeev@redhat.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH v3 17/24] powerpc/powernv/ioda2: Introduce pnv_pci_ioda2_set_window
-Date: Thu, 29 Jan 2015 20:21:58 +1100
-Message-Id: <1422523325-1389-18-git-send-email-aik@ozlabs.ru>
+Subject: [PATCH v3 18/24] powerpc/iommu: Split iommu_free_table into 2 helpers
+Date: Thu, 29 Jan 2015 20:21:59 +1100
+Message-Id: <1422523325-1389-19-git-send-email-aik@ozlabs.ru>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <1422523325-1389-1-git-send-email-aik@ozlabs.ru>
 References: <1422523325-1389-1-git-send-email-aik@ozlabs.ru>
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 15012909-0033-0000-0000-000000FE0B66
+x-cbid: 15012909-0013-0000-0000-000000BF16DA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a part of moving DMA window programming to an iommu_ops
-callback.
-
-This is a mechanical patch.
+The iommu_free_table helper release memory it is using (the TCE table and
+@it_map) and release the iommu_table struct as well. We might not want
+the very last step as we store iommu_table in parent structures.
 
 Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
 ---
- arch/powerpc/platforms/powernv/pci-ioda.c | 84 ++++++++++++++++++++-----------
- 1 file changed, 56 insertions(+), 28 deletions(-)
+ arch/powerpc/include/asm/iommu.h |  1 +
+ arch/powerpc/kernel/iommu.c      | 57 ++++++++++++++++++++++++----------------
+ 2 files changed, 35 insertions(+), 23 deletions(-)
 
-diff --git a/arch/powerpc/platforms/powernv/pci-ioda.c b/arch/powerpc/platforms/powernv/pci-ioda.c
-index 95d9119..1f725d4 100644
---- a/arch/powerpc/platforms/powernv/pci-ioda.c
-+++ b/arch/powerpc/platforms/powernv/pci-ioda.c
-@@ -1351,6 +1351,57 @@ static void pnv_pci_ioda2_free_table(struct iommu_table *tbl)
- 	memset(tbl, 0, sizeof(struct iommu_table));
+diff --git a/arch/powerpc/include/asm/iommu.h b/arch/powerpc/include/asm/iommu.h
+index bf26d47..cc26eca 100644
+--- a/arch/powerpc/include/asm/iommu.h
++++ b/arch/powerpc/include/asm/iommu.h
+@@ -122,6 +122,7 @@ static inline void *get_iommu_table_base(struct device *dev)
+ 
+ extern struct iommu_table *iommu_table_alloc(int node);
+ /* Frees table for an individual device node */
++extern void iommu_reset_table(struct iommu_table *tbl, const char *node_name);
+ extern void iommu_free_table(struct iommu_table *tbl, const char *node_name);
+ 
+ /* Initializes an iommu_table based in values set in the passed-in
+diff --git a/arch/powerpc/kernel/iommu.c b/arch/powerpc/kernel/iommu.c
+index 26feaff..5f87076 100644
+--- a/arch/powerpc/kernel/iommu.c
++++ b/arch/powerpc/kernel/iommu.c
+@@ -721,24 +721,46 @@ struct iommu_table *iommu_table_alloc(int node)
+ 	return &iommu->tables[0];
  }
  
-+static long pnv_pci_ioda2_set_window(struct pnv_ioda_pe *pe,
-+		struct iommu_table *tbl)
++void iommu_reset_table(struct iommu_table *tbl, const char *node_name)
 +{
-+	struct pnv_phb *phb = pe->phb;
-+	const __be64 *swinvp;
-+	int64_t rc;
-+	const __u64 start_addr = tbl->it_offset << tbl->it_page_shift;
-+	const __u64 win_size = tbl->it_size << tbl->it_page_shift;
++	if (!tbl)
++		return;
 +
-+	pe_info(pe, "Setting up window at %llx..%llx pagesize=0x%x tablesize=0x%lx\n",
-+			start_addr, start_addr + win_size - 1,
-+			1UL << tbl->it_page_shift, tbl->it_size << 3);
++	if (tbl->it_map) {
++		unsigned long bitmap_sz;
++		unsigned int order;
 +
-+	pe->iommu.tables[0] = *tbl;
-+	tbl = &pe->iommu.tables[0];
-+	tbl->it_iommu = &pe->iommu;
-+
-+	/*
-+	 * Map TCE table through TVT. The TVE index is the PE number
-+	 * shifted by 1 bit for 32-bits DMA space.
-+	 */
-+	rc = opal_pci_map_pe_dma_window(phb->opal_id, pe->pe_number,
-+			pe->pe_number << 1, 1, __pa(tbl->it_base),
-+			tbl->it_size << 3, 1ULL << tbl->it_page_shift);
-+	if (rc) {
-+		pe_err(pe, "Failed to configure TCE table, err %ld\n", rc);
-+		goto fail;
-+	}
-+
-+	/* OPAL variant of PHB3 invalidated TCEs */
-+	swinvp = of_get_property(phb->hose->dn, "ibm,opal-tce-kill", NULL);
-+	if (swinvp) {
-+		/* We need a couple more fields -- an address and a data
-+		 * to or.  Since the bus is only printed out on table free
-+		 * errors, and on the first pass the data will be a relative
-+		 * bus number, print that out instead.
++		/*
++		 * In case we have reserved the first bit, we should not emit
++		 * the warning below.
 +		 */
-+		pe->tce_inval_reg_phys = be64_to_cpup(swinvp);
-+		tbl->it_index = (unsigned long)ioremap(pe->tce_inval_reg_phys,
-+				8);
-+		tbl->it_type |= (TCE_PCI_SWINV_CREATE | TCE_PCI_SWINV_FREE);
++		if (tbl->it_offset == 0)
++			clear_bit(0, tbl->it_map);
++
++		/* verify that table contains no entries */
++		if (!bitmap_empty(tbl->it_map, tbl->it_size))
++			pr_warn("%s: Unexpected TCEs for %s\n", __func__,
++					node_name);
++
++		/* calculate bitmap size in bytes */
++		bitmap_sz = BITS_TO_LONGS(tbl->it_size) * sizeof(unsigned long);
++
++		/* free bitmap */
++		order = get_order(bitmap_sz);
++		free_pages((unsigned long) tbl->it_map, order);
 +	}
 +
-+	return 0;
-+fail:
-+	if (pe->tce32_seg >= 0)
-+		pe->tce32_seg = -1;
-+
-+	return rc;
++	memset(tbl, 0, sizeof(*tbl));
 +}
 +
- static void pnv_pci_ioda2_set_bypass(struct pnv_ioda_pe *pe, bool enable)
+ void iommu_free_table(struct iommu_table *tbl, const char *node_name)
  {
- 	uint16_t window_id = (pe->pe_number << 1 ) + 1;
-@@ -1421,7 +1472,6 @@ static struct powerpc_iommu_ops pnv_pci_ioda2_ops = {
- static void pnv_pci_ioda2_setup_dma_pe(struct pnv_phb *phb,
- 				       struct pnv_ioda_pe *pe)
- {
--	const __be64 *swinvp;
- 	unsigned int end;
- 	struct iommu_table *tbl = &pe->iommu.tables[0];
- 	int64_t rc;
-@@ -1448,31 +1498,14 @@ static void pnv_pci_ioda2_setup_dma_pe(struct pnv_phb *phb,
- 	pe->iommu.tables[0].it_iommu = &pe->iommu;
- 	pe->iommu.ops = &pnv_pci_ioda2_ops;
+-	unsigned long bitmap_sz;
+-	unsigned int order;
+ 	struct powerpc_iommu *iommu = tbl->it_iommu;
+ 
+-	if (!tbl || !tbl->it_map) {
+-		printk(KERN_ERR "%s: expected TCE map for %s\n", __func__,
+-				node_name);
++	if (!tbl)
+ 		return;
+-	}
  
 -	/*
--	 * Map TCE table through TVT. The TVE index is the PE number
--	 * shifted by 1 bit for 32-bits DMA space.
+-	 * In case we have reserved the first bit, we should not emit
+-	 * the warning below.
 -	 */
--	rc = opal_pci_map_pe_dma_window(phb->opal_id, pe->pe_number,
--			pe->pe_number << 1, 1, __pa(tbl->it_base),
--			tbl->it_size << 3, 1ULL << tbl->it_page_shift);
-+	rc = pnv_pci_ioda2_set_window(pe, tbl);
- 	if (rc) {
- 		pe_err(pe, "Failed to configure 32-bit TCE table,"
- 		       " err %ld\n", rc);
--		goto fail;
--	}
--
--	/* OPAL variant of PHB3 invalidated TCEs */
--	swinvp = of_get_property(phb->hose->dn, "ibm,opal-tce-kill", NULL);
--	if (swinvp) {
--		/* We need a couple more fields -- an address and a data
--		 * to or.  Since the bus is only printed out on table free
--		 * errors, and on the first pass the data will be a relative
--		 * bus number, print that out instead.
--		 */
--		pe->tce_inval_reg_phys = be64_to_cpup(swinvp);
--		tbl->it_index = (unsigned long)ioremap(pe->tce_inval_reg_phys,
--				8);
--		tbl->it_type |= (TCE_PCI_SWINV_CREATE | TCE_PCI_SWINV_FREE);
-+		pnv_pci_ioda2_free_table(tbl);
-+		if (pe->tce32_seg >= 0)
-+			pe->tce32_seg = -1;
-+		return;
+-	if (tbl->it_offset == 0)
+-		clear_bit(0, tbl->it_map);
++	iommu_reset_table(tbl, node_name);
+ 
+ #ifdef CONFIG_IOMMU_API
+ 	if (iommu->group) {
+@@ -747,17 +769,6 @@ void iommu_free_table(struct iommu_table *tbl, const char *node_name)
  	}
+ #endif
  
- 	iommu_register_group(&pe->iommu, phb->hose->global_number,
-@@ -1486,11 +1519,6 @@ static void pnv_pci_ioda2_setup_dma_pe(struct pnv_phb *phb,
- 
- 	/* Also create a bypass window */
- 	pnv_pci_ioda2_setup_bypass_pe(phb, pe);
--	return;
--fail:
--	if (pe->tce32_seg >= 0)
--		pe->tce32_seg = -1;
--	pnv_pci_ioda2_free_table(tbl);
+-	/* verify that table contains no entries */
+-	if (!bitmap_empty(tbl->it_map, tbl->it_size))
+-		pr_warn("%s: Unexpected TCEs for %s\n", __func__, node_name);
+-
+-	/* calculate bitmap size in bytes */
+-	bitmap_sz = BITS_TO_LONGS(tbl->it_size) * sizeof(unsigned long);
+-
+-	/* free bitmap */
+-	order = get_order(bitmap_sz);
+-	free_pages((unsigned long) tbl->it_map, order);
+-
+ 	/* free table */
+ 	kfree(iommu);
  }
- 
- static void pnv_ioda_setup_dma(struct pnv_phb *phb)
 -- 
 2.0.0
 
