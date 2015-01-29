@@ -1,85 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756281AbbA2QcF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 11:32:05 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:55515 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753495AbbA2QcE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 11:32:04 -0500
-Date: Thu, 29 Jan 2015 10:46:52 -0500
-From: Brian Foster <bfoster@redhat.com>
-To: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
-Cc: "'david@fromorbit.com'" <david@fromorbit.com>,
-        "'xfs@oss.sgi.com'" <xfs@oss.sgi.com>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] xfs:change kmem_free to use generic kvfree()
-Message-ID: <20150129154652.GK17652@laptop.bfoster>
-References: <35FD53F367049845BC99AC72306C23D1044A02027DFF@CNBJMBX05.corpusers.net>
+	id S1755745AbbA2Prf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 10:47:35 -0500
+Received: from pandora.arm.linux.org.uk ([78.32.30.218]:34439 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752955AbbA2Prd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Jan 2015 10:47:33 -0500
+Date: Thu, 29 Jan 2015 15:47:18 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Sumit Semwal <sumit.semwal@linaro.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
+        DRI mailing list <dri-devel@lists.freedesktop.org>,
+        Linaro MM SIG Mailman List <linaro-mm-sig@lists.linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Linaro Kernel Mailman List <linaro-kernel@lists.linaro.org>,
+        Tomasz Stanislawski <stanislawski.tomasz@googlemail.com>,
+        Rob Clark <robdclark@gmail.com>, Daniel Vetter <daniel@ffwll.ch>,
+        Robin Murphy <robin.murphy@arm.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: Re: [RFCv3 2/2] dma-buf: add helpers for sharing attacher
+ constraints with dma-parms
+Message-ID: <20150129154718.GB26493@n2100.arm.linux.org.uk>
+References: <1422347154-15258-1-git-send-email-sumit.semwal@linaro.org>
+ <1422347154-15258-2-git-send-email-sumit.semwal@linaro.org>
+ <20150129143908.GA26493@n2100.arm.linux.org.uk>
+ <CAO_48GEOQ1pBwirgEWeVVXW-iOmaC=Xerr2VyYYz9t1QDXgVsw@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <35FD53F367049845BC99AC72306C23D1044A02027DFF@CNBJMBX05.corpusers.net>
+In-Reply-To: <CAO_48GEOQ1pBwirgEWeVVXW-iOmaC=Xerr2VyYYz9t1QDXgVsw@mail.gmail.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 28, 2015 at 02:08:47PM +0800, Wang, Yalin wrote:
-> Change kmem_free to use kvfree() generic function,
-> remove the duplicated code.
+On Thu, Jan 29, 2015 at 09:00:11PM +0530, Sumit Semwal wrote:
+> So, short answer is, it is left to the exporter to decide. The dma-buf
+> framework should not even attempt to decide or enforce any of the
+> above.
 > 
-> Signed-off-by: Yalin Wang <yalin.wang@sonymobile.com>
-> ---
-
-Looks good...
-
-Reviewed-by: Brian Foster <bfoster@redhat.com>
-
->  fs/xfs/kmem.c | 10 ----------
->  fs/xfs/kmem.h |  5 ++++-
->  2 files changed, 4 insertions(+), 11 deletions(-)
+> At each dma_buf_attach(), there's a callback to the exporter, where
+> the exporter can decide, if it intends to handle these kind of cases,
+> on the best way forward.
 > 
-> diff --git a/fs/xfs/kmem.c b/fs/xfs/kmem.c
-> index 53e95b2..a7a3a63 100644
-> --- a/fs/xfs/kmem.c
-> +++ b/fs/xfs/kmem.c
-> @@ -91,16 +91,6 @@ kmem_zalloc_large(size_t size, xfs_km_flags_t flags)
->  	return ptr;
->  }
->  
-> -void
-> -kmem_free(const void *ptr)
-> -{
-> -	if (!is_vmalloc_addr(ptr)) {
-> -		kfree(ptr);
-> -	} else {
-> -		vfree(ptr);
-> -	}
-> -}
-> -
->  void *
->  kmem_realloc(const void *ptr, size_t newsize, size_t oldsize,
->  	     xfs_km_flags_t flags)
-> diff --git a/fs/xfs/kmem.h b/fs/xfs/kmem.h
-> index 64db0e5..cc6b768 100644
-> --- a/fs/xfs/kmem.h
-> +++ b/fs/xfs/kmem.h
-> @@ -63,7 +63,10 @@ kmem_flags_convert(xfs_km_flags_t flags)
->  extern void *kmem_alloc(size_t, xfs_km_flags_t);
->  extern void *kmem_zalloc_large(size_t size, xfs_km_flags_t);
->  extern void *kmem_realloc(const void *, size_t, size_t, xfs_km_flags_t);
-> -extern void  kmem_free(const void *);
-> +static inline void  kmem_free(const void *ptr)
-> +{
-> +	kvfree(ptr);
-> +}
->  
->  
->  extern void *kmem_zalloc_greedy(size_t *, size_t, size_t);
-> -- 
-> 2.2.2
+> The exporter might, for example, decide to migrate backing storage,
+
+That's a decision which the exporter can not take.  Think about it...
+
+If subsystem Y has mapped the buffer, it could be accessing the buffer's
+backing storage at the same time that subsystem Z tries to attach to the
+buffer.
+
+Once the buffer has been exported to another user, the exporter has
+effectively lost control over mediating accesses to that buffer.
+
+All that it can do with the way the dma-buf API is today is to allocate
+a _different_ scatter list pointing at the same backing storage which
+satisfies the segment size and number of segments, etc.
+
+There's also another issue which you haven't addressed.  What if several
+attachments result in lowering max_segment_size and max_segment_count
+such that:
+
+	max_segment_size * max_segment_count < dmabuf->size
+
+but individually, the attachments allow dmabuf->size to be represented
+as a scatterlist?
+
+If an exporter were to take notice of the max_segment_size and
+max_segment_count, the resulting buffer is basically unrepresentable
+as a scatterlist.
+
+> > Please consider the possible sequences of use (such as the scenario
+> > above) when creating or augmenting an API.
+> >
 > 
-> _______________________________________________
-> xfs mailing list
-> xfs@oss.sgi.com
-> http://oss.sgi.com/mailman/listinfo/xfs
+> I tried to think of the scenarios I could think of, but If you still
+> feel this approach doesn't help with your concerns, I'll graciously
+> accept advice to improve it.
+
+See the new one above :)
+
+-- 
+FTTC broadband for 0.8mile line: currently at 10.5Mbps down 400kbps up
+according to speedtest.net.
