@@ -1,93 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755719AbbA2Ppk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 10:45:40 -0500
-Received: from utopia.booyaka.com ([74.50.51.50]:42529 "EHLO
-	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752809AbbA2Ppj (ORCPT
+	id S1754992AbbA2Pqw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 10:46:52 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:46045 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752213AbbA2Pqu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 10:45:39 -0500
-Date: Thu, 29 Jan 2015 15:45:38 +0000 (UTC)
-From: Paul Walmsley <paul@pwsan.com>
-To: Rob Herring <robherring2@gmail.com>
-cc: Mark Rutland <mark.rutland@arm.com>, Alexandre Courbot <gnurou@gmail.com>,
-        Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
+	Thu, 29 Jan 2015 10:46:50 -0500
+Date: Thu, 29 Jan 2015 15:46:25 +0000
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: Russell King <linux@arm.linux.org.uk>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Kumar Gala <galak@codeaurora.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: Re: [PATCH 02/24] Documentation: DT bindings: add more chip compatible
- strings for Tegra PCIe
-In-Reply-To: <CAL_JsqKMm=r+57ShskgbtNqnCGF1yKYDSJJFQ7o05keNzh5z+g@mail.gmail.com>
-Message-ID: <alpine.DEB.2.02.1501291543030.16475@utopia.booyaka.com>
-References: <20150128234935.20644.89300.stgit@dusk.lan> <20150128234937.20644.9400.stgit@dusk.lan> <CAL_JsqKMm=r+57ShskgbtNqnCGF1yKYDSJJFQ7o05keNzh5z+g@mail.gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Kumar Gala <galak@codeaurora.org>
+Subject: Re: [PATCH 0/2] Fix secondary CPU boot for thumb2 kernels
+Message-ID: <20150129154624.GH8951@e104818-lin.cambridge.arm.com>
+References: <1421869698-27341-1-git-send-email-sboyd@codeaurora.org>
+ <54C94511.30508@codeaurora.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54C94511.30508@codeaurora.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rob
-
-On Thu, 29 Jan 2015, Rob Herring wrote:
-
-> On Wed, Jan 28, 2015 at 5:49 PM, Paul Walmsley <paul@pwsan.com> wrote:
+On Wed, Jan 28, 2015 at 08:22:41PM +0000, Stephen Boyd wrote:
+> On 01/21/15 11:48, Stephen Boyd wrote:
+> > Currently I can't boot up secondary CPUs on qcom platforms when I
+> > compile the kernel for THUMB2 mode. This is because we always enter
+> > the kernel in ARM mode regardless of what mode the kernel is compiled
+> > for. This patchset adds a small wrapper to secondary_startup() called
+> > secondary_startup_arm() that allows us to switch into THUMB2 mode if
+> > we need to. If the kernel is compiled for ARM mode it shouldn't have
+> > any effect.
 > >
-> > Add compatible strings for the PCIe IP blocks present on several Tegra
-> > chips.  The primary objective here is to avoid checkpatch warnings,
-> > per:
+> > Stephen Boyd (2):
+> >   ARM: Add a secondary_startup that assumes ARM mode
+> >   ARM: qcom: Use secondary_startup_arm()
 > >
-> > http://marc.info/?l=linux-tegra&m=142201349727836&w=2
-> >
-> > Signed-off-by: Paul Walmsley <paul@pwsan.com>
-> > Cc: Thierry Reding <thierry.reding@gmail.com>
-> > Cc: Rob Herring <robh+dt@kernel.org>
-> > Cc: Pawel Moll <pawel.moll@arm.com>
-> > Cc: Mark Rutland <mark.rutland@arm.com>
-> > Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>
-> > Cc: Kumar Gala <galak@codeaurora.org>
-> > Cc: Stephen Warren <swarren@wwwdotorg.org>
-> > Cc: Alexandre Courbot <gnurou@gmail.com>
-> > Cc: linux-tegra@vger.kernel.org
-> > Cc: linux-pci@vger.kernel.org
-> > Cc: devicetree@vger.kernel.org
-> > Cc: linux-kernel@vger.kernel.org
-> > ---
-> >  .../bindings/pci/nvidia,tegra20-pcie.txt           |    2 ++
-> >  1 file changed, 2 insertions(+)
-> >
-> > diff --git a/Documentation/devicetree/bindings/pci/nvidia,tegra20-pcie.txt b/Documentation/devicetree/bindings/pci/nvidia,tegra20-pcie.txt
-> > index d763e047c6ae..e772884f1c33 100644
-> > --- a/Documentation/devicetree/bindings/pci/nvidia,tegra20-pcie.txt
-> > +++ b/Documentation/devicetree/bindings/pci/nvidia,tegra20-pcie.txt
-> > @@ -5,6 +5,8 @@ Required properties:
-> >    - "nvidia,tegra20-pcie"
-> >    - "nvidia,tegra30-pcie"
-> >    - "nvidia,tegra124-pcie"
-> > +  - "nvidia,tegra132-pcie" (not yet matched in the driver)
-> > +  - "nvidia,tegra210-pcie" (not yet matched in the driver)
+> >  arch/arm/kernel/head.S       | 7 +++++++
+> >  arch/arm/mach-qcom/platsmp.c | 4 ++--
+> >  2 files changed, 9 insertions(+), 2 deletions(-)
 > 
-> Whether the driver matches or not is irrelevant to the binding and may
-> change over time. Does this mean the driver matches on something else
-> or Tegra132 is not yet supported in the driver? 
+> Any comments here? Perhaps I can send this through the patch tracker?
 
-It means that the driver currently matches on one of the first three 
-strings that don't carry that annotation.
+FWIW, they look fine to me.
 
-> If the former, what is important is what are the valid combinations of 
-> compatible properties and that is not captured here. In other words, 
-> what is the fallback compatible string for each chip?
+Acked-by: Catalin Marinas <catalin.marinas@arm.com>
 
-The intention was to try to be helpful: to document that anyone adding a 
-"nvidia,tegra132-pcie" compatible string would also need to add one of the 
-other strings as a fallback.  Would you like that to be documented in a 
-different way, or removed?
+I guess the reason it works fine on other platforms is because the
+secondary start address we pass to firmware has bit 0 set and this
+causes the jump to the kernel in Thumb-2 mode.
 
-
-- Paul
+Catalin
