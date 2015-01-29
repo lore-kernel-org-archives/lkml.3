@@ -1,69 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754165AbbA2OmV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 09:42:21 -0500
-Received: from david.siemens.de ([192.35.17.14]:46078 "EHLO david.siemens.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752244AbbA2OmT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 09:42:19 -0500
-Message-ID: <54CA46A6.2030108@siemens.com>
-Date: Thu, 29 Jan 2015 15:41:42 +0100
-From: Jan Kiszka <jan.kiszka@siemens.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
+	id S1754189AbbA2OoP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 09:44:15 -0500
+Received: from smtp81.iad3a.emailsrvr.com ([173.203.187.81]:34288 "EHLO
+	smtp81.iad3a.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750961AbbA2OoK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Jan 2015 09:44:10 -0500
+X-Sender-Id: abbotti@mev.co.uk
+Message-ID: <54CA4737.9020300@mev.co.uk>
+Date: Thu, 29 Jan 2015 14:44:07 +0000
+From: Ian Abbott <abbotti@mev.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.3.0
 MIME-Version: 1.0
-To: Daniel Thompson <daniel.thompson@linaro.org>,
-        Michal Marek <mmarek@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-CC: Thomas Gleixner <tglx@linutronix.de>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        kgdb-bugreport@lists.sourceforge.net, Andi Kleen <andi@firstfloor.org>,
-        Tom Tromey <tromey@redhat.com>, Ben Widawsky <ben@bwidawsk.net>,
-        Borislav Petkov <bp@suse.de>, linux-kbuild@vger.kernel.org
-Subject: Re: [PATCH v11 23/28] scripts/gdb: Ignore byte-compiled python files
-References: <cover.1422514006.git.jan.kiszka@siemens.com> <fd0c2a6ad6e1d021ce85798f9cd89d9e3381288e.1422514006.git.jan.kiszka@siemens.com> <54CA325F.9070906@suse.cz> <54CA3736.4090600@siemens.com> <54CA44E2.904@linaro.org>
-In-Reply-To: <54CA44E2.904@linaro.org>
-Content-Type: text/plain; charset=windows-1252
+To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        H Hartley Sweeten <hsweeten@visionengravers.com>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging: comedi: drivers: ni_atmio: Removed variables
+ that is never used
+References: <1422484622-9282-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+In-Reply-To: <1422484622-9282-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+Content-Type: text/plain; charset=windows-1252; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2015-01-29 15:34, Daniel Thompson wrote:
-> On 29/01/15 13:35, Jan Kiszka wrote:
->> On 2015-01-29 14:15, Michal Marek wrote:
->>> On 2015-01-29 07:46, Jan Kiszka wrote:
->>>> --- a/Makefile
->>>> +++ b/Makefile
->>>> @@ -1179,7 +1179,8 @@ MRPROPER_FILES += .config .config.old .version .old_version $(version_h) \
->>>>  		  Module.symvers tags TAGS cscope* GPATH GTAGS GRTAGS GSYMS \
->>>>  		  signing_key.priv signing_key.x509 x509.genkey		\
->>>>  		  extra_certificates signing_key.x509.keyid		\
->>>> -		  signing_key.x509.signer vmlinux-gdb.py
->>>> +		  signing_key.x509.signer vmlinux-gdb.py		\
->>>> +		  scripts/gdb/linux/*.py[co]
->>>
->>> In 01/28, you already have
->>>
->>> +clean-files := *.pyc $(if $(KBUILD_SRC),*.py)
->>>
->>> Maybe just add *.pyo there and you don't need to add it to the toplevel
->>> Makefile.
->>
->> Based on a quick test, you seem right. Daniel, anything we miss?
-> 
-> No. Deleting it with the clean rule makes sense.
-> 
-> Of course the .gitignore parts of my patch will still be needed in some
-> form or other.
+On 28/01/15 22:37, Rickard Strandqvist wrote:
+> Variable ar assigned a value that is never used.
+> I have also removed all the code that thereby serves no purpose.
+>
+> This was found using a static code analysis program called cppcheck
+>
+> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+> ---
+>   drivers/staging/comedi/drivers/ni_atmio.c |    2 --
+>   1 file changed, 2 deletions(-)
+>
+> diff --git a/drivers/staging/comedi/drivers/ni_atmio.c b/drivers/staging/comedi/drivers/ni_atmio.c
+> index 0c5ff28..301f154 100644
+> --- a/drivers/staging/comedi/drivers/ni_atmio.c
+> +++ b/drivers/staging/comedi/drivers/ni_atmio.c
+> @@ -300,7 +300,6 @@ static int ni_atmio_attach(struct comedi_device *dev,
+>   			   struct comedi_devconfig *it)
+>   {
+>   	const struct ni_board_struct *boardtype;
+> -	struct ni_private *devpriv;
+>   	struct pnp_dev *isapnp_dev;
+>   	int ret;
+>   	unsigned long iobase;
+> @@ -310,7 +309,6 @@ static int ni_atmio_attach(struct comedi_device *dev,
+>   	ret = ni_alloc_private(dev);
+>   	if (ret)
+>   		return ret;
+> -	devpriv = dev->private;
+>
+>   	iobase = it->options[0];
+>   	irq = it->options[1];
+>
 
-Sure. Can you provide an updated version, one that augments the
-clean-files rule instead? Then I'll sign-off and include it in a
-potential follow-up round.
+Yes, devpriv is no longer needed here.
 
-Thanks,
-Jan
+Reviewed-by: Ian Abbott <abbotti@mev.co.uk>
 
 -- 
-Siemens AG, Corporate Technology, CT RTC ITP SES-DE
-Corporate Competence Center Embedded Linux
+-=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk> )=-
+-=(                          Web: http://www.mev.co.uk/  )=-
