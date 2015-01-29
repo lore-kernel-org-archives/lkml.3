@@ -1,276 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753574AbbA2O73 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 09:59:29 -0500
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:46499 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753260AbbA2O70 (ORCPT
+	id S1753039AbbA2O7W (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 09:59:22 -0500
+Received: from mail-qg0-f46.google.com ([209.85.192.46]:43036 "EHLO
+	mail-qg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751624AbbA2O7T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 09:59:26 -0500
-From: Ebru Akagunduz <ebru.akagunduz@gmail.com>
-To: linux-mm@kvack.org
-Cc: akpm@linux-foundation.org, kirill@shutemov.name, mhocko@suse.cz,
-        mgorman@suse.de, rientjes@google.com, sasha.levin@oracle.com,
-        hughd@google.com, hannes@cmpxchg.org, vbabka@suse.cz,
-        linux-kernel@vger.kernel.org, riel@redhat.com, aarcange@redhat.com,
-        zhangyanfei.linux@aliyun.com,
-        Ebru Akagunduz <ebru.akagunduz@gmail.com>
-Subject: [PATCH v4] mm: incorporate read-only pages into transparent huge pages
-Date: Thu, 29 Jan 2015 16:59:07 +0200
-Message-Id: <1422543547-12591-1-git-send-email-ebru.akagunduz@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	Thu, 29 Jan 2015 09:59:19 -0500
+From: "S. Gilles" <sgilles@terpmail.umd.edu>
+X-Google-Original-From: "S. Gilles" <sgilles@umd.edu>
+Date: Thu, 29 Jan 2015 09:59:08 -0500
+To: Tomi Valkeinen <tomi.valkeinen@ti.com>
+Cc: "S. Gilles" <sgilles@terpmail.umd.edu>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Maik Broemme <mbroemme@plusserver.de>,
+        linux-fbdev <linux-fbdev@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Thierry Reding <thierry.reding@gmail.com>
+Subject: Re: i915 framebuffer init too slow to find logo
+Message-ID: <20150129145907.GA2440@number16>
+References: <20150129023247.GA10967@number16>
+ <54C9EAC3.9040509@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54C9EAC3.9040509@ti.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch aims to improve THP collapse rates, by allowing
-THP collapse in the presence of read-only ptes, like those
-left in place by do_swap_page after a read fault.
+On 2015-01-29T10:09:39+0200, Tomi Valkeinen wrote:
+> On 29/01/15 04:32, S. Gilles wrote:
+> > Since commit 92b004d1aa9f367c372511ca0330f58216b25703 : prevent use of
+> > logs after they have been freed, my i915 machine has no logo on boot
+> > (reverting that commit brings it back on recent trees). My .config
+> > builds nothing but wireless as =m, so I think this is a genuine false
+> > positive (as predicted by the commit). Examining an augmented dmesg,
+> 
+> It's not so much about modules, but when the code tries to use the
+> logos. Drivers as modules might cause the use of logos to happen later,
+> but that's only one possible reason.
+> 
+> > it appears that the framebuffer setup is too slow by about 0.3s, which
+> > I wouldn't really expect from this system/driver.
+> > 
+> > Is this slowness considered worth fixing, or is this issue considered
+> > too cosmetic? (Or is this just PEBKAC?)
+> > 
+> > Possibly useful information:
+> > 
+> > $ lspci | grep VGA
+> > 00:02.0 VGA compatible controller: Intel Corporation 2nd Generation Core Processor Family Integrated Graphics Controller (rev 09)
+> > 
+> > From various printk()s, it looks like the slow portion of
+> > fb_console_init() is restore_fbdev_mode(), specifically
+> > drm_mode_set_config_internal(), which takes about 0.45s, while the
+> > fb_logo_late_init() call happens about 0.15s into that. I can give the
+> > full details if requested.
+> 
+> When does the driver probe() happen? Does the initialization happen
+> outside of the probe(), via workqueue or such? If so, then the fix is
+> valid for your case also, as the work could be ran after the logos have
+> been freed.
 
-Currently THP can collapse 4kB pages into a THP when
-there are up to khugepaged_max_ptes_none pte_none ptes
-in a 2MB range. This patch applies the same limit for
-read-only ptes.
+It looks like the fix is indeed valid, since the initialization
+happens without probe() in the trace: the result of putting
+dump_stack() at the beginning of the relevant functions is (in far too
+much detail)
 
-The patch was tested with a test program that allocates
-800MB of memory, writes to it, and then sleeps. I force
-the system to swap out all but 190MB of the program by
-touching other memory. Afterwards, the test program does
-a mix of reads and writes to its memory, and the memory
-gets swapped back in.
+...
+[    0.302391] CPU: 1 PID: 1 Comm: swapper/0 Not tainted 3.19.0-rc5+ #26
+[    0.302476] Hardware name: LENOVO 4286CTO/4286CTO, BIOS 8DET42WW (1.12 ) 04/01/2011
+[    0.302561]  ffff880138ffd000 ffff880139563c98 ffffffff817945db 0000000000000126
+[    0.302882]  ffffffff81849d20 ffff880139563cc8 ffffffff813b7ec4 ffff880138ffd000
+[    0.303189]  ffffffff81848b10 ffffffff81c3ad58 ffff880138ffd090 ffff880139563cf8
+[    0.303511] Call Trace:
+[    0.303578]  [<ffffffff817945db>] dump_stack+0x45/0x57
+[    0.303677]  [<ffffffff813b7ec4>] i915_pci_probe+0x1a/0x68
+[    0.303769]  [<ffffffff8131c209>] pci_device_probe+0x54/0xa3
+[    0.303850]  [<ffffffff8144367d>] driver_probe_device+0x99/0x1c8
+[    0.303916]  [<ffffffff81443841>] __driver_attach+0x5d/0x80
+[    0.303980]  [<ffffffff814437e4>] ? __device_attach+0x38/0x38
+[    0.305851]  [<ffffffff81441d7c>] bus_for_each_dev+0x7b/0x85
+[    0.305914]  [<ffffffff81443240>] driver_attach+0x19/0x1b
+[    0.305975]  [<ffffffff81442f28>] bus_add_driver+0x109/0x1d3
+[    0.306038]  [<ffffffff81443c20>] driver_register+0x8a/0xc7
+[    0.306141]  [<ffffffff8131bf4b>] __pci_register_driver+0x5c/0x60
+[    0.306219]  [<ffffffff81d052cc>] ? ftrace_define_fields_drm_vblank_event_delivered+0x9f/0x9f
+[    0.306329]  [<ffffffff813a5fa3>] drm_pci_init+0x4d/0xcd
+[    0.306428]  [<ffffffff81d052cc>] ? ftrace_define_fields_drm_vblank_event_delivered+0x9f/0x9f
+[    0.306505]  [<ffffffff81d05356>] i915_init+0x8a/0x92
+[    0.306566]  [<ffffffff81d052cc>] ? ftrace_define_fields_drm_vblank_event_delivered+0x9f/0x9f
+[    0.306650]  [<ffffffff8100030d>] do_one_initcall+0xe9/0x172
+[    0.306746]  [<ffffffff81ccefb1>] kernel_init_freeable+0x117/0x19f
+[    0.306827]  [<ffffffff81cce7c0>] ? initcall_blacklist+0xa3/0xa3
+[    0.306926]  [<ffffffff8178e559>] ? rest_init+0xb6/0xb6
+[    0.306993]  [<ffffffff8178e562>] kernel_init+0x9/0xd0
+[    0.307085]  [<ffffffff8179ceec>] ret_from_fork+0x7c/0xb0
+[    0.307176]  [<ffffffff8178e559>] ? rest_init+0xb6/0xb6
+...
+[    0.646722] CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.19.0-rc5+ #26
+[    0.646723] Hardware name: LENOVO 4286CTO/4286CTO, BIOS 8DET42WW (1.12 ) 04/01/2011
+[    0.646726]  ffff8800b5aff000 ffff880139563e78 ffffffff817945db 0000000000000013
+[    0.646728]  ffffffff81d00a08 ffff880139563e88 ffffffff81d00a1f ffff880139563ef8
+[    0.646730]  ffffffff8100030d 0000000000000000 ffffffff81b7f6b8 0000019d00070007
+[    0.646730] Call Trace:
+[    0.646733]  [<ffffffff817945db>] dump_stack+0x45/0x57
+[    0.646736]  [<ffffffff81d00a08>] ? fb_console_init+0x116/0x116
+[    0.646738]  [<ffffffff81d00a1f>] fb_logo_late_init+0x17/0x22
+[    0.646741]  [<ffffffff8100030d>] do_one_initcall+0xe9/0x172
+[    0.646744]  [<ffffffff81ccefb1>] kernel_init_freeable+0x117/0x19f
+[    0.646745]  [<ffffffff81cce7c0>] ? initcall_blacklist+0xa3/0xa3
+[    0.646747]  [<ffffffff8178e559>] ? rest_init+0xb6/0xb6
+[    0.646749]  [<ffffffff8178e562>] kernel_init+0x9/0xd0
+[    0.646752]  [<ffffffff8179ceec>] ret_from_fork+0x7c/0xb0
+[    0.646754]  [<ffffffff8178e559>] ? rest_init+0xb6/0xb6
+...
+[    1.162602] CPU: 1 PID: 6 Comm: kworker/u16:0 Not tainted 3.19.0-rc5+ #26
+[    1.162605] Hardware name: LENOVO 4286CTO/4286CTO, BIOS 8DET42WW (1.12 ) 04/01/2011
+[    1.162627]  0000000000000018 ffff8801395a3918 ffffffff817945db ffffffff81caeee0
+[    1.162634]  0000000000000018 ffff8801395a3938 ffffffff8178f5f7 0000000000000000
+[    1.162641]  ffff8800b5ff0c00 ffff8801395a3968 ffffffff813321fb 0000000000000320
+[    1.162643] Call Trace:
+[    1.162653]  [<ffffffff817945db>] dump_stack+0x45/0x57
+[    1.162661]  [<ffffffff8178f5f7>] fb_find_logo+0xd/0x43
+[    1.162669]  [<ffffffff813321fb>] fb_prepare_logo+0x87/0x12d
+[    1.162675]  [<ffffffff81328fed>] fbcon_prepare_logo+0x7f/0x2e8
+[    1.162680]  [<ffffffff8132b3b9>] fbcon_init+0x3d9/0x447
+[    1.162688]  [<ffffffff813817de>] visual_init+0xb7/0x10d
+[    1.162695]  [<ffffffff81383000>] do_bind_con_driver+0x1ab/0x2cd
+[    1.162702]  [<ffffffff813835e1>] do_take_over_console+0x132/0x162
+[    1.162707]  [<ffffffff813292ac>] do_fbcon_takeover+0x56/0x9a
+[    1.162712]  [<ffffffff8132cb6a>] fbcon_event_notify+0x31c/0x644
+[    1.162718]  [<ffffffff810bcf4f>] notifier_call_chain+0x39/0x5c
+[    1.162723]  [<ffffffff810bd208>] __blocking_notifier_call_chain+0x47/0x60
+[    1.162729]  [<ffffffff810bd230>] blocking_notifier_call_chain+0xf/0x11
+[    1.162735]  [<ffffffff81331cc3>] fb_notifier_call_chain+0x16/0x18
+[    1.162741]  [<ffffffff81333b50>] register_framebuffer+0x261/0x299
+[    1.162750]  [<ffffffff8139bcfb>] drm_fb_helper_initial_config+0x26e/0x328
+[    1.162757]  [<ffffffff8141da68>] intel_fbdev_initial_config+0x16/0x18
+[    1.162762]  [<ffffffff810be0a0>] async_run_entry_fn+0x33/0xca
+[    1.162770]  [<ffffffff810b800b>] process_one_work+0x223/0x3f9
+[    1.162775]  [<ffffffff810b7f8f>] ? process_one_work+0x1a7/0x3f9
+[    1.162781]  [<ffffffff810b8905>] worker_thread+0x260/0x354
+[    1.162788]  [<ffffffff810b86a5>] ? cancel_delayed_work_sync+0x10/0x10
+[    1.162794]  [<ffffffff810bc333>] kthread+0xe8/0xf0
+[    1.162802]  [<ffffffff810bc24b>] ? kthread_create_on_node+0x1b1/0x1b1
+[    1.162810]  [<ffffffff8179ceec>] ret_from_fork+0x7c/0xb0
+[    1.162817]  [<ffffffff810bc24b>] ? kthread_create_on_node+0x1b1/0x1b1
+...
 
-Without the patch, only the memory that did not get
-swapped out remained in THPs, which corresponds to 24% of
-the memory of the program. The percentage did not increase
-over time.
+> However, it does seem that the fix seems to cause logos to disappear for
+> many people. I'd be interesting to know how many of those cases were
+> working by luck, either by
+> 
+> 1) an async work being ran fast enough, before the logos had been freed
+> 2) the use of logos happening after the logos had been freed, but if no
+> one had trashed the logo memory yet, it still works
 
-With this patch, after 5 minutes of waiting khugepaged had
-collapsed 60% of the program's memory back into THPs.
+In my case, it looks like #1 is the case: free_initmem() was called
+~6.96s into boot on the run matching the traces above, so the initdata
+looks safe barring async trickery.
 
-Signed-off-by: Ebru Akagunduz <ebru.akagunduz@gmail.com>
-Signed-off-by: Ebru Akagunduz <ebru.akagunduz@gmail.com>
-Reviewed-by: Rik van Riel <riel@redhat.com>
-Acked-by: Vlastimil Babka <vbabka@suse.cz>
-Acked-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
----
-Changes in v2:
- - Remove extra code indent (Vlastimil Babka)
- - Add comment line for check condition of page_count() (Vlastimil Babka)
- - Add fast path optimistic check to
-   __collapse_huge_page_isolate() (Andrea Arcangeli)
- - Move check condition of page_count() below to trylock_page() (Andrea Arcangeli)
+> I don't care so much about the logo myself but people do seem to like
+> it, so perhaps we need to change the code as Thierry suggested:
+> allocating memory for the logos and keeping them in memory until someone
+> uses them the first time, and then free the memory.
 
-Changes in v3:
- - Add a at-least-one-writable-pte check (Zhang Yanfei)
- - Debug page count (Vlastimil Babka, Andrea Arcangeli)
- - Increase read-only pte counter if pte is none (Andrea Arcangeli)
+I'm not too concerned about the pixels myself, but I was concerned
+that the initialization was happening slow enough to be caught by this
+(perhaps this might have been a warning sign if setting up the console
+was depending unsafely on other initdata?). It is also rather obvious,
+so it's something a novice like myself can easily bisect and report.
 
-Changes in v4:
- - Remove read-only counter (Andrea Arcangeli)
- - Remove debug page count  (Andrea Arcangeli)
- - Change type of writable as bool (Andrea Arcangeli)
- - Change type of referenced as bool (Vlastimil Babka)
- - Change comment line (Vlastimil Babka, Zhang Yanfei)
-
-v3 of this patch was added in mm tree. I send v4,
-if you accept to replace v3 with v4. If not, I can
-send this changes with a new patch.
-
-I've written down test results:
-With the patch:
-After swapped out:
-cat /proc/pid/smaps:
-Anonymous:	85064 kB
-AnonHugePages:	83968 kB
-Swap:		714940 kB
-Fraction:	98,71
-
-cat /proc/meminfo:
-AnonPages:	1710332 kB
-AnonHugePages:	1632256 kB
-Fraction:	95,43
-
-After swapped in:
-In a few seconds:
-cat /proc/pid/smaps:
-Anonymous:	800004 kB
-AnonHugePages:	116736 kB
-Swap:		0 kB
-Fraction:	14,59
-
-cat /proc/meminfo:
-AnonPages:	2426832 kB
-AnonHugePages:	1681408 kB
-Fraction:	69,28
-
-In 5 minutes:
-cat /proc/pid/smaps:
-Anonymous:	800004 kB
-AnonHugePages:	487424 kB
-Swap:		0 kB
-Fraction:	60,92
-
-cat /proc/meminfo:
-AnonPages:	2427852 kB
-AnonHugePages:	2035712 kB
-Fraction:	83,84
-
-Without the patch:
-After swapped out:
-cat /proc/pid/smaps:
-Anonymous:      190660 kB
-AnonHugePages:  190464 kB
-Swap:           609344 kB
-Fraction:       99,89
-
-cat /proc/meminfo:
-AnonPages:      1740456 kB
-AnonHugePages:  1667072 kB
-Fraction:       95,78
-
-After swapped in:
-cat /proc/pid/smaps:
-Anonymous:      800004 kB
-AnonHugePages:  190464 kB
-Swap:           0 kB
-Fraction:       23,80
-
-cat /proc/meminfo:
-AnonPages:      2350032 kB
-AnonHugePages:  1667072 kB
-Fraction:       70,93
-
-I waited 10 minutes the fractions
-did not change without the patch.
-
- mm/huge_memory.c | 55 ++++++++++++++++++++++++++++++++++++++++++-------------
- 1 file changed, 42 insertions(+), 13 deletions(-)
-
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index 817a875..45b5c81 100644
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -2148,7 +2148,8 @@ static int __collapse_huge_page_isolate(struct vm_area_struct *vma,
- {
- 	struct page *page;
- 	pte_t *_pte;
--	int referenced = 0, none = 0;
-+	int none = 0;
-+	bool referenced = false, writable = false;
- 	for (_pte = pte; _pte < pte+HPAGE_PMD_NR;
- 	     _pte++, address += PAGE_SIZE) {
- 		pte_t pteval = *_pte;
-@@ -2158,7 +2159,7 @@ static int __collapse_huge_page_isolate(struct vm_area_struct *vma,
- 			else
- 				goto out;
- 		}
--		if (!pte_present(pteval) || !pte_write(pteval))
-+		if (!pte_present(pteval))
- 			goto out;
- 		page = vm_normal_page(vma, address, pteval);
- 		if (unlikely(!page))
-@@ -2168,9 +2169,6 @@ static int __collapse_huge_page_isolate(struct vm_area_struct *vma,
- 		VM_BUG_ON_PAGE(!PageAnon(page), page);
- 		VM_BUG_ON_PAGE(!PageSwapBacked(page), page);
- 
--		/* cannot use mapcount: can't collapse if there's a gup pin */
--		if (page_count(page) != 1)
--			goto out;
- 		/*
- 		 * We can do it before isolate_lru_page because the
- 		 * page can't be freed from under us. NOTE: PG_lock
-@@ -2179,6 +2177,29 @@ static int __collapse_huge_page_isolate(struct vm_area_struct *vma,
- 		 */
- 		if (!trylock_page(page))
- 			goto out;
-+
-+		/*
-+		 * cannot use mapcount: can't collapse if there's a gup pin.
-+		 * The page must only be referenced by the scanned process
-+		 * and page swap cache.
-+		 */
-+		if (page_count(page) != 1 + !!PageSwapCache(page)) {
-+			unlock_page(page);
-+			goto out;
-+		}
-+		if (pte_write(pteval)) {
-+			writable = true;
-+		} else {
-+			if (PageSwapCache(page) && !reuse_swap_page(page)) {
-+				unlock_page(page);
-+				goto out;
-+			}
-+			/*
-+			 * Page is not in the swap cache. It can be collapsed
-+			 * into a THP.
-+			 */
-+		}
-+
- 		/*
- 		 * Isolate the page to avoid collapsing an hugepage
- 		 * currently in use by the VM.
-@@ -2195,9 +2216,9 @@ static int __collapse_huge_page_isolate(struct vm_area_struct *vma,
- 		/* If there is no mapped pte young don't collapse the page */
- 		if (pte_young(pteval) || PageReferenced(page) ||
- 		    mmu_notifier_test_young(vma->vm_mm, address))
--			referenced = 1;
-+			referenced = true;
- 	}
--	if (likely(referenced))
-+	if (likely(referenced && writable))
- 		return 1;
- out:
- 	release_pte_pages(pte, _pte);
-@@ -2550,11 +2571,12 @@ static int khugepaged_scan_pmd(struct mm_struct *mm,
- {
- 	pmd_t *pmd;
- 	pte_t *pte, *_pte;
--	int ret = 0, referenced = 0, none = 0;
-+	int ret = 0, none = 0;
- 	struct page *page;
- 	unsigned long _address;
- 	spinlock_t *ptl;
- 	int node = NUMA_NO_NODE;
-+	bool writable = false, referenced = false;
- 
- 	VM_BUG_ON(address & ~HPAGE_PMD_MASK);
- 
-@@ -2573,8 +2595,11 @@ static int khugepaged_scan_pmd(struct mm_struct *mm,
- 			else
- 				goto out_unmap;
- 		}
--		if (!pte_present(pteval) || !pte_write(pteval))
-+		if (!pte_present(pteval))
- 			goto out_unmap;
-+		if (pte_write(pteval))
-+			writable = true;
-+
- 		page = vm_normal_page(vma, _address, pteval);
- 		if (unlikely(!page))
- 			goto out_unmap;
-@@ -2591,14 +2616,18 @@ static int khugepaged_scan_pmd(struct mm_struct *mm,
- 		VM_BUG_ON_PAGE(PageCompound(page), page);
- 		if (!PageLRU(page) || PageLocked(page) || !PageAnon(page))
- 			goto out_unmap;
--		/* cannot use mapcount: can't collapse if there's a gup pin */
--		if (page_count(page) != 1)
-+		/*
-+		 * cannot use mapcount: can't collapse if there's a gup pin.
-+		 * The page must only be referenced by the scanned process
-+		 * and page swap cache.
-+		 */
-+		if (page_count(page) != 1 + !!PageSwapCache(page))
- 			goto out_unmap;
- 		if (pte_young(pteval) || PageReferenced(page) ||
- 		    mmu_notifier_test_young(vma->vm_mm, address))
--			referenced = 1;
-+			referenced = true;
- 	}
--	if (referenced)
-+	if (referenced && writable)
- 		ret = 1;
- out_unmap:
- 	pte_unmap_unlock(pte, ptl);
 -- 
-1.9.1
-
+S. Gilles
