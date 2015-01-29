@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758207AbbA2LR0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 06:17:26 -0500
-Received: from mailapp01.imgtec.com ([195.59.15.196]:22398 "EHLO
+	id S1758141AbbA2LQ7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 06:16:59 -0500
+Received: from mailapp01.imgtec.com ([195.59.15.196]:4054 "EHLO
 	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755923AbbA2LOf (ORCPT
+	with ESMTP id S1755925AbbA2LOg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 06:14:35 -0500
+	Thu, 29 Jan 2015 06:14:36 -0500
 From: James Hogan <james.hogan@imgtec.com>
 To: Ralf Baechle <ralf@linux-mips.org>, <linux-mips@linux-mips.org>
 CC: <linux-kernel@vger.kernel.org>, James Hogan <james.hogan@imgtec.com>
-Subject: [PATCH 5/9] MIPS: Malta: Implement get_c0_fdc_int()
-Date: Thu, 29 Jan 2015 11:14:10 +0000
-Message-ID: <1422530054-7976-6-git-send-email-james.hogan@imgtec.com>
+Subject: [PATCH 6/9] MIPS: idle: Workaround wait + FDC problems
+Date: Thu, 29 Jan 2015 11:14:11 +0000
+Message-ID: <1422530054-7976-7-git-send-email-james.hogan@imgtec.com>
 X-Mailer: git-send-email 2.0.5
 In-Reply-To: <1422530054-7976-1-git-send-email-james.hogan@imgtec.com>
 References: <1422530054-7976-1-git-send-email-james.hogan@imgtec.com>
@@ -23,51 +23,54 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Implement the weak get_c0_fdc_int() function for Malta. The Fast Debug
-Channel (FDC) interrupt is obtained mainly depending on whether a GIC is
-present. Vectored external interrupt mode isn't yet supported.
+On certain cores (namely proAptiv and P5600) incoming data via a Fast
+Debug Channel (FDC) while the core is blocked on a wait instruction will
+cause the wait not to wake up even when another interrupt is received.
+This makes an idle target stop as soon as you send FDC data to it, until
+the debug probe interrupts it and restarts the wait instruction.
+
+This is worked around by avoiding using r4k_wait on these cores if
+CONFIG_MIPS_EJTAG_FDC_TTY is enabled (which would imply the user intends
+to use the FDC).
 
 Signed-off-by: James Hogan <james.hogan@imgtec.com>
 Cc: Ralf Baechle <ralf@linux-mips.org>
 Cc: linux-mips@linux-mips.org
 ---
-EIC mode not supported because I don't have anything to try it on (and
-it isn't clear which interrupt priority level would get used).
+ arch/mips/kernel/idle.c | 13 +++++++++++--
+ 1 file changed, 11 insertions(+), 2 deletions(-)
 
-It may make sense to have a common default implementation of
-get_c0_fdc_int(), but this isn't done for the other local IRQs yet so
-I've kept it like this for consistency.
----
- arch/mips/mti-malta/malta-time.c | 16 ++++++++++++++++
- 1 file changed, 16 insertions(+)
-
-diff --git a/arch/mips/mti-malta/malta-time.c b/arch/mips/mti-malta/malta-time.c
-index ce02dbdedc62..7d4b86571564 100644
---- a/arch/mips/mti-malta/malta-time.c
-+++ b/arch/mips/mti-malta/malta-time.c
-@@ -115,6 +115,22 @@ void read_persistent_clock(struct timespec *ts)
- 	ts->tv_nsec = 0;
- }
+diff --git a/arch/mips/kernel/idle.c b/arch/mips/kernel/idle.c
+index 0b9082b6b683..3db277ea9e8d 100644
+--- a/arch/mips/kernel/idle.c
++++ b/arch/mips/kernel/idle.c
+@@ -176,6 +176,17 @@ void __init check_wait(void)
+ 		cpu_wait = rm7k_wait_irqoff;
+ 		break;
  
-+int get_c0_fdc_int(void)
-+{
-+	int mips_cpu_fdc_irq;
-+
-+	if (cpu_has_veic)
-+		mips_cpu_fdc_irq = -1;
-+	else if (gic_present)
-+		mips_cpu_fdc_irq = gic_get_c0_fdc_int();
-+	else if (cp0_fdc_irq >= 0)
-+		mips_cpu_fdc_irq = MIPS_CPU_IRQ_BASE + cp0_fdc_irq;
-+	else
-+		mips_cpu_fdc_irq = -1;
-+
-+	return mips_cpu_fdc_irq;
-+}
-+
- int get_c0_perfcount_int(void)
- {
- 	if (cpu_has_veic) {
++	case CPU_PROAPTIV:
++	case CPU_P5600:
++		/*
++		 * Incoming Fast Debug Channel (FDC) data during a wait
++		 * instruction causes the wait never to resume, even if an
++		 * interrupt is received. Avoid using wait at all if FDC data is
++		 * likely to be received.
++		 */
++		if (IS_ENABLED(CONFIG_MIPS_EJTAG_FDC_TTY))
++			break;
++		/* fall through */
+ 	case CPU_M14KC:
+ 	case CPU_M14KEC:
+ 	case CPU_24K:
+@@ -183,8 +194,6 @@ void __init check_wait(void)
+ 	case CPU_1004K:
+ 	case CPU_1074K:
+ 	case CPU_INTERAPTIV:
+-	case CPU_PROAPTIV:
+-	case CPU_P5600:
+ 	case CPU_M5150:
+ 		cpu_wait = r4k_wait;
+ 		if (read_c0_config7() & MIPS_CONF7_WII)
 -- 
 2.0.5
 
