@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932153AbbA2PRV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 10:17:21 -0500
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:13140 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753353AbbA2PM0 (ORCPT
+	id S1756316AbbA2PRU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 10:17:20 -0500
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:19003 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754075AbbA2PM2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 10:12:26 -0500
-X-AuditID: cbfec7f5-b7fc86d0000066b7-a1-54ca4d460f96
+	Thu, 29 Jan 2015 10:12:28 -0500
+X-AuditID: cbfec7f4-b7f126d000001e9a-d7-54ca4d489621
 From: Andrey Ryabinin <a.ryabinin@samsung.com>
 To: linux-kernel@vger.kernel.org
 Cc: Andrey Ryabinin <a.ryabinin@samsung.com>,
@@ -21,577 +21,184 @@ Cc: Andrey Ryabinin <a.ryabinin@samsung.com>,
         Joonsoo Kim <iamjoonsoo.kim@lge.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Dave Hansen <dave.hansen@intel.com>, Andi Kleen <andi@firstfloor.org>,
-        x86@kernel.org, linux-mm@kvack.org,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Jonathan Corbet <corbet@lwn.net>,
-        Andy Lutomirski <luto@amacapital.net>,
-        linux-doc@vger.kernel.org (open list:DOCUMENTATION)
-Subject: [PATCH v10 02/17] x86_64: add KASan support
-Date: Thu, 29 Jan 2015 18:11:46 +0300
-Message-id: <1422544321-24232-3-git-send-email-a.ryabinin@samsung.com>
+        x86@kernel.org, linux-mm@kvack.org
+Subject: [PATCH v10 03/17] mm: page_alloc: add kasan hooks on alloc and free
+ paths
+Date: Thu, 29 Jan 2015 18:11:47 +0300
+Message-id: <1422544321-24232-4-git-send-email-a.ryabinin@samsung.com>
 X-Mailer: git-send-email 2.2.2
 In-reply-to: <1422544321-24232-1-git-send-email-a.ryabinin@samsung.com>
 References: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com>
  <1422544321-24232-1-git-send-email-a.ryabinin@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrGLMWRmVeSWpSXmKPExsVy+t/xy7puvqdCDDq6dSy2/XrEZvF770xW
-	iznr17BZHLn2nd3i+rc3jBZPDrQzWnx6+YDR4vnDh+wWEx62sVtM2yhusbK7mc1i+7O3TBYr
-	Ox+wWixsW8JicXnXHDaLe2v+s1qsXtvAanHpwAImi8VHbjNbvHs2mdli86apzBY/NjxmdRDz
-	uP/mL4vH/J0fGT12zrrL7rFgU6nH4j0vmTw2repk89j0aRK7R9fbK0we786dY/c4MeM3i8eT
-	K9OZPBb3TWb1+Pj0FovH+31X2Tz6tqxi9Pi8SS5AMIrLJiU1J7MstUjfLoEr4+y+2WwFG+or
-	bn9cydLAuDqji5GTQ0LARKJ3Ri8zhC0mceHeejYQW0hgKaPEkue8XYxcQHYfk8TyjptgRWwC
-	ehL/Zm0HKxIRUJDY3PuMFaSIWWAKm8Shb/vZQRLCQFOv9V9hArFZBFQlLt54DGbzCrhJfHh8
-	n6WLkQNom5zEhY/xIGFOAXeJf/dASkCWNTFKbDw7j20CI+8CRoZVjKKppckFxUnpuUZ6xYm5
-	xaV56XrJ+bmbGCFx9XUH49JjVocYBTgYlXh4Z2w6GSLEmlhWXJl7iFGCg1lJhHep5akQId6U
-	xMqq1KL8+KLSnNTiQ4xMHJxSDYyndZbEvWS00VVQ9Q6uzioK15MpEroSr3mCzeKAzuLCzb9X
-	T1JlmhA1S+jF8dWMM9RN6yv4mP9I7uu40Cw9N92BtfeWobx8zZePYd7bXwR8NsxJ5XH49PhM
-	F8v5R0uXCPMddTI/+WJvWT/7VcHDBRdftJt/v2MXdD6c+9rxe33pXXeiZyZy1yqxFGckGmox
-	FxUnAgCDVIioiQIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrKLMWRmVeSWpSXmKPExsVy+t/xy7oevqdCDO79sLLY9usRm8XvvTNZ
+	LeasX8NmceTad3aL69/eMFp8evmA0eL5w4fsFhMetrFbrOxuZrPY/uwtk8XKzgesFpd3zWGz
+	uLfmP6vF4iO3mS3ePZvMbPFjw2NWBwGP+Ts/MnrsnHWX3WPBplKPxXteMnlsWtXJ5rHp0yR2
+	j663V5g8Tsz4zeLx5Mp0Jo+PT2+xePRtWcXo8XmTXABPFJdNSmpOZllqkb5dAlfG0W/rGAuO
+	qlV82HqauYHxmXwXIyeHhICJxOdJc1kgbDGJC/fWs4HYQgJLGSVm7ajtYuQCsvuYJM40HQEr
+	YhPQk/g3aztYkYiAgsTm3mesIEXMAitYJL5cW8EIkhAWCJFY2zEBrIhFQFXi/sfLTCA2r4Cb
+	xMyvc4HiHEDb5CQufIwHCXMKuEv8u/eYCWJZE6PExrPz2CYw8i5gZFjFKJpamlxQnJSea6hX
+	nJhbXJqXrpecn7uJERL0X3YwLj5mdYhRgINRiYd35qaTIUKsiWXFlbmHGCU4mJVEeJdangoR
+	4k1JrKxKLcqPLyrNSS0+xMjEwSnVwKho8yN5hZuO0n6OG/oXe1P2JczYIep9eL72UZmDX5cv
+	nlZ9Wvz9jc4nxkpzi8Le+uxW3BGjdOfH35s1bRf7Xf9Jic3uKbKZ7Wdcd+qA9EFrv+yA0413
+	Xdk49s5jCFnbUhZ9rSaGd1X8TaFrRdkKlZfkfleE1AmHeMtscxHucWPXvK39Z7XYBCWW4oxE
+	Qy3mouJEAMlT5lZYAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds arch specific code for kernel address sanitizer.
-
-16TB of virtual addressed used for shadow memory.
-It's located in range [ffffec0000000000 - fffffc0000000000]
-between vmemmap and %esp fixup stacks.
-
-At early stage we map whole shadow region with zero page.
-Latter, after pages mapped to direct mapping address range
-we unmap zero pages from corresponding shadow (see kasan_map_shadow())
-and allocate and map a real shadow memory reusing vmemmap_populate()
-function.
-
-Also replace __pa with __pa_nodebug before shadow initialized.
-__pa with CONFIG_DEBUG_VIRTUAL=y make external function call (__phys_addr)
-__phys_addr is instrumented, so __asan_load could be called before
-shadow area initialized.
+Add kernel address sanitizer hooks to mark allocated page's addresses
+as accessible in corresponding shadow region.
+Mark freed pages as inaccessible.
 
 Signed-off-by: Andrey Ryabinin <a.ryabinin@samsung.com>
 ---
- Documentation/x86/x86_64/mm.txt   |   2 +
- arch/x86/Kconfig                  |   1 +
- arch/x86/boot/Makefile            |   2 +
- arch/x86/boot/compressed/Makefile |   2 +
- arch/x86/include/asm/kasan.h      |  31 ++++++
- arch/x86/kernel/Makefile          |   2 +
- arch/x86/kernel/dumpstack.c       |   5 +-
- arch/x86/kernel/head64.c          |   9 +-
- arch/x86/kernel/head_64.S         |  30 ++++++
- arch/x86/kernel/setup.c           |   3 +
- arch/x86/mm/Makefile              |   3 +
- arch/x86/mm/kasan_init_64.c       | 197 ++++++++++++++++++++++++++++++++++++++
- arch/x86/realmode/Makefile        |   2 +-
- arch/x86/realmode/rm/Makefile     |   1 +
- arch/x86/vdso/Makefile            |   1 +
- lib/Kconfig.kasan                 |   2 +
- 16 files changed, 289 insertions(+), 4 deletions(-)
- create mode 100644 arch/x86/include/asm/kasan.h
- create mode 100644 arch/x86/mm/kasan_init_64.c
+ include/linux/kasan.h |  6 ++++++
+ mm/compaction.c       |  2 ++
+ mm/kasan/kasan.c      | 14 ++++++++++++++
+ mm/kasan/kasan.h      |  2 ++
+ mm/kasan/report.c     | 11 +++++++++++
+ mm/page_alloc.c       |  3 +++
+ 6 files changed, 38 insertions(+)
 
-diff --git a/Documentation/x86/x86_64/mm.txt b/Documentation/x86/x86_64/mm.txt
-index 052ee64..05712ac 100644
---- a/Documentation/x86/x86_64/mm.txt
-+++ b/Documentation/x86/x86_64/mm.txt
-@@ -12,6 +12,8 @@ ffffc90000000000 - ffffe8ffffffffff (=45 bits) vmalloc/ioremap space
- ffffe90000000000 - ffffe9ffffffffff (=40 bits) hole
- ffffea0000000000 - ffffeaffffffffff (=40 bits) virtual memory map (1TB)
- ... unused hole ...
-+ffffec0000000000 - fffffc0000000000 (=44 bits) kasan shadow memory (16TB)
-+... unused hole ...
- ffffff0000000000 - ffffff7fffffffff (=39 bits) %esp fixup stacks
- ... unused hole ...
- ffffffff80000000 - ffffffffa0000000 (=512 MB)  kernel text mapping, from phys 0
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index d34ef08..e5c87b2 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -85,6 +85,7 @@ config X86
- 	select HAVE_CMPXCHG_LOCAL
- 	select HAVE_CMPXCHG_DOUBLE
- 	select HAVE_ARCH_KMEMCHECK
-+	select HAVE_ARCH_KASAN if X86_64
- 	select HAVE_USER_RETURN_NOTIFIER
- 	select ARCH_BINFMT_ELF_RANDOMIZE_PIE
- 	select HAVE_ARCH_JUMP_LABEL
-diff --git a/arch/x86/boot/Makefile b/arch/x86/boot/Makefile
-index 3db07f3..57bbf2f 100644
---- a/arch/x86/boot/Makefile
-+++ b/arch/x86/boot/Makefile
-@@ -14,6 +14,8 @@
- # Set it to -DSVGA_MODE=NORMAL_VGA if you just want the EGA/VGA mode.
- # The number is the same as you would ordinarily press at bootup.
+diff --git a/include/linux/kasan.h b/include/linux/kasan.h
+index bb72642..ab5131e 100644
+--- a/include/linux/kasan.h
++++ b/include/linux/kasan.h
+@@ -31,6 +31,9 @@ static inline void kasan_disable_local(void)
  
-+KASAN_SANITIZE := n
+ void kasan_unpoison_shadow(const void *address, size_t size);
+ 
++void kasan_alloc_pages(struct page *page, unsigned int order);
++void kasan_free_pages(struct page *page, unsigned int order);
 +
- SVGA_MODE	:= -DSVGA_MODE=NORMAL_VGA
+ #else /* CONFIG_KASAN */
  
- targets		:= vmlinux.bin setup.bin setup.elf bzImage
-diff --git a/arch/x86/boot/compressed/Makefile b/arch/x86/boot/compressed/Makefile
-index ad754b4..843feb3 100644
---- a/arch/x86/boot/compressed/Makefile
-+++ b/arch/x86/boot/compressed/Makefile
-@@ -16,6 +16,8 @@
- #	(see scripts/Makefile.lib size_append)
- #	compressed vmlinux.bin.all + u32 size of vmlinux.bin.all
+ static inline void kasan_unpoison_shadow(const void *address, size_t size) {}
+@@ -38,6 +41,9 @@ static inline void kasan_unpoison_shadow(const void *address, size_t size) {}
+ static inline void kasan_enable_local(void) {}
+ static inline void kasan_disable_local(void) {}
  
-+KASAN_SANITIZE := n
++static inline void kasan_alloc_pages(struct page *page, unsigned int order) {}
++static inline void kasan_free_pages(struct page *page, unsigned int order) {}
 +
- targets := vmlinux vmlinux.bin vmlinux.bin.gz vmlinux.bin.bz2 vmlinux.bin.lzma \
- 	vmlinux.bin.xz vmlinux.bin.lzo vmlinux.bin.lz4
+ #endif /* CONFIG_KASAN */
  
-diff --git a/arch/x86/include/asm/kasan.h b/arch/x86/include/asm/kasan.h
-new file mode 100644
-index 0000000..8b22422
---- /dev/null
-+++ b/arch/x86/include/asm/kasan.h
-@@ -0,0 +1,31 @@
-+#ifndef _ASM_X86_KASAN_H
-+#define _ASM_X86_KASAN_H
-+
-+/*
-+ * Compiler uses shadow offset assuming that addresses start
-+ * from 0. Kernel addresses don't start from 0, so shadow
-+ * for kernel really starts from compiler's shadow offset +
-+ * 'kernel address space start' >> KASAN_SHADOW_SCALE_SHIFT
-+ */
-+#define KASAN_SHADOW_START      (KASAN_SHADOW_OFFSET + \
-+					(0xffff800000000000ULL >> 3))
-+/* 47 bits for kernel address -> (47 - 3) bits for shadow */
-+#define KASAN_SHADOW_END        (KASAN_SHADOW_START + (1ULL << (47 - 3)))
-+
-+#ifndef __ASSEMBLY__
-+
-+extern pte_t kasan_zero_pte[];
-+extern pte_t kasan_zero_pmd[];
-+extern pte_t kasan_zero_pud[];
-+
-+#ifdef CONFIG_KASAN
-+void __init kasan_map_early_shadow(pgd_t *pgd);
-+void __init kasan_init(void);
-+#else
-+static inline void kasan_map_early_shadow(pgd_t *pgd) { }
-+static inline void kasan_init(void) { }
-+#endif
-+
-+#endif
-+
-+#endif
-diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
-index 316b34e..4fc8ca7 100644
---- a/arch/x86/kernel/Makefile
-+++ b/arch/x86/kernel/Makefile
-@@ -16,6 +16,8 @@ CFLAGS_REMOVE_ftrace.o = -pg
- CFLAGS_REMOVE_early_printk.o = -pg
- endif
- 
-+KASAN_SANITIZE_head$(BITS).o := n
-+
- CFLAGS_irq.o := -I$(src)/../include/asm/trace
- 
- obj-y			:= process_$(BITS).o signal.o entry_$(BITS).o
-diff --git a/arch/x86/kernel/dumpstack.c b/arch/x86/kernel/dumpstack.c
-index b74ebc7..cf3df1d 100644
---- a/arch/x86/kernel/dumpstack.c
-+++ b/arch/x86/kernel/dumpstack.c
-@@ -265,7 +265,10 @@ int __die(const char *str, struct pt_regs *regs, long err)
- 	printk("SMP ");
- #endif
- #ifdef CONFIG_DEBUG_PAGEALLOC
--	printk("DEBUG_PAGEALLOC");
-+	printk("DEBUG_PAGEALLOC ");
-+#endif
-+#ifdef CONFIG_KASAN
-+	printk("KASAN");
- #endif
- 	printk("\n");
- 	if (notify_die(DIE_OOPS, str, regs, err,
-diff --git a/arch/x86/kernel/head64.c b/arch/x86/kernel/head64.c
-index eda1a86..efcddfa 100644
---- a/arch/x86/kernel/head64.c
-+++ b/arch/x86/kernel/head64.c
-@@ -27,6 +27,7 @@
- #include <asm/bios_ebda.h>
- #include <asm/bootparam_utils.h>
- #include <asm/microcode.h>
-+#include <asm/kasan.h>
- 
- /*
-  * Manage page tables very early on.
-@@ -46,7 +47,7 @@ static void __init reset_early_page_tables(void)
- 
- 	next_early_pgt = 0;
- 
--	write_cr3(__pa(early_level4_pgt));
-+	write_cr3(__pa_nodebug(early_level4_pgt));
- }
- 
- /* Create a new PMD entry */
-@@ -59,7 +60,7 @@ int __init early_make_pgtable(unsigned long address)
- 	pmdval_t pmd, *pmd_p;
- 
- 	/* Invalid address or early pgt is done ?  */
--	if (physaddr >= MAXMEM || read_cr3() != __pa(early_level4_pgt))
-+	if (physaddr >= MAXMEM || read_cr3() != __pa_nodebug(early_level4_pgt))
- 		return -1;
- 
- again:
-@@ -158,6 +159,8 @@ asmlinkage __visible void __init x86_64_start_kernel(char * real_mode_data)
- 	/* Kill off the identity-map trampoline */
- 	reset_early_page_tables();
- 
-+	kasan_map_early_shadow(early_level4_pgt);
-+
- 	/* clear bss before set_intr_gate with early_idt_handler */
- 	clear_bss();
- 
-@@ -179,6 +182,8 @@ asmlinkage __visible void __init x86_64_start_kernel(char * real_mode_data)
- 	/* set init_level4_pgt kernel high mapping*/
- 	init_level4_pgt[511] = early_level4_pgt[511];
- 
-+	kasan_map_early_shadow(init_level4_pgt);
-+
- 	x86_64_start_reservations(real_mode_data);
- }
- 
-diff --git a/arch/x86/kernel/head_64.S b/arch/x86/kernel/head_64.S
-index a468c0a..6fd514d9 100644
---- a/arch/x86/kernel/head_64.S
-+++ b/arch/x86/kernel/head_64.S
-@@ -514,8 +514,38 @@ ENTRY(phys_base)
- 	/* This must match the first entry in level2_kernel_pgt */
- 	.quad   0x0000000000000000
- 
-+#ifdef CONFIG_KASAN
-+#define FILL(VAL, COUNT)				\
-+	.rept (COUNT) ;					\
-+	.quad	(VAL) ;					\
-+	.endr
-+
-+NEXT_PAGE(kasan_zero_pte)
-+	FILL(kasan_zero_page - __START_KERNEL_map + _KERNPG_TABLE, 512)
-+NEXT_PAGE(kasan_zero_pmd)
-+	FILL(kasan_zero_pte - __START_KERNEL_map + _KERNPG_TABLE, 512)
-+NEXT_PAGE(kasan_zero_pud)
-+	FILL(kasan_zero_pmd - __START_KERNEL_map + _KERNPG_TABLE, 512)
-+
-+#undef FILL
-+#endif
-+
-+
- #include "../../x86/xen/xen-head.S"
- 	
- 	__PAGE_ALIGNED_BSS
- NEXT_PAGE(empty_zero_page)
- 	.skip PAGE_SIZE
-+
-+#ifdef CONFIG_KASAN
-+/*
-+ * This page used as early shadow. We don't use empty_zero_page
-+ * at early stages, stack instrumentation could write some garbage
-+ * to this page.
-+ * Latter we reuse it as zero shadow for large ranges of memory
-+ * that allowed to access, but not instrumented by kasan
-+ * (vmalloc/vmemmap ...).
-+ */
-+NEXT_PAGE(kasan_zero_page)
-+	.skip PAGE_SIZE
-+#endif
-diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index c4648ada..27d2009 100644
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -89,6 +89,7 @@
- #include <asm/cacheflush.h>
- #include <asm/processor.h>
- #include <asm/bugs.h>
-+#include <asm/kasan.h>
- 
- #include <asm/vsyscall.h>
- #include <asm/cpu.h>
-@@ -1174,6 +1175,8 @@ void __init setup_arch(char **cmdline_p)
- 
- 	x86_init.paging.pagetable_init();
- 
-+	kasan_init();
-+
- 	if (boot_cpu_data.cpuid_level >= 0) {
- 		/* A CPU has %cr4 if and only if it has CPUID */
- 		mmu_cr4_features = read_cr4();
-diff --git a/arch/x86/mm/Makefile b/arch/x86/mm/Makefile
-index ecfdc46..c4cc740 100644
---- a/arch/x86/mm/Makefile
-+++ b/arch/x86/mm/Makefile
-@@ -20,6 +20,9 @@ obj-$(CONFIG_HIGHMEM)		+= highmem_32.o
- 
- obj-$(CONFIG_KMEMCHECK)		+= kmemcheck/
- 
-+KASAN_SANITIZE_kasan_init_$(BITS).o := n
-+obj-$(CONFIG_KASAN)		+= kasan_init_$(BITS).o
-+
- obj-$(CONFIG_MMIOTRACE)		+= mmiotrace.o
- mmiotrace-y			:= kmmio.o pf_in.o mmio-mod.o
- obj-$(CONFIG_MMIOTRACE_TEST)	+= testmmiotrace.o
-diff --git a/arch/x86/mm/kasan_init_64.c b/arch/x86/mm/kasan_init_64.c
-new file mode 100644
-index 0000000..cfb932e
---- /dev/null
-+++ b/arch/x86/mm/kasan_init_64.c
-@@ -0,0 +1,197 @@
-+#include <linux/bootmem.h>
+ #endif /* LINUX_KASAN_H */
+diff --git a/mm/compaction.c b/mm/compaction.c
+index b68736c..b2d3ef9 100644
+--- a/mm/compaction.c
++++ b/mm/compaction.c
+@@ -16,6 +16,7 @@
+ #include <linux/sysfs.h>
+ #include <linux/balloon_compaction.h>
+ #include <linux/page-isolation.h>
 +#include <linux/kasan.h>
-+#include <linux/kdebug.h>
-+#include <linux/mm.h>
-+#include <linux/sched.h>
-+#include <linux/vmalloc.h>
-+
-+#include <asm/tlbflush.h>
-+#include <asm/sections.h>
-+
-+extern pgd_t early_level4_pgt[PTRS_PER_PGD];
-+extern struct range pfn_mapped[E820_X_MAX];
-+
-+extern unsigned char kasan_zero_page[PAGE_SIZE];
-+
-+static int __init map_range(struct range *range)
-+{
-+	unsigned long start = kasan_mem_to_shadow(
-+		(unsigned long)pfn_to_kaddr(range->start));
-+	unsigned long end = kasan_mem_to_shadow(
-+		(unsigned long)pfn_to_kaddr(range->end));
-+
-+	/*
-+	 * end + 1 here is intentional. We check several shadow bytes in advance
-+	 * to slightly speed up fastpath. In some rare cases we could cross
-+	 * boundary of mapped shadow, so we just map some more here.
-+	 */
-+	return vmemmap_populate(start, end + 1, NUMA_NO_NODE);
-+}
-+
-+static void __init clear_pgds(unsigned long start,
-+			unsigned long end)
-+{
-+	for (; start < end; start += PGDIR_SIZE)
-+		pgd_clear(pgd_offset_k(start));
-+}
-+
-+void __init kasan_map_early_shadow(pgd_t *pgd)
-+{
-+	int i;
-+	unsigned long start = KASAN_SHADOW_START;
-+	unsigned long end = KASAN_SHADOW_END;
-+
-+	for (i = pgd_index(start); start < end; i++) {
-+		pgd[i] = __pgd(__pa_nodebug(kasan_zero_pud)
-+				| _KERNPG_TABLE);
-+		start += PGDIR_SIZE;
-+	}
-+}
-+
-+static int __init zero_pte_populate(pmd_t *pmd, unsigned long addr,
-+				unsigned long end)
-+{
-+	pte_t *pte = pte_offset_kernel(pmd, addr);
-+
-+	while (addr + PAGE_SIZE <= end) {
-+		WARN_ON(!pte_none(*pte));
-+		set_pte(pte, __pte(__pa_nodebug(kasan_zero_page)
-+					| __PAGE_KERNEL_RO));
-+		addr += PAGE_SIZE;
-+		pte = pte_offset_kernel(pmd, addr);
-+	}
-+	return 0;
-+}
-+
-+static int __init zero_pmd_populate(pud_t *pud, unsigned long addr,
-+				unsigned long end)
-+{
-+	int ret = 0;
-+	pmd_t *pmd = pmd_offset(pud, addr);
-+
-+	while (IS_ALIGNED(addr, PMD_SIZE) && addr + PMD_SIZE <= end) {
-+		WARN_ON(!pmd_none(*pmd));
-+		set_pmd(pmd, __pmd(__pa_nodebug(kasan_zero_pte)
-+					| __PAGE_KERNEL_RO));
-+		addr += PMD_SIZE;
-+		pmd = pmd_offset(pud, addr);
-+	}
-+	if (addr < end) {
-+		if (pmd_none(*pmd)) {
-+			void *p = vmemmap_alloc_block(PAGE_SIZE, NUMA_NO_NODE);
-+			if (!p)
-+				return -ENOMEM;
-+			set_pmd(pmd, __pmd(__pa_nodebug(p) | _KERNPG_TABLE));
-+		}
-+		ret = zero_pte_populate(pmd, addr, end);
-+	}
-+	return ret;
-+}
-+
-+
-+static int __init zero_pud_populate(pgd_t *pgd, unsigned long addr,
-+				unsigned long end)
-+{
-+	int ret = 0;
-+	pud_t *pud = pud_offset(pgd, addr);
-+
-+	while (IS_ALIGNED(addr, PUD_SIZE) && addr + PUD_SIZE <= end) {
-+		WARN_ON(!pud_none(*pud));
-+		set_pud(pud, __pud(__pa_nodebug(kasan_zero_pmd)
-+					| __PAGE_KERNEL_RO));
-+		addr += PUD_SIZE;
-+		pud = pud_offset(pgd, addr);
-+	}
-+
-+	if (addr < end) {
-+		if (pud_none(*pud)) {
-+			void *p = vmemmap_alloc_block(PAGE_SIZE, NUMA_NO_NODE);
-+			if (!p)
-+				return -ENOMEM;
-+			set_pud(pud, __pud(__pa_nodebug(p) | _KERNPG_TABLE));
-+		}
-+		ret = zero_pmd_populate(pud, addr, end);
-+	}
-+	return ret;
-+}
-+
-+static int __init zero_pgd_populate(unsigned long addr, unsigned long end)
-+{
-+	int ret = 0;
-+	pgd_t *pgd = pgd_offset_k(addr);
-+
-+	while (IS_ALIGNED(addr, PGDIR_SIZE) && addr + PGDIR_SIZE <= end) {
-+		WARN_ON(!pgd_none(*pgd));
-+		set_pgd(pgd, __pgd(__pa_nodebug(kasan_zero_pud)
-+					| __PAGE_KERNEL_RO));
-+		addr += PGDIR_SIZE;
-+		pgd = pgd_offset_k(addr);
-+	}
-+
-+	if (addr < end) {
-+		if (pgd_none(*pgd)) {
-+			void *p = vmemmap_alloc_block(PAGE_SIZE, NUMA_NO_NODE);
-+			if (!p)
-+				return -ENOMEM;
-+			set_pgd(pgd, __pgd(__pa_nodebug(p) | _KERNPG_TABLE));
-+		}
-+		ret = zero_pud_populate(pgd, addr, end);
-+	}
-+	return ret;
-+}
-+
-+
-+static void __init populate_zero_shadow(unsigned long start, unsigned long end)
-+{
-+	if (zero_pgd_populate(start, end))
-+		panic("kasan: unable to map zero shadow!");
-+}
-+
-+
-+#ifdef CONFIG_KASAN_INLINE
-+static int kasan_die_handler(struct notifier_block *self,
-+			     unsigned long val,
-+			     void *data)
-+{
-+	if (val == DIE_GPF) {
-+		pr_emerg("CONFIG_KASAN_INLINE enabled");
-+		pr_emerg("GPF could be caused by NULL-ptr deref or user memory access");
-+	}
-+	return NOTIFY_OK;
-+}
-+
-+static struct notifier_block kasan_die_notifier = {
-+	.notifier_call = kasan_die_handler,
-+};
-+#endif
-+
-+void __init kasan_init(void)
-+{
-+	int i;
-+
-+#ifdef CONFIG_KASAN_INLINE
-+	register_die_notifier(&kasan_die_notifier);
-+#endif
-+
-+	memcpy(early_level4_pgt, init_level4_pgt, sizeof(early_level4_pgt));
-+	load_cr3(early_level4_pgt);
-+
-+	clear_pgds(KASAN_SHADOW_START, KASAN_SHADOW_END);
-+
-+	populate_zero_shadow(KASAN_SHADOW_START,
-+			kasan_mem_to_shadow(PAGE_OFFSET));
-+
-+	for (i = 0; i < E820_X_MAX; i++) {
-+		if (pfn_mapped[i].end == 0)
-+			break;
-+
-+		if (map_range(&pfn_mapped[i]))
-+			panic("kasan: unable to allocate shadow!");
-+	}
-+	populate_zero_shadow(kasan_mem_to_shadow(PAGE_OFFSET + MAXMEM),
-+			KASAN_SHADOW_END);
-+
-+	memset(kasan_zero_page, 0, PAGE_SIZE);
-+
-+	load_cr3(init_level4_pgt);
-+}
-diff --git a/arch/x86/realmode/Makefile b/arch/x86/realmode/Makefile
-index 94f7fbe..e02c2c6 100644
---- a/arch/x86/realmode/Makefile
-+++ b/arch/x86/realmode/Makefile
-@@ -6,7 +6,7 @@
- # for more details.
- #
- #
--
-+KASAN_SANITIZE := n
- subdir- := rm
+ #include "internal.h"
  
- obj-y += init.o
-diff --git a/arch/x86/realmode/rm/Makefile b/arch/x86/realmode/rm/Makefile
-index 7c0d7be..2730d77 100644
---- a/arch/x86/realmode/rm/Makefile
-+++ b/arch/x86/realmode/rm/Makefile
-@@ -6,6 +6,7 @@
- # for more details.
- #
- #
-+KASAN_SANITIZE := n
+ #ifdef CONFIG_COMPACTION
+@@ -72,6 +73,7 @@ static void map_pages(struct list_head *list)
+ 	list_for_each_entry(page, list, lru) {
+ 		arch_alloc_page(page, 0);
+ 		kernel_map_pages(page, 1, 1);
++		kasan_alloc_pages(page, 0);
+ 	}
+ }
  
- always := realmode.bin realmode.relocs
+diff --git a/mm/kasan/kasan.c b/mm/kasan/kasan.c
+index 895fa5f..ea86458 100644
+--- a/mm/kasan/kasan.c
++++ b/mm/kasan/kasan.c
+@@ -247,6 +247,20 @@ static __always_inline void check_memory_region(unsigned long addr,
+ 	kasan_report(addr, size, write);
+ }
  
-diff --git a/arch/x86/vdso/Makefile b/arch/x86/vdso/Makefile
-index 5a4affe..2aacd7c 100644
---- a/arch/x86/vdso/Makefile
-+++ b/arch/x86/vdso/Makefile
-@@ -3,6 +3,7 @@
- #
++void kasan_alloc_pages(struct page *page, unsigned int order)
++{
++	if (likely(!PageHighMem(page)))
++		kasan_unpoison_shadow(page_address(page), PAGE_SIZE << order);
++}
++
++void kasan_free_pages(struct page *page, unsigned int order)
++{
++	if (likely(!PageHighMem(page)))
++		kasan_poison_shadow(page_address(page),
++				PAGE_SIZE << order,
++				KASAN_FREE_PAGE);
++}
++
+ #define DECLARE_ASAN_CHECK(size)				\
+ 	void __asan_load##size(unsigned long addr)		\
+ 	{							\
+diff --git a/mm/kasan/kasan.h b/mm/kasan/kasan.h
+index da0e53c..0f09fb2 100644
+--- a/mm/kasan/kasan.h
++++ b/mm/kasan/kasan.h
+@@ -6,6 +6,8 @@
+ #define KASAN_SHADOW_SCALE_SIZE (1UL << KASAN_SHADOW_SCALE_SHIFT)
+ #define KASAN_SHADOW_MASK       (KASAN_SHADOW_SCALE_SIZE - 1)
  
- KBUILD_CFLAGS += $(DISABLE_LTO)
-+KASAN_SANITIZE := n
++#define KASAN_FREE_PAGE         0xFF  /* page was freed */
++
+ struct access_info {
+ 	unsigned long access_addr;
+ 	unsigned long first_bad_addr;
+diff --git a/mm/kasan/report.c b/mm/kasan/report.c
+index 21a9eeb..4e26c68 100644
+--- a/mm/kasan/report.c
++++ b/mm/kasan/report.c
+@@ -54,6 +54,9 @@ static void print_error_description(struct access_info *info)
+ 	shadow_val = *(u8 *)kasan_mem_to_shadow(info->first_bad_addr);
  
- VDSO64-$(CONFIG_X86_64)		:= y
- VDSOX32-$(CONFIG_X86_X32_ABI)	:= y
-diff --git a/lib/Kconfig.kasan b/lib/Kconfig.kasan
-index 10341df..f86070d 100644
---- a/lib/Kconfig.kasan
-+++ b/lib/Kconfig.kasan
-@@ -5,6 +5,7 @@ if HAVE_ARCH_KASAN
+ 	switch (shadow_val) {
++	case KASAN_FREE_PAGE:
++		bug_type = "use after free";
++		break;
+ 	case 0 ... KASAN_SHADOW_SCALE_SIZE - 1:
+ 		bug_type = "out of bounds access";
+ 		break;
+@@ -69,6 +72,14 @@ static void print_error_description(struct access_info *info)
  
- config KASAN
- 	bool "AddressSanitizer: runtime memory debugger"
-+	depends on !MEMORY_HOTPLUG
- 	help
- 	  Enables address sanitizer - runtime memory debugger,
- 	  designed to find out-of-bounds accesses and use-after-free bugs.
-@@ -15,6 +16,7 @@ config KASAN
+ static void print_address_description(struct access_info *info)
+ {
++	unsigned long addr = info->access_addr;
++
++	if ((addr >= PAGE_OFFSET) &&
++		(addr < (unsigned long)high_memory)) {
++		struct page *page = virt_to_head_page((void *)addr);
++		dump_page(page, "kasan: bad access detected");
++	}
++
+ 	dump_stack();
+ }
  
- config KASAN_SHADOW_OFFSET
- 	hex
-+	default 0xdffffc0000000000 if X86_64
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 8d52ab1..31bc2e8 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -25,6 +25,7 @@
+ #include <linux/compiler.h>
+ #include <linux/kernel.h>
+ #include <linux/kmemcheck.h>
++#include <linux/kasan.h>
+ #include <linux/module.h>
+ #include <linux/suspend.h>
+ #include <linux/pagevec.h>
+@@ -787,6 +788,7 @@ static bool free_pages_prepare(struct page *page, unsigned int order)
  
- choice
- 	prompt "Instrumentation type"
+ 	trace_mm_page_free(page, order);
+ 	kmemcheck_free_shadow(page, order);
++	kasan_free_pages(page, order);
+ 
+ 	if (PageAnon(page))
+ 		page->mapping = NULL;
+@@ -970,6 +972,7 @@ static int prep_new_page(struct page *page, unsigned int order, gfp_t gfp_flags,
+ 
+ 	arch_alloc_page(page, order);
+ 	kernel_map_pages(page, 1 << order, 1);
++	kasan_alloc_pages(page, order);
+ 
+ 	if (gfp_flags & __GFP_ZERO)
+ 		prep_zero_page(page, order, gfp_flags);
 -- 
 2.2.2
 
