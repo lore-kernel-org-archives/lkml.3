@@ -1,150 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752699AbbA2GqZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 01:46:25 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.243]:47874 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751457AbbA2GqY (ORCPT
+	id S1754901AbbA2Gle (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 01:41:34 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:26568 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752087AbbA2Glb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 01:46:24 -0500
-From: Wenyou Yang <wenyou.yang@atmel.com>
-To: <nicolas.ferre@atmel.com>, <linux@arm.linux.org.uk>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <alexandre.belloni@free-electrons.com>, <sylvain.rochet@finsecur.com>,
-        <peda@axentia.se>, <sergei.shtylyov@cogentembedded.com>,
-        <linux@maxim.org.za>, <wenyou.yang@atmel.com>
-Subject: [PATCH v5 10/13] pm: at91: rename function name: at91_slow_clock()-->at91_pm_suspend_sram_fn
-Date: Thu, 29 Jan 2015 14:42:31 +0800
-Message-ID: <1422513751-25977-1-git-send-email-wenyou.yang@atmel.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1422513316-21509-1-git-send-email-wenyou.yang@atmel.com>
-References: <1422513316-21509-1-git-send-email-wenyou.yang@atmel.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	Thu, 29 Jan 2015 01:41:31 -0500
+From: Ethan Zhao <ethan.zhao@oracle.com>
+To: rjw@rjwysocki.net, viresh.kumar@linaro.org
+Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        ethan.kernel@gmail.com, Ethan Zhao <ethan.zhao@oracle.com>
+Subject: [PATCH] cpufreq: fix another race between PPC notification and vcpu_hotplug()
+Date: Thu, 29 Jan 2015 15:42:41 +0900
+Message-Id: <1422513761-8230-1-git-send-email-ethan.zhao@oracle.com>
+X-Mailer: git-send-email 1.8.3.1
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As the file name's renaming, rename the file name at91_slow_clock()-->
-at91_pm_suspend_sram_fn, rename the function handler's name at the same time.
+There is race observed between PPC changed notification handler worker thread
+and vcpu_hotplug() called within xenbus_thread() context.
+It is shown as following WARNING:
 
-Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
-Acked-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+ ------------[ cut here ]------------
+ WARNING: CPU: 0 PID: 4 at include/linux/kref.h:47
+ kobject_get+0x41/0x50()
+ Modules linked in: acpi_cpufreq(+) nfsd auth_rpcgss nfs_acl
+ lockd grace sunrpc xfs libcrc32c sd_mod ixgbe igb mdio ahci hwmon
+ ...
+ [   14.003548] CPU: 0 PID: 4 Comm: kworker/0:0 Not tainted
+ ...
+ [   14.003553] Workqueue: kacpi_notify acpi_os_execute_deferred
+ [   14.003554]  0000000000000000 000000008c76682c ffff88094c793af8
+ ffffffff81661b14
+ [   14.003556]  0000000000000000 0000000000000000 ffff88094c793b38
+ ffffffff81072b61
+ [   14.003558]  ffff88094c793bd8 ffff8812491f8800 0000000000000292
+ 0000000000000000
+ [   14.003560] Call Trace:
+ [   14.003567]  [<ffffffff81661b14>] dump_stack+0x46/0x58
+ [   14.003571]  [<ffffffff81072b61>] warn_slowpath_common+0x81/0xa0
+ [   14.003572]  [<ffffffff81072c7a>] warn_slowpath_null+0x1a/0x20
+ [   14.003574]  [<ffffffff812e16d1>] kobject_get+0x41/0x50
+ [   14.003579]  [<ffffffff815262a5>] cpufreq_cpu_get+0x75/0xc0
+ [   14.003581]  [<ffffffff81527c3e>] cpufreq_update_policy+0x2e/0x1f0
+ [   14.003586]  [<ffffffff810b8cb2>] ? up+0x32/0x50
+ [   14.003589]  [<ffffffff81381aa9>] ? acpi_ns_get_node+0xcb/0xf2
+ [   14.003591]  [<ffffffff81381efd>] ? acpi_evaluate_object+0x22c/0x252
+ [   14.003593]  [<ffffffff813824f6>] ? acpi_get_handle+0x95/0xc0
+ [   14.003596]  [<ffffffff81360967>] ? acpi_has_method+0x25/0x40
+ [   14.003601]  [<ffffffff81391e08>] acpi_processor_ppc_has_changed+0x77/0x82
+ [   14.003604]  [<ffffffff81089566>] ? move_linked_works+0x66/0x90
+ [   14.003606]  [<ffffffff8138e8ed>] acpi_processor_notify+0x58/0xe7
+ [   14.003609]  [<ffffffff8137410c>] acpi_ev_notify_dispatch+0x44/0x5c
+ [   14.003611]  [<ffffffff8135f293>] acpi_os_execute_deferred+0x15/0x22
+ [   14.003614]  [<ffffffff8108c910>] process_one_work+0x160/0x410
+ [   14.003616]  [<ffffffff8108d05b>] worker_thread+0x11b/0x520
+ [   14.003617]  [<ffffffff8108cf40>] ? rescuer_thread+0x380/0x380
+ [   14.003621]  [<ffffffff81092421>] kthread+0xe1/0x100
+ [   14.003623]  [<ffffffff81092340>] ? kthread_create_on_node+0x1b0/0x1b0
+ [   14.003628]  [<ffffffff81669ebc>] ret_from_fork+0x7c/0xb0
+ [   14.003630]  [<ffffffff81092340>] ? kthread_create_on_node+0x1b0/0x1b0
+ [   14.003631] ---[ end trace 89e66eb9795efdf7 ]---
+
+ Thread A: Workqueue: kacpi_notify
+
+ acpi_processor_notify()
+   acpi_processor_ppc_has_changed()
+	 cpufreq_update_policy()
+	   cpufreq_cpu_get()
+             kobject_get()
+
+ Thread B: xenbus_thread()
+
+ xenbus_thread()
+   msg->u.watch.handle->callback()
+     handle_vcpu_hotplug_event()
+       vcpu_hotplug()
+         cpu_down()
+           __cpu_notify(CPU_DOWN_PREPARE..)
+             cpufreq_cpu_callback()
+               __cpufreq_remove_dev_prepare()
+                 update_policy_cpu()
+                   kobject_move()
+
+To avoid this race, cpufreq_cpu_get() should check the cpu is offline or not
+and move the kobject_move() after up_write(&policy->rwsem) in function
+update_policy_cpu() to be sure the updating to the policy was done in another
+thread. 
+
+But seems it is not complete fix because of some functions would schedule out
+we could couldn't move them into sections proteced by rwsem directly, such as
+the move_object().
+
+Only passed buidling with v3.19-rc6.
+
+Signed-off-by: Ethan Zhao <ethan.zhao@oracle.com>
 ---
- arch/arm/mach-at91/pm.c         |   25 +++++++++++++------------
- arch/arm/mach-at91/pm_suspend.S |   24 ++++++++++--------------
- 2 files changed, 23 insertions(+), 26 deletions(-)
+ drivers/cpufreq/cpufreq.c | 28 ++++++++++++++++++----------
+ 1 file changed, 18 insertions(+), 10 deletions(-)
 
-diff --git a/arch/arm/mach-at91/pm.c b/arch/arm/mach-at91/pm.c
-index c3a697f..ce15013 100644
---- a/arch/arm/mach-at91/pm.c
-+++ b/arch/arm/mach-at91/pm.c
-@@ -131,13 +131,12 @@ int at91_suspend_entering_slow_clock(void)
- }
- EXPORT_SYMBOL(at91_suspend_entering_slow_clock);
+diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+index 46bed4f..b5e2bb8 100644
+--- a/drivers/cpufreq/cpufreq.c
++++ b/drivers/cpufreq/cpufreq.c
+@@ -202,7 +202,7 @@ struct cpufreq_policy *cpufreq_cpu_get(unsigned int cpu)
+ 	struct cpufreq_policy *policy = NULL;
+ 	unsigned long flags;
  
--
--static void (*slow_clock)(void __iomem *pmc, void __iomem *ramc0,
-+static void (*at91_suspend_sram_fn)(void __iomem *pmc, void __iomem *ramc0,
- 			  void __iomem *ramc1, int memctrl);
+-	if (cpufreq_disabled() || (cpu >= nr_cpu_ids))
++	if (cpufreq_disabled() || cpu_is_offline(cpu))
+ 		return NULL;
  
--extern void at91_slow_clock(void __iomem *pmc, void __iomem *ramc0,
-+extern void at91_pm_suspend_in_sram(void __iomem *pmc, void __iomem *ramc0,
- 			    void __iomem *ramc1, int memctrl);
--extern u32 at91_slow_clock_sz;
-+extern u32 at91_pm_suspend_in_sram_sz;
- 
- static void at91_pm_suspend(suspend_state_t state)
- {
-@@ -146,8 +145,8 @@ static void at91_pm_suspend(suspend_state_t state)
- 	pm_data |= (state == PM_SUSPEND_MEM) ?
- 				AT91_PM_MODE(AT91_PM_SLOW_CLOCK) : 0;
- 
--	slow_clock(at91_pmc_base, at91_ramc_base[0],
--			at91_ramc_base[1], pm_data);
-+	at91_suspend_sram_fn(at91_pmc_base, at91_ramc_base[0],
-+				at91_ramc_base[1], pm_data);
- }
- 
- static int at91_pm_enter(suspend_state_t state)
-@@ -288,17 +287,19 @@ static void __init at91_pm_sram_init(void)
- 		goto put_node;
+ 	if (!down_read_trylock(&cpufreq_rwsem))
+@@ -214,10 +214,18 @@ struct cpufreq_policy *cpufreq_cpu_get(unsigned int cpu)
+ 	if (cpufreq_driver) {
+ 		/* get the CPU */
+ 		policy = per_cpu(cpufreq_cpu_data, cpu);
+-		if (policy)
+-			kobject_get(&policy->kobj);
++		if (!policy)
++			goto out;
++
++		if (policy->cpu != cpu) {
++			policy = NULL;
++			goto out;
++		}
++
++		kobject_get(&policy->kobj);
  	}
  
--	sram_base = gen_pool_alloc(sram_pool, at91_slow_clock_sz);
-+	sram_base = gen_pool_alloc(sram_pool, at91_pm_suspend_in_sram_sz);
- 	if (!sram_base) {
--		pr_warn("%s: unable to alloc ocram!\n", __func__);
-+		pr_warn("%s: unable to alloc sram!\n", __func__);
- 		goto put_node;
- 	}
++out:
+ 	read_unlock_irqrestore(&cpufreq_driver_lock, flags);
  
- 	sram_pbase = gen_pool_virt_to_phys(sram_pool, sram_base);
--	slow_clock = __arm_ioremap_exec(sram_pbase, at91_slow_clock_sz, false);
-+	at91_suspend_sram_fn = __arm_ioremap_exec(sram_pbase,
-+					at91_pm_suspend_in_sram_sz, false);
+ 	if (!policy)
+@@ -1083,13 +1091,6 @@ static int update_policy_cpu(struct cpufreq_policy *policy, unsigned int cpu,
+ 	if (WARN_ON(cpu == policy->cpu))
+ 		return 0;
  
--	/* Copy the slow_clock handler to SRAM */
--	memcpy(slow_clock, at91_slow_clock, at91_slow_clock_sz);
-+	/* Copy the pm suspend handler to SRAM */
-+	memcpy(at91_suspend_sram_fn,
-+		at91_pm_suspend_in_sram, at91_pm_suspend_in_sram_sz);
- 
- put_node:
- 	of_node_put(node);
-@@ -311,7 +312,7 @@ static void __init at91_pm_init(void)
- 	if (at91_cpuidle_device.dev.platform_data)
- 		platform_device_register(&at91_cpuidle_device);
- 
--	if (slow_clock)
-+	if (at91_suspend_sram_fn)
- 		suspend_set_ops(&at91_pm_ops);
- 	else
- 		pr_info("AT91: PM : Not supported, due to no sram allocated\n");
-diff --git a/arch/arm/mach-at91/pm_suspend.S b/arch/arm/mach-at91/pm_suspend.S
-index 8edbad0..122a3f1 100644
---- a/arch/arm/mach-at91/pm_suspend.S
-+++ b/arch/arm/mach-at91/pm_suspend.S
-@@ -55,23 +55,19 @@ mode	.req	r6
- 
- 	.text
- 
--/* void at91_slow_clock(void __iomem *pmc, void __iomem *sdramc,
-+/*
-+ * void at91_pm_suspend_in_sram(void __iomem *pmc, void __iomem *sdramc,
-  *			void __iomem *ramc1, int memctrl)
-+ * @input param:
-+ * 	@r0: the base address of AT91_PMC
-+ *  	@r1: the base address of SDRAM Controller (SDRAM, DDRSDR, or AT91_SYS)
-+ *	@r2: the base address of second SDRAM Controller or 0 if not present
-+ *	@r3: the pm information
-  */
--ENTRY(at91_slow_clock)
-+ENTRY(at91_pm_suspend_in_sram)
- 	/* Save registers on stack */
- 	stmfd	sp!, {r4 - r12, lr}
- 
--	/*
--	 * Register usage:
--	 *  R0 = Base address of AT91_PMC
--	 *  R1 = Base address of RAM Controller (SDRAM, DDRSDR, or AT91_SYS)
--	 *  R2 = Base address of second RAM Controller or 0 if not present
--	 *  R3 = Memory controller
--	 *  R4 = temporary register
--	 *  R5 = temporary register
--	 */
+-	/* Move kobject to the new policy->cpu */
+-	ret = kobject_move(&policy->kobj, &cpu_dev->kobj);
+-	if (ret) {
+-		pr_err("%s: Failed to move kobj: %d\n", __func__, ret);
+-		return ret;
+-	}
 -
- 	/* Drain write buffer */
- 	mov	tmp1, #0
- 	mcr	p15, 0, tmp1, c7, c10, 4
-@@ -277,5 +273,5 @@ ram_restored:
- .saved_sam9_mdr1:
- 	.word 0
+ 	down_write(&policy->rwsem);
  
--ENTRY(at91_slow_clock_sz)
--	.word .-at91_slow_clock
-+ENTRY(at91_pm_suspend_in_sram_sz)
-+	.word .-at91_pm_suspend_in_sram
+ 	policy->last_cpu = policy->cpu;
+@@ -1097,6 +1098,13 @@ static int update_policy_cpu(struct cpufreq_policy *policy, unsigned int cpu,
+ 
+ 	up_write(&policy->rwsem);
+ 
++	/* Move kobject to the new policy->cpu */
++	ret = kobject_move(&policy->kobj, &cpu_dev->kobj);
++	if (ret) {
++		pr_err("%s: Failed to move kobj: %d\n", __func__, ret);
++		return ret;
++	}
++
+ 	blocking_notifier_call_chain(&cpufreq_policy_notifier_list,
+ 			CPUFREQ_UPDATE_POLICY_CPU, policy);
+ 
 -- 
-1.7.9.5
+1.8.3.1
 
