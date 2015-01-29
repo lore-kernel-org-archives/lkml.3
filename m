@@ -1,43 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753247AbbA2Of7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 09:35:59 -0500
-Received: from mail-qg0-f43.google.com ([209.85.192.43]:33250 "EHLO
-	mail-qg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752139AbbA2Of4 convert rfc822-to-8bit (ORCPT
+	id S1753581AbbA2Ofw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 09:35:52 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53232 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752525AbbA2Ofu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 09:35:56 -0500
+	Thu, 29 Jan 2015 09:35:50 -0500
+Date: Thu, 29 Jan 2015 06:35:48 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drivers/base/node: Avoid manual device_create_file()
+ calls
+Message-ID: <20150129143548.GA9723@kroah.com>
+References: <1422530962-2460-1-git-send-email-tiwai@suse.de>
 MIME-Version: 1.0
-In-Reply-To: <m37fw6xga8.fsf@t19.piap.pl>
-References: <1420857290-8373-1-git-send-email-robh@kernel.org>
- <1420857290-8373-7-git-send-email-robh@kernel.org> <m37fw6xga8.fsf@t19.piap.pl>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Thu, 29 Jan 2015 08:35:35 -0600
-Message-ID: <CAErSpo56H5uUz4zOLk6j5m0Of8ZrZdc_bmNkHuGhEfx2WJvqeQ@mail.gmail.com>
-Subject: Re: [PATCH 06/16] ARM: cns3xxx: convert PCI to use generic config accesses
-To: =?UTF-8?Q?Krzysztof_Ha=C5=82asa?= <khalasa@piap.pl>
-Cc: Rob Herring <robh@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm <linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1422530962-2460-1-git-send-email-tiwai@suse.de>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 29, 2015 at 12:16 AM, Krzysztof Hałasa <khalasa@piap.pl> wrote:
-> Rob Herring <robh@kernel.org> writes:
->
->> Convert the cns3xxx PCI driver to use the generic config access functions.
->>
->> This changes accesses from __raw_readl/__raw_writel to readl/writel.
->>
->>  arch/arm/mach-cns3xxx/pcie.c | 52 +++++++++-----------------------------------
->
-> This looks fine:
-> Acked-by: Krzysztof Hałasa <khalasa@piap.pl>
+On Thu, Jan 29, 2015 at 12:29:22PM +0100, Takashi Iwai wrote:
+> Instead of manual calls of multiple device_create_file() and
+> device_remove_file(), use the static attribute groups assigned to the
+> new device.  This also fixes the possible races, too.
+> 
+> Signed-off-by: Takashi Iwai <tiwai@suse.de>
+> ---
+>  drivers/base/node.c | 34 ++++++++++++++++++++--------------
+>  1 file changed, 20 insertions(+), 14 deletions(-)
 
-Thanks, I added your ack.
+Looks good, I'll queue this up soon, thanks for doing it.
+
+greg k-h
