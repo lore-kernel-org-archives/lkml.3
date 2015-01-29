@@ -1,79 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754758AbbA2MgI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 07:36:08 -0500
-Received: from mail-oi0-f52.google.com ([209.85.218.52]:35258 "EHLO
-	mail-oi0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753221AbbA2MgG (ORCPT
+	id S1755417AbbA2Mjn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 07:39:43 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:46113 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753221AbbA2Mjl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 07:36:06 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAMEtUuzSDYYWneoTy9=AmMa9=x4owWbWsXod=Do54+yj4Je3=Q@mail.gmail.com>
-References: <CAMEtUuzSDYYWneoTy9=AmMa9=x4owWbWsXod=Do54+yj4Je3=Q@mail.gmail.com>
-From: Namhyung Kim <namhyung@kernel.org>
-Date: Thu, 29 Jan 2015 21:35:44 +0900
-X-Google-Sender-Auth: aE0VxqmrPsCIKIhRRGKpndyufaw
-Message-ID: <CAM9d7chgjWh6CyTiNHJX+kWbk29ANEHWSPgY4ga3BpkFbPwgiQ@mail.gmail.com>
-Subject: Re: [PATCH v2 linux-trace 1/8] tracing: attach eBPF programs to
- tracepoints and syscalls
-To: Alexei Starovoitov <ast@plumgrid.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Jiri Olsa <jolsa@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Linux API <linux-api@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 29 Jan 2015 07:39:41 -0500
+X-AuditID: cbfee61a-f79c06d000004e71-3b-54ca2a0b8e9b
+From: Chao Yu <chao2.yu@samsung.com>
+To: "'Jaegeuk Kim'" <jaegeuk@kernel.org>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net
+References: <1422401503-4769-1-git-send-email-jaegeuk@kernel.org>
+ <1422401503-4769-5-git-send-email-jaegeuk@kernel.org>
+In-reply-to: <1422401503-4769-5-git-send-email-jaegeuk@kernel.org>
+Subject: RE: [PATCH 5/5] f2fs: introduce a batched trim
+Date: Thu, 29 Jan 2015 20:38:30 +0800
+Message-id: <003b01d03bc0$a5f23d20$f1d6b760$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: AQKDs63B3JtDSVeEmIqjDxgyUQN23AKL4RA4m1u1E3A=
+Content-language: zh-cn
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrNLMWRmVeSWpSXmKPExsVy+t9jAV1urVMhBhevyFs8WT+L2eLSIneL
+	PXtPslhc3jWHzYHFY9OqTjaP3Qs+M3l83iQXwBzFZZOSmpNZllqkb5fAlXFlzQ32gnXCFa1T
+	jrI1MN7h72Lk5JAQMJG4cOIzM4QtJnHh3nq2LkYuDiGBRYwSnT8XsEI4Pxgl9h+YzQZSxSag
+	IrG84z8TSEJEoJdR4seZfrB2IYFKiQtbH4PZnAJOEpOa+1lBbGEBc4nlq58zgdgsAqoSfcdm
+	sIDYvAKWEheb1zND2IISPybfA4szC2hJrN95nAnClpfYvOYt1HkKEjvOvmYEsUUErCTOnr0A
+	VS8usfHILZYJjIKzkIyahWTULCSjZiFpWcDIsopRNLUguaA4KT3XUK84Mbe4NC9dLzk/dxMj
+	OMifSe1gXNlgcYhRgINRiYeXo/5kiBBrYllxZe4hRgkOZiUR3kKlUyFCvCmJlVWpRfnxRaU5
+	qcWHGKU5WJTEeZXs20KEBNITS1KzU1MLUotgskwcnFINjGvXHz+q/iimf3vJuZPXfr1O5S9c
+	s/Qns73MB+X/LTYnxBU2BnmLs944GzTxa7xhskykTIrYUr0vCclzQypSvmz6MH/D1p7FjIsO
+	ZVw5mCevp7hw4dWXFv83aTNPs+8/qlyRcSv41aoTeZ7tc1q5zZz+Obx+JJB1ln/1pJeZaZsa
+	v53zmz5r/g8lluKMREMt5qLiRACbwPZ4bgIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 29, 2015 at 4:04 PM, Alexei Starovoitov <ast@plumgrid.com> wrote:
-> On Wed, Jan 28, 2015 at 10:41 PM, Namhyung Kim <namhyung@kernel.org> wrote:
->>
->> I think it's not a problem of bpf.  An user process can be killed
->> anytime while it enabed events without bpf.  The only thing it should
->> care is the auto-unload IMHO.
->
-> ok. I think it does indeed make sense to decouple the logic.
-> We can add 'auto_enable' file to achieve desired Ctrl-C behavior.
-> While the 'auto_enable' file is open the event will be enabled
-> and writes to 'enable' file will be ignored.
-> As soon as file closes, the event is auto-disabled.
-> Then user space will use 'bpf' file to attach/auto-unload
-> and 'auto_enable' file together.
-> Seem there would be a use for such 'auto_enable'
-> without bpf as well.
+Hi Jaegeuk,
 
-Why do you want such an 'auto_enable' feature?  I guess it's enough
-just to keep an event in the soft-disabled state and run a bpf program
-before the check.
+> -----Original Message-----
+> From: linux-fsdevel-owner@vger.kernel.org [mailto:linux-fsdevel-owner@vger.kernel.org] On
+> Behalf Of Jaegeuk Kim
+> Sent: Wednesday, January 28, 2015 7:32 AM
+> To: linux-kernel@vger.kernel.org; linux-fsdevel@vger.kernel.org;
+> linux-f2fs-devel@lists.sourceforge.net
+> Cc: Jaegeuk Kim
+> Subject: [PATCH 5/5] f2fs: introduce a batched trim
+> 
+> This patch introduces a batched trimming feature, which submits split discard
+> commands.
 
+I didn't get it, why we should split discard commands. :(
 
->
->> I'm okay for not calling bpf program in NMI but not for disabling events.
->>
->> Suppose an user was collecting an event (including in NMI) and then
->> [s]he also wanted to run a bpf program.  So [s]he wrote a program
->> always return 1.  But after attaching the program, it didn't record
->> the event in NMI..  Isn't that a problem?
->
-> ok, I think 'if (in_nmi()) return 1;' will work then, right?
-> Or you're thinking something else ?
-
-Nope, returning 1 would be okay..
-
-
->
->> Right.  I think bpf programs belong to a user process but events are
->> global resource.  Maybe you also need to consider attaching bpf
->> program via perf (ioctl?) interface..
->
-> yes. I did. Please see my reply to Masami.
-> ioctl only works for tracepoints.
-
-What was the problem of kprobes then? :)
+Does smaller discarding for flash shows better performance or effect or safety?
+Can you please explain more about this patch?
 
 Thanks,
-Namhyung
+
+> 
+> Signed-off-by: Jaegeuk Kim <jaegeuk@kernel.org>
+> ---
+>  fs/f2fs/f2fs.h    |  1 +
+>  fs/f2fs/segment.c | 15 ++++++++++-----
+>  2 files changed, 11 insertions(+), 5 deletions(-)
+> 
+> diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
+> index c0b83d6..ec4d16b 100644
+> --- a/fs/f2fs/f2fs.h
+> +++ b/fs/f2fs/f2fs.h
+> @@ -104,6 +104,7 @@ enum {
+>  	CP_DISCARD,
+>  };
+> 
+> +#define BATCHED_TRIM_SEGMENTS	10
+>  struct cp_control {
+>  	int reason;
+>  	__u64 trim_start;
+> diff --git a/fs/f2fs/segment.c b/fs/f2fs/segment.c
+> index 31c4e57..6c9c784 100644
+> --- a/fs/f2fs/segment.c
+> +++ b/fs/f2fs/segment.c
+> @@ -1066,14 +1066,19 @@ int f2fs_trim_fs(struct f2fs_sb_info *sbi, struct fstrim_range *range)
+>  	end_segno = (end >= MAX_BLKADDR(sbi)) ? MAIN_SEGS(sbi) - 1 :
+>  						GET_SEGNO(sbi, end);
+>  	cpc.reason = CP_DISCARD;
+> -	cpc.trim_start = start_segno;
+> -	cpc.trim_end = end_segno;
+>  	cpc.trim_minlen = range->minlen >> sbi->log_blocksize;
+> 
+>  	/* do checkpoint to issue discard commands safely */
+> -	mutex_lock(&sbi->gc_mutex);
+> -	write_checkpoint(sbi, &cpc);
+> -	mutex_unlock(&sbi->gc_mutex);
+> +	for (; start_segno <= end_segno;
+> +				start_segno += BATCHED_TRIM_SEGMENTS + 1) {
+> +		cpc.trim_start = start_segno;
+> +		cpc.trim_end = min_t(unsigned int,
+> +				start_segno + BATCHED_TRIM_SEGMENTS, end_segno);
+> +
+> +		mutex_lock(&sbi->gc_mutex);
+> +		write_checkpoint(sbi, &cpc);
+> +		mutex_unlock(&sbi->gc_mutex);
+> +	}
+>  out:
+>  	range->len = cpc.trimmed << sbi->log_blocksize;
+>  	return 0;
+> --
+> 2.1.1
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
