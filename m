@@ -1,95 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758586AbbA2O1s (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 09:27:48 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:33722 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754548AbbA2O1r (ORCPT
+	id S1758833AbbA2O3m (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 09:29:42 -0500
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:43687 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755585AbbA2O3j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 09:27:47 -0500
-Date: Thu, 29 Jan 2015 15:27:40 +0100
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Matthias Brugger <matthias.bgg@gmail.com>
-Cc: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        YH Chen =?utf-8?B?KOmZs+aYseixqik=?= <yh.chen@mediatek.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Henry Chen <henryc.chen@mediatek.com>,
-        Rob Herring <robh+dt@kernel.org>,
-        Yingjoe Chen =?utf-8?B?KOmZs+iLsea0sik=?= 
-	<Yingjoe.Chen@mediatek.com>,
-        Eddie Huang <eddie.huang@mediatek.com>,
-        Lee Jones <lee.jones@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        James Liao <jamesjj.liao@mediatek.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Stephen Boyd <sboyd@codeaurora.org>
-Subject: Re: [PATCH v2] MediaTek PMIC support
-Message-ID: <20150129142740.GH12209@pengutronix.de>
-References: <1422022202-7526-1-git-send-email-s.hauer@pengutronix.de>
- <20150126114735.GA3178@pengutronix.de>
- <CABuKBe+x9o5OiysnMq-gvOBx3nKoaheL2efZGA6YQ7ZT5aqijw@mail.gmail.com>
+	Thu, 29 Jan 2015 09:29:39 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CABuKBe+x9o5OiysnMq-gvOBx3nKoaheL2efZGA6YQ7ZT5aqijw@mail.gmail.com>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 14:49:16 up 106 days,  1:03, 146 users,  load average: 0.01, 0.07,
- 0.11
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:67c:670:100:1d::c0
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <54C9D62B.7000602@collabora.com>
+References: <1422011024-32283-1-git-send-email-tomeu.vizoso@collabora.com>
+ <54C6E1FB.5030907@codeaurora.org> <54C888EF.2080500@collabora.com>
+ <20150129022633.22722.78592@quantum> <54C9D62B.7000602@collabora.com>
+From: Mike Turquette <mturquette@linaro.org>
+Date: Thu, 29 Jan 2015 06:29:16 -0800
+Message-ID: <CAPtuhTi3F58yR_OE2toXMp1Wqi==CfJLZ+M8+dcF6t68WqZqqQ@mail.gmail.com>
+Subject: Re: [PATCH v13 0/6] Per-user clock constraints
+To: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+Cc: Stephen Boyd <sboyd@codeaurora.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 29, 2015 at 01:39:42PM +0100, Matthias Brugger wrote:
-> Hi Sascha,
-> 
-> 2015-01-26 12:47 GMT+01:00 Sascha Hauer <s.hauer@pengutronix.de>:
-> > Olof, Arnd,
-> >
-> > OK to put the driver into drivers/soc/mediatek? Can you take these
-> > patches?
-> 
-> How does this patches fit together with the one James clock framework patches?
-> Both use the same compatible "mediatek,mt8135-infracfg" and
-> "mediatek,mt8135-pericfg".
-> 
-> I had a look on other implementations and they attach the reset
-> controller to the clk driver, if they share the same hw block.
-> Might we run into problems if we implement the clocks in the mfd, as
-> we need the clocks early in boot (e.g. for the timer)?
+On Wed, Jan 28, 2015 at 10:41 PM, Tomeu Vizoso
+<tomeu.vizoso@collabora.com> wrote:
+> On 01/29/2015 03:26 AM, Mike Turquette wrote:
+>> Quoting Tomeu Vizoso (2015-01-27 22:59:59)
+>>> On 01/27/2015 01:55 AM, Stephen Boyd wrote:
+>>>> On 01/23/15 03:03, Tomeu Vizoso wrote:
+>>>>> Hi,
+>>>>>
+>>>>> in this v13 I have:
+>>>>>
+>>>>> * added the latest R-b tags from Stephen,
+>>>>>
+>>>>> * split some lines that went over the 80-char limit,
+>>>>>
+>>>>> * made explicit in the docs that the range limits are inclusive, and
+>>>>>
+>>>>> * removed an ifdef in clkdev.c by adding a dev_id param to __of_clk_get_by_name.
+>>>>>
+>>>>
+>>>> I think this patch series is ready to go except for the last one? Do you
+>>>> plan on polishing that one some more?
+>>>
+>>> Hi Mike,
+>>>
+>>> do you plan to merge this for 3.20?
+>>
+>> Tomeu,
+>>
+>> Yes. I have taken patches 1-5.
+>>
+>> I edited patch #3 to adapt clk_has_parent for struct clk_core.
+>>
+>> https://git.kernel.org/cgit/linux/kernel/git/clk/linux.git/commit/?h=clk-next&id=59cf3fcf9bafe8fdb6183f13dafb81fc8213a8f9
+>>
+>> Patch #4 need an update to convert sun6i_ahb1_clk_determine_rate to have
+>> min/max rates.
+>>
+>> https://git.kernel.org/cgit/linux/kernel/git/clk/linux.git/commit/?h=clk-next&id=cb75a8fcd14e71c115decc416dd8d223e7c8b2e0
+>>
+>> Can you look it over and make sure I didn't screw anything up?
+>
+> Yup, they look good to me. I have also done some testing here.
 
->From my experience the clocks are needed by the timer before any driver
-initializes.
+Great! Thanks again for your hard work on this series.
 
-> 
-> In mt6589 pericfg apart from the clocks and reset controller provides
-> registers for AXI bus control and USB wakeup and USB clock selection.
-> The infracfg block provides top AXI bus fabric control signals and
-> remap registers for the modem.
-> Mike, Stephen, what do you think. Can we implement the clk in a mfd
-> driver? Or do you prefer to implement the whole block in the clk
-> driver?
+Regards,
+Mike
 
-Currently the clk support uses regular CLK_OF_DECLARE which handles the
-clock part of pericfg/infracfg and then later a regular driver for
-pericfg/infracfg comes and handles the rest of the functionality. Since
-both use separate registers in the device register space it should work
-fine.
-
-Sascha
-
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+>
+> Thanks,
+>
+> Tomeu
+>
