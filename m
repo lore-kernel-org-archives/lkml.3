@@ -1,129 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754988AbbA2Mi1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 07:38:27 -0500
-Received: from mail.kernel.org ([198.145.29.136]:33759 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752205AbbA2Mi0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 07:38:26 -0500
-Date: Thu, 29 Jan 2015 09:38:31 -0300
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Jiri Olsa <jolsa@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        David Ahern <dsahern@gmail.com>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Stephane Eranian <eranian@google.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH 40/42] perf callchain: Save eh/debug frame offset for
- dwarf unwind
-Message-ID: <20150129123831.GT7220@kernel.org>
-References: <1422518843-25818-1-git-send-email-namhyung@kernel.org>
- <1422518843-25818-41-git-send-email-namhyung@kernel.org>
+	id S1755714AbbA2Mjt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 07:39:49 -0500
+Received: from mail-lb0-f171.google.com ([209.85.217.171]:42091 "EHLO
+	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755465AbbA2Mjo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Jan 2015 07:39:44 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1422518843-25818-41-git-send-email-namhyung@kernel.org>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20150126114735.GA3178@pengutronix.de>
+References: <1422022202-7526-1-git-send-email-s.hauer@pengutronix.de>
+	<20150126114735.GA3178@pengutronix.de>
+Date: Thu, 29 Jan 2015 13:39:42 +0100
+Message-ID: <CABuKBe+x9o5OiysnMq-gvOBx3nKoaheL2efZGA6YQ7ZT5aqijw@mail.gmail.com>
+Subject: Re: [PATCH v2] MediaTek PMIC support
+From: Matthias Brugger <matthias.bgg@gmail.com>
+To: Sascha Hauer <s.hauer@pengutronix.de>
+Cc: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        =?UTF-8?B?WUggQ2hlbiAo6Zmz5pix6LGqKQ==?= <yh.chen@mediatek.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Henry Chen <henryc.chen@mediatek.com>,
+        Rob Herring <robh+dt@kernel.org>,
+        =?UTF-8?B?WWluZ2pvZSBDaGVuICjpmbPoi7HmtLIp?= 
+	<Yingjoe.Chen@mediatek.com>,
+        Eddie Huang <eddie.huang@mediatek.com>,
+        Lee Jones <lee.jones@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        James Liao <jamesjj.liao@mediatek.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Stephen Boyd <sboyd@codeaurora.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, Jan 29, 2015 at 05:07:21PM +0900, Namhyung Kim escreveu:
-> When libunwind tries to resolve callchains it needs to know the offset
-> of .eh_frame_hdr or .debug_frame to access the dso.  Since it calls
-> dso__data_fd(), it'll try to grab dso->lock everytime for same
-> information.  So save it to dso_data struct and reuse it.
-> 
-> Note that there's a window between dso__data_fd() and actual use of
-> the fd.  The fd could be closed by other threads to deal with the open
-> file limit in dso cache code.  But I think it's ok since in that case
-> elf_section_offset() will return 0 so it'll be tried in next acess.
+Hi Sascha,
 
-I know that you did this in the context of your multi threading
-patchkit, but this seems useful even without that patckhit, i.e. this
-can be cherry picked on the grounds that it speeds up things by caching
-something that doesn't change, right?
+2015-01-26 12:47 GMT+01:00 Sascha Hauer <s.hauer@pengutronix.de>:
+> Olof, Arnd,
+>
+> OK to put the driver into drivers/soc/mediatek? Can you take these
+> patches?
 
-I.e. I'll probably just rewrite the comment and apply it before
-considering the other patches, so that other people can comment on the
-other patches, etc.
+How does this patches fit together with the one James clock framework patches?
+Both use the same compatible "mediatek,mt8135-infracfg" and
+"mediatek,mt8135-pericfg".
 
-- Arnaldo
- 
-> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-> ---
->  tools/perf/util/dso.h              |  1 +
->  tools/perf/util/unwind-libunwind.c | 31 ++++++++++++++++++++-----------
->  2 files changed, 21 insertions(+), 11 deletions(-)
-> 
-> diff --git a/tools/perf/util/dso.h b/tools/perf/util/dso.h
-> index c18fcc0e8081..323ee08d56fc 100644
-> --- a/tools/perf/util/dso.h
-> +++ b/tools/perf/util/dso.h
-> @@ -141,6 +141,7 @@ struct dso {
->  		u32		 status_seen;
->  		size_t		 file_size;
->  		struct list_head open_entry;
-> +		u64		 frame_offset;
->  	} data;
->  
->  	union { /* Tool specific area */
-> diff --git a/tools/perf/util/unwind-libunwind.c b/tools/perf/util/unwind-libunwind.c
-> index 7ed6eaf232b6..3219b20837b5 100644
-> --- a/tools/perf/util/unwind-libunwind.c
-> +++ b/tools/perf/util/unwind-libunwind.c
-> @@ -266,14 +266,17 @@ static int read_unwind_spec_eh_frame(struct dso *dso, struct machine *machine,
->  				     u64 *fde_count)
->  {
->  	int ret = -EINVAL, fd;
-> -	u64 offset;
-> +	u64 offset = dso->data.frame_offset;
->  
-> -	fd = dso__data_fd(dso, machine);
-> -	if (fd < 0)
-> -		return -EINVAL;
-> +	if (offset == 0) {
-> +		fd = dso__data_fd(dso, machine);
-> +		if (fd < 0)
-> +			return -EINVAL;
->  
-> -	/* Check the .eh_frame section for unwinding info */
-> -	offset = elf_section_offset(fd, ".eh_frame_hdr");
-> +		/* Check the .eh_frame section for unwinding info */
-> +		offset = elf_section_offset(fd, ".eh_frame_hdr");
-> +		dso->data.frame_offset = offset;
-> +	}
->  
->  	if (offset)
->  		ret = unwind_spec_ehframe(dso, machine, offset,
-> @@ -287,14 +290,20 @@ static int read_unwind_spec_eh_frame(struct dso *dso, struct machine *machine,
->  static int read_unwind_spec_debug_frame(struct dso *dso,
->  					struct machine *machine, u64 *offset)
->  {
-> -	int fd = dso__data_fd(dso, machine);
-> +	int fd;
-> +	u64 ofs = dso->data.frame_offset;
->  
-> -	if (fd < 0)
-> -		return -EINVAL;
-> +	if (ofs == 0) {
-> +		fd = dso__data_fd(dso, machine);
-> +		if (fd < 0)
-> +			return -EINVAL;
->  
-> -	/* Check the .debug_frame section for unwinding info */
-> -	*offset = elf_section_offset(fd, ".debug_frame");
-> +		/* Check the .debug_frame section for unwinding info */
-> +		ofs = elf_section_offset(fd, ".debug_frame");
-> +		dso->data.frame_offset = ofs;
-> +	}
->  
-> +	*offset = ofs;
->  	if (*offset)
->  		return 0;
->  
-> -- 
-> 2.2.2
+I had a look on other implementations and they attach the reset
+controller to the clk driver, if they share the same hw block.
+Might we run into problems if we implement the clocks in the mfd, as
+we need the clocks early in boot (e.g. for the timer)?
+
+In mt6589 pericfg apart from the clocks and reset controller provides
+registers for AXI bus control and USB wakeup and USB clock selection.
+The infracfg block provides top AXI bus fabric control signals and
+remap registers for the modem.
+Mike, Stephen, what do you think. Can we implement the clk in a mfd
+driver? Or do you prefer to implement the whole block in the clk
+driver?
+
+Cheers,
+Matthias
+
+>
+> Sascha
+>
+> On Fri, Jan 23, 2015 at 03:09:55PM +0100, Sascha Hauer wrote:
+>> This series adds initial support for the MediaTek MT6397 PMIC and the
+>> necessary infrastructure to attach it on the MT8135 / MT8173 SoCs.
+>>
+>> The infrastructure includes:
+>>
+>> - pericfg / infracfg controller support
+>>   The pericfg / infracfg controllers contain miscellaneous registers for
+>>   reset controllers and clocks.
+>>
+>> - PMIC wrapper support
+>>   On MediaTek MT8135, MT8173 and other SoCs the PMIC is connected via
+>>   SPI. The SPI master interface is not directly visible to the CPU, but
+>>   only through the PMIC wrapper inside the SoC. The communication between
+>>   the SoC and the PMIC can optionally be encrypted. Also a non standard
+>>   Dual IO SPI mode can be used to increase speed. The MT8135 also supports
+>>   a special feature named "IP Pairing". With IP Pairing the pins of some
+>>   SoC internal peripherals can be on the PMIC. The signals of these pins
+>>   are routed over the SPI bus using the pwrap bridge. Because of these
+>>   optional non SPI conform features the PMIC driver is not implemented as
+>>   a SPI bus master driver.
+>>
+>> The MT6397 PMIC itself is implemented as a regular mfd device driver which
+>> uses regmap to access the PMIC registers.
+>>
+>> This series also adds regulator support for the MT6397 PMIC.
+>>
+>> The first 6 patches can be merged through the ARM SoC tree. The mfd
+>> patch is independent of the first 6 patches and can be merged through the
+>> mfd maintainer trees.
+>>
+>> Changes since v1:
+>>
+>> - document reset bindings for infracfg/pericfg
+>> - fix base addresses in infracfg binding example
+>> - Remove more Email addresses from Flora Fu (She is not working at
+>>   MediaTek anymore, her address is no longer valid)
+>> - drop Regulator support patch, it's already in next
+>>
+>> Sascha
+>>
+>>
+>> _______________________________________________
+>> linux-arm-kernel mailing list
+>> linux-arm-kernel@lists.infradead.org
+>> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+>>
+>
+> --
+> Pengutronix e.K.                           |                             |
+> Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+> Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+> Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+
+
+
+-- 
+motzblog.wordpress.com
