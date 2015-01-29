@@ -1,65 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756825AbbA2LjS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 06:39:18 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:49275 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754325AbbA2LjR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 06:39:17 -0500
+	id S1755945AbbA2LmG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 06:42:06 -0500
+Received: from sauhun.de ([89.238.76.85]:38640 "EHLO pokefinder.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753304AbbA2LmD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Jan 2015 06:42:03 -0500
+Date: Thu, 29 Jan 2015 12:41:55 +0100
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Andrey Danin <danindrey@mail.ru>
+Cc: linux-i2c@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org,
+        ac100@lists.launchpad.net, Laxman Dewangan <ldewangan@nvidia.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Alexandre Courbot <gnurou@gmail.com>, Marc Dietrich <marvin24@gmx.de>
+Subject: Re: [PATCH 1/3] i2c: tegra: implement slave mode
+Message-ID: <20150129114155.GA9080@katana>
+References: <1422516022-27161-1-git-send-email-danindrey@mail.ru>
+ <1422516022-27161-2-git-send-email-danindrey@mail.ru>
 MIME-Version: 1.0
-In-Reply-To: <54CA1929.8060903@sandisk.com>
-References: <54C92A47.2030709@sandisk.com>
-	<CACVXFVOtOujWH5jLLf16+-MeW--aiP1N14a=4aJP2h2_UVdtsw@mail.gmail.com>
-	<54CA1929.8060903@sandisk.com>
-Date: Thu, 29 Jan 2015 19:39:14 +0800
-Message-ID: <CACVXFVP0d=17wtH5hHP6oUtA_XZC8TmfhRvYZv_-Kug6=iMtbA@mail.gmail.com>
-Subject: Re: [PATCH] blk-mq: Fix a recently introduced scsi-mq regression
-From: Ming Lei <ming.lei@canonical.com>
-To: Bart Van Assche <bart.vanassche@sandisk.com>
-Cc: Jens Axboe <axboe@kernel.dk>, Sasha Levin <sasha.levin@oracle.com>,
-        Christoph Hellwig <hch@lst.de>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="nFreZHaLTZJo0R7j"
+Content-Disposition: inline
+In-Reply-To: <1422516022-27161-2-git-send-email-danindrey@mail.ru>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Bart,
 
-On Thu, Jan 29, 2015 at 7:27 PM, Bart Van Assche
-<bart.vanassche@sandisk.com> wrote:
-> On 01/29/15 00:52, Ming Lei wrote:
->> On Thu, Jan 29, 2015 at 2:28 AM, Bart Van Assche
->> <bart.vanassche@sandisk.com> wrote:
->>> This patch fixes a use-after-free that was introduced via patch
->>> "blk-mq: fix hctx/ctx kobject use-after-free" (commit
->>> 76d697d10769; kernel v3.19-rc4) and fixes the following crash:
->>
->> Sorry, my fault, I shouldn't have linked mq's release with mq_kobj,
->> which may be released before running blk_cleanup_queue().
->>
->> Another approach may be to revert the faulty commit and release all
->> mq stuff in request queue's release handler(blk_release_queue)
->> which should be more safe and simple.
->
-> Hello Ming,
->
-> How important is the patch with commit ID 76d697d10769 ? Does it have to
-> be included in kernel v3.19 or can it be postponed until kernel v3.19.1
-> or kernel v3.19.2 ? If so, how about reverting that patch for kernel
+--nFreZHaLTZJo0R7j
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-The patch has been in linus tree, but it isn't marked as -stable.
+Hi,
 
-> v3.19 and sending a reworked patch to Jens with a "Cc: stable" tag after
-> the release of kernel v3.19 ? That last patch will then get included in
-> a stable version of kernel v3.19.
+> Initialization code is based on NVEC driver.
+>=20
+> There is a HW bug in AP20 that was also mentioned in kernel sources
+> for Toshiba AC100.
+>=20
+> Signed-off-by: Andrey Danin <danindrey@mail.ru>
 
-Anyway, it need to be fixed, either reverted or a new patch.
+Cool, thanks for the converison. While I usually like to only get the
+patches which I need to handle, please CC me to all patches next time. I
+am interested what changes were needed for the user of the slave
+framework, too.
 
-I will post out one revert and another fix candidate, and let's
-discuss further.
+> +static bool tegra_i2c_slave_isr(int irq, struct tegra_i2c_dev *i2c_dev)
+> +{
+> +	unsigned long status;
+> +	u8 value;
+> +
+> +	if (!i2c_dev->slave || !i2c_dev->slave->slave_cb)
+> +		return false;
+
+Can this happen?
+
+> +	/* i2c master sends data to us */
+> +	if (is_write(status)) {
+> +		i2c_slave_event(i2c_dev->slave, I2C_SLAVE_REQ_WRITE_START,
+> +				NULL);
+
+Can this HW create an interrupt once the address detection + RW bit are
+received? Or only if a complete write has been received?
+
+> +static int tegra_reg_slave(struct i2c_client *slave)
+> +{
+> +	struct tegra_i2c_dev *i2c_dev =3D i2c_get_adapdata(slave->adapter);
+> +
+> +	if (i2c_dev->slave)
+> +		return -EBUSY;
+> +
+> +	i2c_dev->slave =3D slave;
+> +
+> +	tegra_i2c_clock_enable(i2c_dev);
+> +
+> +	reset_control_assert(i2c_dev->rst);
+> +	udelay(2);
+> +	reset_control_deassert(i2c_dev->rst);
+
+Why do you need a reset when a slave gets registered?
+
+> +
+> +	i2c_writel(i2c_dev, I2C_SL_CNFG_NEWSL, I2C_SL_CNFG);
+> +	i2c_writel(i2c_dev, 0x1E, I2C_SL_DELAY_COUNT);
+
+What does this magic number mean?
+
+> +
+> +	i2c_writel(i2c_dev, slave->addr, I2C_SL_ADDR1);
+> +	i2c_writel(i2c_dev, 0, I2C_SL_ADDR2);
+
+Handling 10 bit addresses?
+
+> +
+> +	return 0;
+> +}
+> +
+
+>  static const struct tegra_i2c_hw_feature tegra30_i2c_hw =3D {
+> @@ -679,6 +808,7 @@ static const struct tegra_i2c_hw_feature tegra30_i2c_=
+hw =3D {
+>  	.has_single_clk_source =3D false,
+>  	.clk_divisor_hs_mode =3D 3,
+>  	.clk_divisor_std_fast_mode =3D 0,
+> +	.slave_read_start_delay =3D 0,
+
+No need to init to 0 IMO.
 
 
-Thanks,
-Ming Lei
+--nFreZHaLTZJo0R7j
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUyhyDAAoJEBQN5MwUoCm2pTAP/0Y5Nqt/YdL+ug7MTyX4Tq1i
+3X7MgYamvmc5QrSvW/ee4z+d7zK+2ep1QlATGoSog5lA7k8pGP7MweunNmV0EvC4
+EFVYTTYD0o+kqVtTbEpXztnaGWV97eOMwz9zEBFI5Z+C8ok0leQ++UrvHywPgwRo
+Eo77T9CXNV4B2jhMCHNIJhSeCL+9UfpuVXx8nA0P0CSVnBW6cux/ozqa6OosJqHX
+oyW9s+e+nobf45juPiINTGDKcNurCR1rhv6+pYZ/+QE5HmBVFGcJOzZpwjC7W6f3
+aFksCtjNQQKDDgyQvCvkMGbcxgmXr//tu4ZW7BHn8R7Gax3iBVw65qO4f98ZnBEM
+TcX3SeeFFDZwyYTObwCa8MMLhoBT3emllsYd4cDzMcMV5VnhuT8Wwa4+OhO9KsFx
+MmHJT5HRtovJioXB08imSJVpif1R4b7Gepwj9aqdRzocOOtcGewD2hUonuvuTXWJ
+73MBox+JLexAcEo2fj9OOb9oeZzuLOdCSDnC1HT5WGfsDnXd8M/cA6BdCH4pREOP
+TTdpcYXzqgf/1JBPJkiL+UCeFyrYYz8mPK6gfHGaZDc20UTVW9/6DtKqmwXCFxFe
+0fHHFGo/SvmUk3apQ98wRNO35Mh2YOv1ttGc6wyVu0lGAPJRtR2wSn2gd8h4RbAc
+eIVKbbItBsfAouK56fzx
+=PfQo
+-----END PGP SIGNATURE-----
+
+--nFreZHaLTZJo0R7j--
