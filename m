@@ -1,62 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762107AbbA2Jte (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 04:49:34 -0500
-Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:58058
-	"EHLO p3plsmtps2ded03.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932325AbbA2Jt3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 04:49:29 -0500
-x-originating-ip: 72.167.245.219
-From: Dexuan Cui <decui@microsoft.com>
-To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        driverdev-devel@linuxdriverproject.org, olaf@aepfle.de,
-        apw@canonical.com, jasowang@redhat.com, kys@microsoft.com
-Cc: haiyangz@microsoft.com
-Subject: [PATCH 3/3] hv: vmbus_open(): reset the channel state on ENOMEM
-Date: Thu, 29 Jan 2015 03:02:50 -0800
-Message-Id: <1422529370-28261-1-git-send-email-decui@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S1756677AbbA2LDv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 06:03:51 -0500
+Received: from mout.kundenserver.de ([212.227.17.10]:63885 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751035AbbA2LDt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Jan 2015 06:03:49 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Behan Webster <behanw@converseincode.com>
+Cc: JBottomley@parallels.com, jayamohan.kallickal@emulex.com,
+        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
+Subject: Re: [PATCH] scsi, be2iscsi, LLVMLinux: Add missing MODULE_DEVICE_TABLE()
+Date: Thu, 29 Jan 2015 12:03:38 +0100
+Message-ID: <1959928.K6oPOZ8N2K@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1422495422-25281-1-git-send-email-behanw@converseincode.com>
+References: <1422495422-25281-1-git-send-email-behanw@converseincode.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V03:K0:iHX6w5HWyoya8U8t4ucxTuNuHbp12n8s+X5IvPiiqcExOll2lVX
+ fXkw+D+DeMqVI2XNLoWM6xicn9LRvWZmHVXRaJB9VOE7QlZSg7TJJsTybK/ZC6bogFgwT3X
+ s90qo8lkLWci56WBhxGtOGJQJtfw6FCKu22NRiopAfelA6ywwHFQfpvgQywOOtBpEOj4xJx
+ Kj2SkO7KpErkJmhBqSs1A==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Without this patch, the state is put to CHANNEL_OPENING_STATE, and when
-the driver is loaded next time, vmbus_open() will fail immediately due to
-newchannel->state != CHANNEL_OPEN_STATE.
+On Wednesday 28 January 2015 17:37:02 Behan Webster wrote:
+> Missing MODULE_DEVICE_TABLE for pci ids from be2iscsi driver found by clang.
+> 
+> Signed-off-by: Behan Webster <behanw@converseincode.com>
+> Reviewed-by: Mark Charlebois <charlebm@gmail.com>
+> Suggested-by: Arnd Bergmann <arnd@arndb.de>
+> Cc: Arnd Bergmann <arnd@arndb.de>
+> ---
 
-CC: "K. Y. Srinivasan" <kys@microsoft.com>
-Signed-off-by: Dexuan Cui <decui@microsoft.com>
----
- drivers/hv/channel.c | 8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+Like one previous patch, the change is good, the description is wrong.
+This patch removes a duplicate MODULE_DEVICE_TABLE entry.
 
-diff --git a/drivers/hv/channel.c b/drivers/hv/channel.c
-index 2978f5e..26dcf26 100644
---- a/drivers/hv/channel.c
-+++ b/drivers/hv/channel.c
-@@ -89,9 +89,10 @@ int vmbus_open(struct vmbus_channel *newchannel, u32 send_ringbuffer_size,
- 	out = (void *)__get_free_pages(GFP_KERNEL|__GFP_ZERO,
- 		get_order(send_ringbuffer_size + recv_ringbuffer_size));
- 
--	if (!out)
--		return -ENOMEM;
--
-+	if (!out) {
-+		err = -ENOMEM;
-+		goto error0;
-+	}
- 
- 	in = (void *)((unsigned long)out + send_ringbuffer_size);
- 
-@@ -199,6 +200,7 @@ error0:
- 	free_pages((unsigned long)out,
- 		get_order(send_ringbuffer_size + recv_ringbuffer_size));
- 	kfree(open_info);
-+	newchannel->state = CHANNEL_OPEN_STATE;
- 	return err;
- }
- EXPORT_SYMBOL_GPL(vmbus_open);
--- 
-1.9.1
-
+	Arnd
