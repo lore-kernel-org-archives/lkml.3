@@ -1,73 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933715AbbA2CWs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 21:22:48 -0500
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:49268 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932718AbbA2CWo (ORCPT
+	id S933783AbbA2CYX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 21:24:23 -0500
+Received: from eusmtp01.atmel.com ([212.144.249.242]:31565 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761719AbbA2CYT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 21:22:44 -0500
-Date: Thu, 29 Jan 2015 11:22:41 +0900
-From: Sergey Senozhatsky <sergey.senozhatsky.work@gmail.com>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
+	Wed, 28 Jan 2015 21:24:19 -0500
+From: "Yang, Wenyou" <Wenyou.Yang@atmel.com>
+To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        "Ferre, Nicolas" <Nicolas.FERRE@atmel.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>
+CC: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux-MM <linux-mm@kvack.org>, Nitin Gupta <ngupta@vflare.org>,
-        Jerome Marchand <jmarchan@redhat.com>,
-        Ganesh Mahendran <opensource.ganesh@gmail.com>,
-        sergey.senozhatsky.work@gmail.com
-Subject: Re: [PATCH v1 2/2] zram: remove init_lock in zram_make_request
-Message-ID: <20150129022241.GA2555@swordfish>
-References: <1422432945-6764-1-git-send-email-minchan@kernel.org>
- <1422432945-6764-2-git-send-email-minchan@kernel.org>
- <20150128145651.GB965@swordfish>
- <20150128233343.GC4706@blaptop>
- <CAHqPoqKZFDSjO1pL+ixYe_m_L0nGNcu04qSNp-jd1fUixKtHnw@mail.gmail.com>
- <20150129020139.GB9672@blaptop>
+        "alexandre.belloni@free-electrons.com" 
+	<alexandre.belloni@free-electrons.com>,
+        "sylvain.rochet@finsecur.com" <sylvain.rochet@finsecur.com>,
+        "peda@axentia.se" <peda@axentia.se>,
+        "linux@maxim.org.za" <linux@maxim.org.za>
+Subject: RE: [PATCH v2 3/3] pm: at91: add disable/enable the L1/L2 cache
+ while suspend/resume
+Thread-Topic: [PATCH v2 3/3] pm: at91: add disable/enable the L1/L2 cache
+ while suspend/resume
+Thread-Index: AQHQOqGWhx01SRZMPkSnJ57qqrXM+pzUyZGAgAGU0PA=
+Date: Thu, 29 Jan 2015 02:22:43 +0000
+Message-ID: <B256D81BAE5131468A838E5D7A243641BFD38E20@penmbx01>
+References: <1422411707-10945-1-git-send-email-wenyou.yang@atmel.com>
+ <1422411844-13241-1-git-send-email-wenyou.yang@atmel.com>
+ <54C8B54B.3090607@cogentembedded.com>
+In-Reply-To: <54C8B54B.3090607@cogentembedded.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.168.5.13]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150129020139.GB9672@blaptop>
-User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On (01/29/15 11:01), Minchan Kim wrote:
-> On Thu, Jan 29, 2015 at 10:57:38AM +0900, Sergey Senozhatsky wrote:
-> > On Thu, Jan 29, 2015 at 8:33 AM, Minchan Kim <minchan@kernel.org> wrote:
-> > > On Wed, Jan 28, 2015 at 11:56:51PM +0900, Sergey Senozhatsky wrote:
-> > > > I don't like re-introduced ->init_done.
-> > > > another idea... how about using `zram->disksize == 0' instead of
-> > > > `->init_done' (previously `->meta != NULL')? should do the trick.
-> > >
-> > > It could be.
-> > >
-> > >
-> > care to change it?
+Hi Sergei,
+
+Thank you for your review.
+
+> -----Original Message-----
+> From: Sergei Shtylyov [mailto:sergei.shtylyov@cogentembedded.com]
+> Sent: Wednesday, January 28, 2015 6:09 PM
+> To: Yang, Wenyou; Ferre, Nicolas; linux@arm.linux.org.uk
+> Cc: linux-arm-kernel@lists.infradead.org; linux-kernel@vger.kernel.org;
+> alexandre.belloni@free-electrons.com; sylvain.rochet@finsecur.com;
+> peda@axentia.se; linux@maxim.org.za
+> Subject: Re: [PATCH v2 3/3] pm: at91: add disable/enable the L1/L2 cache while
+> suspend/resume
 > 
-> Will try!
+> Hello.
 > 
-> If it was your concern, I'm happy to remove the check.(ie, actually,
-> I realized that after I push the button to send). Thanks!
+> On 1/28/2015 5:24 AM, Wenyou Yang wrote:
 > 
+> > For the sama5, disable L1 D-cache and L2 cache before the cpu go to
+> > wfi, after wakeing up, enable L1 D-cache and L2 cache.
+> 
+>     Waking.
+> 
+> > Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
+> > ---
+> >   arch/arm/mach-at91/pm.c         |   12 +++++
+> >   arch/arm/mach-at91/pm_suspend.S |  107
+> +++++++++++++++++++++++++++++++++++++++
+> >   2 files changed, 119 insertions(+)
+> 
+> [...]
+> > diff --git a/arch/arm/mach-at91/pm_suspend.S
+> > b/arch/arm/mach-at91/pm_suspend.S index 311cc23..02d4e56 100644
+> > --- a/arch/arm/mach-at91/pm_suspend.S
+> > +++ b/arch/arm/mach-at91/pm_suspend.S
+> [...]
+> > @@ -324,3 +325,109 @@ ram_restored:
+> [...]
+> > +l2x_sync:
+> 
+>     I don't see where this label is used.
+I thought it is an indication the following is for L2 cache synchronization. 
 
-Thanks a lot, Minchan.
+It is redundant, remove it.
 
-and, guys, sorry for previous html email (I'm sure I toggled the "plain
-text" mode in gmail web-interface, but somehow it has different meaning
-in gmail world).
+> 
+> > +	ldr	r0, [r2, #L2X0_CACHE_SYNC]
+> > +	bic	r0, r0, #0x1
+> > +	str	r0, [r2, #L2X0_CACHE_SYNC]
+> > +sync:
+> > +	ldr	r0, [r2, #L2X0_CACHE_SYNC]
+> > +	ands	r0, r0, #0x1
+> > +	bne	sync
+> > +
+> > +skip_l2disable:
+> > +	ldmfd	sp!, {r4 - r12, pc}
+> > +ENDPROC(at91_disable_l1_l2_cache)
+> [...]
+> 
+> WBR, Sergei
 
-
-I'm still concerned about performance numbers that I see on my x86_64.
-it's not always, but mostly slower. I'll give it another try (disable
-lockdep, etc.), but if we lose 10% on average then, sorry, I'm not so
-positive about srcu change and will tend to vote for your initial commit
-that simply moved meta free() out of init_lock and left locking as is
-(lockdep warning would have been helpful there, because otherwise it
-just looked like we change code w/o any reason).
-
-what do you thunk?
-
-	-ss
+Best Regards,
+Wenyou Yang
