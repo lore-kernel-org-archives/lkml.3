@@ -1,79 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753463AbbA2GwR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 01:52:17 -0500
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:59532 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751855AbbA2GwQ (ORCPT
+	id S1757965AbbA2GzX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 01:55:23 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:46464 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751328AbbA2GzR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 01:52:16 -0500
-Date: Thu, 29 Jan 2015 07:52:12 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Borislav Petkov <bp@suse.de>
-Cc: x86-ml <x86@kernel.org>, lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] A microcode loader fix for 3.19
-Message-ID: <20150129065212.GA2835@gmail.com>
-References: <20150128204728.GG7569@pd.tnic>
+	Thu, 29 Jan 2015 01:55:17 -0500
+Date: Wed, 28 Jan 2015 22:54:36 -0800
+From: tip-bot for Boris Ostrovsky <tipbot@zytor.com>
+Message-ID: <tip-da63865a01c6384d459464e5165d95d4f04878d8@git.kernel.org>
+Cc: boris.ostrovsky@oracle.com, mingo@kernel.org, hpa@zytor.com, bp@suse.de,
+        tglx@linutronix.de, james@dingwall.me.uk, linux-kernel@vger.kernel.org
+Reply-To: mingo@kernel.org, bp@suse.de, hpa@zytor.com,
+        boris.ostrovsky@oracle.com, james@dingwall.me.uk,
+        linux-kernel@vger.kernel.org, tglx@linutronix.de
+In-Reply-To: <1422411669-25147-1-git-send-email-boris.ostrovsky@oracle.com>
+References: <1422411669-25147-1-git-send-email-boris.ostrovsky@oracle.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] x86, microcode:
+  Return error from driver init code when loader is disabled
+Git-Commit-ID: da63865a01c6384d459464e5165d95d4f04878d8
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <20150128204728.GG7569@pd.tnic>
-User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit-ID:  da63865a01c6384d459464e5165d95d4f04878d8
+Gitweb:     http://git.kernel.org/tip/da63865a01c6384d459464e5165d95d4f04878d8
+Author:     Boris Ostrovsky <boris.ostrovsky@oracle.com>
+AuthorDate: Tue, 27 Jan 2015 21:21:09 -0500
+Committer:  Borislav Petkov <bp@suse.de>
+CommitDate: Wed, 28 Jan 2015 09:23:40 +0100
 
-* Borislav Petkov <bp@suse.de> wrote:
+x86, microcode: Return error from driver init code when loader is disabled
 
-> Hi guys,
-> 
-> please pull this last small fix for the microcode loader not erroring
-> out of its init routine properly.
-> 
-> Optimally, it should go with the last batch of tip/urgent stuff for
-> 3.19, if possible.
-> 
-> Thanks.
-> 
-> ---
-> The following changes since commit 26bc420b59a38e4e6685a73345a0def461136dce:
-> 
->   Linux 3.19-rc6 (2015-01-25 20:04:41 -0800)
-> 
-> are available in the git repository at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/bp/bp.git tags/microcode_fix_for_3.19
-> 
-> for you to fetch changes up to da63865a01c6384d459464e5165d95d4f04878d8:
-> 
->   x86, microcode: Return error from driver init code when loader is disabled (2015-01-28 09:23:40 +0100)
-> 
-> ----------------------------------------------------------------
-> One final fix for 3.19 to address a wrongful deregistering of the
-> microcode loader module.
-> 
-> ----------------------------------------------------------------
-> Boris Ostrovsky (1):
->       x86, microcode: Return error from driver init code when loader is disabled
-> 
->  arch/x86/kernel/cpu/microcode/core.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/arch/x86/kernel/cpu/microcode/core.c b/arch/x86/kernel/cpu/microcode/core.c
-> index 15c29096136b..36a83617eb21 100644
-> --- a/arch/x86/kernel/cpu/microcode/core.c
-> +++ b/arch/x86/kernel/cpu/microcode/core.c
-> @@ -552,7 +552,7 @@ static int __init microcode_init(void)
->  	int error;
->  
->  	if (paravirt_enabled() || dis_ucode_ldr)
-> -		return 0;
-> +		return -EINVAL;
->  
->  	if (c->x86_vendor == X86_VENDOR_INTEL)
->  		microcode_ops = init_intel_microcode();
+Commits 65cef1311d5d ("x86, microcode: Add a disable chicken bit") and
+a18a0f6850d4 ("x86, microcode: Don't initialize microcode code on
+paravirt") allow microcode driver skip initialization when microcode
+loading is not permitted.
 
-Pulled into tip:x86/urgent, thanks Boris!
+However, they don't prevent the driver from being loaded since the
+init code returns 0. If at some point later the driver gets unloaded
+this will result in an oops while trying to deregister the (never
+registered) device.
 
-	Ingo
+To avoid this, make init code return an error on paravirt or when
+microcode loading is disabled. The driver will then never be loaded.
+
+Signed-off-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+Link: http://lkml.kernel.org/r/1422411669-25147-1-git-send-email-boris.ostrovsky@oracle.com
+Reported-by: James Digwall <james@dingwall.me.uk>
+Cc: stable@vger.kernel.org # 3.18
+Signed-off-by: Borislav Petkov <bp@suse.de>
+---
+ arch/x86/kernel/cpu/microcode/core.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/x86/kernel/cpu/microcode/core.c b/arch/x86/kernel/cpu/microcode/core.c
+index 15c2909..36a8361 100644
+--- a/arch/x86/kernel/cpu/microcode/core.c
++++ b/arch/x86/kernel/cpu/microcode/core.c
+@@ -552,7 +552,7 @@ static int __init microcode_init(void)
+ 	int error;
+ 
+ 	if (paravirt_enabled() || dis_ucode_ldr)
+-		return 0;
++		return -EINVAL;
+ 
+ 	if (c->x86_vendor == X86_VENDOR_INTEL)
+ 		microcode_ops = init_intel_microcode();
