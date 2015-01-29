@@ -1,114 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753095AbbA2I65 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 03:58:57 -0500
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:55917 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751014AbbA2I6z (ORCPT
+	id S1761901AbbA2JcE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 04:32:04 -0500
+Received: from mx08-00178001.pphosted.com ([91.207.212.93]:46773 "EHLO
+	mx08-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756855AbbA2Jb6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 03:58:55 -0500
-X-AuditID: cbfec7f4-b7f126d000001e9a-2e-54c9f5bcc90d
-Message-id: <54C9F64C.10505@samsung.com>
-Date: Thu, 29 Jan 2015 09:58:52 +0100
-From: Karol Wrona <k.wrona@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
- Thunderbird/31.4.0
-MIME-version: 1.0
-To: Ulf Hansson <ulf.hansson@linaro.org>
-Cc: Seungwon Jeon <tgih.jun@samsung.com>,
-        Jaehoon Chung <jh80.chung@samsung.com>,
-        linux-mmc <linux-mmc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Karol Wrona <wrona.vy@gmail.com>
-Subject: Re: [RFC PATCH 1/1] mmc: dw_mmc: Add runtime pm to dw_mmc
-References: <1421858639-14737-1-git-send-email-k.wrona@samsung.com>
- <1421858639-14737-2-git-send-email-k.wrona@samsung.com>
- <CAPDyKFpTT3J-D6CqPcUdcTq4d=tMy7dDSn_ZZJGD12qeey4p9A@mail.gmail.com>
-In-reply-to: <CAPDyKFpTT3J-D6CqPcUdcTq4d=tMy7dDSn_ZZJGD12qeey4p9A@mail.gmail.com>
-Content-type: text/plain; charset=utf-8
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrDLMWRmVeSWpSXmKPExsVy+t/xK7p7vp4MMViyksti44z1rBY3frWx
-	WpxtesNucXnXHDaLI//7GS0+3L/IbHF8bbjFnnVbmBw4PHbOusvucefaHjaPvi2rGD0+b5IL
-	YInisklJzcksSy3St0vgyri4+yFLwV2BiqtTH7I0MPbydjFyckgImEic+97OBmGLSVy4tx7M
-	FhJYyijx8qNoFyMXkP2JUeLJmkNMIAleAQ2JRa9vsoLYLAKqErO7Z4LZbALqEs07FjOD2KIC
-	ERLzj71mhqgXlPgx+R4LiC0C1Lvn4XlWkKHMAgeZJM6+7AcrEhZwkviyvYsNYtsRRonrK2Yx
-	giQ4BYIlPl9dApTgAOpQl5gyJRckzCwgL7F5zVvmCYwCs5DsmIVQNQtJ1QJG5lWMoqmlyQXF
-	Sem5hnrFibnFpXnpesn5uZsYISH+ZQfj4mNWhxgFOBiVeHhnbjoZIsSaWFZcmXuIUYKDWUmE
-	V/wNUIg3JbGyKrUoP76oNCe1+BAjEwenVANjJ+/OrjMndp48tUF5VvaimBsLLl/64p1ZuSsl
-	qG/a/9zN7nz/tZ1adsS9nbReYDv75yaJTb0CgrFBXksX6G7aH/i9YOvC4MSdK4MuBXZtsm3c
-	eP3za79IHkmf/wHes7vYsqRu9V/be/ypV7G63sQJrl29JzjPvZs3/1Pms8XMzdEn/zHa7xZb
-	psRSnJFoqMVcVJwIAGXTgMJPAgAA
+	Thu, 29 Jan 2015 04:31:58 -0500
+From: Ajit Pal Singh <ajitpal.singh@st.com>
+To: <thierry.reding@gmail.com>, <linux-pwm@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+CC: <maxime.coquelin@st.com>, <lee.jones@linaro.org>,
+        Ajit Pal Singh <ajitpal.singh@st.com>
+Subject: [PATCH RESEND] pwm: sti: Maintain a bitmap of configured devices
+Date: Thu, 29 Jan 2015 14:34:43 +0530
+Message-ID: <1422522283-29757-1-git-send-email-ajitpal.singh@st.com>
+X-Mailer: git-send-email 1.7.5.4
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.33,0.0.0000
+ definitions=2015-01-29_04:2015-01-28,2015-01-29,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/22/2015 10:02 AM, Ulf Hansson wrote:
-> On 21 January 2015 at 17:43, Karol Wrona <k.wrona@samsung.com> wrote:
->> This patch adds runtime pm handling to dw_mmc and enables it for dw_mmc-exynos.
->> It mainly uses mci_request/mci_request_end for mmc host state information.
->>
->> Signed-off-by: Karol Wrona <k.wrona@samsung.com>
->> ---
->>  drivers/mmc/host/dw_mmc-exynos.c |   69 ++++++++++++++++++++++++++++++++++++--
->>  drivers/mmc/host/dw_mmc.c        |   65 +++++++++++++++++++++++++++++++++--
->>  2 files changed, 130 insertions(+), 4 deletions(-)
->>
->> diff --git a/drivers/mmc/host/dw_mmc-exynos.c b/drivers/mmc/host/dw_mmc-exynos.c
->> index 12a5eaa..7281c6f 100644
->> --- a/drivers/mmc/host/dw_mmc-exynos.c
->> +++ b/drivers/mmc/host/dw_mmc-exynos.c
->> @@ -17,12 +17,15 @@
-[...]
->>
->> +#define DWMMC_AUTOSUSPEND_DELAY 200
-> 
-> Normally we use 50 as default. Any reason to why you can't use that?
-> 
-Thanks for looking at that.
-No special reason. I will check lower delay value.
+This patch introduces a bitmap which is used to keep track of the
+pwm channels which have been configured in a pwm chip.
 
-> Hmm, maybe we should have such a default defined in a common mmc host
-> header file!?
-Will do.
-> 
->> +
->>  /* Variations in Exynos specific dw-mshc controller */
->>  enum dw_mci_exynos_type {
->>         DW_MCI_TYPE_EXYNOS4210,
->> @@ -97,6 +100,30 @@ static int dw_mci_exynos_setup_clock(struct dw_mci *host)
->>         return 0;
->>  }
->>
->> +#ifdef CONFIG_PM
->> +static int dw_mci_exynos_runtime_suspend(struct device *dev)
->> +{
->> +       struct dw_mci *host = dev_get_drvdata(dev);
->> +
->> +       /* empty for now */
->> +
->> +       return 0;
->> +}
->> +
->> +static int dw_mci_exynos_runtime_resume(struct device *dev)
->> +{
->> +       struct dw_mci *host = dev_get_drvdata(dev);
->> +
->> +       /* empty for now */
->> +
->> +       return 0;
->> +}
->> +#else
->> +#define dw_mci_exynos_runtime_suspend          NULL
->> +#define dw_mci_exynos_runtime_resume           NULL
->> +
->> +#endif /* CONFIG_PM */
-> 
-> I would suggest you to remove all the above code from this patch. If
-> you want to add the callbacks, let's anyway do that from a separate
-> patch.
-Will do.
+The method used earlier to find the number of configured channels,
+was to count the pwmdevices with PWMF_REQUESTED field set
+and period value configured. This was not correct and failed
+when of_pwm_get()/pwm_get() and then pwm_config() was used.
 
-Thanks,
-Karol
+Signed-off-by: Ajit Pal Singh <ajitpal.singh@st.com>
+---
+ drivers/pwm/pwm-sti.c |   30 +++++++++++-------------------
+ 1 files changed, 11 insertions(+), 19 deletions(-)
+
+diff --git a/drivers/pwm/pwm-sti.c b/drivers/pwm/pwm-sti.c
+index b95115c..92abbd5 100644
+--- a/drivers/pwm/pwm-sti.c
++++ b/drivers/pwm/pwm-sti.c
+@@ -57,6 +57,7 @@ struct sti_pwm_chip {
+ 	struct regmap_field *pwm_int_en;
+ 	struct pwm_chip chip;
+ 	struct pwm_device *cur;
++	unsigned long configured;
+ 	unsigned int en_count;
+ 	struct mutex sti_pwm_lock; /* To sync between enable/disable calls */
+ 	void __iomem *mmio;
+@@ -102,24 +103,6 @@ static int sti_pwm_get_prescale(struct sti_pwm_chip *pc, unsigned long period,
+ 	return 0;
+ }
+ 
+-/* Calculate the number of PWM devices configured with a period. */
+-static unsigned int sti_pwm_count_configured(struct pwm_chip *chip)
+-{
+-	struct pwm_device *pwm;
+-	unsigned int ncfg = 0;
+-	unsigned int i;
+-
+-	for (i = 0; i < chip->npwm; i++) {
+-		pwm = &chip->pwms[i];
+-		if (test_bit(PWMF_REQUESTED, &pwm->flags)) {
+-			if (pwm_get_period(pwm))
+-				ncfg++;
+-		}
+-	}
+-
+-	return ncfg;
+-}
+-
+ /*
+  * For STiH4xx PWM IP, the PWM period is fixed to 256 local clock cycles.
+  * The only way to change the period (apart from changing the PWM input clock)
+@@ -141,7 +124,7 @@ static int sti_pwm_config(struct pwm_chip *chip, struct pwm_device *pwm,
+ 	unsigned int ncfg;
+ 	bool period_same = false;
+ 
+-	ncfg = sti_pwm_count_configured(chip);
++	ncfg = hweight_long(pc->configured);
+ 	if (ncfg)
+ 		period_same = (period_ns == pwm_get_period(cur));
+ 
+@@ -197,6 +180,7 @@ static int sti_pwm_config(struct pwm_chip *chip, struct pwm_device *pwm,
+ 
+ 		ret = regmap_field_write(pc->pwm_int_en, 0);
+ 
++		set_bit(pwm->hwpwm, &pc->configured);
+ 		pc->cur = pwm;
+ 
+ 		dev_dbg(dev, "prescale:%u, period:%i, duty:%i, pwmvalx:%u\n",
+@@ -254,10 +238,18 @@ static void sti_pwm_disable(struct pwm_chip *chip, struct pwm_device *pwm)
+ 	mutex_unlock(&pc->sti_pwm_lock);
+ }
+ 
++static void sti_pwm_free(struct pwm_chip *chip, struct pwm_device *pwm)
++{
++	struct sti_pwm_chip *pc = to_sti_pwmchip(chip);
++
++	clear_bit(pwm->hwpwm, &pc->configured);
++}
++
+ static const struct pwm_ops sti_pwm_ops = {
+ 	.config = sti_pwm_config,
+ 	.enable = sti_pwm_enable,
+ 	.disable = sti_pwm_disable,
++	.free = sti_pwm_free,
+ 	.owner = THIS_MODULE,
+ };
+ 
+-- 
+1.7.5.4
+
