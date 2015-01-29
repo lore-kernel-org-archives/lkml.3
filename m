@@ -1,92 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756157AbbA2HBI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 02:01:08 -0500
-Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:37936 "EHLO
-	mx0b-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754645AbbA2HBE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 02:01:04 -0500
-Date: Wed, 28 Jan 2015 23:00:27 -0800
-From: Shaohua Li <shli@fb.com>
-To: Peter Zijlstra <peterz@infradead.org>
-CC: <linux-kernel@vger.kernel.org>, <Kernel-team@fb.com>,
-        Andy Lutomirski <luto@amacapital.net>, Ingo Molnar <mingo@kernel.org>
-Subject: Re: [RFC 2/2] perf: update userspace page info for software event
-Message-ID: <20150129070027.GA1138116@devbig257.prn2.facebook.com>
-References: <119aa7d433860f568136ab623fb4a510c28e9e6f.1421906750.git.shli@fb.com>
- <e0f8f6f0a114c464e8e38cd73be31564bd5ea7da.1421906750.git.shli@fb.com>
- <20150123084451.GE2896@worktop.programming.kicks-ass.net>
- <20150123155724.GA631220@devbig257.prn2.facebook.com>
+	id S1753860AbbA2HBB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 02:01:01 -0500
+Received: from bes.se.axis.com ([195.60.68.10]:49485 "EHLO bes.se.axis.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751108AbbA2HA7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Jan 2015 02:00:59 -0500
+Message-ID: <54C9DA9D.3010802@axis.com>
+Date: Thu, 29 Jan 2015 08:00:45 +0100
+From: Robert Rosengren <robert.rosengren@axis.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20150123155724.GA631220@devbig257.prn2.facebook.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
-X-Originating-IP: [192.168.16.4]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.33,0.0.0000
- definitions=2015-01-29_03:2015-01-28,2015-01-29,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0 kscore.is_bulkscore=0
- kscore.compositescore=0 circleOfTrustscore=15.6932674168306
- compositescore=0.923639739835017 urlsuspect_oldscore=0.923639739835017
- suspectscore=0 recipient_domain_to_sender_totalscore=0 phishscore=0
- bulkscore=0 kscore.is_spamscore=0 recipient_to_sender_totalscore=0
- recipient_domain_to_sender_domain_totalscore=62764
- rbsscore=0.923639739835017 spamscore=0
- recipient_to_sender_domain_totalscore=7 urlsuspectscore=0.9 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
- definitions=main-1501290076
-X-FB-Internal: deliver
+To: Guenter Roeck <linux@roeck-us.net>, Jean Delvare <jdelvare@suse.de>
+CC: "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        Johan Adolfsson <johana@axis.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [lm-sensors] [PATCH] hwmon: (ads7828) Make sample interval configurable
+References: <1421409922-28299-1-git-send-email-robert.rosengren@axis.com>	<54B92596.2040206@roeck-us.net>	<20150116183020.GA6262@roeck-us.net>	<54C74567.9020201@axis.com>	<54C79B87.8040607@roeck-us.net>	<4BEA3FF3CAA35E408EA55C7BE2E61D05943B6DD753@xmail3.se.axis.com>	<20150127200553.GA5689@roeck-us.net> <20150127233455.0c62457e@endymion.delvare> <54C86035.9080605@roeck-us.net> <54C87F3C.2020105@axis.com> <54C8F73D.4040808@roeck-us.net>
+In-Reply-To: <54C8F73D.4040808@roeck-us.net>
+Content-Type: text/plain; charset="windows-1252"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ping!
+On 01/28/2015 03:50 PM, Guenter Roeck wrote:
+> Can you possibly send me the output from i2cdump ? That might help figuring out what is going on.
+I don't have i2cdump (I suppose that you mean the lm-sensors tool) 
+available for my hardware. I'll give it a go to compile it...
 
-On Fri, Jan 23, 2015 at 07:57:24AM -0800, Shaohua Li wrote:
-> On Fri, Jan 23, 2015 at 09:44:51AM +0100, Peter Zijlstra wrote:
-> > On Thu, Jan 22, 2015 at 01:09:02PM -0800, Shaohua Li wrote:
-> > > ---
-> > >  kernel/events/core.c | 3 +++
-> > >  1 file changed, 3 insertions(+)
-> > > 
-> > > diff --git a/kernel/events/core.c b/kernel/events/core.c
-> > > index 4edde3e..4221240 100644
-> > > --- a/kernel/events/core.c
-> > > +++ b/kernel/events/core.c
-> > > @@ -5950,6 +5950,7 @@ static int perf_swevent_add(struct perf_event *event, int flags)
-> > >  	}
-> > >  
-> > >  	hlist_add_head_rcu(&event->hlist_entry, head);
-> > > +	perf_event_update_userpage(event);
-> > >  
-> > >  	return 0;
-> > >  }
-> > > @@ -6419,6 +6420,7 @@ static int cpu_clock_event_add(struct perf_event *event, int flags)
-> > >  {
-> > >  	if (flags & PERF_EF_START)
-> > >  		cpu_clock_event_start(event, flags);
-> > > +	perf_event_update_userpage(event);
-> > >  
-> > >  	return 0;
-> > >  }
-> > > @@ -6493,6 +6495,7 @@ static int task_clock_event_add(struct perf_event *event, int flags)
-> > >  {
-> > >  	if (flags & PERF_EF_START)
-> > >  		task_clock_event_start(event, flags);
-> > > +	perf_event_update_userpage(event);
-> > >  
-> > >  	return 0;
-> > >  }
-> > 
-> > How about the one I sent; which adds it to {start,stop} instead of add?
-> > {start,stop} is the right place to add them, although this add might be
-> > sufficient for your use case.
-> Hi Peter,
-> I tried {start, stop}, it doesn't work (doesn't get called in context
-> switch) and I still get a CLOCK_MONOTONIC. So I added it to .add, which
-> is called in context switch and I got correct thread time. Am I missing
-> anything?
-> 
-> Thanks,
-> Shaohua
+BR,
+Robert
