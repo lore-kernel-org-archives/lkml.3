@@ -1,78 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754816AbbA2GlI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 01:41:08 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.242]:48683 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752336AbbA2GlG (ORCPT
+	id S1754781AbbA2Gj5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 01:39:57 -0500
+Received: from mail-qg0-f48.google.com ([209.85.192.48]:59357 "EHLO
+	mail-qg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752193AbbA2Gjz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 01:41:06 -0500
-From: Wenyou Yang <wenyou.yang@atmel.com>
-To: <nicolas.ferre@atmel.com>, <linux@arm.linux.org.uk>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <alexandre.belloni@free-electrons.com>, <sylvain.rochet@finsecur.com>,
-        <peda@axentia.se>, <sergei.shtylyov@cogentembedded.com>,
-        <linux@maxim.org.za>, <wenyou.yang@atmel.com>
-Subject: [PATCH v5 05/13] pm: at91: move the copying the sram function to the sram initializationi phase
-Date: Thu, 29 Jan 2015 14:38:55 +0800
-Message-ID: <1422513535-23885-1-git-send-email-wenyou.yang@atmel.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1422513316-21509-1-git-send-email-wenyou.yang@atmel.com>
-References: <1422513316-21509-1-git-send-email-wenyou.yang@atmel.com>
+	Thu, 29 Jan 2015 01:39:55 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
+From: Alexei Starovoitov <ast@plumgrid.com>
+Date: Wed, 28 Jan 2015 22:39:34 -0800
+Message-ID: <CAMEtUuywGh9p9yQdeJJiKRdpZhmgJdQYWgf3W3U0uSTXkjF_uA@mail.gmail.com>
+Subject: Re: [PATCH v2 linux-trace 1/8] tracing: attach eBPF programs to
+ tracepoints and syscalls
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Namhyung Kim <namhyung@kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Jiri Olsa <jolsa@redhat.com>, Linux API <linux-api@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To decrease the suspend time, move the copying the sram function
-to the sram initialization phase, instead of every time go to suspend.
+On Wed, Jan 28, 2015 at 9:39 PM, Masami Hiramatsu
+<masami.hiramatsu.pt@hitachi.com> wrote:
+>
+> Maybe, would we need a reference counter for each event? :)
 
-In the meanwhile, if there is no sram allocated for PM, the PM is not supported.
+when we would want multiple users to attach different programs
+to the same event, then yes.
+Right now I'd rather have things simple.
 
-Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
-Acked-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
----
- arch/arm/mach-at91/pm.c |   12 +++++++-----
- 1 file changed, 7 insertions(+), 5 deletions(-)
+> Actually, ftrace event is not similar to perf-event which ktap
+> is based on, ftrace event interface is always exported via
+> debugfs, this means users can share the event for different
+> usage.
 
-diff --git a/arch/arm/mach-at91/pm.c b/arch/arm/mach-at91/pm.c
-index daa998d..6df0152 100644
---- a/arch/arm/mach-at91/pm.c
-+++ b/arch/arm/mach-at91/pm.c
-@@ -163,10 +163,6 @@ static int at91_pm_enter(suspend_state_t state)
- 			 * turning off the main oscillator; reverse on wakeup.
- 			 */
- 			if (slow_clock) {
--#ifdef CONFIG_AT91_SLOW_CLOCK
--				/* copy slow_clock handler to SRAM, and call it */
--				memcpy(slow_clock, at91_slow_clock, at91_slow_clock_sz);
--#endif
- 				slow_clock(at91_pmc_base, at91_ramc_base[0],
- 					   at91_ramc_base[1],
- 					   at91_pm_data.memctrl);
-@@ -311,6 +307,9 @@ static void __init at91_pm_sram_init(void)
- 	sram_pbase = gen_pool_virt_to_phys(sram_pool, sram_base);
- 	slow_clock = __arm_ioremap_exec(sram_pbase, at91_slow_clock_sz, false);
- 
-+	/* Copy the slow_clock handler to SRAM */
-+	memcpy(slow_clock, at91_slow_clock, at91_slow_clock_sz);
-+
- put_node:
- 	of_node_put(node);
- }
-@@ -328,7 +327,10 @@ static void __init at91_pm_init(void)
- 	if (at91_cpuidle_device.dev.platform_data)
- 		platform_device_register(&at91_cpuidle_device);
- 
--	suspend_set_ops(&at91_pm_ops);
-+	if (slow_clock)
-+		suspend_set_ops(&at91_pm_ops);
-+	else
-+		pr_info("AT91: PM : Not supported, due to no sram allocated\n");
- }
- 
- void __init at91rm9200_pm_init(void)
--- 
-1.7.9.5
+yes.I've been thinking to extend perf_event ioctl to attach programs,
+but right now it's only supporting tracepoints and kprobe
+seems not trivial to add.
+So I went for tracefs style of attaching for now.
 
+> One possible other solution is to add a instance-lock interface
+> for each ftrace instance and lock it by bpf. Then, other users
+> can not enable/disable the events in the instance.
+
+the user space can synchronize itself via flock. kernel doesn't
+need to arbitrate. If one user process attached a program
+that auto-enabled an event and another process did
+'echo 0 > enable', it's fine. I think it's a feature instead of a bug.
+Both users are root anyway.
+
+The more we talk about it, the more I like a new 'bpf' file
+approach within tracefs (that I've mentioned in cover letter)
+with auto-enable/disable logic to make it clear that
+it's different from traditional global 'filter' file.
