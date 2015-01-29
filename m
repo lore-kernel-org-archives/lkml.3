@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754940AbbA2IQn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 03:16:43 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:51384 "EHLO
+	id S1754154AbbA2IQm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 03:16:42 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:51398 "EHLO
 	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752511AbbA2IKO (ORCPT
+	with ESMTP id S1753206AbbA2IKO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 29 Jan 2015 03:10:14 -0500
 X-Original-SENDERIP: 10.177.220.203
@@ -18,9 +18,9 @@ Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Andi Kleen <andi@firstfloor.org>,
         Stephane Eranian <eranian@google.com>,
         Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [PATCH 22/42] perf tools: Introduce machine__find*_thread_time()
-Date: Thu, 29 Jan 2015 17:07:03 +0900
-Message-Id: <1422518843-25818-23-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 23/42] perf tools: Add a test case for timed thread handling
+Date: Thu, 29 Jan 2015 17:07:04 +0900
+Message-Id: <1422518843-25818-24-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <1422518843-25818-1-git-send-email-namhyung@kernel.org>
 References: <1422518843-25818-1-git-send-email-namhyung@kernel.org>
@@ -28,335 +28,238 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With data file indexing is enabled, it needs to search thread based on
-sample time since sample processing is done after other (task, comm and
-mmap) events are processed.  This can be a problem if a session is very
-long and pid is recycled - in that case it'll only see the last one.
-
-So keep thread start time in it, and search thread based on the time.
-This patch introduces machine__find{,new}_thread_time() function for
-this.  It'll first search current thread rbtree and then dead thread
-tree and list.  If it couldn't find anyone, it'll create a new thread.
-
-The sample timestamp of 0 means that this is called from synthesized
-event so just use current rbtree.  The timestamp will be -1 if sample
-didn't record the timestamp so will see current threads automatically.
+A test case for verifying live and dead thread tree management during
+time change and new machine__find{,new}_thread_time().
 
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/builtin-script.c     |  11 ++++-
- tools/perf/tests/dwarf-unwind.c |   8 ++--
- tools/perf/tests/hists_common.c |   3 +-
- tools/perf/tests/hists_link.c   |   2 +-
- tools/perf/util/event.c         |  14 ++++--
- tools/perf/util/machine.c       | 102 +++++++++++++++++++++++++++++++++++++++-
- tools/perf/util/machine.h       |   8 +++-
- tools/perf/util/thread.c        |   4 ++
- tools/perf/util/thread.h        |   1 +
- 9 files changed, 138 insertions(+), 15 deletions(-)
+ tools/perf/Makefile.perf              |   1 +
+ tools/perf/tests/builtin-test.c       |   4 +
+ tools/perf/tests/tests.h              |   1 +
+ tools/perf/tests/thread-lookup-time.c | 174 ++++++++++++++++++++++++++++++++++
+ 4 files changed, 180 insertions(+)
+ create mode 100644 tools/perf/tests/thread-lookup-time.c
 
-diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
-index 4a007110d2f7..65b3a07be2bf 100644
---- a/tools/perf/builtin-script.c
-+++ b/tools/perf/builtin-script.c
-@@ -559,8 +559,15 @@ static int process_sample_event(struct perf_tool *tool,
- {
- 	struct addr_location al;
- 	struct perf_script *script = container_of(tool, struct perf_script, tool);
--	struct thread *thread = machine__findnew_thread(machine, sample->pid,
--							sample->tid);
-+	struct thread *thread;
+diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
+index 8507891db69d..8bb35ee91fd5 100644
+--- a/tools/perf/Makefile.perf
++++ b/tools/perf/Makefile.perf
+@@ -459,6 +459,7 @@ LIB_OBJS += $(OUTPUT)tests/mmap-thread-lookup.o
+ LIB_OBJS += $(OUTPUT)tests/thread-mg-share.o
+ LIB_OBJS += $(OUTPUT)tests/switch-tracking.o
+ LIB_OBJS += $(OUTPUT)tests/thread-comm.o
++LIB_OBJS += $(OUTPUT)tests/thread-lookup-time.o
+ 
+ BUILTIN_OBJS += $(OUTPUT)builtin-annotate.o
+ BUILTIN_OBJS += $(OUTPUT)builtin-bench.o
+diff --git a/tools/perf/tests/builtin-test.c b/tools/perf/tests/builtin-test.c
+index 1b463d82a71a..e4d335de19ea 100644
+--- a/tools/perf/tests/builtin-test.c
++++ b/tools/perf/tests/builtin-test.c
+@@ -171,6 +171,10 @@ static struct test {
+ 		.func = test__thread_comm,
+ 	},
+ 	{
++		.desc = "Test thread lookup with time",
++		.func = test__thread_lookup_time,
++	},
++	{
+ 		.func = NULL,
+ 	},
+ };
+diff --git a/tools/perf/tests/tests.h b/tools/perf/tests/tests.h
+index 43ac17780629..1090337f63e5 100644
+--- a/tools/perf/tests/tests.h
++++ b/tools/perf/tests/tests.h
+@@ -52,6 +52,7 @@ int test__switch_tracking(void);
+ int test__fdarray__filter(void);
+ int test__fdarray__add(void);
+ int test__thread_comm(void);
++int test__thread_lookup_time(void);
+ 
+ #if defined(__x86_64__) || defined(__i386__) || defined(__arm__)
+ #ifdef HAVE_DWARF_UNWIND_SUPPORT
+diff --git a/tools/perf/tests/thread-lookup-time.c b/tools/perf/tests/thread-lookup-time.c
+new file mode 100644
+index 000000000000..6237ecf8caae
+--- /dev/null
++++ b/tools/perf/tests/thread-lookup-time.c
+@@ -0,0 +1,174 @@
++#include "tests.h"
++#include "machine.h"
++#include "thread.h"
++#include "map.h"
++#include "debug.h"
 +
-+	if (perf_session__has_index(script->session))
-+		thread = machine__findnew_thread_time(machine, sample->pid,
-+						      sample->tid,
-+						      sample->time);
-+	else
-+		thread = machine__findnew_thread(machine, sample->pid,
-+						 sample->tid);
- 
- 	if (thread == NULL) {
- 		pr_debug("problem processing %d event, skipping it.\n",
-diff --git a/tools/perf/tests/dwarf-unwind.c b/tools/perf/tests/dwarf-unwind.c
-index 0bf06bec68c7..7e04feb431cb 100644
---- a/tools/perf/tests/dwarf-unwind.c
-+++ b/tools/perf/tests/dwarf-unwind.c
-@@ -16,10 +16,10 @@
- 
- static int mmap_handler(struct perf_tool *tool __maybe_unused,
- 			union perf_event *event,
--			struct perf_sample *sample __maybe_unused,
-+			struct perf_sample *sample,
- 			struct machine *machine)
- {
--	return machine__process_mmap2_event(machine, event, NULL);
-+	return machine__process_mmap2_event(machine, event, sample);
- }
- 
- static int init_live_machine(struct machine *machine)
-@@ -66,12 +66,10 @@ static int unwind_entry(struct unwind_entry *entry, void *arg)
- __attribute__ ((noinline))
- static int unwind_thread(struct thread *thread)
- {
--	struct perf_sample sample;
-+	struct perf_sample sample = { .time = -1ULL, };
- 	unsigned long cnt = 0;
- 	int err = -1;
- 
--	memset(&sample, 0, sizeof(sample));
--
- 	if (test__arch_unwind_sample(&sample, thread)) {
- 		pr_debug("failed to get unwind sample\n");
- 		goto out;
-diff --git a/tools/perf/tests/hists_common.c b/tools/perf/tests/hists_common.c
-index a62c09134516..86a8fdb41804 100644
---- a/tools/perf/tests/hists_common.c
-+++ b/tools/perf/tests/hists_common.c
-@@ -80,6 +80,7 @@ static struct {
- struct machine *setup_fake_machine(struct machines *machines)
- {
- 	struct machine *machine = machines__find(machines, HOST_KERNEL_ID);
-+	struct perf_sample sample = { .time = -1ULL, };
- 	size_t i;
- 
- 	if (machine == NULL) {
-@@ -113,7 +114,7 @@ struct machine *setup_fake_machine(struct machines *machines)
- 		strcpy(fake_mmap_event.mmap.filename,
- 		       fake_mmap_info[i].filename);
- 
--		machine__process_mmap_event(machine, &fake_mmap_event, NULL);
-+		machine__process_mmap_event(machine, &fake_mmap_event, &sample);
- 	}
- 
- 	for (i = 0; i < ARRAY_SIZE(fake_symbols); i++) {
-diff --git a/tools/perf/tests/hists_link.c b/tools/perf/tests/hists_link.c
-index 4f3d45692acb..1237cc87e8d5 100644
---- a/tools/perf/tests/hists_link.c
-+++ b/tools/perf/tests/hists_link.c
-@@ -64,7 +64,7 @@ static int add_hist_entries(struct perf_evlist *evlist, struct machine *machine)
- 	struct perf_evsel *evsel;
- 	struct addr_location al;
- 	struct hist_entry *he;
--	struct perf_sample sample = { .period = 1, };
-+	struct perf_sample sample = { .period = 1, .time = -1ULL, };
- 	size_t i = 0, k;
- 
- 	/*
-diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
-index 186960a09024..8b9fe0a908e8 100644
---- a/tools/perf/util/event.c
-+++ b/tools/perf/util/event.c
-@@ -9,6 +9,7 @@
- #include "strlist.h"
- #include "thread.h"
- #include "thread_map.h"
-+#include "session.h"
- #include "symbol/kallsyms.h"
- 
- static const char *perf_event__names[] = {
-@@ -823,11 +824,18 @@ int perf_event__preprocess_sample(const union perf_event *event,
- 				  struct machine *machine,
- 				  struct addr_location *al,
- 				  struct perf_sample *sample,
--				  struct perf_session *session __maybe_unused)
-+				  struct perf_session *session)
- {
- 	u8 cpumode = event->header.misc & PERF_RECORD_MISC_CPUMODE_MASK;
--	struct thread *thread = machine__findnew_thread(machine, sample->pid,
--							sample->tid);
-+	struct thread *thread;
-+
-+	if (session && perf_session__has_index(session))
-+		thread = machine__findnew_thread_time(machine, sample->pid,
-+						      sample->tid,
-+						      sample->time);
-+	else
-+		thread = machine__findnew_thread(machine, sample->pid,
-+						 sample->tid);
- 
- 	if (thread == NULL)
- 		return -1;
-diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
-index d4050fcba851..f8bc2f67b515 100644
---- a/tools/perf/util/machine.c
-+++ b/tools/perf/util/machine.c
-@@ -434,6 +434,106 @@ struct thread *machine__find_thread(struct machine *machine, pid_t pid,
- 	return __machine__findnew_thread(machine, pid, tid, false);
- }
- 
-+static struct thread *__machine__findnew_thread_time(struct machine *machine,
-+						     pid_t pid, pid_t tid,
-+						     u64 timestamp, bool create)
++static int thread__print_cb(struct thread *th, void *arg __maybe_unused)
 +{
-+	struct thread *curr, *pos, *new;
-+	struct thread *th = NULL;
-+	struct rb_node **p;
-+	struct rb_node *parent = NULL;
++	printf("thread: %d, start time: %"PRIu64" %s\n",
++	       th->tid, th->start_time, th->dead ? "(dead)" : "");
++	return 0;
++}
 +
-+	curr = __machine__findnew_thread(machine, pid, tid, false);
-+	if (curr && timestamp >= curr->start_time)
-+		return curr;
++static int lookup_with_timestamp(struct machine *machine)
++{
++	struct thread *t1, *t2, *t3;
++	union perf_event fork = {
++		.fork = {
++			.pid = 0,
++			.tid = 0,
++			.ppid = 1,
++			.ptid = 1,
++		},
++	};
++	struct perf_sample sample = {
++		.time = 50000,
++	};
 +
-+	p = &machine->dead_threads.rb_node;
-+	while (*p != NULL) {
-+		parent = *p;
-+		th = rb_entry(parent, struct thread, rb_node);
++	/* start_time is set to 0 */
++	t1 = machine__findnew_thread(machine, 0, 0);
 +
-+		if (th->tid == tid) {
-+			list_for_each_entry(pos, &th->tid_node, tid_node) {
-+				if (timestamp >= pos->start_time &&
-+				    pos->start_time > th->start_time) {
-+					th = pos;
-+					break;
-+				}
-+			}
-+
-+			if (timestamp >= th->start_time) {
-+				machine__update_thread_pid(machine, th, pid);
-+				return th;
-+			}
-+			break;
-+		}
-+
-+		if (tid < th->tid)
-+			p = &(*p)->rb_left;
-+		else
-+			p = &(*p)->rb_right;
++	if (verbose > 1) {
++		printf("========= after t1 created ==========\n");
++		machine__for_each_thread(machine, thread__print_cb, NULL);
 +	}
 +
-+	if (!create)
-+		return NULL;
++	TEST_ASSERT_VAL("wrong start time of old thread", t1->start_time == 0);
 +
-+	if (!curr && !*p)
-+		return __machine__findnew_thread(machine, pid, tid, true);
++	TEST_ASSERT_VAL("cannot find current thread",
++			machine__find_thread(machine, 0, 0) == t1);
 +
-+	new = thread__new(pid, tid);
-+	if (new == NULL)
-+		return NULL;
++	TEST_ASSERT_VAL("cannot find current thread with time",
++			machine__findnew_thread_time(machine, 0, 0, 10000) == t1);
 +
-+	new->dead = true;
-+	new->start_time = timestamp;
++	/* start_time is overwritten to new value */
++	thread__set_comm(t1, "/usr/bin/perf", 20000);
 +
-+	if (*p) {
-+		list_for_each_entry(pos, &th->tid_node, tid_node) {
-+			/* sort by time */
-+			if (timestamp >= pos->start_time) {
-+				th = pos;
-+				break;
-+			}
-+		}
-+		list_add_tail(&new->tid_node, &th->tid_node);
-+	} else {
-+		rb_link_node(&new->rb_node, parent, p);
-+		rb_insert_color(&new->rb_node, &machine->dead_threads);
++	if (verbose > 1) {
++		printf("========= after t1 set comm ==========\n");
++		machine__for_each_thread(machine, thread__print_cb, NULL);
 +	}
++
++	TEST_ASSERT_VAL("failed to update start time", t1->start_time == 20000);
++
++	TEST_ASSERT_VAL("should not find passed thread",
++			/* this will create yet another dead thread */
++			machine__findnew_thread_time(machine, 0, 0, 10000) != t1);
++
++	TEST_ASSERT_VAL("cannot find overwritten thread with time",
++			machine__find_thread_time(machine, 0, 0, 20000) == t1);
++
++	/* now t1 goes to dead thread tree, and create t2 */
++	machine__process_fork_event(machine, &fork, &sample);
++
++	if (verbose > 1) {
++		printf("========= after t2 forked ==========\n");
++		machine__for_each_thread(machine, thread__print_cb, NULL);
++	}
++
++	t2 = machine__find_thread(machine, 0, 0);
++	TEST_ASSERT_VAL("cannot find current thread", t2 != NULL);
++
++	TEST_ASSERT_VAL("wrong start time of new thread", t2->start_time == 50000);
++
++	TEST_ASSERT_VAL("dead thread cannot be found",
++			machine__find_thread_time(machine, 0, 0, 10000) != t1);
++
++	TEST_ASSERT_VAL("cannot find dead thread after new thread",
++			machine__find_thread_time(machine, 0, 0, 30000) == t1);
++
++	TEST_ASSERT_VAL("cannot find current thread after new thread",
++			machine__find_thread_time(machine, 0, 0, 50000) == t2);
++
++	/* now t2 goes to dead thread tree, and create t3 */
++	sample.time = 60000;
++	machine__process_fork_event(machine, &fork, &sample);
++
++	if (verbose > 1) {
++		printf("========= after t3 forked ==========\n");
++		machine__for_each_thread(machine, thread__print_cb, NULL);
++	}
++
++	t3 = machine__find_thread(machine, 0, 0);
++	TEST_ASSERT_VAL("cannot find current thread", t3 != NULL);
++
++	TEST_ASSERT_VAL("wrong start time of new thread", t3->start_time == 60000);
++
++	TEST_ASSERT_VAL("cannot find dead thread after new thread",
++			machine__findnew_thread_time(machine, 0, 0, 30000) == t1);
++
++	TEST_ASSERT_VAL("cannot find dead thread after new thread",
++			machine__findnew_thread_time(machine, 0, 0, 50000) == t2);
++
++	TEST_ASSERT_VAL("cannot find current thread after new thread",
++			machine__findnew_thread_time(machine, 0, 0, 70000) == t3);
++
++	machine__delete_threads(machine);
++	return 0;
++}
++
++static int lookup_without_timestamp(struct machine *machine)
++{
++	struct thread *t1, *t2, *t3;
++	union perf_event fork = {
++		.fork = {
++			.pid = 0,
++			.tid = 0,
++			.ppid = 1,
++			.ptid = 1,
++		},
++	};
++	struct perf_sample sample = {
++		.time = -1ULL,
++	};
++
++	t1 = machine__findnew_thread(machine, 0, 0);
++	TEST_ASSERT_VAL("cannot find current thread", t1 != NULL);
++
++	TEST_ASSERT_VAL("cannot find new thread with time",
++			machine__findnew_thread_time(machine, 0, 0, -1ULL) == t1);
++
++	machine__process_fork_event(machine, &fork, &sample);
++
++	t2 = machine__find_thread(machine, 0, 0);
++	TEST_ASSERT_VAL("cannot find current thread", t2 != NULL);
++
++	TEST_ASSERT_VAL("cannot find new thread with time",
++			machine__find_thread_time(machine, 0, 0, -1ULL) == t2);
++
++	machine__process_fork_event(machine, &fork, &sample);
++
++	t3 = machine__find_thread(machine, 0, 0);
++	TEST_ASSERT_VAL("cannot find current thread", t3 != NULL);
++
++	TEST_ASSERT_VAL("cannot find new thread with time",
++			machine__findnew_thread_time(machine, 0, 0, -1ULL) == t3);
++
++	machine__delete_threads(machine);
++	return 0;
++}
++
++int test__thread_lookup_time(void)
++{
++	struct machines machines;
++	struct machine *machine;
 +
 +	/*
-+	 * We have to initialize map_groups separately
-+	 * after rb tree is updated.
-+	 *
-+	 * The reason is that we call machine__findnew_thread
-+	 * within thread__init_map_groups to find the thread
-+	 * leader and that would screwed the rb tree.
++	 * This test is to check whether it can retrieve a correct
++	 * thread for a given time.  When multi-file data storage is
++	 * enabled, those task/comm/mmap events are processed first so
++	 * the later sample should find a matching thread properly.
 +	 */
-+	if (thread__init_map_groups(new, machine)) {
-+		if (!list_empty(&new->tid_node))
-+			list_del(&new->tid_node);
-+		else
-+			rb_erase(&new->rb_node, &machine->dead_threads);
++	machines__init(&machines);
++	machine = &machines.host;
 +
-+		thread__delete(new);
-+		return NULL;
-+	}
++	if (lookup_with_timestamp(machine) < 0)
++		return -1;
 +
-+	return new;
++	if (lookup_without_timestamp(machine) < 0)
++		return -1;
++
++	machines__exit(&machines);
++	return 0;
 +}
-+
-+struct thread *machine__find_thread_time(struct machine *machine, pid_t pid,
-+					 pid_t tid, u64 timestamp)
-+{
-+	return __machine__findnew_thread_time(machine, pid, tid, timestamp, false);
-+}
-+
-+struct thread *machine__findnew_thread_time(struct machine *machine, pid_t pid,
-+					    pid_t tid, u64 timestamp)
-+{
-+	return __machine__findnew_thread_time(machine, pid, tid, timestamp, true);
-+}
-+
- struct comm *machine__thread_exec_comm(struct machine *machine,
- 				       struct thread *thread)
- {
-@@ -1172,7 +1272,7 @@ int machine__process_mmap2_event(struct machine *machine,
- 	}
- 
- 	thread = machine__findnew_thread(machine, event->mmap2.pid,
--					event->mmap2.tid);
-+					 event->mmap2.tid);
- 	if (thread == NULL)
- 		goto out_problem;
- 
-diff --git a/tools/perf/util/machine.h b/tools/perf/util/machine.h
-index 4349946a38ff..9571b6b1c5b5 100644
---- a/tools/perf/util/machine.h
-+++ b/tools/perf/util/machine.h
-@@ -68,8 +68,6 @@ static inline bool machine__kernel_ip(struct machine *machine, u64 ip)
- 	return ip >= kernel_start;
- }
- 
--struct thread *machine__find_thread(struct machine *machine, pid_t pid,
--				    pid_t tid);
- struct comm *machine__thread_exec_comm(struct machine *machine,
- 				       struct thread *thread);
- 
-@@ -149,6 +147,12 @@ static inline bool machine__is_host(struct machine *machine)
- 
- struct thread *machine__findnew_thread(struct machine *machine, pid_t pid,
- 				       pid_t tid);
-+struct thread *machine__find_thread(struct machine *machine, pid_t pid,
-+				    pid_t tid);
-+struct thread *machine__findnew_thread_time(struct machine *machine, pid_t pid,
-+					    pid_t tid, u64 timestamp);
-+struct thread *machine__find_thread_time(struct machine *machine, pid_t pid,
-+					 pid_t tid, u64 timestamp);
- 
- size_t machine__fprintf(struct machine *machine, FILE *fp);
- 
-diff --git a/tools/perf/util/thread.c b/tools/perf/util/thread.c
-index c9ae0e1599da..306bdaede019 100644
---- a/tools/perf/util/thread.c
-+++ b/tools/perf/util/thread.c
-@@ -127,6 +127,9 @@ int __thread__set_comm(struct thread *thread, const char *str, u64 timestamp,
- 
- 	/* Override the default :tid entry */
- 	if (!thread->comm_set) {
-+		if (!thread->start_time)
-+			thread->start_time = timestamp;
-+
- 		err = comm__override(curr, str, timestamp, exec);
- 		if (err)
- 			return err;
-@@ -228,6 +231,7 @@ int thread__fork(struct thread *thread, struct thread *parent, u64 timestamp)
- 	}
- 
- 	thread->ppid = parent->tid;
-+	thread->start_time = timestamp;
- 	return thread__clone_map_groups(thread, parent);
- }
- 
-diff --git a/tools/perf/util/thread.h b/tools/perf/util/thread.h
-index 21268e66b2ad..e5d7abd255ea 100644
---- a/tools/perf/util/thread.h
-+++ b/tools/perf/util/thread.h
-@@ -25,6 +25,7 @@ struct thread {
- 	struct list_head	comm_list;
- 	int			comm_len;
- 	u64			db_id;
-+	u64			start_time;
- 
- 	void			*priv;
- 	struct thread_stack	*ts;
 -- 
 2.2.2
 
