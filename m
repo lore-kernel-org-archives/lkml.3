@@ -1,93 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759758AbbA2L31 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 06:29:27 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:56105 "EHLO mx2.suse.de"
+	id S1760210AbbA2L3j (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 06:29:39 -0500
+Received: from unicorn.mansr.com ([81.2.72.234]:51908 "EHLO unicorn.mansr.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753638AbbA2L30 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 06:29:26 -0500
-From: Takashi Iwai <tiwai@suse.de>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] drivers/base/node: Avoid manual device_create_file() calls
-Date: Thu, 29 Jan 2015 12:29:22 +0100
-Message-Id: <1422530962-2460-1-git-send-email-tiwai@suse.de>
-X-Mailer: git-send-email 2.2.2
+	id S1754434AbbA2L3g convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Jan 2015 06:29:36 -0500
+From: =?iso-8859-1?Q?M=E5ns_Rullg=E5rd?= <mans@mansr.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: David Miller <davem@davemloft.net>, behanw@converseincode.com,
+        sathya.perla@emulex.com, ajit.khaparde@emulex.com,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        subbu.seetharaman@emulex.com
+Subject: Re: [PATCH] net, ethernet, LLVMLinux: Add missing MODULE_DEVICE_TABLE()
+References: <1422495374-22835-1-git-send-email-behanw@converseincode.com>
+	<20150128.224228.1533046356464752424.davem@davemloft.net>
+	<3392784.h8cmHX9fyr@wuerfel>
+Date: Thu, 29 Jan 2015 11:29:32 +0000
+In-Reply-To: <3392784.h8cmHX9fyr@wuerfel> (Arnd Bergmann's message of "Thu, 29
+	Jan 2015 10:10:48 +0100")
+Message-ID: <yw1xlhklbzab.fsf@unicorn.mansr.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.4 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Instead of manual calls of multiple device_create_file() and
-device_remove_file(), use the static attribute groups assigned to the
-new device.  This also fixes the possible races, too.
+Arnd Bergmann <arnd@arndb.de> writes:
 
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
----
- drivers/base/node.c | 34 ++++++++++++++++++++--------------
- 1 file changed, 20 insertions(+), 14 deletions(-)
+> On Wednesday 28 January 2015 22:42:28 David Miller wrote:
+>> From: Behan Webster <behanw@converseincode.com>
+>> Date: Wed, 28 Jan 2015 17:36:14 -0800
+>> 
+>> > Missing MODULE_DEVICE_TABLE for pci ids from benet driver found by clang.
+>> > 
+>> > Signed-off-by: Behan Webster <behanw@converseincode.com>
+>> > Suggested-by: Arnd Bergmann <arnd@arndb.de>
+>> 
+>> Why are you removing the device table?
+>
+> Behan took a patch that I did earlier and split it up to add descriptions.
+> The patch is correct, but he either misunderstood or misexpressed the
+> intention.
+>
+> This driver has two identical lines that both say 
+>
+> MODULE_DEVICE_TABLE(pci, be_dev_ids);
+>
+> I don't remember the exact symptom, but llvm/clang trips over this, while gcc
+> silently ignores the second one.
 
-diff --git a/drivers/base/node.c b/drivers/base/node.c
-index a3b82e9c7f20..6ce1d4343cf0 100644
---- a/drivers/base/node.c
-+++ b/drivers/base/node.c
-@@ -200,6 +200,25 @@ static ssize_t node_read_distance(struct device *dev,
- }
- static DEVICE_ATTR(distance, S_IRUGO, node_read_distance, NULL);
- 
-+static struct attribute *node_dev_attrs[] = {
-+	&dev_attr_cpumap.attr,
-+	&dev_attr_cpulist.attr,
-+	&dev_attr_meminfo.attr,
-+	&dev_attr_numastat.attr,
-+	&dev_attr_distance.attr,
-+	&dev_attr_vmstat.attr,
-+	NULL
-+};
-+
-+static struct attribute_group node_dev_attr_group = {
-+	.attrs	= node_dev_attrs,
-+};
-+
-+static const struct attribute_group *node_dev_attr_groups[] = {
-+	&node_dev_attr_group,
-+	NULL
-+};
-+
- #ifdef CONFIG_HUGETLBFS
- /*
-  * hugetlbfs per node attributes registration interface:
-@@ -273,16 +292,10 @@ static int register_node(struct node *node, int num, struct node *parent)
- 	node->dev.id = num;
- 	node->dev.bus = &node_subsys;
- 	node->dev.release = node_device_release;
-+	node->dev.groups = node_dev_attr_groups;
- 	error = device_register(&node->dev);
- 
- 	if (!error){
--		device_create_file(&node->dev, &dev_attr_cpumap);
--		device_create_file(&node->dev, &dev_attr_cpulist);
--		device_create_file(&node->dev, &dev_attr_meminfo);
--		device_create_file(&node->dev, &dev_attr_numastat);
--		device_create_file(&node->dev, &dev_attr_distance);
--		device_create_file(&node->dev, &dev_attr_vmstat);
--
- 		hugetlb_register_node(node);
- 
- 		compaction_register_node(node);
-@@ -299,13 +312,6 @@ static int register_node(struct node *node, int num, struct node *parent)
-  */
- void unregister_node(struct node *node)
- {
--	device_remove_file(&node->dev, &dev_attr_cpumap);
--	device_remove_file(&node->dev, &dev_attr_cpulist);
--	device_remove_file(&node->dev, &dev_attr_meminfo);
--	device_remove_file(&node->dev, &dev_attr_numastat);
--	device_remove_file(&node->dev, &dev_attr_distance);
--	device_remove_file(&node->dev, &dev_attr_vmstat);
--
- 	hugetlb_unregister_node(node);		/* no-op, if memoryless node */
- 
- 	device_unregister(&node->dev);
+GCC is probably being "helpful" and allowing multiple identical
+definitions even though the C spec does not.  Obviously all but one
+should go away.  No need to mention llvm, IMO.
+
 -- 
-2.2.2
-
+Måns Rullgård
+mans@mansr.com
