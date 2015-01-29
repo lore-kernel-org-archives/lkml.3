@@ -1,139 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757429AbbA2NXh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 08:23:37 -0500
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:55597 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755889AbbA2NXg (ORCPT
+	id S1757758AbbA2NXq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 08:23:46 -0500
+Received: from smtp97.ord1c.emailsrvr.com ([108.166.43.97]:58609 "EHLO
+	smtp97.ord1c.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757257AbbA2NXn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 08:23:36 -0500
-Date: Thu, 29 Jan 2015 22:23:15 +0900
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Jiri Olsa <jolsa@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        David Ahern <dsahern@gmail.com>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Stephane Eranian <eranian@google.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH 40/42] perf callchain: Save eh/debug frame offset for
- dwarf unwind
-Message-ID: <20150129132315.GB29130@danjae>
-References: <1422518843-25818-1-git-send-email-namhyung@kernel.org>
- <1422518843-25818-41-git-send-email-namhyung@kernel.org>
- <20150129123831.GT7220@kernel.org>
+	Thu, 29 Jan 2015 08:23:43 -0500
+X-Greylist: delayed 60989 seconds by postgrey-1.27 at vger.kernel.org; Thu, 29 Jan 2015 08:23:43 EST
+X-SMTPDoctor-Processed: csmtpprox beta
+X-Sender-Id: markh@compro.net
+Message-ID: <54CA345D.4010502@compro.net>
+Date: Thu, 29 Jan 2015 08:23:41 -0500
+From: Mark Hounschell <markh@compro.net>
+Reply-To: markh@compro.net
+Organization: Compro Computer Svcs.
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20150129123831.GT7220@kernel.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Linux-kernel <linux-kernel@vger.kernel.org>
+Subject: dma_alloc_coherent - cma - and IOMMU question
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 29, 2015 at 09:38:31AM -0300, Arnaldo Carvalho de Melo wrote:
-> Em Thu, Jan 29, 2015 at 05:07:21PM +0900, Namhyung Kim escreveu:
-> > When libunwind tries to resolve callchains it needs to know the offset
-> > of .eh_frame_hdr or .debug_frame to access the dso.  Since it calls
-> > dso__data_fd(), it'll try to grab dso->lock everytime for same
-> > information.  So save it to dso_data struct and reuse it.
-> > 
-> > Note that there's a window between dso__data_fd() and actual use of
-> > the fd.  The fd could be closed by other threads to deal with the open
-> > file limit in dso cache code.  But I think it's ok since in that case
-> > elf_section_offset() will return 0 so it'll be tried in next acess.
-> 
-> I know that you did this in the context of your multi threading
-> patchkit, but this seems useful even without that patckhit, i.e. this
-> can be cherry picked on the grounds that it speeds up things by caching
-> something that doesn't change, right?
+Sorry for the noise. I've read everything DMA in the kernel Doc dir and 
+searched the web to no avail. So I thought I might get some useful info 
+here.
 
-Right.
+I'm currently using a 3.18.3 (x86_64) kernel on an AMD platform. I am 
+currently doing 8MB DMAs to and from our device using the in kernel CMA 
+"cma=64M@0-4G" with no problems. This device is not DAC or 
+scatter/gather capable so the in kernel CMA has been great and replaced 
+our old bigphysarea usage.
 
-> 
-> I.e. I'll probably just rewrite the comment and apply it before
-> considering the other patches, so that other people can comment on the
-> other patches, etc.
+We simply use dma_alloc_coherent and pass the dma_addr_t *dma_handle 
+returned from the dma_alloc_coherent function to our device as the 
+"bus/pci" address to use.
+We also use remap_pfn_range on that dma_addr_t *dma_handle returned from 
+  the dma_alloc_coherent function to mmap userland to the buffer. All is 
+good until I enable the IOMMU. I then either get IO_PAGE_FAULTs, the DMA 
+just quietly never completes or the system gets borked.
 
-Thanks for doing that!
-Namhyung
+[  106.115725] AMD-Vi: Event logged [IO_PAGE_FAULT device=03:00.0 
+domain=0x001b address=0x00000000aa500000 flags=0x0010]
+[  106.115729] AMD-Vi: Event logged [IO_PAGE_FAULT device=03:00.0 
+domain=0x001b address=0x00000000aa500040 flags=0x0010]
+
+Here are the IOMMU settings in my kernel config:
+
+#grep IOMMU .config
+# CONFIG_GART_IOMMU is not set
+# CONFIG_CALGARY_IOMMU is not set
+CONFIG_IOMMU_HELPER=y
+CONFIG_VFIO_IOMMU_TYPE1=m
+CONFIG_IOMMU_API=y
+CONFIG_IOMMU_SUPPORT=y
+CONFIG_AMD_IOMMU=y
+# CONFIG_AMD_IOMMU_STATS is not set
+CONFIG_AMD_IOMMU_V2=m
+CONFIG_INTEL_IOMMU=y
+CONFIG_INTEL_IOMMU_DEFAULT_ON=y
+CONFIG_INTEL_IOMMU_FLOPPY_WA=y
+# CONFIG_IOMMU_STRESS is not set
 
 
-> 
-> - Arnaldo
->  
-> > Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-> > ---
-> >  tools/perf/util/dso.h              |  1 +
-> >  tools/perf/util/unwind-libunwind.c | 31 ++++++++++++++++++++-----------
-> >  2 files changed, 21 insertions(+), 11 deletions(-)
-> > 
-> > diff --git a/tools/perf/util/dso.h b/tools/perf/util/dso.h
-> > index c18fcc0e8081..323ee08d56fc 100644
-> > --- a/tools/perf/util/dso.h
-> > +++ b/tools/perf/util/dso.h
-> > @@ -141,6 +141,7 @@ struct dso {
-> >  		u32		 status_seen;
-> >  		size_t		 file_size;
-> >  		struct list_head open_entry;
-> > +		u64		 frame_offset;
-> >  	} data;
-> >  
-> >  	union { /* Tool specific area */
-> > diff --git a/tools/perf/util/unwind-libunwind.c b/tools/perf/util/unwind-libunwind.c
-> > index 7ed6eaf232b6..3219b20837b5 100644
-> > --- a/tools/perf/util/unwind-libunwind.c
-> > +++ b/tools/perf/util/unwind-libunwind.c
-> > @@ -266,14 +266,17 @@ static int read_unwind_spec_eh_frame(struct dso *dso, struct machine *machine,
-> >  				     u64 *fde_count)
-> >  {
-> >  	int ret = -EINVAL, fd;
-> > -	u64 offset;
-> > +	u64 offset = dso->data.frame_offset;
-> >  
-> > -	fd = dso__data_fd(dso, machine);
-> > -	if (fd < 0)
-> > -		return -EINVAL;
-> > +	if (offset == 0) {
-> > +		fd = dso__data_fd(dso, machine);
-> > +		if (fd < 0)
-> > +			return -EINVAL;
-> >  
-> > -	/* Check the .eh_frame section for unwinding info */
-> > -	offset = elf_section_offset(fd, ".eh_frame_hdr");
-> > +		/* Check the .eh_frame section for unwinding info */
-> > +		offset = elf_section_offset(fd, ".eh_frame_hdr");
-> > +		dso->data.frame_offset = offset;
-> > +	}
-> >  
-> >  	if (offset)
-> >  		ret = unwind_spec_ehframe(dso, machine, offset,
-> > @@ -287,14 +290,20 @@ static int read_unwind_spec_eh_frame(struct dso *dso, struct machine *machine,
-> >  static int read_unwind_spec_debug_frame(struct dso *dso,
-> >  					struct machine *machine, u64 *offset)
-> >  {
-> > -	int fd = dso__data_fd(dso, machine);
-> > +	int fd;
-> > +	u64 ofs = dso->data.frame_offset;
-> >  
-> > -	if (fd < 0)
-> > -		return -EINVAL;
-> > +	if (ofs == 0) {
-> > +		fd = dso__data_fd(dso, machine);
-> > +		if (fd < 0)
-> > +			return -EINVAL;
-> >  
-> > -	/* Check the .debug_frame section for unwinding info */
-> > -	*offset = elf_section_offset(fd, ".debug_frame");
-> > +		/* Check the .debug_frame section for unwinding info */
-> > +		ofs = elf_section_offset(fd, ".debug_frame");
-> > +		dso->data.frame_offset = ofs;
-> > +	}
-> >  
-> > +	*offset = ofs;
-> >  	if (*offset)
-> >  		return 0;
-> >  
-> > -- 
-> > 2.2.2
+ From reading the in kernel doc it would appear that we could in fact, 
+using the IOMMU and the dma_map_sg function, get rid of the CMA 
+requirement and our device could DMA anywhere, even above the 4GB 
+address space limit of our device. But before going through this larger 
+change to our GPL driver, I want to understand if and/or why the 
+dma_alloc_coherent function does not appear to set up the IOMMU for me. 
+Is the IOMMU only supported for "streaming" DMA type and not for 
+"coherent"? I read no reference to this in the kernel doc?
+
+Any hints would be greatly appreciated. Again, sorry for the noise.
+
+Regards
+Mark
+
+
+
+
