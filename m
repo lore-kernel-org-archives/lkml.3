@@ -1,47 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753401AbbA2Oa7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 09:30:59 -0500
-Received: from mga01.intel.com ([192.55.52.88]:61719 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751553AbbA2Oa6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 09:30:58 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.09,486,1418112000"; 
-   d="scan'208";a="678002040"
-Date: Thu, 29 Jan 2015 16:30:53 +0200
-From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-To: Felipe Balbi <balbi@ti.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Baolu Lu <baolu.lu@linux.intel.com>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Kishon Vijay Abraham I <kishon@ti.com>
-Subject: Re: [PATCH 8/8] phy: add driver for TI TUSB1210 ULPI PHY
-Message-ID: <20150129143053.GC2570@kuha.fi.intel.com>
-References: <1422025978-178336-1-git-send-email-heikki.krogerus@linux.intel.com>
- <1422025978-178336-9-git-send-email-heikki.krogerus@linux.intel.com>
- <20150129050951.GC9098@saruman.tx.rr.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150129050951.GC9098@saruman.tx.rr.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1752275AbbA2Odk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 09:33:40 -0500
+Received: from cpsmtpb-ews06.kpnxchange.com ([213.75.39.9]:53771 "EHLO
+	cpsmtpb-ews06.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751824AbbA2Odj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Jan 2015 09:33:39 -0500
+Message-ID: <1422542015.32520.5.camel@x220>
+Subject: Re: [PATCH 6/9] clocksource: Driver for Conexant Digicolor SoC timer
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Baruch Siach <baruch@tkos.co.il>
+Cc: Daniel Lezcano <daniel.lezcano@linaro.org>, tglx@linutronix.de,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Barry.Song@csr.com, linux@rempel-privat.de, rob.herring@linaro.org,
+        thierry.reding@gmail.com
+Date: Thu, 29 Jan 2015 15:33:35 +0100
+In-Reply-To: <20150129142639.GI19448@tarshish>
+References: <54CA3044.6070501@linaro.org>
+	 <1422536899-16609-1-git-send-email-daniel.lezcano@linaro.org>
+	 <1422536899-16609-6-git-send-email-daniel.lezcano@linaro.org>
+	 <1422538656.32520.4.camel@x220> <20150129142639.GI19448@tarshish>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 29 Jan 2015 14:33:37.0804 (UTC) FILETIME=[91BCA4C0:01D03BD0]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Also, I was chatting in private with David and, apparently, there's a
-> way to request for eye diagram data from BIOS straight. That's more
-> in-line with what we would do for DT-based boots, passing that
-> eye-diagram data as a DT attribute.
+On Thu, 2015-01-29 at 16:26 +0200, Baruch Siach wrote:
+> > And the select for this symbol (see https://lkml.org/lkml/2015/1/26/360)
+> > will be provided in a separate patch? Because this patch, by itself,
+> > won't allow DIGICOLOR_TIMER to be set, will it?
 > 
-> Care to comment ? If that's the case, I'd rather use that BIOS hook and
-> remove ulpi_read() from probe().
+> Yes. Posted yesterday. See 
+> http://article.gmane.org/gmane.linux.ports.arm.kernel/390166.
 
-I'm not familiar with such method. But if there is one, I'm not
-against it. I need to check it.
+I see. Thanks!
 
 
-Thanks,
+Paul Bolle
 
--- 
-heikki
