@@ -1,33 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753860AbbA2HBB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 02:01:01 -0500
-Received: from bes.se.axis.com ([195.60.68.10]:49485 "EHLO bes.se.axis.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751108AbbA2HA7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 02:00:59 -0500
-Message-ID: <54C9DA9D.3010802@axis.com>
-Date: Thu, 29 Jan 2015 08:00:45 +0100
-From: Robert Rosengren <robert.rosengren@axis.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.3.0
+	id S1755263AbbA2HFQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 02:05:16 -0500
+Received: from mail-qg0-f43.google.com ([209.85.192.43]:59048 "EHLO
+	mail-qg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751787AbbA2HFN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Jan 2015 02:05:13 -0500
 MIME-Version: 1.0
-To: Guenter Roeck <linux@roeck-us.net>, Jean Delvare <jdelvare@suse.de>
-CC: "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        Johan Adolfsson <johana@axis.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [lm-sensors] [PATCH] hwmon: (ads7828) Make sample interval configurable
-References: <1421409922-28299-1-git-send-email-robert.rosengren@axis.com>	<54B92596.2040206@roeck-us.net>	<20150116183020.GA6262@roeck-us.net>	<54C74567.9020201@axis.com>	<54C79B87.8040607@roeck-us.net>	<4BEA3FF3CAA35E408EA55C7BE2E61D05943B6DD753@xmail3.se.axis.com>	<20150127200553.GA5689@roeck-us.net> <20150127233455.0c62457e@endymion.delvare> <54C86035.9080605@roeck-us.net> <54C87F3C.2020105@axis.com> <54C8F73D.4040808@roeck-us.net>
-In-Reply-To: <54C8F73D.4040808@roeck-us.net>
-Content-Type: text/plain; charset="windows-1252"; format=flowed
-Content-Transfer-Encoding: 7bit
+From: Alexei Starovoitov <ast@plumgrid.com>
+Date: Wed, 28 Jan 2015 23:04:52 -0800
+Message-ID: <CAMEtUuzSDYYWneoTy9=AmMa9=x4owWbWsXod=Do54+yj4Je3=Q@mail.gmail.com>
+Subject: Re: [PATCH v2 linux-trace 1/8] tracing: attach eBPF programs to
+ tracepoints and syscalls
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Jiri Olsa <jolsa@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Linux API <linux-api@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/28/2015 03:50 PM, Guenter Roeck wrote:
-> Can you possibly send me the output from i2cdump ? That might help figuring out what is going on.
-I don't have i2cdump (I suppose that you mean the lm-sensors tool) 
-available for my hardware. I'll give it a go to compile it...
+On Wed, Jan 28, 2015 at 10:41 PM, Namhyung Kim <namhyung@kernel.org> wrote:
+>
+> I think it's not a problem of bpf.  An user process can be killed
+> anytime while it enabed events without bpf.  The only thing it should
+> care is the auto-unload IMHO.
 
-BR,
-Robert
+ok. I think it does indeed make sense to decouple the logic.
+We can add 'auto_enable' file to achieve desired Ctrl-C behavior.
+While the 'auto_enable' file is open the event will be enabled
+and writes to 'enable' file will be ignored.
+As soon as file closes, the event is auto-disabled.
+Then user space will use 'bpf' file to attach/auto-unload
+and 'auto_enable' file together.
+Seem there would be a use for such 'auto_enable'
+without bpf as well.
+
+> I'm okay for not calling bpf program in NMI but not for disabling events.
+>
+> Suppose an user was collecting an event (including in NMI) and then
+> [s]he also wanted to run a bpf program.  So [s]he wrote a program
+> always return 1.  But after attaching the program, it didn't record
+> the event in NMI..  Isn't that a problem?
+
+ok, I think 'if (in_nmi()) return 1;' will work then, right?
+Or you're thinking something else ?
+
+> Right.  I think bpf programs belong to a user process but events are
+> global resource.  Maybe you also need to consider attaching bpf
+> program via perf (ioctl?) interface..
+
+yes. I did. Please see my reply to Masami.
+ioctl only works for tracepoints.
