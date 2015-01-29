@@ -1,56 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754732AbbA2PAx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 10:00:53 -0500
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:47402 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754276AbbA2PAh (ORCPT
+	id S1754651AbbA2PAw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 10:00:52 -0500
+Received: from casper.infradead.org ([85.118.1.10]:55636 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753000AbbA2PAs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 10:00:37 -0500
-From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-To: Ulf Hansson <ulf.hansson@linaro.org>
-Cc: Kukjin Kim <kgene@kernel.org>, Doug Anderson <dianders@chromium.org>,
-        Olof Johansson <olof@lixom.net>, Arend van Spriel <arend@broadcom.com>,
-        Srinivas Kandagatla <srinivas.kandagatla@linaro.org>,
-        linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-mmc@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Subject: [PATCH v3 6/6] ARM: dts: exynos5250-snow: Add cap-sdio-irq to wifi mmc node
-Date: Thu, 29 Jan 2015 16:00:08 +0100
-Message-Id: <1422543608-24704-7-git-send-email-javier.martinez@collabora.co.uk>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <1422543608-24704-1-git-send-email-javier.martinez@collabora.co.uk>
-References: <1422543608-24704-1-git-send-email-javier.martinez@collabora.co.uk>
+	Thu, 29 Jan 2015 10:00:48 -0500
+Date: Thu, 29 Jan 2015 15:00:47 +0000
+From: Thomas Graf <tgraf@suug.ch>
+To: Valdis Kletnieks <Valdis.Kletnieks@vt.edu>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: linux-next - crashes in rhashtable_shrink
+Message-ID: <20150129150047.GB12634@casper.infradead.org>
+References: <5398.1422543462@turing-police.cc.vt.edu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5398.1422543462@turing-police.cc.vt.edu>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <tgraf@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enabling SDIO IRQ signalling for the wifi MMC/SDIO slot
-doubles the transmission transfer rate.
+On 01/29/15 at 09:57am, Valdis Kletnieks wrote:
+> For the past few kernels, I've seen occasional crashes in rhashtable_shrink.
+> Looks like the last thing to touch that code was the patch series:
+> 
+> Subject	[PATCH 0/9 net-next v2] rhashtable: Per bucket locks & deferred table resizing
+> Date	Fri, 2 Jan 2015 23:00:13 +0100
 
-Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
----
-
-Changes since v2: None.
-
-Changes since v1: None, new patch.
----
- arch/arm/boot/dts/exynos5250-snow.dts | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/arch/arm/boot/dts/exynos5250-snow.dts b/arch/arm/boot/dts/exynos5250-snow.dts
-index b78712058903..909edc3448d3 100644
---- a/arch/arm/boot/dts/exynos5250-snow.dts
-+++ b/arch/arm/boot/dts/exynos5250-snow.dts
-@@ -539,6 +539,7 @@
- 	status = "okay";
- 	num-slots = <1>;
- 	broken-cd;
-+	cap-sdio-irq;
- 	card-detect-delay = <200>;
- 	samsung,dw-mshc-ciu-div = <3>;
- 	samsung,dw-mshc-sdr-timing = <2 3>;
--- 
-2.1.3
-
+Thanks for the report! Based on a similar report I've already tracked
+this down to race condition. I'm in the final stages of submitting a
+series of fixes for it.
