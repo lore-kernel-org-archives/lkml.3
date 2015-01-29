@@ -1,60 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754781AbbA2Gj5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 01:39:57 -0500
-Received: from mail-qg0-f48.google.com ([209.85.192.48]:59357 "EHLO
-	mail-qg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752193AbbA2Gjz (ORCPT
+	id S1755340AbbA2GmI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 01:42:08 -0500
+Received: from eusmtp01.atmel.com ([212.144.249.242]:48791 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754983AbbA2GmG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 01:39:55 -0500
+	Thu, 29 Jan 2015 01:42:06 -0500
+From: Wenyou Yang <wenyou.yang@atmel.com>
+To: <nicolas.ferre@atmel.com>, <linux@arm.linux.org.uk>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <alexandre.belloni@free-electrons.com>, <sylvain.rochet@finsecur.com>,
+        <peda@axentia.se>, <sergei.shtylyov@cogentembedded.com>,
+        <linux@maxim.org.za>, <wenyou.yang@atmel.com>
+Subject: [PATCH v5 06/13] ARM: at91: move select SRAM to ARCH_AT91
+Date: Thu, 29 Jan 2015 14:39:39 +0800
+Message-ID: <1422513579-24378-1-git-send-email-wenyou.yang@atmel.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1422513316-21509-1-git-send-email-wenyou.yang@atmel.com>
+References: <1422513316-21509-1-git-send-email-wenyou.yang@atmel.com>
 MIME-Version: 1.0
-From: Alexei Starovoitov <ast@plumgrid.com>
-Date: Wed, 28 Jan 2015 22:39:34 -0800
-Message-ID: <CAMEtUuywGh9p9yQdeJJiKRdpZhmgJdQYWgf3W3U0uSTXkjF_uA@mail.gmail.com>
-Subject: Re: [PATCH v2 linux-trace 1/8] tracing: attach eBPF programs to
- tracepoints and syscalls
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Namhyung Kim <namhyung@kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Jiri Olsa <jolsa@redhat.com>, Linux API <linux-api@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 28, 2015 at 9:39 PM, Masami Hiramatsu
-<masami.hiramatsu.pt@hitachi.com> wrote:
->
-> Maybe, would we need a reference counter for each event? :)
+Because the CONFIG_AT91_SLOW_CLOCK will be removed
+to simply the PM config, so move select SRAM.
 
-when we would want multiple users to attach different programs
-to the same event, then yes.
-Right now I'd rather have things simple.
+Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
+Acked-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+---
+ arch/arm/mach-at91/Kconfig |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-> Actually, ftrace event is not similar to perf-event which ktap
-> is based on, ftrace event interface is always exported via
-> debugfs, this means users can share the event for different
-> usage.
+diff --git a/arch/arm/mach-at91/Kconfig b/arch/arm/mach-at91/Kconfig
+index c6740e3..6b9e685 100644
+--- a/arch/arm/mach-at91/Kconfig
++++ b/arch/arm/mach-at91/Kconfig
+@@ -25,6 +25,7 @@ config SOC_SAMA5
+ 	select MEMORY
+ 	select ATMEL_SDRAMC
+ 	select PHYLIB if NETDEVICES
++	select SRAM if PM
+ 
+ menu "Atmel AT91 System-on-Chip"
+ 
+@@ -82,6 +83,7 @@ config SOC_AT91RM9200
+ 	select CPU_ARM920T
+ 	select GENERIC_CLOCKEVENTS
+ 	select HAVE_AT91_USB_CLK
++	select SRAM if PM
+ 
+ config SOC_AT91SAM9
+ 	bool "AT91SAM9"
+@@ -95,6 +97,7 @@ config SOC_AT91SAM9
+ 	select HAVE_AT91_UTMI
+ 	select HAVE_FB_ATMEL
+ 	select MEMORY
++	select SRAM if PM
+ 	help
+ 	  Select this if you are using one of those Atmel SoC:
+ 	    AT91SAM9260
+@@ -119,7 +122,6 @@ comment "AT91 Feature Selections"
+ 
+ config AT91_SLOW_CLOCK
+ 	bool "Suspend-to-RAM disables main oscillator"
+-	select SRAM
+ 	depends on SUSPEND
+ 	help
+ 	  Select this if you want Suspend-to-RAM to save the most power
+-- 
+1.7.9.5
 
-yes.I've been thinking to extend perf_event ioctl to attach programs,
-but right now it's only supporting tracepoints and kprobe
-seems not trivial to add.
-So I went for tracefs style of attaching for now.
-
-> One possible other solution is to add a instance-lock interface
-> for each ftrace instance and lock it by bpf. Then, other users
-> can not enable/disable the events in the instance.
-
-the user space can synchronize itself via flock. kernel doesn't
-need to arbitrate. If one user process attached a program
-that auto-enabled an event and another process did
-'echo 0 > enable', it's fine. I think it's a feature instead of a bug.
-Both users are root anyway.
-
-The more we talk about it, the more I like a new 'bpf' file
-approach within tracefs (that I've mentioned in cover letter)
-with auto-enable/disable logic to make it clear that
-it's different from traditional global 'filter' file.
