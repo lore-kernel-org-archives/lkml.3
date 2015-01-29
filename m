@@ -1,43 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755561AbbA2M0g (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 07:26:36 -0500
-Received: from smtp65.iad3a.emailsrvr.com ([173.203.187.65]:60596 "EHLO
-	smtp65.iad3a.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753308AbbA2M0f (ORCPT
+	id S1755002AbbA2M3E (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 07:29:04 -0500
+Received: from mail-ie0-f176.google.com ([209.85.223.176]:42855 "EHLO
+	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753279AbbA2M3B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 07:26:35 -0500
-X-Sender-Id: abbotti@mev.co.uk
-Message-ID: <54CA26F8.4080200@mev.co.uk>
-Date: Thu, 29 Jan 2015 12:26:32 +0000
-From: Ian Abbott <abbotti@mev.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.3.0
+	Thu, 29 Jan 2015 07:29:01 -0500
 MIME-Version: 1.0
-To: Simon Guo <wei.guo.simon@gmail.com>,
-        H Hartley Sweeten <hsweeten@visionengravers.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 02/02] STAGING: Fix pcl818.c coding style issue: line
- over 80 characters
-References: <20150129053428.GB2508@thunderCat>
-In-Reply-To: <20150129053428.GB2508@thunderCat>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20150128152412.GX21293@sirena.org.uk>
+References: <20150128152412.GX21293@sirena.org.uk>
+Date: Thu, 29 Jan 2015 12:29:00 +0000
+Message-ID: <CAPvkgC1LjQ0A2OkNjOAU3HAWVBiu3E=9pjJynPF4QFzyoRQRnw@mail.gmail.com>
+Subject: Re: Hangs in libhugetlbfs tests in -next
+From: Steve Capper <steve.capper@linaro.org>
+To: Mark Brown <broonie@kernel.org>
+Cc: Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 29/01/15 05:34, Simon Guo wrote:
-> Correct one coding style problem(detected by checkpatch.pl) in pcl818.c.
-> - line over 80 characters
+On 28 January 2015 at 15:24, Mark Brown <broonie@kernel.org> wrote:
+> For at least the past couple of days tests of libhugetlbfs have been
+> hanging on mustang in the mlock test running ARMv8 defconfig with both
+> 32 bit and 64 bit userspace - after the mprotect test (the one before
+> it) we get no console output for several hours so it appears that the
+> test has deadlocked.  The tail of the log is:
 >
-> Signed-off-by: Simon Guo <wei.guo.simon@gmail.com>
-> ---
->   drivers/staging/comedi/drivers/pcl818.c | 15 ++++++++++-----
->   1 file changed, 10 insertions(+), 5 deletions(-)
+> | find_path (2M: 64):   PASS
+> | unlinked_fd (2M: 64): PASS
+> | readback (2M: 64):    PASS
+> | truncate (2M: 64):    PASS
+> | shared (2M: 64):      PASS
+> | mprotect (2M: 64):    PASS
+>
+> and then a timeout.
+>
+> This may be a generic bug but my ability to run these tests on other
+> platforms with huge page support using the infrastructure I'm using is
+> limited so I've not been able to test elsewhere and confirm.
 
-Reviewed-by: Ian Abbott <abbotti@mev.co.uk>
+I've reproduced this on Juno, it looks like hugtlb_fault is being
+called repeatedly in the mlock test.
 
+I'll investigate further.
+
+Cheers,
 -- 
--=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk> )=-
--=(                          Web: http://www.mev.co.uk/  )=-
+Steve
