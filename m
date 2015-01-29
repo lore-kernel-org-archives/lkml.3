@@ -1,71 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754096AbbA2Olh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 09:41:37 -0500
-Received: from smtprelay0249.hostedemail.com ([216.40.44.249]:44720 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752394AbbA2Olf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 09:41:35 -0500
-X-Session-Marker: 6E657665747340676F6F646D69732E6F7267
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,rostedt@goodmis.org,:::::,RULES_HIT:41:355:379:541:599:800:960:966:973:988:989:1260:1277:1311:1313:1314:1345:1359:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:1981:2194:2196:2199:2200:2393:2553:2559:2562:2693:2915:3138:3139:3140:3141:3142:3353:3622:3865:3866:3867:3868:3870:3871:3872:3873:3874:4184:4385:5007:6119:6261:7875:7903:8660:8957:9010:10004:10400:10848:10967:11026:11232:11473:11658:11914:12043:12438:12517:12519:12740:13069:13148:13230:13311:13357:13618:14096:14097:21060:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: meal35_47c97e8246234
-X-Filterd-Recvd-Size: 2789
-Date: Thu, 29 Jan 2015 09:41:32 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Miroslav Benes <mbenes@suse.cz>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>, jkosina@suse.cz
-Subject: Re: Question about ftrace, dynamically allocated trampolines and
- dynamic fops
-Message-ID: <20150129094132.1b9c1494@gandalf.local.home>
-In-Reply-To: <alpine.LNX.2.00.1501291023000.25445@pobox.suse.cz>
-References: <alpine.LNX.2.00.1501291023000.25445@pobox.suse.cz>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
+	id S1754165AbbA2OmV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 09:42:21 -0500
+Received: from david.siemens.de ([192.35.17.14]:46078 "EHLO david.siemens.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752244AbbA2OmT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Jan 2015 09:42:19 -0500
+Message-ID: <54CA46A6.2030108@siemens.com>
+Date: Thu, 29 Jan 2015 15:41:42 +0100
+From: Jan Kiszka <jan.kiszka@siemens.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+To: Daniel Thompson <daniel.thompson@linaro.org>,
+        Michal Marek <mmarek@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+CC: Thomas Gleixner <tglx@linutronix.de>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        kgdb-bugreport@lists.sourceforge.net, Andi Kleen <andi@firstfloor.org>,
+        Tom Tromey <tromey@redhat.com>, Ben Widawsky <ben@bwidawsk.net>,
+        Borislav Petkov <bp@suse.de>, linux-kbuild@vger.kernel.org
+Subject: Re: [PATCH v11 23/28] scripts/gdb: Ignore byte-compiled python files
+References: <cover.1422514006.git.jan.kiszka@siemens.com> <fd0c2a6ad6e1d021ce85798f9cd89d9e3381288e.1422514006.git.jan.kiszka@siemens.com> <54CA325F.9070906@suse.cz> <54CA3736.4090600@siemens.com> <54CA44E2.904@linaro.org>
+In-Reply-To: <54CA44E2.904@linaro.org>
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 29 Jan 2015 10:40:58 +0100 (CET)
-Miroslav Benes <mbenes@suse.cz> wrote:
-
+On 2015-01-29 15:34, Daniel Thompson wrote:
+> On 29/01/15 13:35, Jan Kiszka wrote:
+>> On 2015-01-29 14:15, Michal Marek wrote:
+>>> On 2015-01-29 07:46, Jan Kiszka wrote:
+>>>> --- a/Makefile
+>>>> +++ b/Makefile
+>>>> @@ -1179,7 +1179,8 @@ MRPROPER_FILES += .config .config.old .version .old_version $(version_h) \
+>>>>  		  Module.symvers tags TAGS cscope* GPATH GTAGS GRTAGS GSYMS \
+>>>>  		  signing_key.priv signing_key.x509 x509.genkey		\
+>>>>  		  extra_certificates signing_key.x509.keyid		\
+>>>> -		  signing_key.x509.signer vmlinux-gdb.py
+>>>> +		  signing_key.x509.signer vmlinux-gdb.py		\
+>>>> +		  scripts/gdb/linux/*.py[co]
+>>>
+>>> In 01/28, you already have
+>>>
+>>> +clean-files := *.pyc $(if $(KBUILD_SRC),*.py)
+>>>
+>>> Maybe just add *.pyo there and you don't need to add it to the toplevel
+>>> Makefile.
+>>
+>> Based on a quick test, you seem right. Daniel, anything we miss?
 > 
-> Hi,
+> No. Deleting it with the clean rule makes sense.
 > 
-> solving a possible race condition in kGraft and thinking about the same in 
-> klp live patching I looked quite a lot at ftrace code. One thing about 
-> recent dynamic trampolines seems a bit odd. For dynamic fops 
-> (FTRACE_OPS_FL_DYNAMIC is set in ops->flags) arch_ftrace_update_trampoline 
-> is called only for nonpreemptive kernels in ftrace_update_trampoline. The 
-> reason is obvious and well described in the comment there. However the 
-> actual callback function in arch_ftrace_update_trampoline is 
-> determined by call to ftrace_ops_get_func which gives generic 
-> ftrace_ops_list_func for dynamic ops. This function disables preemption 
-> (because of traversing rcu protected list), so it should be safe to use 
-> dynamic trampolines even for dynamic fops in preemptive kernels. Is this 
-> correct? 
+> Of course the .gitignore parts of my patch will still be needed in some
+> form or other.
 
-No, the dynamic trampoline itself is not safe. I explained this at the
-LinuxConEU/Plumbers conference, although the slides don't explain it
-well :-/, otherwise I would have just pointed you to them.
+Sure. Can you provide an updated version, one that augments the
+clean-files rule instead? Then I'll sign-off and include it in a
+potential follow-up round.
 
-Basically what the issue is, if a task jumps to the dynamic trampoline
-and gets preempted, how would you ever free that trampoline again?
+Thanks,
+Jan
 
-Now for live kernel patching, we could add another flag that says
-permanent, that means the trampoline and the ops will never be free or
-change, and then it would be safe to use dynamic trampolines.
-
-> 
-> Or maybe the problem is the opposite. Why does the ftrace use 
-> ftrace_ops_list_func in such situation? Even for nonpreemptive kernel and 
-> dynamic fops ftrace_ops_list_func has unnecessary overhead.
-
-It points the dynamic ops (in non-preempt) to ftrace_ops_list_func? Are
-you sure about that. One way to verify is to
-cat /sys/kernel/debug/tracing/enabled_functions, which should show you
-want the dynamic ops points to.
-
--- Steve
+-- 
+Siemens AG, Corporate Technology, CT RTC ITP SES-DE
+Corporate Competence Center Embedded Linux
