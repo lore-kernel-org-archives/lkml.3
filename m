@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932211AbbA2NIo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 08:08:44 -0500
-Received: from mail-we0-f176.google.com ([74.125.82.176]:33367 "EHLO
-	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932087AbbA2NIl (ORCPT
+	id S1757296AbbA2NJr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 08:09:47 -0500
+Received: from mail-we0-f170.google.com ([74.125.82.170]:47119 "EHLO
+	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932123AbbA2NIm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 08:08:41 -0500
+	Thu, 29 Jan 2015 08:08:42 -0500
 From: Daniel Lezcano <daniel.lezcano@linaro.org>
 To: tglx@linutronix.de
 Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         Barry.Song@csr.com, baruch@tkos.co.il, linux@rempel-privat.de,
         rob.herring@linaro.org, thierry.reding@gmail.com
-Subject: [PATCH 6/9] clocksource: Driver for Conexant Digicolor SoC timer
-Date: Thu, 29 Jan 2015 14:08:16 +0100
-Message-Id: <1422536899-16609-6-git-send-email-daniel.lezcano@linaro.org>
+Subject: [PATCH 7/9] dt/bindings: Add binding for Versatile system registers
+Date: Thu, 29 Jan 2015 14:08:17 +0100
+Message-Id: <1422536899-16609-7-git-send-email-daniel.lezcano@linaro.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422536899-16609-1-git-send-email-daniel.lezcano@linaro.org>
 References: <54CA3044.6070501@linaro.org>
@@ -23,253 +23,39 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Baruch Siach <baruch@tkos.co.il>
+From: Rob Herring <robh@kernel.org>
 
-Add clocksource driver to the Conexant CX92755 SoC, part of the Digicolor SoCs
-series. Hardware provides 8 timers, A to H. Timer A is dedicated to a future
-watchdog driver so we don't use it here. Use timer B for sched_clock, and timer
-C for clock_event.
+Add binding for Versatile board system registers found in the FPGA of the
+Versatile/AB and Versatile/PB boards.
 
-Signed-off-by: Baruch Siach <baruch@tkos.co.il>
+Signed-off-by: Rob Herring <robh@kernel.org>
+Cc: Pawel Moll <pawel.moll@arm.com>
+Cc: Mark Rutland <mark.rutland@arm.com>
+Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>
+Cc: Kumar Gala <galak@codeaurora.org>
+Cc: devicetree@vger.kernel.org
 Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
 ---
- drivers/clocksource/Kconfig           |   3 +
- drivers/clocksource/Makefile          |   1 +
- drivers/clocksource/timer-digicolor.c | 199 ++++++++++++++++++++++++++++++++++
- 3 files changed, 203 insertions(+)
- create mode 100644 drivers/clocksource/timer-digicolor.c
+ Documentation/devicetree/bindings/arm/versatile-sysreg.txt | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/arm/versatile-sysreg.txt
 
-diff --git a/drivers/clocksource/Kconfig b/drivers/clocksource/Kconfig
-index a89120b..72a3827 100644
---- a/drivers/clocksource/Kconfig
-+++ b/drivers/clocksource/Kconfig
-@@ -18,6 +18,9 @@ config CLKBLD_I8253
- config CLKSRC_MMIO
- 	bool
- 
-+config DIGICOLOR_TIMER
-+	bool
-+
- config DW_APB_TIMER
- 	bool
- 
-diff --git a/drivers/clocksource/Makefile b/drivers/clocksource/Makefile
-index 21c11e2..0f8003d 100644
---- a/drivers/clocksource/Makefile
-+++ b/drivers/clocksource/Makefile
-@@ -10,6 +10,7 @@ obj-$(CONFIG_SH_TIMER_TMU)	+= sh_tmu.o
- obj-$(CONFIG_EM_TIMER_STI)	+= em_sti.o
- obj-$(CONFIG_CLKBLD_I8253)	+= i8253.o
- obj-$(CONFIG_CLKSRC_MMIO)	+= mmio.o
-+obj-$(CONFIG_DIGICOLOR_TIMER)	+= timer-digicolor.o
- obj-$(CONFIG_DW_APB_TIMER)	+= dw_apb_timer.o
- obj-$(CONFIG_DW_APB_TIMER_OF)	+= dw_apb_timer_of.o
- obj-$(CONFIG_ROCKCHIP_TIMER)      += rockchip_timer.o
-diff --git a/drivers/clocksource/timer-digicolor.c b/drivers/clocksource/timer-digicolor.c
+diff --git a/Documentation/devicetree/bindings/arm/versatile-sysreg.txt b/Documentation/devicetree/bindings/arm/versatile-sysreg.txt
 new file mode 100644
-index 0000000..7f8388c
+index 0000000..a4f1526
 --- /dev/null
-+++ b/drivers/clocksource/timer-digicolor.c
-@@ -0,0 +1,199 @@
-+/*
-+ * Conexant Digicolor timer driver
-+ *
-+ * Author: Baruch Siach <baruch@tkos.co.il>
-+ *
-+ * Copyright (C) 2014 Paradox Innovation Ltd.
-+ *
-+ * Based on:
-+ *	Allwinner SoCs hstimer driver
-+ *
-+ * Copyright (C) 2013 Maxime Ripard
-+ *
-+ * Maxime Ripard <maxime.ripard@free-electrons.com>
-+ *
-+ * This file is licensed under the terms of the GNU General Public
-+ * License version 2.  This program is licensed "as is" without any
-+ * warranty of any kind, whether express or implied.
-+ */
++++ b/Documentation/devicetree/bindings/arm/versatile-sysreg.txt
+@@ -0,0 +1,10 @@
++ARM Versatile system registers
++--------------------------------------
 +
-+/*
-+ * Conexant Digicolor SoCs have 8 configurable timers, named from "Timer A" to
-+ * "Timer H". Timer A is the only one with watchdog support, so it is dedicated
-+ * to the watchdog driver. This driver uses Timer B for sched_clock(), and
-+ * Timer C for clockevents.
-+ */
++This is a system control registers block, providing multiple low level
++platform functions like board detection and identification, software
++interrupt generation, MMC and NOR Flash control etc.
 +
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-+
-+#include <linux/clk.h>
-+#include <linux/clockchips.h>
-+#include <linux/interrupt.h>
-+#include <linux/irq.h>
-+#include <linux/irqreturn.h>
-+#include <linux/sched_clock.h>
-+#include <linux/of.h>
-+#include <linux/of_address.h>
-+#include <linux/of_irq.h>
-+
-+enum {
-+	TIMER_A,
-+	TIMER_B,
-+	TIMER_C,
-+	TIMER_D,
-+	TIMER_E,
-+	TIMER_F,
-+	TIMER_G,
-+	TIMER_H,
-+};
-+
-+#define CONTROL(t)	((t)*8)
-+#define COUNT(t)	((t)*8 + 4)
-+
-+#define CONTROL_DISABLE		0
-+#define CONTROL_ENABLE		BIT(0)
-+#define CONTROL_MODE(m)		((m) << 4)
-+#define CONTROL_MODE_ONESHOT	CONTROL_MODE(1)
-+#define CONTROL_MODE_PERIODIC	CONTROL_MODE(2)
-+
-+struct digicolor_timer {
-+	struct clock_event_device ce;
-+	void __iomem *base;
-+	u32 ticks_per_jiffy;
-+	int timer_id; /* one of TIMER_* */
-+};
-+
-+struct digicolor_timer *dc_timer(struct clock_event_device *ce)
-+{
-+	return container_of(ce, struct digicolor_timer, ce);
-+}
-+
-+static inline void dc_timer_disable(struct clock_event_device *ce)
-+{
-+	struct digicolor_timer *dt = dc_timer(ce);
-+	writeb(CONTROL_DISABLE, dt->base + CONTROL(dt->timer_id));
-+}
-+
-+static inline void dc_timer_enable(struct clock_event_device *ce, u32 mode)
-+{
-+	struct digicolor_timer *dt = dc_timer(ce);
-+	writeb(CONTROL_ENABLE | mode, dt->base + CONTROL(dt->timer_id));
-+}
-+
-+static inline void dc_timer_set_count(struct clock_event_device *ce,
-+				      unsigned long count)
-+{
-+	struct digicolor_timer *dt = dc_timer(ce);
-+	writel(count, dt->base + COUNT(dt->timer_id));
-+}
-+
-+static void digicolor_clkevt_mode(enum clock_event_mode mode,
-+				  struct clock_event_device *ce)
-+{
-+	struct digicolor_timer *dt = dc_timer(ce);
-+
-+	switch (mode) {
-+	case CLOCK_EVT_MODE_PERIODIC:
-+		dc_timer_disable(ce);
-+		dc_timer_set_count(ce, dt->ticks_per_jiffy);
-+		dc_timer_enable(ce, CONTROL_MODE_PERIODIC);
-+		break;
-+	case CLOCK_EVT_MODE_ONESHOT:
-+		dc_timer_disable(ce);
-+		dc_timer_enable(ce, CONTROL_MODE_ONESHOT);
-+		break;
-+	case CLOCK_EVT_MODE_UNUSED:
-+	case CLOCK_EVT_MODE_SHUTDOWN:
-+	default:
-+		dc_timer_disable(ce);
-+		break;
-+	}
-+}
-+
-+static int digicolor_clkevt_next_event(unsigned long evt,
-+				       struct clock_event_device *ce)
-+{
-+	dc_timer_disable(ce);
-+	dc_timer_set_count(ce, evt);
-+	dc_timer_enable(ce, CONTROL_MODE_ONESHOT);
-+
-+	return 0;
-+}
-+
-+static struct digicolor_timer dc_timer_dev = {
-+	.ce = {
-+		.name = "digicolor_tick",
-+		.rating = 340,
-+		.features = CLOCK_EVT_FEAT_PERIODIC | CLOCK_EVT_FEAT_ONESHOT,
-+		.set_mode = digicolor_clkevt_mode,
-+		.set_next_event = digicolor_clkevt_next_event,
-+	},
-+	.timer_id = TIMER_C,
-+};
-+
-+static irqreturn_t digicolor_timer_interrupt(int irq, void *dev_id)
-+{
-+	struct clock_event_device *evt = dev_id;
-+
-+	evt->event_handler(evt);
-+
-+	return IRQ_HANDLED;
-+}
-+
-+static u64 digicolor_timer_sched_read(void)
-+{
-+	return ~readl(dc_timer_dev.base + COUNT(TIMER_B));
-+}
-+
-+static void __init digicolor_timer_init(struct device_node *node)
-+{
-+	unsigned long rate;
-+	struct clk *clk;
-+	int ret, irq;
-+
-+	/*
-+	 * timer registers are shared with the watchdog timer;
-+	 * don't map exclusively
-+	 */
-+	dc_timer_dev.base = of_iomap(node, 0);
-+	if (!dc_timer_dev.base) {
-+		pr_err("Can't map registers");
-+		return;
-+	}
-+
-+	irq = irq_of_parse_and_map(node, dc_timer_dev.timer_id);
-+	if (irq <= 0) {
-+		pr_err("Can't parse IRQ");
-+		return;
-+	}
-+
-+	clk = of_clk_get(node, 0);
-+	if (IS_ERR(clk)) {
-+		pr_err("Can't get timer clock");
-+		return;
-+	}
-+	clk_prepare_enable(clk);
-+	rate = clk_get_rate(clk);
-+	dc_timer_dev.ticks_per_jiffy = DIV_ROUND_UP(rate, HZ);
-+
-+	writeb(CONTROL_DISABLE, dc_timer_dev.base + CONTROL(TIMER_B));
-+	writel(UINT_MAX, dc_timer_dev.base + COUNT(TIMER_B));
-+	writeb(CONTROL_ENABLE, dc_timer_dev.base + CONTROL(TIMER_B));
-+
-+	sched_clock_register(digicolor_timer_sched_read, 32, rate);
-+	clocksource_mmio_init(dc_timer_dev.base + COUNT(TIMER_B), node->name,
-+			      rate, 340, 32, clocksource_mmio_readl_down);
-+
-+	ret = request_irq(irq, digicolor_timer_interrupt,
-+			  IRQF_TIMER | IRQF_IRQPOLL, "digicolor_timerC",
-+			  &dc_timer_dev.ce);
-+	if (ret)
-+		pr_warn("request of timer irq %d failed (%d)\n", irq, ret);
-+
-+	dc_timer_dev.ce.cpumask = cpu_possible_mask;
-+	dc_timer_dev.ce.irq = irq;
-+
-+	clockevents_config_and_register(&dc_timer_dev.ce, rate, 0, 0xffffffff);
-+}
-+CLOCKSOURCE_OF_DECLARE(conexant_digicolor, "cnxt,cx92755-timer",
-+		       digicolor_timer_init);
++Required node properties:
++- compatible value : = "arm,versatile-sysreg", "syscon"
++- reg : physical base address and the size of the registers window
 -- 
 1.9.1
 
