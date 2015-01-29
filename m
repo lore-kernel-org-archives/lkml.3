@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754712AbbA2INh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 03:13:37 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:51554 "EHLO
+	id S1754609AbbA2INg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 03:13:36 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:51572 "EHLO
 	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753435AbbA2IKT (ORCPT
+	with ESMTP id S1753439AbbA2IKT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 29 Jan 2015 03:10:19 -0500
 X-Original-SENDERIP: 10.177.220.203
@@ -18,9 +18,9 @@ Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Andi Kleen <andi@firstfloor.org>,
         Stephane Eranian <eranian@google.com>,
         Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [PATCH 33/42] perf report: Parallelize perf report using multi-thread
-Date: Thu, 29 Jan 2015 17:07:14 +0900
-Message-Id: <1422518843-25818-34-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 34/42] perf tools: Add missing_threads rb tree
+Date: Thu, 29 Jan 2015 17:07:15 +0900
+Message-Id: <1422518843-25818-35-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <1422518843-25818-1-git-send-email-namhyung@kernel.org>
 References: <1422518843-25818-1-git-send-email-namhyung@kernel.org>
@@ -28,391 +28,334 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce perf_session__process_events_mt() to enable multi-thread
-sample processing.  It allocates a struct perf_tool_mt and fills
-needed info in it.
-
-The session and hists event stats are counted for each thread and
-summed after finishing the processing.  Similarly hist entries are
-added to per-thread hists first and then move to the original hists
-using hists__mt_resort().  This function reuses hists__collapse_
-resort() code so makes sort__need_collapse force to true and skips
-the collapsing function.
-
-Note that most of preprocessing stage is already done by processing
-meta events in dummy tracking evsel first.  We can find corresponding
-thread and map based on the sample time and symbol loading and dso
-cache access is protected by pthread mutex.
+Sometimes it's possible to miss certain meta events like fork/exit and
+in this case it can fail to find such thread in the machine's rbtree.
+But adding a thread to the tree is dangerous since it's now executed
+in multi-thread environment otherwise it'll add an overhead in order
+to grab a lock for every search.  So adds a separate missing_threads
+tree and protect it with a mutex.  It's expected to be accessed only
+if a thread is not found in a normal tree.
 
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/util/hist.c    |  75 +++++++++++++++++++-----
- tools/perf/util/hist.h    |   3 +
- tools/perf/util/session.c | 141 ++++++++++++++++++++++++++++++++++++++++++++++
- tools/perf/util/session.h |   2 +
- tools/perf/util/tool.h    |  12 ++++
- 5 files changed, 220 insertions(+), 13 deletions(-)
+ tools/perf/tests/thread-lookup-time.c |   8 ++-
+ tools/perf/util/build-id.c            |   9 ++-
+ tools/perf/util/machine.c             | 129 +++++++++++++++++++++-------------
+ tools/perf/util/machine.h             |   2 +
+ tools/perf/util/session.c             |   8 +--
+ tools/perf/util/thread.h              |   1 +
+ 6 files changed, 101 insertions(+), 56 deletions(-)
 
-diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
-index c44565b382c5..14d4b9358ac6 100644
---- a/tools/perf/util/hist.c
-+++ b/tools/perf/util/hist.c
-@@ -950,7 +950,7 @@ void hist_entry__delete(struct hist_entry *he)
-  * collapse the histogram
-  */
- 
--static bool hists__collapse_insert_entry(struct hists *hists __maybe_unused,
-+static bool hists__collapse_insert_entry(struct hists *hists,
- 					 struct rb_root *root,
- 					 struct hist_entry *he)
+diff --git a/tools/perf/tests/thread-lookup-time.c b/tools/perf/tests/thread-lookup-time.c
+index 6237ecf8caae..04cdde9329d6 100644
+--- a/tools/perf/tests/thread-lookup-time.c
++++ b/tools/perf/tests/thread-lookup-time.c
+@@ -7,7 +7,9 @@
+ static int thread__print_cb(struct thread *th, void *arg __maybe_unused)
  {
-@@ -987,6 +987,13 @@ static bool hists__collapse_insert_entry(struct hists *hists __maybe_unused,
- 	}
- 	hists->nr_entries++;
- 
-+	/*
-+	 * For multi-threaded report, he->hists points to a dummy
-+	 * hists in the struct perf_tool_mt.  Please see
-+	 * perf_session__process_events_mt().
-+	 */
-+	he->hists = hists;
-+
- 	rb_link_node(&he->rb_node_in, parent, p);
- 	rb_insert_color(&he->rb_node_in, root);
- 	return true;
-@@ -1014,19 +1021,12 @@ static void hists__apply_filters(struct hists *hists, struct hist_entry *he)
- 	hists__filter_entry_by_symbol(hists, he);
- }
- 
--void hists__collapse_resort(struct hists *hists, struct ui_progress *prog)
-+static void __hists__collapse_resort(struct hists *hists, struct rb_root *root,
-+				     struct ui_progress *prog)
- {
--	struct rb_root *root;
- 	struct rb_node *next;
- 	struct hist_entry *n;
- 
--	if (!sort__need_collapse)
--		return;
--
--	hists->nr_entries = 0;
--
--	root = hists__get_rotate_entries_in(hists);
--
- 	next = rb_first(root);
- 
- 	while (next) {
-@@ -1049,6 +1049,27 @@ void hists__collapse_resort(struct hists *hists, struct ui_progress *prog)
- 	}
- }
- 
-+void hists__collapse_resort(struct hists *hists, struct ui_progress *prog)
-+{
-+	struct rb_root *root;
-+
-+	if (!sort__need_collapse)
-+		return;
-+
-+	hists->nr_entries = 0;
-+
-+	root = hists__get_rotate_entries_in(hists);
-+	__hists__collapse_resort(hists, root, prog);
-+}
-+
-+void hists__mt_resort(struct hists *dst, struct hists *src)
-+{
-+	struct rb_root *root = src->entries_in;
-+
-+	sort__need_collapse = 1;
-+	__hists__collapse_resort(dst, root, NULL);
-+}
-+
- static int hist_entry__sort(struct hist_entry *a, struct hist_entry *b)
- {
- 	struct perf_hpp_fmt *fmt;
-@@ -1277,6 +1298,29 @@ void events_stats__inc(struct events_stats *stats, u32 type)
- 	++stats->nr_events[type];
- }
- 
-+void events_stats__add(struct events_stats *dst, struct events_stats *src)
-+{
-+	int i;
-+
-+#define ADD(_field)  dst->_field += src->_field
-+
-+	ADD(total_period);
-+	ADD(total_non_filtered_period);
-+	ADD(total_lost);
-+	ADD(total_invalid_chains);
-+	ADD(nr_non_filtered_samples);
-+	ADD(nr_lost_warned);
-+	ADD(nr_unknown_events);
-+	ADD(nr_invalid_chains);
-+	ADD(nr_unknown_id);
-+	ADD(nr_unprocessable_samples);
-+
-+	for (i = 0; i < PERF_RECORD_HEADER_MAX; i++)
-+		ADD(nr_events[i]);
-+
-+#undef ADD
-+}
-+
- void hists__inc_nr_events(struct hists *hists, u32 type)
- {
- 	events_stats__inc(&hists->stats, type);
-@@ -1453,16 +1497,21 @@ int perf_hist_config(const char *var, const char *value)
+ 	printf("thread: %d, start time: %"PRIu64" %s\n",
+-	       th->tid, th->start_time, th->dead ? "(dead)" : "");
++	       th->tid, th->start_time,
++	       th->dead ? "(dead)" : th->exited ? "(exited)" :
++	       th->missing ? "(missing)" : "");
  	return 0;
  }
  
--static int hists_evsel__init(struct perf_evsel *evsel)
-+void __hists__init(struct hists *hists)
- {
--	struct hists *hists = evsel__hists(evsel);
--
- 	memset(hists, 0, sizeof(*hists));
- 	hists->entries_in_array[0] = hists->entries_in_array[1] = RB_ROOT;
- 	hists->entries_in = &hists->entries_in_array[0];
- 	hists->entries_collapsed = RB_ROOT;
- 	hists->entries = RB_ROOT;
- 	pthread_mutex_init(&hists->lock, NULL);
-+}
-+
-+static int hists_evsel__init(struct perf_evsel *evsel)
-+{
-+	struct hists *hists = evsel__hists(evsel);
-+
-+	__hists__init(hists);
+@@ -105,6 +107,8 @@ static int lookup_with_timestamp(struct machine *machine)
+ 			machine__findnew_thread_time(machine, 0, 0, 70000) == t3);
+ 
+ 	machine__delete_threads(machine);
++	machine__delete_dead_threads(machine);
++	machine__delete_missing_threads(machine);
  	return 0;
  }
  
-diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
-index 991ca5504cbd..2c29d70b2cfe 100644
---- a/tools/perf/util/hist.h
-+++ b/tools/perf/util/hist.h
-@@ -124,6 +124,7 @@ int hist_entry__sort_snprintf(struct hist_entry *he, char *bf, size_t size,
- void hist_entry__delete(struct hist_entry *he);
+@@ -146,6 +150,8 @@ static int lookup_without_timestamp(struct machine *machine)
+ 			machine__findnew_thread_time(machine, 0, 0, -1ULL) == t3);
  
- void hists__output_resort(struct hists *hists, struct ui_progress *prog);
-+void hists__mt_resort(struct hists *dst, struct hists *src);
- void hists__collapse_resort(struct hists *hists, struct ui_progress *prog);
- 
- void hists__decay_entries(struct hists *hists, bool zap_user, bool zap_kernel);
-@@ -136,6 +137,7 @@ void hists__inc_stats(struct hists *hists, struct hist_entry *h);
- void hists__inc_nr_events(struct hists *hists, u32 type);
- void hists__inc_nr_samples(struct hists *hists, bool filtered);
- void events_stats__inc(struct events_stats *stats, u32 type);
-+void events_stats__add(struct events_stats *dst, struct events_stats *src);
- size_t events_stats__fprintf(struct events_stats *stats, FILE *fp);
- 
- size_t hists__fprintf(struct hists *hists, bool show_header, int max_rows,
-@@ -179,6 +181,7 @@ static inline struct hists *evsel__hists(struct perf_evsel *evsel)
+ 	machine__delete_threads(machine);
++	machine__delete_dead_threads(machine);
++	machine__delete_missing_threads(machine);
+ 	return 0;
  }
  
- int hists__init(void);
-+void __hists__init(struct hists *hists);
+diff --git a/tools/perf/util/build-id.c b/tools/perf/util/build-id.c
+index 0c72680a977f..1a37da34d852 100644
+--- a/tools/perf/util/build-id.c
++++ b/tools/perf/util/build-id.c
+@@ -60,7 +60,14 @@ static int perf_event__exit_del_thread(struct perf_tool *tool __maybe_unused,
+ 		    event->fork.ppid, event->fork.ptid);
  
- struct perf_hpp {
- 	char *buf;
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index 7114427f3d0f..d1d5e0b3a26e 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -1412,6 +1412,147 @@ int perf_session__process_events(struct perf_session *session,
- 	return err;
+ 	if (thread) {
+-		rb_erase(&thread->rb_node, &machine->threads);
++		if (thread->dead)
++			rb_erase(&thread->rb_node, &machine->dead_threads);
++		else if (thread->missing)
++			rb_erase(&thread->rb_node, &machine->missing_threads);
++		else
++			rb_erase(&thread->rb_node, &machine->threads);
++
++		list_del(&thread->tid_node);
+ 		machine->last_match = NULL;
+ 		thread__delete(thread);
+ 	}
+diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
+index 7dc044b93cf8..b55454d85f60 100644
+--- a/tools/perf/util/machine.c
++++ b/tools/perf/util/machine.c
+@@ -29,6 +29,7 @@ int machine__init(struct machine *machine, const char *root_dir, pid_t pid)
+ 
+ 	machine->threads = RB_ROOT;
+ 	machine->dead_threads = RB_ROOT;
++	machine->missing_threads = RB_ROOT;
+ 	machine->last_match = NULL;
+ 
+ 	machine->vdso_info = NULL;
+@@ -89,6 +90,19 @@ static void dsos__delete(struct dsos *dsos)
+ 	}
  }
  
-+static void *processing_thread_idx(void *arg)
++void machine__delete_missing_threads(struct machine *machine)
 +{
-+	struct perf_tool_mt *mt_tool = arg;
-+	struct perf_session *session = mt_tool->session;
-+	int fd = perf_data_file__fd(session->file);
-+	u64 offset = session->header.index[mt_tool->idx].offset;
-+	u64 size = session->header.index[mt_tool->idx].size;
-+	u64 file_size = perf_data_file__size(session->file);
++	struct rb_node *nd = rb_first(&machine->missing_threads);
 +
-+	pr_debug("processing samples using thread [%d]\n", mt_tool->idx);
-+	if (__perf_session__process_events(session, &mt_tool->stats,
-+					   fd, offset, size, file_size,
-+					   &mt_tool->tool) < 0) {
-+		pr_err("processing samples failed (thread [%d)\n", mt_tool->idx);
-+		return NULL;
++	while (nd) {
++		struct thread *t = rb_entry(nd, struct thread, rb_node);
++
++		nd = rb_next(nd);
++		rb_erase(&t->rb_node, &machine->missing_threads);
++		thread__delete(t);
 +	}
-+
-+	pr_debug("processing samples done for thread [%d]\n", mt_tool->idx);
-+	return arg;
 +}
 +
-+int perf_session__process_events_mt(struct perf_session *session,
-+				    struct perf_tool *tool, void *arg)
+ void machine__delete_dead_threads(struct machine *machine)
+ {
+ 	struct rb_node *nd = rb_first(&machine->dead_threads);
+@@ -434,20 +448,14 @@ struct thread *machine__find_thread(struct machine *machine, pid_t pid,
+ 	return __machine__findnew_thread(machine, pid, tid, false);
+ }
+ 
+-static struct thread *__machine__findnew_thread_time(struct machine *machine,
+-						     pid_t pid, pid_t tid,
+-						     u64 timestamp, bool create)
++static struct thread *machine__find_dead_thread_time(struct machine *machine,
++						     pid_t pid __maybe_unused,
++						     pid_t tid, u64 timestamp)
+ {
+-	struct thread *curr, *pos, *new;
+-	struct thread *th = NULL;
+-	struct rb_node **p;
++	struct thread *th, *pos;
++	struct rb_node **p = &machine->dead_threads.rb_node;
+ 	struct rb_node *parent = NULL;
+ 
+-	curr = __machine__findnew_thread(machine, pid, tid, false);
+-	if (curr && timestamp >= curr->start_time)
+-		return curr;
+-
+-	p = &machine->dead_threads.rb_node;
+ 	while (*p != NULL) {
+ 		parent = *p;
+ 		th = rb_entry(parent, struct thread, rb_node);
+@@ -461,10 +469,9 @@ static struct thread *__machine__findnew_thread_time(struct machine *machine,
+ 				}
+ 			}
+ 
+-			if (timestamp >= th->start_time) {
+-				machine__update_thread_pid(machine, th, pid);
++			if (timestamp >= th->start_time)
+ 				return th;
+-			}
++
+ 			break;
+ 		}
+ 
+@@ -474,50 +481,67 @@ static struct thread *__machine__findnew_thread_time(struct machine *machine,
+ 			p = &(*p)->rb_right;
+ 	}
+ 
+-	if (!create)
+-		return NULL;
++	return NULL;
++}
+ 
+-	if (!curr && !*p)
+-		return __machine__findnew_thread(machine, pid, tid, true);
++static struct thread *__machine__findnew_thread_time(struct machine *machine,
++						     pid_t pid, pid_t tid,
++						     u64 timestamp, bool create)
 +{
-+	struct perf_data_file *file = session->file;
-+	struct perf_evlist *evlist = session->evlist;
-+	struct perf_evsel *evsel;
-+	u64 nr_entries = 0;
-+	struct perf_tool_mt *mt_tools = NULL;
-+	struct perf_tool_mt *mt;
-+	pthread_t *th_id;
-+	int err, i, k;
-+	int nr_index = session->header.nr_index;
-+	u64 size = perf_data_file__size(file);
++	struct thread *th, *new = NULL;
++	struct rb_node **p = &machine->missing_threads.rb_node;
++	struct rb_node *parent = NULL;
+ 
+-	new = thread__new(pid, tid);
+-	if (new == NULL)
+-		return NULL;
++	static pthread_mutex_t missing_thread_lock = PTHREAD_MUTEX_INITIALIZER;
+ 
+-	new->dead = true;
+-	new->start_time = timestamp;
++	th = __machine__findnew_thread(machine, pid, tid, false);
++	if (th && timestamp >= th->start_time)
++		return th;
+ 
+-	if (*p) {
+-		list_for_each_entry(pos, &th->tid_node, tid_node) {
+-			/* sort by time */
+-			if (timestamp >= pos->start_time) {
+-				th = pos;
+-				break;
+-			}
++	th = machine__find_dead_thread_time(machine, pid, tid, timestamp);
++	if (th)
++		return th;
 +
-+	if (perf_session__register_idle_thread(session) == NULL)
-+		return -ENOMEM;
++	pthread_mutex_lock(&missing_thread_lock);
 +
-+	if (perf_data_file__is_pipe(file) || !session->header.index) {
-+		pr_err("data file doesn't contain the index table\n");
-+		return -EINVAL;
-+	}
++	while (*p != NULL) {
++		parent = *p;
++		th = rb_entry(parent, struct thread, rb_node);
 +
-+	err = __perf_session__process_events(session, &session->stats,
-+					     perf_data_file__fd(file),
-+					     session->header.data_offset,
-+					     session->header.data_size,
-+					     size, tool);
-+	if (err)
-+		return err;
++		if (th->tid == tid) {
++			pthread_mutex_unlock(&missing_thread_lock);
++			return th;
+ 		}
+-		list_add_tail(&new->tid_node, &th->tid_node);
+-	} else {
+-		rb_link_node(&new->rb_node, parent, p);
+-		rb_insert_color(&new->rb_node, &machine->dead_threads);
 +
-+	th_id = calloc(nr_index, sizeof(*th_id));
-+	if (th_id == NULL)
++		if (tid < th->tid)
++			p = &(*p)->rb_left;
++		else
++			p = &(*p)->rb_right;
+ 	}
+ 
++	if (!create)
 +		goto out;
 +
-+	mt_tools = calloc(nr_index, sizeof(*mt_tools));
-+	if (mt_tools == NULL)
++	new = thread__new(pid, tid);
++	if (new == NULL)
 +		goto out;
 +
-+	for (i = 0; i < nr_index; i++) {
-+		mt = &mt_tools[i];
++	/* missing threads are not bothered with timestamp */
++	new->start_time = 0;
++	new->missing = true;
 +
-+		memcpy(&mt->tool, tool, sizeof(*tool));
-+
-+		mt->hists = calloc(evlist->nr_entries, sizeof(*mt->hists));
-+		if (mt->hists == NULL)
-+			goto err;
-+
-+		for (k = 0; k < evlist->nr_entries; k++)
-+			__hists__init(&mt->hists[k]);
-+
-+		mt->session = session;
-+		mt->tool.ordered_events = false;
-+		mt->idx = i;
-+		mt->priv = arg;
-+
-+		pthread_create(&th_id[i], NULL, processing_thread_idx, mt);
-+	}
-+
-+	for (i = 0; i < nr_index; i++) {
-+		pthread_join(th_id[i], (void **)&mt);
-+		if (mt == NULL) {
-+			err = -EINVAL;
-+			continue;
-+		}
-+
-+		events_stats__add(&session->stats, &mt->stats);
-+
-+		evlist__for_each(evlist, evsel) {
-+			struct hists *hists = evsel__hists(evsel);
-+
-+			events_stats__add(&hists->stats,
-+					  &mt->hists[evsel->idx].stats);
-+
-+			nr_entries += mt->hists[evsel->idx].nr_entries;
-+		}
-+	}
-+
-+	for (i = 0; i < nr_index; i++) {
-+		mt = &mt_tools[i];
-+
-+		evlist__for_each(evlist, evsel) {
-+			struct hists *hists = evsel__hists(evsel);
-+
-+			if (perf_evsel__is_dummy_tracking(evsel))
-+				continue;
-+
-+			hists__mt_resort(hists, &mt->hists[evsel->idx]);
-+
-+			/* Non-group events are considered as leader */
-+			if (symbol_conf.event_group &&
-+			    !perf_evsel__is_group_leader(evsel)) {
-+				struct hists *leader_hists;
-+
-+				leader_hists = evsel__hists(evsel->leader);
-+				hists__match(leader_hists, hists);
-+				hists__link(leader_hists, hists);
-+			}
-+		}
-+	}
+ 	/*
+-	 * We have to initialize map_groups separately
+-	 * after rb tree is updated.
+-	 *
+-	 * The reason is that we call machine__findnew_thread
+-	 * within thread__init_map_groups to find the thread
+-	 * leader and that would screwed the rb tree.
++	 * missing threads have their own map groups regardless of
++	 * leader for the sake of simplicity.  it's okay since the map
++	 * groups has no map in it anyway.
+ 	 */
+-	if (thread__init_map_groups(new, machine)) {
+-		if (!list_empty(&new->tid_node))
+-			list_del(&new->tid_node);
+-		else
+-			rb_erase(&new->rb_node, &machine->dead_threads);
++	new->mg = map_groups__new(machine);
+ 
+-		thread__delete(new);
+-		return NULL;
+-	}
++	rb_link_node(&new->rb_node, parent, p);
++	rb_insert_color(&new->rb_node, &machine->missing_threads);
 +
 +out:
-+	events_stats__warn_about_errors(&session->stats, tool);
++	pthread_mutex_unlock(&missing_thread_lock);
+ 
+ 	return new;
+ }
+@@ -1356,6 +1380,7 @@ static void machine__remove_thread(struct machine *machine, struct thread *th)
+ 
+ 	machine->last_match = NULL;
+ 	rb_erase(&th->rb_node, &machine->threads);
++	RB_CLEAR_NODE(&th->rb_node);
+ 
+ 	th->dead = true;
+ 
+@@ -1825,6 +1850,14 @@ int machine__for_each_thread(struct machine *machine,
+ 				return rc;
+ 		}
+ 	}
 +
-+	if (mt_tools) {
-+		for (i = 0; i < nr_index; i++)
-+			free(mt_tools[i].hists);
-+		free(mt_tools);
++	for (nd = rb_first(&machine->missing_threads); nd; nd = rb_next(nd)) {
++		thread = rb_entry(nd, struct thread, rb_node);
++		rc = fn(thread, priv);
++		if (rc != 0)
++			return rc;
 +	}
 +
-+	free(th_id);
-+	return err;
-+
-+err:
-+	while (i-- > 0) {
-+		pthread_cancel(th_id[i]);
-+		pthread_join(th_id[i], NULL);
-+	}
-+
-+	goto out;
-+}
- bool perf_session__has_traces(struct perf_session *session, const char *msg)
+ 	return rc;
+ }
+ 
+diff --git a/tools/perf/util/machine.h b/tools/perf/util/machine.h
+index 9571b6b1c5b5..40af1f59e360 100644
+--- a/tools/perf/util/machine.h
++++ b/tools/perf/util/machine.h
+@@ -31,6 +31,7 @@ struct machine {
+ 	char		  *root_dir;
+ 	struct rb_root	  threads;
+ 	struct rb_root	  dead_threads;
++	struct rb_root	  missing_threads;
+ 	struct thread	  *last_match;
+ 	struct vdso_info  *vdso_info;
+ 	struct dsos	  user_dsos;
+@@ -116,6 +117,7 @@ void machines__set_comm_exec(struct machines *machines, bool comm_exec);
+ struct machine *machine__new_host(void);
+ int machine__init(struct machine *machine, const char *root_dir, pid_t pid);
+ void machine__exit(struct machine *machine);
++void machine__delete_missing_threads(struct machine *machine);
+ void machine__delete_dead_threads(struct machine *machine);
+ void machine__delete_threads(struct machine *machine);
+ void machine__delete(struct machine *machine);
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index d1d5e0b3a26e..507db51ccfea 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -138,14 +138,11 @@ struct perf_session *perf_session__new(struct perf_data_file *file,
+ 	return NULL;
+ }
+ 
+-static void perf_session__delete_dead_threads(struct perf_session *session)
+-{
+-	machine__delete_dead_threads(&session->machines.host);
+-}
+-
+ static void perf_session__delete_threads(struct perf_session *session)
  {
- 	struct perf_evsel *evsel;
-diff --git a/tools/perf/util/session.h b/tools/perf/util/session.h
-index 33af571f9d08..8027d6aa5fe4 100644
---- a/tools/perf/util/session.h
-+++ b/tools/perf/util/session.h
-@@ -51,6 +51,8 @@ int perf_session__peek_event(struct perf_session *session, off_t file_offset,
+ 	machine__delete_threads(&session->machines.host);
++	machine__delete_dead_threads(&session->machines.host);
++	machine__delete_missing_threads(&session->machines.host);
+ }
  
- int perf_session__process_events(struct perf_session *session,
- 				 struct perf_tool *tool);
-+int perf_session__process_events_mt(struct perf_session *session,
-+				    struct perf_tool *tool, void *arg);
- 
- int perf_session_queue_event(struct perf_session *s, union perf_event *event,
- 			     struct perf_tool *tool, struct perf_sample *sample,
-diff --git a/tools/perf/util/tool.h b/tools/perf/util/tool.h
-index bb2708bbfaca..a04826bbe991 100644
---- a/tools/perf/util/tool.h
-+++ b/tools/perf/util/tool.h
-@@ -2,6 +2,7 @@
- #define __PERF_TOOL_H
- 
- #include <stdbool.h>
-+#include "util/event.h"
- 
- struct perf_session;
- union perf_event;
-@@ -10,6 +11,7 @@ struct perf_evsel;
- struct perf_sample;
- struct perf_tool;
- struct machine;
-+struct hists;
- 
- typedef int (*event_sample)(struct perf_tool *tool, union perf_event *event,
- 			    struct perf_sample *sample,
-@@ -45,4 +47,14 @@ struct perf_tool {
- 	bool		ordering_requires_timestamps;
- };
- 
-+struct perf_tool_mt {
-+	struct perf_tool	tool;
-+	struct events_stats	stats;
-+	struct hists		*hists;
-+	struct perf_session	*session;
-+	int			idx;
-+
-+	void			*priv;
-+};
-+
- #endif /* __PERF_TOOL_H */
+ static void perf_session_env__delete(struct perf_session_env *env)
+@@ -167,7 +164,6 @@ static void perf_session_env__delete(struct perf_session_env *env)
+ void perf_session__delete(struct perf_session *session)
+ {
+ 	perf_session__destroy_kernel_maps(session);
+-	perf_session__delete_dead_threads(session);
+ 	perf_session__delete_threads(session);
+ 	perf_session_env__delete(&session->header.env);
+ 	machines__exit(&session->machines);
+diff --git a/tools/perf/util/thread.h b/tools/perf/util/thread.h
+index 5209ad5adadf..88fee3d8c0dc 100644
+--- a/tools/perf/util/thread.h
++++ b/tools/perf/util/thread.h
+@@ -23,6 +23,7 @@ struct thread {
+ 	bool			comm_set;
+ 	bool			exited; /* if set thread has exited */
+ 	bool			dead; /* thread is in dead_threads list */
++	bool			missing; /* thread is in missing_threads list */
+ 	struct list_head	comm_list;
+ 	int			comm_len;
+ 	u64			db_id;
 -- 
 2.2.2
 
