@@ -1,69 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753511AbbA2BPI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 20:15:08 -0500
-Received: from cpsmtpb-ews02.kpnxchange.com ([213.75.39.5]:65402 "EHLO
-	cpsmtpb-ews02.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752965AbbA2BPG (ORCPT
+	id S1754088AbbA2BTJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 20:19:09 -0500
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:40500 "EHLO
+	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754073AbbA2BTE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 20:15:06 -0500
-Message-ID: <1422491816.3621.84.camel@x220>
-Subject: Re: [PATCH] Smack: fix netfilter Makefile entry
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Casey Schaufler <casey@schaufler-ca.com>,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Date: Thu, 29 Jan 2015 01:36:56 +0100
-In-Reply-To: <2504358.ZeqdfUXKpJ@wuerfel>
-References: <2504358.ZeqdfUXKpJ@wuerfel>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 29 Jan 2015 00:36:56.0361 (UTC) FILETIME=[AF585990:01D03B5B]
-X-RcptDomain: vger.kernel.org
+	Wed, 28 Jan 2015 20:19:04 -0500
+X-Original-SENDERIP: 10.177.220.203
+X-Original-MAILFROM: namhyung@kernel.org
+Date: Thu, 29 Jan 2015 09:46:31 +0900
+From: Namhyung Kim <namhyung@kernel.org>
+To: Alexei Starovoitov <ast@plumgrid.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Jiri Olsa <jolsa@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        linux-api@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 linux-trace 1/8] tracing: attach eBPF programs to
+ tracepoints and syscalls
+Message-ID: <20150129004631.GA24182@sejong>
+References: <1422417973-10195-1-git-send-email-ast@plumgrid.com>
+ <1422417973-10195-2-git-send-email-ast@plumgrid.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1422417973-10195-2-git-send-email-ast@plumgrid.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2015-01-28 at 17:12 +0100, Arnd Bergmann wrote:
-> The newly added Smack support for netfilter secmark has its own
-> Kconfig symbol, but the actual implementation is conditionally
-> built on another symbol.
+Hi Alexei,
+
+On Tue, Jan 27, 2015 at 08:06:06PM -0800, Alexei Starovoitov wrote:
+> User interface:
+> fd = open("/sys/kernel/debug/tracing/__event__/filter")
 > 
-> It is possible for CONFIG_NETFILTER and SECURITY_SMACK to both
-> be enabled, but NETWORK_SECMARK to be disabled, in which case
-> we get a build error:
+> write(fd, "bpf_123")
 > 
-> ../security/smack/smack_netfilter.c: In function 'smack_ipv6_output':
-> ../security/smack/smack_netfilter.c:36:6: error: 'struct sk_buff' has no member named 'secmark'
->    skb->secmark = skp->smk_secid;
->       ^
-> ../security/smack/smack_netfilter.c: In function 'smack_ipv4_output':
-> ../security/smack/smack_netfilter.c:55:6: error: 'struct sk_buff' has no member named 'secmark'
->    skb->secmark = skp->smk_secid;
->       ^
+> where 123 is process local FD associated with eBPF program previously loaded.
+> __event__ is static tracepoint event or syscall.
+> (kprobe support is in next patch)
+> Once program is successfully attached to tracepoint event, the tracepoint
+> will be auto-enabled
 > 
-> This changes the Makefile to use the correct Kconfig symbol.
+> close(fd)
+> auto-disables tracepoint event and detaches eBPF program from it
 > 
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> Fixes: 69f287ae6fc83 ("Smack: secmark support for netfilter")
+> eBPF programs can call in-kernel helper functions to:
+> - lookup/update/delete elements in maps
+> - memcmp
+> - fetch_ptr/u64/u32/u16/u8 values from unsafe address via probe_kernel_read(),
+>   so that eBPF program can walk any kernel data structures
 > 
-> diff --git a/security/smack/Makefile b/security/smack/Makefile
-> index 616cf93b368e..d4a376c84050 100644
-> --- a/security/smack/Makefile
-> +++ b/security/smack/Makefile
-> @@ -5,4 +5,4 @@
->  obj-$(CONFIG_SECURITY_SMACK) := smack.o
+> Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
+> ---
+
+[SNIP]
+> diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
+> index b03a0ea77b99..70482817231a 100644
+> --- a/kernel/trace/trace_events.c
+> +++ b/kernel/trace/trace_events.c
+> @@ -1084,6 +1084,26 @@ event_filter_read(struct file *filp, char __user *ubuf, size_t cnt,
+>  	return r;
+>  }
 >  
->  smack-y := smack_lsm.o smack_access.o smackfs.o
-> -smack-$(CONFIG_NETFILTER) += smack_netfilter.o
-> +smack-$(SECURITY_SMACK_NETFILTER) += smack_netfilter.o
+> +static int event_filter_release(struct inode *inode, struct file *filp)
+> +{
+> +	struct ftrace_event_file *file;
+> +	char buf[2] = "0";
+> +
+> +	mutex_lock(&event_mutex);
+> +	file = event_file_data(filp);
+> +	if (file) {
+> +		if (file->flags & TRACE_EVENT_FL_BPF) {
+> +			/* auto-disable the filter */
+> +			ftrace_event_enable_disable(file, 0);
 
-You probably wanted to use:
-    CONFIG_SECURITY_SMACK_NETFILTER
+Hmm.. what if user already enabled an event, attached a bpf filter and
+then detached the filter - I'm not sure we can always auto-disable
+it..
 
 
-Paul Bolle
+> +
+> +			/* if BPF filter was used, clear it on fd close */
+> +			apply_event_filter(file, buf);
+> +		}
+> +	}
+> +	mutex_unlock(&event_mutex);
+> +	return 0;
+> +}
+> +
+>  static ssize_t
+>  event_filter_write(struct file *filp, const char __user *ubuf, size_t cnt,
+>  		   loff_t *ppos)
+> @@ -1107,8 +1127,18 @@ event_filter_write(struct file *filp, const char __user *ubuf, size_t cnt,
+>  
+>  	mutex_lock(&event_mutex);
+>  	file = event_file_data(filp);
+> -	if (file)
+> +	if (file) {
+> +		/*
+> +		 * note to user space tools:
+> +		 * write() into debugfs/tracing/events/xxx/filter file
+> +		 * must be done with the same privilege level as open()
+> +		 */
+>  		err = apply_event_filter(file, buf);
+> +		if (!err && file->flags & TRACE_EVENT_FL_BPF)
+> +			/* once filter is applied, auto-enable it */
+> +			ftrace_event_enable_disable(file, 1);
+> +	}
+> +
+>  	mutex_unlock(&event_mutex);
+>  
+>  	free_page((unsigned long) buf);
+> @@ -1363,6 +1393,7 @@ static const struct file_operations ftrace_event_filter_fops = {
+>  	.open = tracing_open_generic,
+>  	.read = event_filter_read,
+>  	.write = event_filter_write,
+> +	.release = event_filter_release,
+>  	.llseek = default_llseek,
+>  };
+>  
+> diff --git a/kernel/trace/trace_events_filter.c b/kernel/trace/trace_events_filter.c
+> index ced69da0ff55..e0303b3cc9fb 100644
+> --- a/kernel/trace/trace_events_filter.c
+> +++ b/kernel/trace/trace_events_filter.c
+> @@ -23,6 +23,9 @@
+>  #include <linux/mutex.h>
+>  #include <linux/perf_event.h>
+>  #include <linux/slab.h>
+> +#include <linux/bpf.h>
+> +#include <trace/bpf_trace.h>
+> +#include <linux/filter.h>
+>  
+>  #include "trace.h"
+>  #include "trace_output.h"
+> @@ -541,6 +544,21 @@ static int filter_match_preds_cb(enum move_type move, struct filter_pred *pred,
+>  	return WALK_PRED_DEFAULT;
+>  }
+>  
+> +unsigned int trace_filter_call_bpf(struct event_filter *filter, void *ctx)
+> +{
+> +	unsigned int ret;
+> +
+> +	if (in_nmi()) /* not supported yet */
+> +		return 0;
 
+But doesn't this mean to auto-disable all attached events during NMI
+as returning 0 will prevent the event going to ring buffer?
+
+I think it'd be better to keep an attached event in a soft-disabled
+state like event trigger and give control of enabling to users..
+
+Thanks,
+Namhyung
+
+
+> +
+> +	rcu_read_lock();
+> +	ret = BPF_PROG_RUN(filter->prog, ctx);
+> +	rcu_read_unlock();
+> +
+> +	return ret;
+> +}
+> +EXPORT_SYMBOL_GPL(trace_filter_call_bpf);
