@@ -1,186 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755516AbbA2Pae (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 10:30:34 -0500
-Received: from mail-oi0-f41.google.com ([209.85.218.41]:50090 "EHLO
-	mail-oi0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754008AbbA2Pac (ORCPT
+	id S1755720AbbA2Pcz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 10:32:55 -0500
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:43017 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753722AbbA2Pcw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 10:30:32 -0500
+	Thu, 29 Jan 2015 10:32:52 -0500
+Message-ID: <54CA5299.6050304@gmail.com>
+Date: Thu, 29 Jan 2015 21:02:41 +0530
+From: Varka Bhadram <varkabhadram@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-In-Reply-To: <20150129143908.GA26493@n2100.arm.linux.org.uk>
-References: <1422347154-15258-1-git-send-email-sumit.semwal@linaro.org>
- <1422347154-15258-2-git-send-email-sumit.semwal@linaro.org> <20150129143908.GA26493@n2100.arm.linux.org.uk>
-From: Sumit Semwal <sumit.semwal@linaro.org>
-Date: Thu, 29 Jan 2015 21:00:11 +0530
-Message-ID: <CAO_48GEOQ1pBwirgEWeVVXW-iOmaC=Xerr2VyYYz9t1QDXgVsw@mail.gmail.com>
-Subject: Re: [RFCv3 2/2] dma-buf: add helpers for sharing attacher constraints
- with dma-parms
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
-        DRI mailing list <dri-devel@lists.freedesktop.org>,
-        Linaro MM SIG Mailman List <linaro-mm-sig@lists.linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Linaro Kernel Mailman List <linaro-kernel@lists.linaro.org>,
-        Tomasz Stanislawski <stanislawski.tomasz@googlemail.com>,
-        Rob Clark <robdclark@gmail.com>, Daniel Vetter <daniel@ffwll.ch>,
-        Robin Murphy <robin.murphy@arm.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+To: Chunyan Zhang <chunyan.zhang@spreadtrum.com>, gregkh@linuxfoundation.org
+CC: robh+dt@kernel.org, mark.rutland@arm.com, arnd@arndb.de,
+        gnomes@lxorguk.ukuu.org.uk, peter@hurleysoftware.com,
+        pawel.moll@arm.com, ijc+devicetree@hellion.org.uk,
+        galak@codeaurora.org, grant.likely@linaro.org, jslaby@suse.cz,
+        heiko@sntech.de, jason@lakedaemon.net, florian.vaussard@epfl.ch,
+        andrew@lunn.ch, hytszk@gmail.com, antonynpavlov@gmail.com,
+        shawn.guo@linaro.org, orsonzhai@gmail.com, geng.ren@spreadtrum.com,
+        zhizhou.zhang@spreadtrum.com, lanqing.liu@spreadtrum.com,
+        zhang.lyra@gmail.com, wei.qiao@spreadtrum.com,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-serial@vger.kernel.org, linux-api@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v10 2/2] tty/serial: Add Spreadtrum sc9836-uart driver
+ support
+References: <sc9836-serial-v10> <1422443324-25082-1-git-send-email-chunyan.zhang@spreadtrum.com> <1422443324-25082-3-git-send-email-chunyan.zhang@spreadtrum.com> <54CA5128.8050500@gmail.com>
+In-Reply-To: <54CA5128.8050500@gmail.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Russell!
-
-On 29 January 2015 at 20:09, Russell King - ARM Linux
-<linux@arm.linux.org.uk> wrote:
-> On Tue, Jan 27, 2015 at 01:55:54PM +0530, Sumit Semwal wrote:
->> +/*
->> + * recalc_constraints - recalculates constraints for all attached devices;
->> + *  useful for detach() recalculation, and for dma_buf_recalc_constraints()
->> + *  helper.
->> + *  Returns recalculated constraints in recalc_cons, or error in the unlikely
->> + *  case when constraints of attached devices might have changed.
->> + */
+On Thursday 29 January 2015 08:56 PM, Varka Bhadram wrote:
+> Hi,
 >
-Thanks for your valuable review comments!
-
-> Please see kerneldoc documentation for the proper format of these comments.
-These are static functions, and as such kerneldoc doesn't enforce
-kernel-doc style comments, so in the dma-buf files, we've not followed
-them for static functions.
-That said, it is certainly a valuable advice, and I could create a
-separate patch-set for updating the documentation for the static
-functions as well.
+> On Wednesday 28 January 2015 04:38 PM, Chunyan Zhang wrote:
+>> Add a full sc9836-uart driver for SC9836 SoC which is based on the
+>> spreadtrum sharkl64 platform.
+>> This driver also support earlycon.
+>>
+>> Originally-by: Lanqing Liu <lanqing.liu@spreadtrum.com>
+>> Signed-off-by: Orson Zhai <orson.zhai@spreadtrum.com>
+>> Signed-off-by: Chunyan Zhang <chunyan.zhang@spreadtrum.com>
+>> Acked-by: Arnd Bergmann <arnd@arndb.de>
+>> Reviewed-by: Peter Hurley <peter@hurleysoftware.com>
+>> ---
+>>   drivers/tty/serial/Kconfig       |   18 +
+>>   drivers/tty/serial/Makefile      |    1 +
+>>   drivers/tty/serial/sprd_serial.c |  793 
+>> ++++++++++++++++++++++++++++++++++++++
+>>   include/uapi/linux/serial_core.h |    3 +
+>>   4 files changed, 815 insertions(+)
+>>   create mode 100644 drivers/tty/serial/sprd_serial.c
+>>
+> (...)
 >
->> +static int recalc_constraints(struct dma_buf *dmabuf,
->> +                           struct device_dma_parameters *recalc_cons)
+>> +static int sprd_probe(struct platform_device *pdev)
 >> +{
->> +     struct device_dma_parameters calc_cons;
->> +     struct dma_buf_attachment *attach;
->> +     int ret = 0;
+>> +    struct resource *res;
+>> +    struct uart_port *up;
+>> +    struct clk *clk;
+>> +    int irq;
+>> +    int index;
+>> +    int ret;
 >> +
->> +     init_constraints(&calc_cons);
+>> +    for (index = 0; index < ARRAY_SIZE(sprd_port); index++)
+>> +        if (sprd_port[index] == NULL)
+>> +            break;
 >> +
->> +     list_for_each_entry(attach, &dmabuf->attachments, node) {
->> +             ret = calc_constraints(attach->dev, &calc_cons);
->> +             if (ret)
->> +                     return ret;
->> +     }
->> +     *recalc_cons = calc_cons;
->> +     return 0;
->> +}
+>> +    if (index == ARRAY_SIZE(sprd_port))
+>> +        return -EBUSY;
 >> +
->>  /**
->>   * dma_buf_export_named - Creates a new dma_buf, and associates an anon file
->>   * with this buffer, so it can be exported.
->> @@ -313,6 +373,9 @@ struct dma_buf *dma_buf_export_named(void *priv, const struct dma_buf_ops *ops,
->>       dmabuf->ops = ops;
->>       dmabuf->size = size;
->>       dmabuf->exp_name = exp_name;
+>> +    index = sprd_probe_dt_alias(index, &pdev->dev);
 >> +
->> +     init_constraints(&dmabuf->constraints);
+>> +    sprd_port[index] = devm_kzalloc(&pdev->dev,
+>> +        sizeof(*sprd_port[index]), GFP_KERNEL);
+>> +    if (!sprd_port[index])
+>> +        return -ENOMEM;
 >> +
->>       init_waitqueue_head(&dmabuf->poll);
->>       dmabuf->cb_excl.poll = dmabuf->cb_shared.poll = &dmabuf->poll;
->>       dmabuf->cb_excl.active = dmabuf->cb_shared.active = 0;
->> @@ -422,7 +485,7 @@ struct dma_buf_attachment *dma_buf_attach(struct dma_buf *dmabuf,
->>                                         struct device *dev)
->>  {
->>       struct dma_buf_attachment *attach;
->> -     int ret;
->> +     int ret = 0;
+>> +    up = &sprd_port[index]->port;
+>> +    up->dev = &pdev->dev;
+>> +    up->line = index;
+>> +    up->type = PORT_SPRD;
+>> +    up->iotype = SERIAL_IO_PORT;
+>> +    up->uartclk = SPRD_DEF_RATE;
+>> +    up->fifosize = SPRD_FIFO_SIZE;
+>> +    up->ops = &serial_sprd_ops;
+>> +    up->flags = UPF_BOOT_AUTOCONF;
+>> +
+>> +    clk = devm_clk_get(&pdev->dev, NULL);
+>> +    if (!IS_ERR(clk))
+>> +        up->uartclk = clk_get_rate(clk);
+>> +
+>> +    res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+>> +    if (!res) {
+>> +        dev_err(&pdev->dev, "not provide mem resource\n");
+>> +        return -ENODEV;
+>> +    }
+>
+> This check is not required. It will be done by devm_ioremap_resource()
+>
+>> +    up->mapbase = res->start;
+
+Accessing of 'res' has to be done after devm_ioremap_resource()
+
+>> +    up->membase = devm_ioremap_resource(&pdev->dev, res);
+>> +    if (IS_ERR(up->membase))
+>> +        return PTR_ERR(up->membase);
+>> +
 >>
->>       if (WARN_ON(!dmabuf || !dev))
->>               return ERR_PTR(-EINVAL);
->> @@ -436,6 +499,9 @@ struct dma_buf_attachment *dma_buf_attach(struct dma_buf *dmabuf,
->>
->>       mutex_lock(&dmabuf->lock);
->>
->> +     if (calc_constraints(dev, &dmabuf->constraints))
->> +             goto err_constraints;
->> +
->>       if (dmabuf->ops->attach) {
->>               ret = dmabuf->ops->attach(dmabuf, dev, attach);
->>               if (ret)
->> @@ -448,6 +514,7 @@ struct dma_buf_attachment *dma_buf_attach(struct dma_buf *dmabuf,
->>
->>  err_attach:
->>       kfree(attach);
->> +err_constraints:
->>       mutex_unlock(&dmabuf->lock);
->>       return ERR_PTR(ret);
->>  }
->> @@ -470,6 +537,8 @@ void dma_buf_detach(struct dma_buf *dmabuf, struct dma_buf_attachment *attach)
->>       if (dmabuf->ops->detach)
->>               dmabuf->ops->detach(dmabuf, attach);
->>
->> +     recalc_constraints(dmabuf, &dmabuf->constraints);
->> +
->
-> To me, this whole thing seems horribly racy.
->
-> What happens if subsystem X creates a dmabuf, which is passed to
-> userspace. It's then passed to subsystem Y, which starts making use
-> of it, calling dma_buf_map_attachment() on it.
->
-> The same buffer is also passed (via unix domain sockets) to another
-> program, which then passes it independently into subsystem Z, and
-> subsystem Z has more restrictive DMA constraints.
->
-> What happens at this point?
->
-> Subsystems such as DRM cache the scatter table, and return it for
-> subsequent attach calls, so DRM drivers using the default
-> drm_gem_map_dma_buf() implementation would not see the restrictions
-> placed upon the dmabuf.  Moreover, the returned scatterlist would not
-> be modified for those restrictions either.
->
-> What would other subsystems do?
->
-> This needs more thought before it's merged.
->
-> For example, in the above situation, should we deny the ability to
-> create a new attachment when a dmabuf has already been mapped by an
-> existing attachment?  Should we deny it only when the new attachment
-> has more restrictive DMA constraints?
->
-So, short answer is, it is left to the exporter to decide. The dma-buf
-framework should not even attempt to decide or enforce any of the
-above.
-
-At each dma_buf_attach(), there's a callback to the exporter, where
-the exporter can decide, if it intends to handle these kind of cases,
-on the best way forward.
-
-The exporter might, for example, decide to migrate backing storage,
-should there be a need to do so, or simply deny when the new
-attachment has more restrictive DMA constraints, as you mentioned as a
-possibility.
-
-These changes simply allow the exporter, should it wish to, to take
-the DMA constraints into consideration while making those decisions.
-For the current cases, it should not even matter if the DMA
-constraints aren't shared by the devices.
-
-> Please consider the possible sequences of use (such as the scenario
-> above) when creating or augmenting an API.
 >
 
-I tried to think of the scenarios I could think of, but If you still
-feel this approach doesn't help with your concerns, I'll graciously
-accept advice to improve it.
+-- 
+Thanks,
+Varka Bhadram.
 
-Once again, thanks for reviewing these changes!
-
-> --
-> FTTC broadband for 0.8mile line: currently at 10.5Mbps down 400kbps up
-> according to speedtest.net.
-
-
-Best regards,
-~Sumit.
