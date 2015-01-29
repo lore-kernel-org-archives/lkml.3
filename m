@@ -1,85 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758173AbbA2EUJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 23:20:09 -0500
-Received: from mail-qg0-f46.google.com ([209.85.192.46]:46560 "EHLO
-	mail-qg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754202AbbA2EUG (ORCPT
+	id S1758837AbbA2EVT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 23:21:19 -0500
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:60278 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752657AbbA2EVR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 23:20:06 -0500
+	Wed, 28 Jan 2015 23:21:17 -0500
+Date: Thu, 29 Jan 2015 13:21:15 +0900
+From: Sergey Senozhatsky <sergey.senozhatsky.work@gmail.com>
+To: Ganesh Mahendran <opensource.ganesh@gmail.com>
+Cc: minchan@kernel.org, ngupta@vflare.org, sergey.senozhatsky.work@gmail.com,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Subject: Re: [PATCH v2] zram: free meta table in zram_meta_free
+Message-ID: <20150129042115.GB2555@swordfish>
+References: <1421711028-5553-1-git-send-email-opensource.ganesh@gmail.com>
 MIME-Version: 1.0
-From: Alexei Starovoitov <ast@plumgrid.com>
-Date: Wed, 28 Jan 2015 20:19:45 -0800
-Message-ID: <CAMEtUuzW2xGGy6xGE_5EcKTEk-US1_o02qFbokxB2h9rU+TZfg@mail.gmail.com>
-Subject: Re: [PATCH v2 linux-trace 4/8] samples: bpf: simple tracing example
- in C
-To: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
-        Namhyung Kim <namhyung@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Linux API <linux-api@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1421711028-5553-1-git-send-email-opensource.ganesh@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 28, 2015 at 12:44 PM, Arnaldo Carvalho de Melo
-<acme@kernel.org> wrote:
->
->> > #define memcmp(s1, s2, n) bpf_memcmp(s1, s2, n)
->
->> >> in bpf_helpers.h to have it work?
->
->> yes, that will work just fine.
->> Since it's an example I made it explicit that bpf_memcmp()
->> has memcmp() semantics, but little bit different:
->> int bpf_memcmp(void *unsafe_ptr, void *safe_ptr, int size)
->
-> Not knowing about the safe/unsafe pointers (at this point in my
-> conceptual eBPF learning process), I would think that it would be easier
-> to understand if it would reuse another well known idiom:
->
-> #define memcmp_from_user(kernel, user, n) bpf_memcmp(user, kernel, n)
+On (01/20/15 07:43), Ganesh Mahendran wrote:
+> zram_meta_alloc() and zram_meta_free() are a pair.
+> In zram_meta_alloc(), meta table is allocated. So it it better to free
+> it in zram_meta_free().
+> 
+> Signed-off-by: Ganesh Mahendran <opensource.ganesh@gmail.com>
+> Cc: Nitin Gupta <ngupta@vflare.org>
+> Cc: Minchan Kim <minchan@kernel.org>
+> Cc: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
 
-that actually won't be right. It's not reading from user.
-'unsafe' means that pointer is not known to be safe
-within the program. So far, bpf verifier recognizes pointer
-to context, stack and maps. Everything else is unsafe.
-Therefore all pointer walking of unknown data structures
-need to use bpf_fetch_*() helpers to access memory.
-Similarly bpf_memcmp() is used to do memcmp() of
-two memory regions: one known to be safe and one
-unknown.
 
- > I don't reuse anything I've learned before trying to understand eBPF,
-> not I see any well known marker (__user) that would help me understand
-> that that pointer needs special treatment/belongs to a different "domain".
+Acked-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
 
-I tried to do exactly that actually :)
-bpf_fetch_*() helpers suppose to match existing fetch*()
-primitives used to do the same pointer walking for kprobes.
-Maybe bpf_probe_memcmp() would be a better name?
-Hard to tell.
+	-ss
 
->> bpf_fetch_*() helpers are also explicit in examples.
->> If one need to do a lot of pointer walking, then macro like
->> #define D(P) ((typeof(P))bpf_fetch_ptr(&P))
->> would be easier to use: p = D(D(skb->dev)->ifalias)
->> multiple pointer derefs would look more natural...
->
-> And if possible, i.e. if the eBPF compiler would take care of that
-> somehow, would indeed be preferred as it looks more natural :-)
-
-yes, on the user space side we have all the freedom.
-Note, these examples are using user's bpf_helpers.h
-which defines it as:
-static int (*bpf_memcmp)(void *unsafe_ptr, void *safe_ptr, int size) =
-        (void *) BPF_FUNC_memcmp;
-
-so whether we want to call the function bpf_memcmp() or
-bpf_probe_memcmp() is up to user space.
-The BPF_FUNC_memcmp name is what matters which
-is defined in uapi/linux/bpf.h
-I'll try to come up with more explicit name...
+> ---
+> v2: use zram->disksize to get num of pages - Sergey
+> ---
+>  drivers/block/zram/zram_drv.c |   33 ++++++++++++++++-----------------
+>  1 file changed, 16 insertions(+), 17 deletions(-)
+> 
+> diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
+> index 9250b3f..aa5a4c5 100644
+> --- a/drivers/block/zram/zram_drv.c
+> +++ b/drivers/block/zram/zram_drv.c
+> @@ -307,8 +307,21 @@ static inline int valid_io_request(struct zram *zram,
+>  	return 1;
+>  }
+>  
+> -static void zram_meta_free(struct zram_meta *meta)
+> +static void zram_meta_free(struct zram_meta *meta, u64 disksize)
+>  {
+> +	size_t num_pages = disksize >> PAGE_SHIFT;
+> +	size_t index;
+> +
+> +	/* Free all pages that are still in this zram device */
+> +	for (index = 0; index < num_pages; index++) {
+> +		unsigned long handle = meta->table[index].handle;
+> +
+> +		if (!handle)
+> +			continue;
+> +
+> +		zs_free(meta->mem_pool, handle);
+> +	}
+> +
+>  	zs_destroy_pool(meta->mem_pool);
+>  	vfree(meta->table);
+>  	kfree(meta);
+> @@ -706,9 +719,6 @@ static void zram_bio_discard(struct zram *zram, u32 index,
+>  
+>  static void zram_reset_device(struct zram *zram, bool reset_capacity)
+>  {
+> -	size_t index;
+> -	struct zram_meta *meta;
+> -
+>  	down_write(&zram->init_lock);
+>  
+>  	zram->limit_pages = 0;
+> @@ -718,20 +728,9 @@ static void zram_reset_device(struct zram *zram, bool reset_capacity)
+>  		return;
+>  	}
+>  
+> -	meta = zram->meta;
+> -	/* Free all pages that are still in this zram device */
+> -	for (index = 0; index < zram->disksize >> PAGE_SHIFT; index++) {
+> -		unsigned long handle = meta->table[index].handle;
+> -		if (!handle)
+> -			continue;
+> -
+> -		zs_free(meta->mem_pool, handle);
+> -	}
+> -
+>  	zcomp_destroy(zram->comp);
+>  	zram->max_comp_streams = 1;
+> -
+> -	zram_meta_free(zram->meta);
+> +	zram_meta_free(zram->meta, zram->disksize);
+>  	zram->meta = NULL;
+>  	/* Reset stats */
+>  	memset(&zram->stats, 0, sizeof(zram->stats));
+> @@ -803,7 +802,7 @@ out_destroy_comp:
+>  	up_write(&zram->init_lock);
+>  	zcomp_destroy(comp);
+>  out_free_meta:
+> -	zram_meta_free(meta);
+> +	zram_meta_free(meta, disksize);
+>  	return err;
+>  }
+>  
+> -- 
+> 1.7.9.5
+> 
