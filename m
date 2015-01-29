@@ -1,300 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758385AbbA2L05 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 06:26:57 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:50260 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753977AbbA2L0s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 06:26:48 -0500
-Message-ID: <54CA18EF.2060607@ti.com>
-Date: Thu, 29 Jan 2015 13:26:39 +0200
-From: Roger Quadros <rogerq@ti.com>
+	id S1758508AbbA2L1s (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 06:27:48 -0500
+Received: from mail-by2on0062.outbound.protection.outlook.com ([207.46.100.62]:44672
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752378AbbA2L1p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Jan 2015 06:27:45 -0500
+X-AuditID: ac160a69-f79956d000002b3c-66-54ca192cb96f
+Message-ID: <54CA1929.8060903@sandisk.com>
+Date: Thu, 29 Jan 2015 12:27:37 +0100
+From: Bart Van Assche <bart.vanassche@sandisk.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
 MIME-Version: 1.0
-To: Chanwoo Choi <cw00.choi@samsung.com>
-CC: <myungjoo.ham@samsung.com>, <balbi@ti.com>, <tony@atomide.com>,
-        <george.cherian@ti.com>, <nsekhar@ti.com>,
-        <devicetree@vger.kernel.org>, <linux-usb@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 1/7] extcon: usb-gpio: Introduce gpio usb extcon driver
-References: <1422274532-9488-1-git-send-email-rogerq@ti.com> <1422274532-9488-2-git-send-email-rogerq@ti.com> <54C8D2F4.9050404@ti.com> <54C99197.5070605@samsung.com>
-In-Reply-To: <54C99197.5070605@samsung.com>
-Content-Type: text/plain; charset="windows-1252"
+To: Ming Lei <ming.lei@canonical.com>
+CC: Jens Axboe <axboe@kernel.dk>, Sasha Levin <sasha.levin@oracle.com>,
+        Christoph Hellwig <hch@lst.de>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] blk-mq: Fix a recently introduced scsi-mq regression
+References: <54C92A47.2030709@sandisk.com>
+ <CACVXFVOtOujWH5jLLf16+-MeW--aiP1N14a=4aJP2h2_UVdtsw@mail.gmail.com>
+In-Reply-To: <CACVXFVOtOujWH5jLLf16+-MeW--aiP1N14a=4aJP2h2_UVdtsw@mail.gmail.com>
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpgkeLIzCtJLcpLzFFi42JZI8azSFdH8lSIQUePrMXqu/1sFitXH2Wy
+	uLxrDpvFroff2S0WH7nN7MDqMauhl83j8tlSj903G9g8Pj69xeLxeZNcAGsUl01Kak5mWWqR
+	vl0CV8bsJr6CLRwVC1ZuYGxgfMjWxcjJISFgInFzViMzhC0mceHeeqA4F4eQwAlGiSUdL9gh
+	nB2MEtNO7GaB6di44QuYLSSwhVGi5a4EiM0roCVxuXsZE4jNIqAq8XPqIzCbTcBI4tv7mWD1
+	ogJhEt8372CGqBeUODnzCVhcBKh+Yv8/MJtZYCqjxNuXVSC2sICnxKtFv6F25Usc+7gG7GpO
+	gUCJR/O3MHYxcgDVa0qs36UP0Sovsf3tHGaQmyUE9rJKbN32jQmiV13i5JL5TBMYRWYhWT0L
+	oX0WkvYFjMyrGMVyM3OKc9NTCwyN9IoT81Iyi7P1kvNzNzGC44UrcwfjiknmhxgFOBiVeHgT
+	Gk+GCLEmlhVX5h5ilOBgVhLhFRM4FSLEm5JYWZValB9fVJqTWnyIUZqDRUmcV3B6lr+QQHpi
+	SWp2ampBahFMlomDU6qBcZHn9iUKrocS2pVZZM7yZDhI+5yPWxOt9/3Rqd11Ja/PvO1t6o94
+	H/0+ctFLd9N/tzhZTnRvWB7LZdfIuH3ZtgrNuSVvJdyc8j4/1/WefmsGx6+pn+648uRyfpkl
+	Pyvb7ucz5mmFM5u9HDzeZv3PD2QTFHz4vWlT7ZEFAdzrfj1yuX/4cNt8WSWW4oxEQy3mouJE
+	ALPrgUmTAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrBJMWRmVeSWpSXmKPExsXCtZEjRVdH8lSIwbsmXovVd/vZLFauPspk
+	cXnXHDaLXQ+/s1ssPnKb2YHVY1ZDL5vH5bOlHrtvNrB5fHx6i8Xj8ya5ANYoLpuU1JzMstQi
+	fbsErozZTXwFWzgqFqzcwNjA+JCti5GTQ0LARGLjhi8sELaYxIV768HiQgKbGCXWbCkHsXkF
+	tCQudy9jArFZBFQlfk59BGazCRhJfHs/E6xXVCBM4vvmHcwQ9YISJ2c+AYuLANVP7P8HZHNx
+	MAvMYJQ4dOkP2AJhAU+JV4t+s0Asy5c49nENWJxTIFDi0fwtjCA2s4C6xJ95l5ghbHmJ7W/n
+	ME9g5J+FZMcsJGWzkJQtYGRexSiWm5lTnJueWWBopFecmJeSWZytl5yfu4kRHLacUTsYr080
+	P8TIxMEp1cCYs1Dv89SdexqWznJY92RLcEjeDGFD3Y5Ls/yP7XTcfliqs71x1fGfNVFc8qrf
+	mG7oSDv5XGWVWctTF1X/tM7J8/jnKY5vFaqcs959tdp5w1aq5l2SzYUiz8uegsn63CcL6zSD
+	Ey+mbn6ulXc2Yf9GF7fe6QvNHd/zFjN+2czsdbVh2w6ZnitKLMUZiYZazEXFiQCIEjzECwIA
+	AA==
+X-EOPAttributedMessage: 0
+Authentication-Results: spf=pass (sender IP is 63.163.107.173)
+ smtp.mailfrom=Bart.VanAssche@sandisk.com; canonical.com; dkim=none (message
+ not signed) header.d=none;canonical.com; dmarc=permerror action=none
+ header.from=sandisk.com;
+X-Forefront-Antispam-Report: CIP:63.163.107.173;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(377454003)(164054003)(51704005)(479174004)(24454002)(86362001)(33656002)(46102003)(36756003)(2950100001)(64126003)(62966003)(77156002)(50466002)(77096005)(19580405001)(87936001)(92566002)(23676002)(106466001)(110136001)(54356999)(50986999)(76176999)(47776003)(87266999)(65806001)(83506001);DIR:OUT;SFP:1101;SCL:1;SRVR:BLUPR02MB116;H:milsmgep12.sandisk.com;FPR:;SPF:None;MLV:sfv;LANG:en;
+X-DmarcAction-Test: None
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:(3005004);SRVR:BLUPR02MB116;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:BLUPR02MB116;
+X-Forefront-PRVS: 0471B73328
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BLUPR02MB116;
+X-OriginatorOrg: sandisk.com
+X-MS-Exchange-CrossTenant-OriginalArrivalTime: 29 Jan 2015 11:27:40.8058
+ (UTC)
+X-MS-Exchange-CrossTenant-Id: fcd9ea9c-ae8c-460c-ab3c-3db42d7ac64d
+X-MS-Exchange-CrossTenant-OriginalAttributedTenantConnectingIp: TenantId=fcd9ea9c-ae8c-460c-ab3c-3db42d7ac64d;Ip=[63.163.107.173]
+X-MS-Exchange-CrossTenant-FromEntityHeader: HybridOnPrem
+X-MS-Exchange-Transport-CrossTenantHeadersStamped: BLUPR02MB116
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Chanwoo,
+On 01/29/15 00:52, Ming Lei wrote:
+> On Thu, Jan 29, 2015 at 2:28 AM, Bart Van Assche
+> <bart.vanassche@sandisk.com> wrote:
+>> This patch fixes a use-after-free that was introduced via patch
+>> "blk-mq: fix hctx/ctx kobject use-after-free" (commit
+>> 76d697d10769; kernel v3.19-rc4) and fixes the following crash:
+> 
+> Sorry, my fault, I shouldn't have linked mq's release with mq_kobj,
+> which may be released before running blk_cleanup_queue().
+> 
+> Another approach may be to revert the faulty commit and release all
+> mq stuff in request queue's release handler(blk_release_queue)
+> which should be more safe and simple.
 
-On 29/01/15 03:49, Chanwoo Choi wrote:
-> Hi Roger,
-> 
-> We need to discuss one point about 'id_irqwake'.
-> I don't recommend to use 'id_irqwake' field.
-> 
-> And I catch build warning by using "select" keywork in Kconfig.
-> It is my wrong guide of "select" keyword. So, I'll change it 
-> as 'depends on' keyword.
-> 
-> Looks good to me except for 'id_irqwake'. 
-> I'll apply this patch on 3.21 queue after completing this discussion.
-> 
-> On 01/28/2015 09:15 PM, Roger Quadros wrote:
->> This driver observes the USB ID pin connected over a GPIO and
->> updates the USB cable extcon states accordingly.
->>
->> The existing GPIO extcon driver is not suitable for this purpose
->> as it needs to be taught to understand USB cable states and it
->> can't handle more than one cable per instance.
->>
->> For the USB case we need to handle 2 cable states.
->> 1) USB (attach/detach)
->> 2) USB-Host (attach/detach)
->>
->> This driver can be easily updated in the future to handle VBUS
->> events in case it happens to be available on GPIO for any platform.
->>
->> Signed-off-by: Roger Quadros <rogerq@ti.com>
->> ---
->> v3:
->> - removed IRQF_NO_SUSPEND flag. Added IRQF_TRIGGER_RISING and
->>   IRQF_TRIGGER_FALLING
->> - Added disable_irq() to suspend() and enable_irq() to resume()
->>
->>  .../devicetree/bindings/extcon/extcon-usb-gpio.txt |  18 ++
->>  drivers/extcon/Kconfig                             |   7 +
->>  drivers/extcon/Makefile                            |   1 +
->>  drivers/extcon/extcon-usb-gpio.c                   | 233 +++++++++++++++++++++
->>  4 files changed, 259 insertions(+)
->>  create mode 100644 Documentation/devicetree/bindings/extcon/extcon-usb-gpio.txt
->>  create mode 100644 drivers/extcon/extcon-usb-gpio.c
->>
->> diff --git a/Documentation/devicetree/bindings/extcon/extcon-usb-gpio.txt b/Documentation/devicetree/bindings/extcon/extcon-usb-gpio.txt
->> new file mode 100644
->> index 0000000..85fe6b0
->> --- /dev/null
->> +++ b/Documentation/devicetree/bindings/extcon/extcon-usb-gpio.txt
->> @@ -0,0 +1,18 @@
->> +USB GPIO Extcon device
->> +
->> +This is a virtual device used to generate USB cable states from the USB ID pin
->> +connected to a GPIO pin.
->> +
->> +Required properties:
->> +- compatible: Should be "linux,extcon-usb-gpio"
->> +- id-gpio: gpio for USB ID pin. See gpio binding.
->> +
->> +Example:
->> +	extcon_usb1 {
->> +		compatible = "linux,extcon-usb-gpio";
->> +		id-gpio = <&gpio6 1 GPIO_ACTIVE_HIGH>;
->> +	}
->> +
->> +	&omap_dwc3_1 {
->> +		extcon = <&extcon_usb1>;
->> +	};
->> diff --git a/drivers/extcon/Kconfig b/drivers/extcon/Kconfig
->> index 6a1f7de..fd11536 100644
->> --- a/drivers/extcon/Kconfig
->> +++ b/drivers/extcon/Kconfig
->> @@ -93,4 +93,11 @@ config EXTCON_SM5502
->>  	  Silicon Mitus SM5502. The SM5502 is a USB port accessory
->>  	  detector and switch.
->>  
->> +config EXTCON_USB_GPIO
->> +	tristate "USB GPIO extcon support"
->> +	select GPIOLIB
-> 
-> I catch the build warning if using 'select' instead of 'depends on' as following:
-> It is my wrong guide to you. So, I'll modify it by using "depends on" as your original patch.
+Hello Ming,
 
-OK. Thanks.
+How important is the patch with commit ID 76d697d10769 ? Does it have to
+be included in kernel v3.19 or can it be postponed until kernel v3.19.1
+or kernel v3.19.2 ? If so, how about reverting that patch for kernel
+v3.19 and sending a reworked patch to Jens with a "Cc: stable" tag after
+the release of kernel v3.19 ? That last patch will then get included in
+a stable version of kernel v3.19.
 
-> 
-> make ARCH=arm CROSS_COMPILE=arm-linux-gnueabi- zImage  -j 8
-> scripts/kconfig/conf --silentoldconfig Kconfig
-> drivers/gpio/Kconfig:34:error: recursive dependency detected!
-> drivers/gpio/Kconfig:34:	symbol GPIOLIB is selected by EXTCON_USB_GPIO
-> drivers/extcon/Kconfig:96:	symbol EXTCON_USB_GPIO depends on EXTCON
-> drivers/extcon/Kconfig:1:	symbol EXTCON is selected by CHARGER_MANAGER
-> drivers/power/Kconfig:316:	symbol CHARGER_MANAGER depends on POWER_SUPPLY
-> drivers/power/Kconfig:1:	symbol POWER_SUPPLY is selected by HID_SONY
-> drivers/hid/Kconfig:670:	symbol HID_SONY depends on NEW_LEDS
-> drivers/leds/Kconfig:8:	symbol NEW_LEDS is selected by BCMA_DRIVER_GPIO
-> drivers/bcma/Kconfig:75:	symbol BCMA_DRIVER_GPIO depends on GPIOLIB
-> 
->> +	help
->> +	  Say Y here to enable GPIO based USB cable detection extcon support.
->> +	  Used typically if GPIO is used for USB ID pin detection.
->> +
->>  endif # MULTISTATE_SWITCH
->> diff --git a/drivers/extcon/Makefile b/drivers/extcon/Makefile
->> index 0370b42..6a08a98 100644
->> --- a/drivers/extcon/Makefile
->> +++ b/drivers/extcon/Makefile
->> @@ -12,3 +12,4 @@ obj-$(CONFIG_EXTCON_MAX8997)	+= extcon-max8997.o
->>  obj-$(CONFIG_EXTCON_PALMAS)	+= extcon-palmas.o
->>  obj-$(CONFIG_EXTCON_RT8973A)	+= extcon-rt8973a.o
->>  obj-$(CONFIG_EXTCON_SM5502)	+= extcon-sm5502.o
->> +obj-$(CONFIG_EXTCON_USB_GPIO)	+= extcon-usb-gpio.o
->> diff --git a/drivers/extcon/extcon-usb-gpio.c b/drivers/extcon/extcon-usb-gpio.c
->> new file mode 100644
->> index 0000000..99a58b2
->> --- /dev/null
->> +++ b/drivers/extcon/extcon-usb-gpio.c
->> @@ -0,0 +1,233 @@
->> +/**
->> + * drivers/extcon/extcon-usb-gpio.c - USB GPIO extcon driver
->> + *
->> + * Copyright (C) 2015 Texas Instruments Incorporated - http://www.ti.com
->> + * Author: Roger Quadros <rogerq@ti.com>
->> + *
->> + * This program is free software; you can redistribute it and/or modify
->> + * it under the terms of the GNU General Public License version 2 as
->> + * published by the Free Software Foundation.
->> + *
->> + * This program is distributed in the hope that it will be useful,
->> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
->> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
->> + * GNU General Public License for more details.
->> + */
->> +
->> +#include <linux/extcon.h>
->> +#include <linux/init.h>
->> +#include <linux/interrupt.h>
->> +#include <linux/irq.h>
->> +#include <linux/kernel.h>
->> +#include <linux/module.h>
->> +#include <linux/of_gpio.h>
->> +#include <linux/platform_device.h>
->> +#include <linux/slab.h>
->> +#include <linux/workqueue.h>
->> +
->> +#define USB_GPIO_DEBOUNCE_MS	20	/* ms */
->> +
->> +struct usb_extcon_info {
->> +	struct device *dev;
->> +	struct extcon_dev *edev;
->> +
->> +	struct gpio_desc *id_gpiod;
->> +	int id_irq;
->> +	bool id_irqwake;		/* ID wakeup enabled flag */
-> 
-> Do you really think id_irqwake is necessary?
-> I think it is not necessary.
+Thanks,
 
-I will explain below why it is necessary.
+Bart.
 
-> 
->> +
->> +	unsigned long debounce_jiffies;
->> +	struct delayed_work wq_detcable;
->> +};
->> +
->> +/* List of detectable cables */
->> +enum {
->> +	EXTCON_CABLE_USB = 0,
->> +	EXTCON_CABLE_USB_HOST,
->> +
->> +	EXTCON_CABLE_END,
->> +};
->> +
->> +static const char *usb_extcon_cable[] = {
->> +	[EXTCON_CABLE_USB] = "USB",
->> +	[EXTCON_CABLE_USB_HOST] = "USB-Host",
->> +	NULL,
->> +};
->> +
-> 
-> [snip]
-> 
->> +
->> +static int usb_extcon_remove(struct platform_device *pdev)
->> +{
->> +	struct usb_extcon_info *info = platform_get_drvdata(pdev);
->> +
->> +	cancel_delayed_work_sync(&info->wq_detcable);
->> +
->> +	return 0;
->> +}
->> +
->> +#ifdef CONFIG_PM_SLEEP
->> +static int usb_extcon_suspend(struct device *dev)
->> +{
->> +	struct usb_extcon_info *info = dev_get_drvdata(dev);
->> +
->> +	if (device_may_wakeup(dev))
->> +		if (!enable_irq_wake(info->id_irq))
->> +			info->id_irqwake = true;
->> +
-> 
-> You can simplify this code as following without 'id_irqwake':
-> 
-> 	if (device_may_wakeup(dev))
-> 		enable_irq_wake(info->id_irq);
-
-enable_irq_wake() can fail. And if it does we need to keep track of it
-to prevent unbalanced disable_irq_wake() call in resume().
-That's the reason I've added the id_irqwake flag in struct usb_extcon_info.
-
-> 
->> +	/*
->> +	 * We don't want to process any IRQs after this point
->> +	 * as GPIOs used behind I2C subsystem might not be
->> +	 * accessible until resume completes. So disable IRQ.
->> +	 */
->> +	disable_irq(info->id_irq);
->> +
->> +	return 0;
->> +}
->> +
->> +static int usb_extcon_resume(struct device *dev)
->> +{
->> +	struct usb_extcon_info *info = dev_get_drvdata(dev);
->> +
->> +	if (info->id_irqwake) {
->> +		disable_irq_wake(info->id_irq);
->> +		info->id_irqwake = false;
->> +	}
-> 
-> ditto.
-> 
-> 	if (device_may_wakeup(dev))
-> 		disable_irq_wake(info->id_irq);
-> 
->> +
->> +	enable_irq(info->id_irq);
->> +
->> +	return 0;
->> +}
->> +#endif
->> +
->> +static SIMPLE_DEV_PM_OPS(usb_extcon_pm_ops,
->> +			 usb_extcon_suspend, usb_extcon_resume);
->> +
->> +static struct of_device_id usb_extcon_dt_match[] = {
->> +	{ .compatible = "linux,extcon-usb-gpio", },
->> +	{ /* sentinel */ }
->> +};
->> +MODULE_DEVICE_TABLE(of, usb_extcon_dt_match);
->> +
->> +static struct platform_driver usb_extcon_driver = {
->> +	.probe		= usb_extcon_probe,
->> +	.remove		= usb_extcon_remove,
->> +	.driver		= {
->> +		.name	= "extcon-usb-gpio",
->> +		.pm	= &usb_extcon_pm_ops,
->> +		.of_match_table = usb_extcon_dt_match,
->> +	},
->> +};
->> +
->> +module_platform_driver(usb_extcon_driver);
->> +
->> +MODULE_AUTHOR("Roger Quadros <rogerq@ti.com>");
->> +MODULE_DESCRIPTION("USB GPIO extcon driver");
->> +MODULE_LICENSE("GPL v2");
->>
-> 
-cheers,
--roger
