@@ -1,67 +1,215 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932731AbbA2KEc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 05:04:32 -0500
-Received: from mail-lb0-f172.google.com ([209.85.217.172]:63673 "EHLO
-	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755530AbbA2KE1 (ORCPT
+	id S933293AbbA2KHk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 05:07:40 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:37502 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932132AbbA2KHg convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 05:04:27 -0500
-Date: Thu, 29 Jan 2015 11:04:24 +0100
-From: Johan Hovold <johan@kernel.org>
-To: Peter Hung <hpeter@gmail.com>
-Cc: Johan Hovold <johan@kernel.org>, gregkh@linuxfoundation.org,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        tom_tsai@fintek.com.tw, peter_hong@fintek.com.tw,
-        Peter Hung <hpeter+linux_kernel@gmail.com>
-Subject: Re: [PATCH v3 1/5] usb: serial: add register map for F81232
-Message-ID: <20150129100424.GB5312@localhost>
-References: <1422424676-7395-1-git-send-email-hpeter+linux_kernel@gmail.com>
- <20150128175525.GE2433@localhost>
- <54C99CEE.8070802@gmail.com>
+	Thu, 29 Jan 2015 05:07:36 -0500
+Date: Thu, 29 Jan 2015 10:15:14 +0008
+From: Jason Wang <jasowang@redhat.com>
+Subject: RE: [PATCH v3 3/3] Drivers: hv: vmbus: serialize Offer and Rescind
+ offer
+To: Dexuan Cui <decui@microsoft.com>
+Cc: Vitaly Kuznetsov <vkuznets@redhat.com>, KY Srinivasan <kys@microsoft.com>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        Haiyang Zhang <haiyangz@microsoft.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Radim =?iso-8859-2?b?S3LobeH4?= <rkrcmar@redhat.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>
+Message-Id: <1422526034.14137.1@smtp.corp.redhat.com>
+In-Reply-To: <F792CF86EFE20D4AB8064279AFBA51C61EA94FB7@SIXPRD3002MB028.064d.mgd.msft.net
+	>
+References: <1421768706-5363-1-git-send-email-vkuznets@redhat.com>
+	<1421768706-5363-4-git-send-email-vkuznets@redhat.com>
+	<F792CF86EFE20D4AB8064279AFBA51C61EA94FB7@SIXPRD3002MB028.064d.mgd.msft.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54C99CEE.8070802@gmail.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 29, 2015 at 10:37:34AM +0800, Peter Hung wrote:
-> Hello.
+
+
+On Wed, Jan 28, 2015 at 7:57 PM, Dexuan Cui <decui@microsoft.com> wrote:
+>>  -----Original Message-----
+>>  From: Vitaly Kuznetsov [mailto:vkuznets@redhat.com]
+>>  Sent: Tuesday, January 20, 2015 23:45 PM
+>>  To: KY Srinivasan; devel@linuxdriverproject.org
+>>  Cc: Haiyang Zhang; linux-kernel@vger.kernel.org; Dexuan Cui; Jason 
+>> Wang;
+>>  Radim Krčmář; Dan Carpenter
+>>  Subject: [PATCH v3 3/3] Drivers: hv: vmbus: serialize Offer and 
+>> Rescind offer
+>>  
+>>  Commit 4b2f9abea52a ("staging: hv: convert channel_mgmt.c to not 
+>> call
+>>  osd_schedule_callback")' was written under an assumption that we 
+>> never
+>>  receive
+>>  Rescind offer while we're still processing the initial Offer 
+>> request. However,
+>>  the issue we fixed in 04a258c162a8 could be caused by this 
+>> assumption not
+>>  always being true.
+>>  
+>>  In particular, we need to protect against the following:
+>>  1) Receiving a Rescind offer after we do queue_work() for 
+>> processing an
+>>  Offer
+>>     request and before we actually enter vmbus_process_offer(). 
+>> work.func
+>>  points
+>>     to vmbus_process_offer() at this moment and in 
+>> vmbus_onoffer_rescind()
+>>  we do
+>>     another queue_work() without a check so we'll enter
+>>  vmbus_process_offer()
+>>     twice.
+>>  2) Receiving a Rescind offer after we enter vmbus_process_offer() 
+>> and
+>>     especially after we set >state = CHANNEL_OPEN_STATE. Many things 
+>> can go
+>>     wrong in that case, e.g. we can call free_channel() while we're 
+>> still using
+>>     it.
+>>  
+>>  Implement the required protection by changing work->func at the 
+>> very end
+>>  of
+>>  vmbus_process_offer() and checking work->func in 
+>> vmbus_onoffer_rescind().
+>>  In
+>>  case we receive rescind offer during or before 
+>> vmbus_process_offer() is
+>>  done
+>>  we set rescind flag to true and we check it at the end of
+>>  vmbus_process_offer()
+>>  so such offer will not get lost.
+>>  
+>>  Suggested-by: Radim Krčmář <rkrcmar@redhat.com>
+>>  Signed-off-by: Vitaly Kuznetsov <vkuznets@redhat.com>
+>>  ---
+>>   drivers/hv/channel_mgmt.c | 30 ++++++++++++++++++++++--------
+>>   1 file changed, 22 insertions(+), 8 deletions(-)
+>>  
+>>  diff --git a/drivers/hv/channel_mgmt.c b/drivers/hv/channel_mgmt.c
+>>  index c6fdd74..877a944 100644
+>>  --- a/drivers/hv/channel_mgmt.c
+>>  +++ b/drivers/hv/channel_mgmt.c
+>>  @@ -279,9 +279,6 @@ static void vmbus_process_offer(struct 
+>> work_struct
+>>  *work)
+>>   	int ret;
+>>   	unsigned long flags;
+>>  
+>>  -	/* The next possible work is rescind handling */
+>>  -	INIT_WORK(&newchannel->work, vmbus_process_rescind_offer);
+>>  -
+>>   	/* Make sure this is a new offer */
+>>   	spin_lock_irqsave(&vmbus_connection.channel_lock, flags);
+>>  
+>>  @@ -341,7 +338,7 @@ static void vmbus_process_offer(struct 
+>> work_struct
+>>  *work)
+>>   			if (channel->sc_creation_callback != NULL)
+>>   				channel->sc_creation_callback(newchannel);
+>>  
+>>  -			goto out;
+>>  +			goto done_init_rescind;
+>>   		}
+>>  
+>>   		goto err_free_chan;
+>>  @@ -382,7 +379,14 @@ static void vmbus_process_offer(struct 
+>> work_struct
+>>  *work)
+>>   		kfree(newchannel->device_obj);
+>>   		goto err_free_chan;
+>>   	}
+>>  -out:
+>>  +done_init_rescind:
+>>  +	spin_lock_irqsave(&newchannel->lock, flags);
+>>  +	/* The next possible work is rescind handling */
+>>  +	INIT_WORK(&newchannel->work, vmbus_process_rescind_offer);
+>>  +	/* Check if rescind offer was already received */
+>>  +	if (newchannel->rescind)
+>>  +		queue_work(newchannel->controlwq, &newchannel->work);
+>>  +	spin_unlock_irqrestore(&newchannel->lock, flags);
+>>   	return;
+>>   err_free_chan:
+>>   	free_channel(newchannel);
+>>  @@ -520,6 +524,7 @@ static void vmbus_onoffer_rescind(struct
+>>  vmbus_channel_message_header *hdr)
+>>   {
+>>   	struct vmbus_channel_rescind_offer *rescind;
+>>   	struct vmbus_channel *channel;
+>>  +	unsigned long flags;
+>>  
+>>   	rescind = (struct vmbus_channel_rescind_offer *)hdr;
+>>   	channel = relid2channel(rescind->child_relid);
+>>  @@ -528,11 +533,20 @@ static void vmbus_onoffer_rescind(struct
+>>  vmbus_channel_message_header *hdr)
+>>   		/* Just return here, no channel found */
+>>   		return;
+>>  
+>>  +	spin_lock_irqsave(&channel->lock, flags);
+>>   	channel->rescind = true;
+>>  +	/*
+>>  +	 * channel->work.func != vmbus_process_rescind_offer means we
+>>  are still
+>>  +	 * processing offer request and the rescind offer processing 
+>> should
+>>  be
+>>  +	 * postponed. It will be done at the very end of
+>>  vmbus_process_offer()
+>>  +	 * as rescind flag is being checked there.
+>>  +	 */
+>>  +	if (channel->work.func == vmbus_process_rescind_offer)
+>>  +		/* work is initialized for vmbus_process_rescind_offer() from
+>>  +		 * vmbus_process_offer() where the channel got created */
+>>  +		queue_work(channel->controlwq, &channel->work);
+>>  
+>>  -	/* work is initialized for vmbus_process_rescind_offer() from
+>>  -	 * vmbus_process_offer() where the channel got created */
+>>  -	queue_work(channel->controlwq, &channel->work);
+>>  +	spin_unlock_irqrestore(&channel->lock, flags);
+>>   }
+>>  
+>>   /*
+>>  --
 > 
-> 1. For retry Issue:
+> Hi Vitaly and all,
+> I have 2 questions:
+> In vmbus_process_offer(),  in the cases of "goto err_free_chan",
+> should we consider the possibility a rescind message could be pending 
+> for 
+> the new channel?
+> In the cases,  because we don't run 
+> "INIT_WORK(&newchannel->work, vmbus_process_rescind_offer); ",
+> vmbus_onoffer_rescind() will do nothing and as a result, 
+> vmbus_process_rescind_offer() won't be invoked.
 > 
-> These patches is referenced from our other usb serial product. That 
-> product maybe not ack the control ep command when It's in very heavily 
-> loading. Our workaround is to modify driver to retry more times if it 
-> timeout because it's f/w can't upgrade with usb protocol. I will remove 
-> the retry mechanic and test for it again.
-
-That sounds good.
-
-> 2. For some function/variable not used:
+> Question 2: in vmbus_process_offer(), in the case
+> vmbus_device_register() fails, we'll run
+> "list_del(&newchannel->listentry);" -- just after this line,
+>  what will happen at this time if relid2channel() returns NULL
+> in vmbus_onoffer_rescind()?
 > 
-> The original driver is lacking a lot of feature. My first patch strategy 
-> is putting all needed function / variables in patch 1 and apply it in 
-> following patches. Sorry for my wrong strategy, I'll change it with more 
-> meaningful and logical patchset and resend it.
+> I think we'll lose the rescind message. 
 
-Perhaps you just need to break the patches up further.
+If CHANNELMSG_RELID_RELEASED is mandatory, need INIT_WORK during 
+onoffer_rescind() unconditionally and and we need post this message 
+without the help of relid2channel() since:
 
-Also if you get checkpatch warnings for code you haven't touched, you
-can either ignore them or fix it separately in preparatory patch.
+- relid2channel() only valid when the channel was added to list, so 
+either in the case of question 2 or before list_add_tail() in 
+vmbus_process_offer()
+- the channel rescind offer message has a relid
 
-Just try to group related changes together.
+> 
+> 
+> Thanks,
+> -- Dexuan
 
-> Thanks for your patient and advice.
-
-No worries. 
-
-In the future when posting to the lists, please try to respond inline
-(as I am above) rather than top-post, and remove context that isn't
-relevant (e.g. code that isn't relevant) for the discussion at hand.
-
-Thanks,
-Johan
